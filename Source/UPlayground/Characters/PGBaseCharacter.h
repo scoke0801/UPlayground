@@ -26,7 +26,7 @@ class UPLAYGROUND_API APGBaseCharacter : public ACharacter
     GENERATED_BODY()
     
 public:
-    APGBaseCharacter();
+    APGBaseCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
     
     // 상태 관련 함수
     UFUNCTION(BlueprintCallable, Category = "Character")
@@ -98,4 +98,8 @@ protected:
     // 장비 시각화 컴포넌트
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|Components")
     class UPGEquipmentVisualizerComponent* EquipmentVisualizerComponent;
+    
+public:
+    // 복제를 위한 GetLifetimeReplicatedProps 함수
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

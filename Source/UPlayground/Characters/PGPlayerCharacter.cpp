@@ -4,6 +4,7 @@
 #include "../Combat/PGCombatComponent.h"
 #include "../Abilities/PGAbilityComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/PGCharacterMovementComponent.h"
 #include "../Input/PGEnhancedInputComponent.h"
 #include "../Input/PGInputConfig.h"
 #include "EnhancedInputSubsystems.h"
@@ -24,8 +25,14 @@ APGPlayerCharacter::APGPlayerCharacter()
     
     // 캐릭터 기본 회전 설정
     bUseControllerRotationPitch = false;
-    bUseControllerRotationYaw = true;
+    bUseControllerRotationYaw = false;  // 이동 방향으로 캐릭터 회전
     bUseControllerRotationRoll = false;
+    
+    // 캐릭터 무브먼트 설정
+    GetCharacterMovement()->bOrientRotationToMovement = true; // 캐릭터가 이동 방향으로 회전
+    GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // 회전 속도
+    GetCharacterMovement()->JumpZVelocity = 600.0f;
+    GetCharacterMovement()->AirControl = 0.2f;
 }
 
 void APGPlayerCharacter::BeginPlay()
@@ -67,12 +74,14 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
         
         if (InputConfig->JumpAction)
         {
-            PGInputComponent->BindActionSafe(InputConfig->JumpAction, ETriggerEvent::Triggered, this, &APGPlayerCharacter::JumpAction);
+            PGInputComponent->BindActionSafe(InputConfig->JumpAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartJump);
+            PGInputComponent->BindActionSafe(InputConfig->JumpAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopJump);
         }
         
         if (InputConfig->SprintAction)
         {
-            PGInputComponent->BindActionSafe(InputConfig->SprintAction, ETriggerEvent::Triggered, this, &APGPlayerCharacter::Sprint);
+            PGInputComponent->BindActionSafe(InputConfig->SprintAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartSprint);
+            PGInputComponent->BindActionSafe(InputConfig->SprintAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopSprint);
         }
         
         // Combat
@@ -174,23 +183,17 @@ void APGPlayerCharacter::Move(const FInputActionValue& Value)
     
     if (Controller != nullptr)
     {
-        // Forward/Backward movement
-        if (MovementVector.Y != 0.0f)
-        {
-            const FRotator Rotation = Controller->GetControlRotation();
-            const FRotator YawRotation(0, Rotation.Yaw, 0);
-            const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-            AddMovementInput(Direction, MovementVector.Y);
-        }
+        // 컨트롤러 회전 가져오기
+        const FRotator Rotation = Controller->GetControlRotation();
+        const FRotator YawRotation(0, Rotation.Yaw, 0);
         
-        // Right/Left movement
-        if (MovementVector.X != 0.0f)
-        {
-            const FRotator Rotation = Controller->GetControlRotation();
-            const FRotator YawRotation(0, Rotation.Yaw, 0);
-            const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-            AddMovementInput(Direction, MovementVector.X);
-        }
+        // 이동 방향 계산
+        const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+        const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+        
+        // 이동 입력 적용
+        AddMovementInput(ForwardDirection, MovementVector.Y);
+        AddMovementInput(RightDirection, MovementVector.X);
     }
 }
 
@@ -201,28 +204,50 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
     
     if (Controller != nullptr)
     {
-        // Up/Down looking
-        AddControllerPitchInput(LookAxisVector.Y);
-        
-        // Left/Right looking
+        // Yaw(좌우) 및 Pitch(상하) 회전 추가
         AddControllerYawInput(LookAxisVector.X);
+        AddControllerPitchInput(LookAxisVector.Y);
     }
 }
 
-void APGPlayerCharacter::JumpAction(const FInputActionValue& Value)
+void APGPlayerCharacter::StartJump(const FInputActionValue& Value)
 {
-    ACharacter::Jump();
+    // 커스텀 이동 컴포넌트 사용
+    if (UPGCharacterMovementComponent* PGMovement = Cast<UPGCharacterMovementComponent>(GetCharacterMovement()))
+    {
+        // 상태 확인 후 점프
+        if (PGMovement->GetMovementState() != EPGMovementState::Stunned && 
+            PGMovement->GetMovementState() != EPGMovementState::Knocked)
+        {
+            Jump();
+        }
+    }
+    else
+    {
+        Jump();
+    }
 }
 
-void APGPlayerCharacter::Sprint(const FInputActionValue& Value)
+void APGPlayerCharacter::StopJump(const FInputActionValue& Value)
 {
-    // 사용자 정의 움직임 컴포넌트를 통한 달리기 구현
-    if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+    StopJumping();
+}
+
+void APGPlayerCharacter::StartSprint(const FInputActionValue& Value)
+{
+    // 커스텀 이동 컴포넌트 사용
+    if (UPGCharacterMovementComponent* PGMovement = Cast<UPGCharacterMovementComponent>(GetCharacterMovement()))
     {
-        // 여기서는 기본 언리얼 움직임 컴포넌트를 사용
-        // 실제 구현에서는 UPGCharacterMovementComponent를 사용할 수 있음
-        const float SprintSpeedMultiplier = 1.5f;
-        MovementComponent->MaxWalkSpeed = 600.0f * SprintSpeedMultiplier;
+        PGMovement->StartSprinting();
+    }
+}
+
+void APGPlayerCharacter::StopSprint(const FInputActionValue& Value)
+{
+    // 커스텀 이동 컴포넌트 사용
+    if (UPGCharacterMovementComponent* PGMovement = Cast<UPGCharacterMovementComponent>(GetCharacterMovement()))
+    {
+        PGMovement->StopSprinting();
     }
 }
 

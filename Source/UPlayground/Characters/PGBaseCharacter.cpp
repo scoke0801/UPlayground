@@ -1,13 +1,16 @@
 #include "PGBaseCharacter.h"
 #include "Net/UnrealNetwork.h"
+#include "Components/PGCharacterMovementComponent.h"
 #include "../Combat/PGCombatComponent.h"
 #include "../Abilities/PGAbilityComponent.h"
 #include "../Items/PGInventoryComponent.h"
 #include "../Equipment/PGEquipmentComponent.h"
 #include "../Equipment/PGEquipmentVisualizerComponent.h"
 #include "../Equipment/PGEquipmentItem.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
-APGBaseCharacter::APGBaseCharacter()
+APGBaseCharacter::APGBaseCharacter(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer.SetDefaultSubobjectClass<UPGCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
     // 기본값 설정
     PrimaryActorTick.bCanEverTick = true;
@@ -46,6 +49,29 @@ void APGBaseCharacter::SetCharacterState(EPGCharacterState NewState)
     if (GetLocalRole() == ROLE_Authority)
     {
         CurrentState = NewState;
+        
+        // 캐릭터 상태에 따라 이동 상태도 변경
+        if (UPGCharacterMovementComponent* PGMovement = Cast<UPGCharacterMovementComponent>(GetCharacterMovement()))
+        {
+            switch (NewState)
+            {
+                case EPGCharacterState::Idle:
+                case EPGCharacterState::Moving:
+                    PGMovement->SetMovementState(EPGMovementState::Walking);
+                    break;
+                    
+                case EPGCharacterState::Stunned:
+                    PGMovement->SetMovementState(EPGMovementState::Stunned);
+                    break;
+                    
+                case EPGCharacterState::Dead:
+                    PGMovement->DisableMovement();
+                    break;
+                    
+                default:
+                    break;
+            }
+        }
     }
 }
 

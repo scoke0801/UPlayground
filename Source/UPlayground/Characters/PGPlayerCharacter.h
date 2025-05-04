@@ -59,13 +59,19 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     class UPGInputConfig* InputConfig;
     
-    // 입력 액션 핸들러
+    // 이동 관련 입력 액션 핸들러
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
-    void JumpAction(const FInputActionValue& Value);
-    void Sprint(const FInputActionValue& Value);
+    void StartJump(const FInputActionValue& Value);
+    void StopJump(const FInputActionValue& Value);
+    void StartSprint(const FInputActionValue& Value);
+    void StopSprint(const FInputActionValue& Value);
+    
+    // 전투 관련 입력 액션 핸들러
     void PrimaryAttack(const FInputActionValue& Value);
     void SecondaryAttack(const FInputActionValue& Value);
+    
+    // 능력 관련 입력 액션 핸들러
     void UseAbility1(const FInputActionValue& Value);
     void UseAbility2(const FInputActionValue& Value);
     void UseAbility3(const FInputActionValue& Value);

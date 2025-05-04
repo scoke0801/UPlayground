@@ -4,17 +4,20 @@
 
 UPGCharacterMovementComponent::UPGCharacterMovementComponent()
 {
-    // 기본값 설정
-    DodgeStrength = 2000.0f;
-    DodgeDuration = 0.2f;
-    DodgeCooldown = 1.0f;
-    SprintSpeedMultiplier = 1.5f;
-    DefaultWalkSpeed = 600.0f;
-    
-    // 이동 상태 초기화
+    // 기본 설정
     CurrentMovementState = EPGMovementState::Walking;
+    
+    // 회피 설정
+    DodgeStrength = 1000.0f;
+    DodgeDuration = 0.3f;
+    DodgeCooldown = 1.0f;
     bIsDodging = false;
     bDodgeOnCooldown = false;
+    
+    // 달리기 설정
+    SprintSpeedMultiplier = 1.5f;
+    DefaultWalkSpeed = 600.0f;
+    MaxWalkSpeed = DefaultWalkSpeed;
 }
 
 void UPGCharacterMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -31,139 +34,133 @@ EPGMovementState UPGCharacterMovementComponent::GetMovementState() const
 
 void UPGCharacterMovementComponent::SetMovementState(EPGMovementState NewState)
 {
-    if (GetOwnerRole() == ROLE_Authority)
+    if (CurrentMovementState != NewState)
     {
         CurrentMovementState = NewState;
+        
+        // 상태에 따른 처리
+        switch (NewState)
+        {
+            case EPGMovementState::Walking:
+                MaxWalkSpeed = DefaultWalkSpeed;
+                break;
+                
+            case EPGMovementState::Sprinting:
+                MaxWalkSpeed = DefaultWalkSpeed * SprintSpeedMultiplier;
+                break;
+                
+            case EPGMovementState::Dodging:
+                // 회피 중에는 이동 제어 제한
+                break;
+                
+            case EPGMovementState::Stunned:
+                // 스턴 상태에서는 이동 불가
+                StopMovementImmediately();
+                DisableMovement();
+                break;
+                
+            case EPGMovementState::Knocked:
+                // 넉백 상태
+                StopMovementImmediately();
+                break;
+        }
     }
 }
 
 bool UPGCharacterMovementComponent::CanDodge() const
 {
-    return !bIsDodging && !bDodgeOnCooldown && IsMovingOnGround();
+    return !bIsDodging && !bDodgeOnCooldown && 
+           CurrentMovementState != EPGMovementState::Stunned && 
+           CurrentMovementState != EPGMovementState::Knocked;
 }
 
 void UPGCharacterMovementComponent::Dodge(FVector Direction)
 {
-    if (!CanDodge() || !CharacterOwner)
+    if (!CanDodge())
     {
         return;
     }
     
-    // 회피 방향 정규화
+    // 회피 시작
+    bIsDodging = true;
     DodgeDirection = Direction.GetSafeNormal();
     
-    // 현재 이동 모드 저장 및 상태 변경
+    // 회피 상태로 변경
     SetMovementState(EPGMovementState::Dodging);
-    bIsDodging = true;
     
-    // 회피 로직 시작
-    if (GetOwnerRole() == ROLE_Authority)
+    // 회피 타이머 설정
+    if (GetWorld())
     {
-        // 회피 강도로 캐릭터 밀기
-        FVector DodgeVelocity = DodgeDirection * DodgeStrength;
-        Launch(DodgeVelocity);
-        
-        // 회피 타이머 설정
-        GetWorld()->GetTimerManager().SetTimer(
-            DodgeTimerHandle,
-            [this]()
+        GetWorld()->GetTimerManager().SetTimer(DodgeTimerHandle, [this]()
+        {
+            bIsDodging = false;
+            SetMovementState(EPGMovementState::Walking);
+            
+            // 쿨다운 시작
+            bDodgeOnCooldown = true;
+            GetWorld()->GetTimerManager().SetTimer(DodgeCooldownTimerHandle, [this]()
             {
-                // 회피 종료
-                bIsDodging = false;
-                SetMovementState(EPGMovementState::Walking);
-                
-                // 쿨다운 시작
-                bDodgeOnCooldown = true;
-                GetWorld()->GetTimerManager().SetTimer(
-                    DodgeCooldownTimerHandle,
-                    [this]()
-                    {
-                        bDodgeOnCooldown = false;
-                    },
-                    DodgeCooldown,
-                    false
-                );
-            },
-            DodgeDuration,
-            false
-        );
+                bDodgeOnCooldown = false;
+            }, DodgeCooldown, false);
+            
+        }, DodgeDuration, false);
     }
 }
 
 void UPGCharacterMovementComponent::StartSprinting()
 {
-    if (CurrentMovementState != EPGMovementState::Walking)
+    if (CurrentMovementState == EPGMovementState::Walking)
     {
-        return;
+        SetMovementState(EPGMovementState::Sprinting);
     }
-    
-    // 달리기 상태로 변경
-    SetMovementState(EPGMovementState::Sprinting);
-    
-    // 이동 속도 증가
-    MaxWalkSpeed = DefaultWalkSpeed * SprintSpeedMultiplier;
 }
 
 void UPGCharacterMovementComponent::StopSprinting()
 {
-    if (CurrentMovementState != EPGMovementState::Sprinting)
+    if (CurrentMovementState == EPGMovementState::Sprinting)
     {
-        return;
+        SetMovementState(EPGMovementState::Walking);
     }
-    
-    // 걷기 상태로 변경
-    SetMovementState(EPGMovementState::Walking);
-    
-    // 이동 속도 복원
-    MaxWalkSpeed = DefaultWalkSpeed;
 }
 
 void UPGCharacterMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
 {
-    // 기본 걷기 물리
-    Super::PhysWalking(deltaTime, Iterations);
-}
-
-void UPGCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
-{
-    // 회피 중인 경우 커스텀 물리 적용
-    if (bIsDodging)
+    // 회피 중일 때 특별한 물리 처리
+    if (CurrentMovementState == EPGMovementState::Dodging && bIsDodging)
     {
         PerformDodge(deltaTime);
     }
     else
     {
-        Super::PhysCustom(deltaTime, Iterations);
+        Super::PhysWalking(deltaTime, Iterations);
     }
+}
+
+void UPGCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
+{
+    Super::PhysCustom(deltaTime, Iterations);
 }
 
 void UPGCharacterMovementComponent::PerformDodge(float DeltaTime)
 {
-    // 회피 중 물리 계산
-    // 여기서는 기본 물리를 사용하지만, 커스텀 물리 로직을 추가할 수 있음
-    
-    // 중력 적용
-    if (IsMovingOnGround())
+    if (CharacterOwner)
     {
-        // 지면에서는 표준 지상 이동 사용
-        CalcVelocity(DeltaTime, GroundFriction, false, BrakingDecelerationWalking);
-    }
-    else
-    {
-        // 공중에서는 공중 이동 로직 사용
-        CalcVelocity(DeltaTime, FallingLateralFriction, false, BrakingDecelerationFalling);
-        Velocity.Z += GetGravityZ() * DeltaTime;
-    }
-    
-    // 이동 적용
-    FVector Delta = Velocity * DeltaTime;
-    FHitResult Hit(1.f);
-    SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, Hit);
-    
-    // 충돌 처리
-    if (Hit.IsValidBlockingHit())
-    {
-        HandleImpact(Hit, DeltaTime, Delta);
-        SlideAlongSurface(Delta, 1.0f - Hit.Time, Hit.Normal, Hit, true);
+        // 회피 이동 적용
+        FVector DodgeVelocity = DodgeDirection * DodgeStrength;
+        Velocity = DodgeVelocity;
+        
+        // 회피 중 중력 적용
+        const FVector Gravity(0.0f, 0.0f, GetGravityZ());
+        Velocity += Gravity * DeltaTime;
+        
+        // 이동 적용
+        FHitResult Hit;
+        SafeMoveUpdatedComponent(Velocity * DeltaTime, UpdatedComponent->GetComponentQuat(), true, Hit);
+        
+        if (Hit.bBlockingHit)
+        {
+            // 충돌 시 슬라이딩 처리
+            SlideAlongSurface(Velocity, 1.0f - Hit.Time, Hit.Normal, Hit, true);
+        }
     }
 }
