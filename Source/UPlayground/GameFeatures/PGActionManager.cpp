@@ -6,29 +6,56 @@
 
 UPGActionManager::UPGActionManager()
 {
-    // 기본값 설정
+    ManagerName = FName("ActionManager");
     DefaultInputPriority = 0;
 }
 
-void UPGActionManager::Initialize()
+bool UPGActionManager::OnInitialize_Implementation()
 {
-    // 매니저 초기화 로직
+    if (!Super::OnInitialize_Implementation())
+    {
+        return false;
+    }
+
     UE_LOG(LogTemp, Log, TEXT("Action Manager Initialized"));
     
     // 입력 에셋 로드
     // 실제 구현에서는 애셋을 직접 로드하거나 참조를 설정해야 함
     // 예를 들어 데이터 에셋을 TSoftObjectPtr로 선언하고 여기서 로드
+    
+    return true;
 }
 
-void UPGActionManager::Deinitialize()
+void UPGActionManager::OnShutdown_Implementation()
 {
-    // 매니저 정리 로직
-    UE_LOG(LogTemp, Log, TEXT("Action Manager Deinitialized"));
+    UE_LOG(LogTemp, Log, TEXT("Action Manager Shutdown"));
+    Super::OnShutdown_Implementation();
 }
 
-void UPGActionManager::ManagerTick(float DeltaTime)
+void UPGActionManager::OnUpdate_Implementation(float DeltaTime)
 {
+    Super::OnUpdate_Implementation(DeltaTime);
     // 매니저 틱 로직 (필요한 경우)
+}
+
+void UPGActionManager::OnGameStateChange_Implementation(EPGGameStateType NewState)
+{
+    Super::OnGameStateChange_Implementation(NewState);
+    
+    // 게임 상태에 따른 입력 처리
+    switch (NewState)
+    {
+        case EPGGameStateType::GamePaused:
+            // 게임 일시정지 시 입력 처리
+            break;
+            
+        case EPGGameStateType::GameRunning:
+            // 게임 실행 중 입력 처리
+            break;
+            
+        default:
+            break;
+    }
 }
 
 UPGInputConfig* UPGActionManager::GetDefaultInputConfig() const

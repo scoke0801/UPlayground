@@ -1,23 +1,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
+#include "../Managers/PGBaseManager.h"
 #include "PGActionManager.generated.h"
 
 /**
  * 플레이어 액션과 입력 처리를 위한 매니저
  */
-UCLASS()
-class UPLAYGROUND_API UPGActionManager : public UObject
+UCLASS(Blueprintable)
+class UPLAYGROUND_API UPGActionManager : public UPGBaseManager
 {
     GENERATED_BODY()
     
 public:
     UPGActionManager();
     
-    // 초기화/정리 함수
-    virtual void Initialize();
-    virtual void Deinitialize();
+    //~Begin UPGBaseManager interface
+    virtual bool OnInitialize_Implementation() override;
+    virtual void OnShutdown_Implementation() override;
+    virtual void OnUpdate_Implementation(float DeltaTime) override;
+    virtual void OnGameStateChange_Implementation(EPGGameStateType NewState) override;
+    //~End UPGBaseManager interface
     
     // 입력 설정 액세스
     UFUNCTION(BlueprintCallable, Category = "Input")
@@ -43,7 +46,4 @@ protected:
     // 기본 우선순위
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     int32 DefaultInputPriority;
-    
-    // 매니저 틱 함수
-    virtual void ManagerTick(float DeltaTime);
 };
