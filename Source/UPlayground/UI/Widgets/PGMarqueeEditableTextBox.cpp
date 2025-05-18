@@ -19,8 +19,6 @@
 
 void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArguments& InArgs)
 {
-    bIsScrollingEnabled = true;
-    bIsHintTextScrollingEnabled = true;
     ScrollState = EScrollState::Idle;
     
     // 부모 EditableTextBox에서 스타일 가져오기 - 특정 스타일을 강제할 필요 없음
@@ -42,21 +40,12 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
         .OnTextChanged(InArgs._OnTextChanged)
         .OnTextCommitted(InArgs._OnTextCommitted);
     
-    // 일반 텍스트를 위한 스크롤 옵션 생성
-    FTextScrollerOptions TextScrollOptions;
-    TextScrollOptions.Speed = InArgs._ScrollSpeed;
-    TextScrollOptions.StartDelay = InArgs._StartDelay;
-    TextScrollOptions.EndDelay = InArgs._EndDelay;
-    TextScrollOptions.FadeInDelay = InArgs._FadeInDelay;
-    TextScrollOptions.FadeOutDelay = InArgs._FadeOutDelay;
-    
-    // 힌트 텍스트를 위한 스크롤 옵션 생성
-    FTextScrollerOptions HintTextScrollOptions;
-    HintTextScrollOptions.Speed = InArgs._HintTextScrollSpeed;
-    HintTextScrollOptions.StartDelay = InArgs._HintTextStartDelay;
-    HintTextScrollOptions.EndDelay = InArgs._HintTextEndDelay;
-    HintTextScrollOptions.FadeInDelay = InArgs._HintTextFadeInDelay;
-    HintTextScrollOptions.FadeOutDelay = InArgs._HintTextFadeOutDelay;
+    // 일반 텍스트를 위한 텍스트 스크롤러 생성
+    TextScroller = SNew(STextScroller)
+        .ScrollOptions(InArgs._TextScrollOptions ? *InArgs._TextScrollOptions : FTextScrollerOptions())
+        [
+            EditableText.ToSharedRef()
+        ];
     
     // 힌트 텍스트 표시를 위한 텍스트 블록 생성
     TSharedRef<STextBlock> HintTextBlock = SNew(STextBlock)
@@ -67,16 +56,9 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
         // UseSubduedForeground()를 사용하여 현재 테마에 맞는 흐린 색상을 사용합니다.
         .ColorAndOpacity(FSlateColor::UseSubduedForeground());
     
-    // 일반 텍스트를 위한 텍스트 스크롤러 생성
-    TextScroller = SNew(STextScroller)
-        .ScrollOptions(TextScrollOptions)
-        [
-            EditableText.ToSharedRef()
-        ];
-    
     // 힌트 텍스트 스크롤러 생성
     HintTextScroller = SNew(STextScroller)
-        .ScrollOptions(HintTextScrollOptions)
+        .ScrollOptions(InArgs._HintTextScrollOptions ? *InArgs._HintTextScrollOptions : FTextScrollerOptions())
         [
             HintTextBlock
         ];
@@ -118,17 +100,19 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
         Border.ToSharedRef()
     ];
     
-    // 활성화된 경우 스크롤링 시작
-    if (bIsScrollingEnabled)
+    // 스크롤 옵션에 따라 스크롤링 활성화 또는 비활성화
+    if (InArgs._TextScrollOptions && InArgs._TextScrollOptions->Speed > 0.0f)
     {
         TextScroller->StartScrolling();
+        ScrollState = EScrollState::Scrolling;
     }
     else
     {
         TextScroller->SuspendScrolling();
+        ScrollState = EScrollState::Idle;
     }
     
-    if (bIsHintTextScrollingEnabled)
+    if (InArgs._HintTextScrollOptions && InArgs._HintTextScrollOptions->Speed > 0.0f)
     {
         HintTextScroller->StartScrolling();
     }
@@ -162,11 +146,9 @@ FVector2D UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::GetDesiredSize()
 
 void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetScrollingEnabled(bool bEnabled)
 {
-    bIsScrollingEnabled = bEnabled;
-    
     if (TextScroller.IsValid())
     {
-        if (bIsScrollingEnabled && ScrollState != EScrollState::Paused)
+        if (bEnabled && ScrollState != EScrollState::Paused)
         {
             TextScroller->StartScrolling();
             ScrollState = EScrollState::Scrolling;
@@ -174,7 +156,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetScrollingEnabled(b
         else
         {
             TextScroller->SuspendScrolling();
-            if (!bIsScrollingEnabled)
+            if (!bEnabled)
             {
                 ScrollState = EScrollState::Idle;
             }
@@ -184,11 +166,9 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetScrollingEnabled(b
 
 void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetHintTextScrollingEnabled(bool bEnabled)
 {
-    bIsHintTextScrollingEnabled = bEnabled;
-    
     if (HintTextScroller.IsValid())
     {
-        if (bIsHintTextScrollingEnabled)
+        if (bEnabled)
         {
             HintTextScroller->StartScrolling();
         }
@@ -205,7 +185,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ResetScrollState()
     {
         TextScroller->ResetScrollState();
         
-        if (bIsScrollingEnabled && ScrollState != EScrollState::Paused)
+        if (ScrollState != EScrollState::Paused && ScrollState != EScrollState::Idle)
         {
             TextScroller->StartScrolling();
             ScrollState = EScrollState::Scrolling;
@@ -216,7 +196,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ResetScrollState()
     {
         HintTextScroller->ResetScrollState();
         
-        if (bIsHintTextScrollingEnabled)
+        if (ScrollState != EScrollState::Paused && ScrollState != EScrollState::Idle)
         {
             HintTextScroller->StartScrolling();
         }
@@ -241,7 +221,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ResumeScrolling()
 {
     if (ScrollState == EScrollState::Paused)
     {
-        if (TextScroller.IsValid() && bIsScrollingEnabled)
+        if (TextScroller.IsValid())
         {
             TextScroller->StartScrolling();
             ScrollState = EScrollState::Scrolling;
@@ -251,7 +231,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ResumeScrolling()
             ScrollState = EScrollState::Idle;
         }
         
-        if (HintTextScroller.IsValid() && bIsHintTextScrollingEnabled)
+        if (HintTextScroller.IsValid())
         {
             HintTextScroller->StartScrolling();
         }
@@ -331,14 +311,14 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::HandleTextFocusChange
     else
     {
         // 포커스가 사라지면 필요한 경우 스크롤링 재개
-        if (TextScroller.IsValid() && bIsScrollingEnabled && !GetText().IsEmpty())
+        if (TextScroller.IsValid() && !GetText().IsEmpty() && ScrollState != EScrollState::Idle)
         {
             TextScroller->ResetScrollState();
             TextScroller->StartScrolling();
             ScrollState = EScrollState::Scrolling;
         }
         
-        if (HintTextScroller.IsValid() && bIsHintTextScrollingEnabled && GetText().IsEmpty())
+        if (HintTextScroller.IsValid() && GetText().IsEmpty())
         {
             HintTextScroller->ResetScrollState();
             HintTextScroller->StartScrolling();
@@ -354,15 +334,76 @@ UPGMarqueeEditableTextBox::UPGMarqueeEditableTextBox()
 {
 }
 
+// CommonTextScrollStyle에서 스크롤 옵션을 생성하는 헬퍼 함수
+FTextScrollerOptions UPGMarqueeEditableTextBox::CreateScrollOptionsFromStyle(const UCommonTextScrollStyle* StyleCDO) const
+{
+    FTextScrollerOptions Options;
+    
+    if (StyleCDO)
+    {
+        // 스타일이 존재하는 경우 기본 스크롤 옵션 설정
+        Options.Speed = 25.0f;       // 기본 스크롤 속도
+        Options.StartDelay = 0.5f;    // 시작 지연 시간
+        Options.EndDelay = 0.5f;      // 종료 지연 시간
+        Options.FadeInDelay = 0.25f;  // 페이드 인 시간
+        Options.FadeOutDelay = 0.25f; // 페이드 아웃 시간
+    }
+    else
+    {
+        // 스타일이 없는 경우 스크롤링 비활성화 (속도 0)
+        Options.Speed = 0.0f;
+        Options.StartDelay = 0.5f;
+        Options.EndDelay = 0.5f;
+        Options.FadeInDelay = 0.25f;
+        Options.FadeOutDelay = 0.25f;
+    }
+    
+    return Options;
+}
+
+// 힌트 텍스트용 스크롤 옵션을 생성하는 헬퍼 함수
+FTextScrollerOptions UPGMarqueeEditableTextBox::CreateHintTextScrollOptionsFromStyle(const UCommonTextScrollStyle* StyleCDO) const
+{
+    FTextScrollerOptions Options;
+    
+    if (StyleCDO)
+    {
+        // 스타일이 존재하는 경우 힌트 텍스트 스크롤 옵션 설정
+        Options.Speed = 15.0f;        // 힌트 텍스트는 일반 텍스트보다 느림
+        Options.StartDelay = 1.0f;     // 시작 지연 시간
+        Options.EndDelay = 1.0f;       // 종료 지연 시간
+        Options.FadeInDelay = 0.25f;   // 페이드 인 시간
+        Options.FadeOutDelay = 0.25f;  // 페이드 아웃 시간
+    }
+    else
+    {
+        // 스타일이 없는 경우 스크롤링 비활성화 (속도 0)
+        Options.Speed = 0.0f;
+        Options.StartDelay = 1.0f;
+        Options.EndDelay = 1.0f;
+        Options.FadeInDelay = 0.25f;
+        Options.FadeOutDelay = 0.25f;
+    }
+    
+    return Options;
+}
+
 TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
 {
+    // 스크롤 옵션 생성
+    const UCommonTextScrollStyle* TextStyleCDO = GetScrollStyleCDO();
+    const UCommonTextScrollStyle* HintTextStyleCDO = GetHintTextScrollStyleCDO();
+    
+    FTextScrollerOptions TextScrollOptions = CreateScrollOptionsFromStyle(TextStyleCDO);
+    FTextScrollerOptions HintTextScrollOptions = CreateHintTextScrollOptionsFromStyle(HintTextStyleCDO);
+    
     // 우리의 커스텀 slate 위젯 생성
     MarqueeEditableTextBox = SNew(SPGMarqueeEditableTextBox)
         .ScrollStyle(&WidgetStyle)
         .Text(GetText())
         .HintText(GetHintText())
-        .Font(GetFont())  // 폰트 속성 전달
-        .ColorAndOpacity(GetColorAndOpacity())  // 색상 속성 전달
+        .Font(GetFont())
+        .ColorAndOpacity(GetColorAndOpacity())
         .IsReadOnly(GetIsReadOnly())
         .IsPassword(GetIsPassword())
         .IsCaretMovedWhenGainFocus(GetIsCaretMovedWhenGainFocus())
@@ -373,25 +414,10 @@ TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
         .AllowContextMenu(AllowContextMenu)
         .MinDesiredWidth(GetMinimumDesiredWidth())
         .TextMargin(TextMargin)
-        .ScrollSpeed(ScrollSpeed)
-        .StartDelay(StartDelay)
-        .EndDelay(EndDelay)
-        .HintTextScrollSpeed(HintTextScrollSpeed)
-        .HintTextStartDelay(HintTextStartDelay)
-        .HintTextEndDelay(HintTextEndDelay)
-        .FadeInDelay(FadeInDelay)
-        .FadeOutDelay(FadeOutDelay)
-        .HintTextFadeInDelay(HintTextFadeInDelay)
-        .HintTextFadeOutDelay(HintTextFadeOutDelay)
+        .TextScrollOptions(&TextScrollOptions)
+        .HintTextScrollOptions(&HintTextScrollOptions)
         .OnTextChanged(BIND_UOBJECT_DELEGATE(FOnTextChanged, HandleOnTextChanged))
         .OnTextCommitted(BIND_UOBJECT_DELEGATE(FOnTextCommitted, HandleOnTextCommitted));
-    
-    // 나중에 사용하기 위해 텍스트 스크롤러 참조 캐싱
-    if (MarqueeEditableTextBox.IsValid())
-    {
-        SetScrollingEnabled(bIsScrollingEnabled);
-        SetHintTextScrollingEnabled(bIsHintTextScrollingEnabled);
-    }
     
     // 부모 클래스와의 호환성을 위해
     MyEditableTextBlock = StaticCastSharedRef<SEditableTextBox>(
@@ -410,10 +436,15 @@ void UPGMarqueeEditableTextBox::SynchronizeProperties()
     if (MarqueeEditableTextBox.IsValid())
     {
         MarqueeEditableTextBox->SetText(GetText());
-        MarqueeEditableTextBox->SetFont(GetFont());  // 폰트 속성 동기화
-        MarqueeEditableTextBox->SetColorAndOpacity(GetColorAndOpacity());  // 색상 속성 동기화
-        MarqueeEditableTextBox->SetScrollingEnabled(bIsScrollingEnabled);
-        MarqueeEditableTextBox->SetHintTextScrollingEnabled(bIsHintTextScrollingEnabled);
+        MarqueeEditableTextBox->SetFont(GetFont());
+        MarqueeEditableTextBox->SetColorAndOpacity(GetColorAndOpacity());
+        
+        // 스크롤 스타일 존재 여부에 따라 스크롤링 설정
+        const bool bTextScrollEnabled = (ScrollStyle != nullptr);
+        const bool bHintTextScrollEnabled = (HintTextScrollStyle != nullptr);
+        
+        MarqueeEditableTextBox->SetScrollingEnabled(bTextScrollEnabled);
+        MarqueeEditableTextBox->SetHintTextScrollingEnabled(bHintTextScrollEnabled);
     }
 }
 
@@ -442,14 +473,15 @@ void UPGMarqueeEditableTextBox::HandleOnTextCommitted(const FText& InText, EText
     Super::HandleOnTextCommitted(InText, CommitMethod);
     
     // 텍스트가 커밋된 후 스크롤링을 재개해야 하는지 확인
-    if (MarqueeEditableTextBox.IsValid() && bIsScrollingEnabled)
+    if (MarqueeEditableTextBox.IsValid() && ScrollStyle != nullptr)
     {
         FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) 
         {
             if (MarqueeEditableTextBox.IsValid())
             {
                 MarqueeEditableTextBox->ResetScrollState();
-                MarqueeEditableTextBox->SetScrollingEnabled(bIsScrollingEnabled);
+                const bool bEnabled = (ScrollStyle != nullptr);
+                MarqueeEditableTextBox->SetScrollingEnabled(bEnabled);
             }
             return false; // 일회성 실행
         }), 0.1f); // 레이아웃이 완료되었는지 확인하기 위한 약간의 지연
@@ -466,23 +498,31 @@ FSlateColor UPGMarqueeEditableTextBox::GetColorAndOpacity() const
     return WidgetStyle.TextStyle.ColorAndOpacity;
 }
 
-void UPGMarqueeEditableTextBox::SetScrollingEnabled(bool bInIsScrollingEnabled)
+void UPGMarqueeEditableTextBox::SetScrollStyle(TSubclassOf<UCommonTextScrollStyle> InScrollStyle)
 {
-    bIsScrollingEnabled = bInIsScrollingEnabled;
+    // 스크롤 스타일 설정
+    ScrollStyle = InScrollStyle;
     
+    // 위젯이 유효한 경우 업데이트
     if (MarqueeEditableTextBox.IsValid())
     {
-        MarqueeEditableTextBox->SetScrollingEnabled(bIsScrollingEnabled);
+        // 스크롤 스타일이 설정되어 있는지 여부에 따라 스크롤링 활성화/비활성화
+        const bool bEnabled = (ScrollStyle != nullptr);
+        MarqueeEditableTextBox->SetScrollingEnabled(bEnabled);
     }
 }
 
-void UPGMarqueeEditableTextBox::SetHintTextScrollingEnabled(bool bInIsHintTextScrollingEnabled)
+void UPGMarqueeEditableTextBox::SetHintTextScrollStyle(TSubclassOf<UCommonTextScrollStyle> InHintTextScrollStyle)
 {
-    bIsHintTextScrollingEnabled = bInIsHintTextScrollingEnabled;
+    // 힌트 텍스트 스크롤 스타일 설정
+    HintTextScrollStyle = InHintTextScrollStyle;
     
+    // 위젯이 유효한 경우 업데이트
     if (MarqueeEditableTextBox.IsValid())
     {
-        MarqueeEditableTextBox->SetHintTextScrollingEnabled(bIsHintTextScrollingEnabled);
+        // 힌트 텍스트 스크롤 스타일이 설정되어 있는지 여부에 따라 스크롤링 활성화/비활성화
+        const bool bEnabled = (HintTextScrollStyle != nullptr);
+        MarqueeEditableTextBox->SetHintTextScrollingEnabled(bEnabled);
     }
 }
 
@@ -517,11 +557,12 @@ const UCommonTextScrollStyle* UPGMarqueeEditableTextBox::GetScrollStyleCDO() con
 
 const UCommonTextScrollStyle* UPGMarqueeEditableTextBox::GetHintTextScrollStyleCDO() const
 {
-    // 설정된 경우 HintTextScrollStyle 사용, 그렇지 않으면 일반 ScrollStyle로 대체
+    // HintTextScrollStyle이 설정된 경우에만 해당 스타일 사용
     if (HintTextScrollStyle)
     {
         return Cast<UCommonTextScrollStyle>(HintTextScrollStyle->ClassDefaultObject);
     }
     
-    return GetScrollStyleCDO();
+    // HintTextScrollStyle이 설정되지 않은 경우 null 반환
+    return nullptr;
 }

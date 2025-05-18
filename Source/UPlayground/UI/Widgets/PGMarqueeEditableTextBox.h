@@ -17,6 +17,9 @@ struct FTextScrollerOptions;
  * - 사용자가 입력을 마치고 텍스트가 사용 가능한 공간보다 길면 스크롤이 재개됩니다
  * - 일반 텍스트와 힌트 텍스트에 대해 서로 다른 스크롤 스타일을 지원합니다
  * - CommonTextBlock과 유사한 스크롤 상태 관리를 구현합니다
+ * - ScrollStyle이 설정된 경우에만 일반 텍스트 스크롤링이 활성화됩니다
+ * - HintTextScrollStyle이 설정된 경우에만 힌트 텍스트 스크롤링이 활성화됩니다
+ * - 스크롤 옵션(속도, 지연 등)은 내부적으로 설정된 기본값을 사용합니다
  */
 UCLASS()
 class UPLAYGROUND_API UPGMarqueeEditableTextBox : public UEditableTextBox
@@ -32,16 +35,18 @@ public:
 	// End of UWidget interface
 
 	/** 
-	 * 텍스트 스크롤링 활성화 여부를 설정합니다
+	 * 일반 텍스트에 대한 스크롤 스타일을 설정합니다.
+	 * 스타일이 설정되면 스크롤링이 활성화되고, null로 설정하면 비활성화됩니다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Marquee Text")
-	void SetScrollingEnabled(bool bInIsScrollingEnabled);
+	void SetScrollStyle(TSubclassOf<UCommonTextScrollStyle> InScrollStyle);
 	
 	/**
-	 * 힌트 텍스트 스크롤링 활성화 여부를 설정합니다
+	 * 힌트 텍스트에 대한 스크롤 스타일을 설정합니다.
+	 * 스타일이 설정되면 스크롤링이 활성화되고, null로 설정하면 비활성화됩니다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Marquee Text")
-	void SetHintTextScrollingEnabled(bool bInIsHintTextScrollingEnabled);
+	void SetHintTextScrollStyle(TSubclassOf<UCommonTextScrollStyle> InHintTextScrollStyle);
 
 	/**
 	 * 스크롤링 상태를 처음으로 재설정합니다
@@ -84,57 +89,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
 	TSubclassOf<UCommonTextScrollStyle> ScrollStyle;
 
-	/** 힌트 텍스트에 사용할 스크롤 스타일 에셋을 참조합니다. null로 설정하면 일반 ScrollStyle을 사용합니다 */
+	/** 힌트 텍스트에 사용할 스크롤 스타일 에셋을 참조합니다. null로 설정하면 힌트 텍스트 스크롤링이 비활성화됩니다 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
 	TSubclassOf<UCommonTextScrollStyle> HintTextScrollStyle;
-
-	/** 일반 텍스트의 초당 스크롤 속도(Slate 단위) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float ScrollSpeed = 25.0f;
-
-	/** 힌트 텍스트의 초당 스크롤 속도(Slate 단위) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float HintTextScrollSpeed = 15.0f;
-
-	/** 텍스트 스크롤을 시작하기 전 일시 중지 시간(초) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float StartDelay = 0.5f;
-
-	/** 텍스트 스크롤 후 일시 중지 시간(초) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float EndDelay = 0.5f;
-
-	/** 힌트 텍스트 스크롤을 시작하기 전 일시 중지 시간(초) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float HintTextStartDelay = 1.0f;
-
-	/** 힌트 텍스트 스크롤 후 일시 중지 시간(초) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float HintTextEndDelay = 1.0f;
-	
-	/** 텍스트 스크롤링 시작 시 페이드 인 시간(초) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float FadeInDelay = 0.25f;
-	
-	/** 텍스트 스크롤링 종료 시 페이드 아웃 시간(초) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float FadeOutDelay = 0.25f;
-	
-	/** 힌트 텍스트 스크롤링 시작 시 페이드 인 시간(초) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float HintTextFadeInDelay = 0.25f;
-	
-	/** 힌트 텍스트 스크롤링 종료 시 페이드 아웃 시간(초) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
-	float HintTextFadeOutDelay = 0.25f;
-
-	/** 초기에 스크롤링 활성화/비활성화 여부 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
-	bool bIsScrollingEnabled = true;
-
-	/** 초기에 힌트 텍스트 스크롤링 활성화/비활성화 여부 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
-	bool bIsHintTextScrollingEnabled = true;
 	
 	/** 텍스트와 박스 가장자리 사이의 여백 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
@@ -152,6 +109,12 @@ private:
 	/** 힌트 텍스트의 스크롤 스타일 CDO 가져오기 */
 	const UCommonTextScrollStyle* GetHintTextScrollStyleCDO() const;
 	
+	/** 스크롤 옵션 생성 - ScrollStyle이 존재하는 경우에만 실제 스크롤링 활성화 */
+	FTextScrollerOptions CreateScrollOptionsFromStyle(const UCommonTextScrollStyle* StyleCDO) const;
+	
+	/** 힌트 텍스트 스크롤 옵션 생성 - HintTextScrollStyle이 존재하는 경우에만 실제 스크롤링 활성화 */
+	FTextScrollerOptions CreateHintTextScrollOptionsFromStyle(const UCommonTextScrollStyle* StyleCDO) const;
+	
 	/** 스크롤링 상태 */
 	enum class EScrollState
 	{
@@ -167,7 +130,7 @@ private:
 		SLATE_BEGIN_ARGS(SPGMarqueeEditableTextBox) {}
 			SLATE_ATTRIBUTE(FText, Text)
 			SLATE_ATTRIBUTE(FText, HintText)
-			SLATE_ATTRIBUTE( FSlateColor, ColorAndOpacity )
+			SLATE_ATTRIBUTE(FSlateColor, ColorAndOpacity)
 			SLATE_ARGUMENT(const FEditableTextBoxStyle*, ScrollStyle)
 			SLATE_ATTRIBUTE(bool, IsReadOnly)
 			SLATE_ATTRIBUTE(bool, IsPassword)
@@ -180,19 +143,11 @@ private:
 			SLATE_ATTRIBUTE(ETextJustify::Type, Justification)
 			SLATE_ATTRIBUTE(bool, AllowContextMenu)
 			SLATE_ATTRIBUTE(FMargin, TextMargin)
-			SLATE_ATTRIBUTE(FSlateFontInfo, Font)  // 폰트 속성 추가
+			SLATE_ATTRIBUTE(FSlateFontInfo, Font)
 			SLATE_EVENT(FOnTextChanged, OnTextChanged)
 			SLATE_EVENT(FOnTextCommitted, OnTextCommitted)
-			SLATE_ARGUMENT(float, ScrollSpeed)
-			SLATE_ARGUMENT(float, StartDelay)
-			SLATE_ARGUMENT(float, EndDelay)
-			SLATE_ARGUMENT(float, HintTextScrollSpeed)
-			SLATE_ARGUMENT(float, HintTextStartDelay)
-			SLATE_ARGUMENT(float, HintTextEndDelay)
-			SLATE_ARGUMENT(float, FadeInDelay)
-			SLATE_ARGUMENT(float, FadeOutDelay)
-			SLATE_ARGUMENT(float, HintTextFadeInDelay)
-			SLATE_ARGUMENT(float, HintTextFadeOutDelay)
+			SLATE_ARGUMENT(const FTextScrollerOptions*, TextScrollOptions)
+			SLATE_ARGUMENT(const FTextScrollerOptions*, HintTextScrollOptions)
 		SLATE_END_ARGS()
 
 		void Construct(const FArguments& InArgs);
@@ -242,12 +197,6 @@ private:
 		
 		/** 힌트 텍스트를 위한 텍스트 스크롤러 */
 		TSharedPtr<STextScroller> HintTextScroller;
-		
-		/** 현재 스크롤링이 활성화되어 있는지 여부 */
-		bool bIsScrollingEnabled = true;
-		
-		/** 현재 힌트 텍스트 스크롤링이 활성화되어 있는지 여부 */
-		bool bIsHintTextScrollingEnabled = true;
 		
 		/** 현재 스크롤 상태 */
 		EScrollState ScrollState = EScrollState::Idle;
