@@ -11,6 +11,7 @@
 #include "Input/Events.h"
 #include "Styling/SlateTypes.h"
 #include "Styling/CoreStyle.h"
+#include "Widgets/Text/STextBlock.h"
 
 //////////////////////////////////////////////////
 // SPGMarqueeEditableTextBox
@@ -19,15 +20,15 @@
 void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArguments& InArgs)
 {
     bIsScrollingEnabled = true;
+    bIsHintTextScrollingEnabled = true;
+    ScrollState = EScrollState::Idle;
     
-    // Get a pointer to the editable text style from CoreStyle
-    const FEditableTextStyle* EditableTextStyle = &FCoreStyle::Get().GetWidgetStyle<FEditableTextStyle>("NormalEditableText");
-    
-    // Create the editable text widget with a custom style
+    // Get style from the parent EditableTextBox - no need to force a specific style
+    // Create the editable text widget using the default styling
     EditableText = SNew(SEditableText)
         .Text(InArgs._Text)
         .HintText(InArgs._HintText)
-        .Style(EditableTextStyle)  // Pass as pointer
+        .Font(InArgs._Font)  // 폰트 속성 적용
         .IsReadOnly(InArgs._IsReadOnly)
         .IsPassword(InArgs._IsPassword)
         .MinDesiredWidth(InArgs._MinDesiredWidth)
@@ -40,27 +41,71 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
         .OnTextChanged(InArgs._OnTextChanged)
         .OnTextCommitted(InArgs._OnTextCommitted);
     
-    // Create scroll options for the text scroller
-    FTextScrollerOptions ScrollOptions;
-    ScrollOptions.Speed = InArgs._ScrollSpeed;
-    ScrollOptions.StartDelay = InArgs._StartDelay;
-    ScrollOptions.EndDelay = InArgs._EndDelay;
-    ScrollOptions.FadeInDelay = 0.0f;
-    ScrollOptions.FadeOutDelay = 0.0f;
+    // Create scroll options for the normal text
+    FTextScrollerOptions TextScrollOptions;
+    TextScrollOptions.Speed = InArgs._ScrollSpeed;
+    TextScrollOptions.StartDelay = InArgs._StartDelay;
+    TextScrollOptions.EndDelay = InArgs._EndDelay;
+    TextScrollOptions.FadeInDelay = 0.0f;
+    TextScrollOptions.FadeOutDelay = 0.0f;
     
-    // Create the text scroller that wraps just the editable text
+    // Create scroll options for the hint text
+    FTextScrollerOptions HintTextScrollOptions;
+    HintTextScrollOptions.Speed = InArgs._HintTextScrollSpeed;
+    HintTextScrollOptions.StartDelay = InArgs._HintTextStartDelay;
+    HintTextScrollOptions.EndDelay = InArgs._HintTextEndDelay;
+    HintTextScrollOptions.FadeInDelay = 0.0f;
+    HintTextScrollOptions.FadeOutDelay = 0.0f;
+    
+    // Create text block for hint text display
+    TSharedRef<STextBlock> HintTextBlock = SNew(STextBlock)
+        .Text(InArgs._HintText)
+        // Use subdued foreground color for hint text - this will respect the system styling
+        .ColorAndOpacity(FSlateColor::UseSubduedForeground());
+    
+    // Create the text scroller for normal text
     TextScroller = SNew(STextScroller)
-        .ScrollOptions(ScrollOptions)
+        .ScrollOptions(TextScrollOptions)
         [
             EditableText.ToSharedRef()
         ];
     
-    // Create the border that will contain the scroller
+    // Create the hint text scroller
+    HintTextScroller = SNew(STextScroller)
+        .ScrollOptions(HintTextScrollOptions)
+        [
+            HintTextBlock
+        ];
+    
+    // Create a container for both scrollers
+    TSharedRef<SWidget> ContentWidget = SNew(SOverlay)
+        + SOverlay::Slot()
+        [
+            SNew(SBox)
+            .Visibility_Lambda([this]() {
+                return !ShouldShowHintText() ? EVisibility::SelfHitTestInvisible : EVisibility::Collapsed;
+            })
+            [
+                TextScroller.ToSharedRef()
+            ]
+        ]
+        + SOverlay::Slot()
+        [
+            SNew(SBox)
+            .Visibility_Lambda([this]() {
+                return ShouldShowHintText() ? EVisibility::SelfHitTestInvisible : EVisibility::Collapsed;
+            })
+            [
+                HintTextScroller.ToSharedRef()
+            ]
+        ];
+    
+    // Create the border that will contain the scrollers
     Border = SNew(SBorder)
-        .BorderImage(&InArgs._Style->BackgroundImageNormal)
+        .BorderImage(&InArgs._ScrollStyle->BackgroundImageNormal)
         .Padding(InArgs._TextMargin)
         [
-            TextScroller.ToSharedRef()
+            ContentWidget
         ];
 
     // Set the content to the border
@@ -77,6 +122,15 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
     else
     {
         TextScroller->SuspendScrolling();
+    }
+    
+    if (bIsHintTextScrollingEnabled)
+    {
+        HintTextScroller->StartScrolling();
+    }
+    else
+    {
+        HintTextScroller->SuspendScrolling();
     }
 }
 
@@ -108,13 +162,35 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetScrollingEnabled(b
     
     if (TextScroller.IsValid())
     {
-        if (bIsScrollingEnabled)
+        if (bIsScrollingEnabled && ScrollState != EScrollState::Paused)
         {
             TextScroller->StartScrolling();
+            ScrollState = EScrollState::Scrolling;
         }
         else
         {
             TextScroller->SuspendScrolling();
+            if (!bIsScrollingEnabled)
+            {
+                ScrollState = EScrollState::Idle;
+            }
+        }
+    }
+}
+
+void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetHintTextScrollingEnabled(bool bEnabled)
+{
+    bIsHintTextScrollingEnabled = bEnabled;
+    
+    if (HintTextScroller.IsValid())
+    {
+        if (bIsHintTextScrollingEnabled)
+        {
+            HintTextScroller->StartScrolling();
+        }
+        else
+        {
+            HintTextScroller->SuspendScrolling();
         }
     }
 }
@@ -125,9 +201,135 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ResetScrollState()
     {
         TextScroller->ResetScrollState();
         
-        if (bIsScrollingEnabled)
+        if (bIsScrollingEnabled && ScrollState != EScrollState::Paused)
         {
             TextScroller->StartScrolling();
+            ScrollState = EScrollState::Scrolling;
+        }
+    }
+    
+    if (HintTextScroller.IsValid())
+    {
+        HintTextScroller->ResetScrollState();
+        
+        if (bIsHintTextScrollingEnabled)
+        {
+            HintTextScroller->StartScrolling();
+        }
+    }
+}
+
+void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::PauseScrolling()
+{
+    if (ScrollState != EScrollState::Paused && TextScroller.IsValid())
+    {
+        TextScroller->SuspendScrolling();
+        ScrollState = EScrollState::Paused;
+    }
+    
+    if (HintTextScroller.IsValid())
+    {
+        HintTextScroller->SuspendScrolling();
+    }
+}
+
+void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ResumeScrolling()
+{
+    if (ScrollState == EScrollState::Paused)
+    {
+        if (TextScroller.IsValid() && bIsScrollingEnabled)
+        {
+            TextScroller->StartScrolling();
+            ScrollState = EScrollState::Scrolling;
+        }
+        else
+        {
+            ScrollState = EScrollState::Idle;
+        }
+        
+        if (HintTextScroller.IsValid() && bIsHintTextScrollingEnabled)
+        {
+            HintTextScroller->StartScrolling();
+        }
+    }
+}
+
+bool UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::IsInputActive() const
+{
+    return EditableText.IsValid() && EditableText->HasKeyboardFocus();
+}
+
+void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetFont(const FSlateFontInfo& InFont)
+{
+    if (EditableText.IsValid())
+    {
+        EditableText->SetFont(InFont);
+    }
+}
+
+bool UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ShouldShowHintText() const
+{
+    if (EditableText.IsValid())
+    {
+        // Show hint text if the editable text is empty and doesn't have focus
+        return EditableText->GetText().IsEmpty() && !EditableText->HasKeyboardFocus();
+    }
+    
+    return false;
+}
+
+FReply UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
+{
+    // Call base class implementation
+    FReply Reply = SCompoundWidget::OnFocusReceived(MyGeometry, InFocusEvent);
+    
+    // Forward focus to editable text
+    if (EditableText.IsValid())
+    {
+        FSlateApplication::Get().SetKeyboardFocus(EditableText, EFocusCause::SetDirectly);
+    }
+    
+    // Handle focus change
+    HandleTextFocusChanged(true);
+    
+    return Reply;
+}
+
+void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::OnFocusLost(const FFocusEvent& InFocusEvent)
+{
+    // Call base class implementation
+    SCompoundWidget::OnFocusLost(InFocusEvent);
+    
+    // Handle focus change
+    HandleTextFocusChanged(false);
+}
+
+void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::HandleTextFocusChanged(bool bHasFocus)
+{
+    // When focus changes, we may need to update which scroller is visible
+    if (bHasFocus)
+    {
+        // Suspend scrolling when text gets focus
+        if (TextScroller.IsValid())
+        {
+            TextScroller->SuspendScrolling();
+            ScrollState = EScrollState::Idle;
+        }
+    }
+    else
+    {
+        // When focus is lost, resume scrolling if needed
+        if (TextScroller.IsValid() && bIsScrollingEnabled && !GetText().IsEmpty())
+        {
+            TextScroller->ResetScrollState();
+            TextScroller->StartScrolling();
+            ScrollState = EScrollState::Scrolling;
+        }
+        
+        if (HintTextScroller.IsValid() && bIsHintTextScrollingEnabled && GetText().IsEmpty())
+        {
+            HintTextScroller->ResetScrollState();
+            HintTextScroller->StartScrolling();
         }
     }
 }
@@ -144,9 +346,10 @@ TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
 {
     // Create our custom slate widget
     MarqueeEditableTextBox = SNew(SPGMarqueeEditableTextBox)
-        .Style(&WidgetStyle)
+        .ScrollStyle(&WidgetStyle)
         .Text(GetText())
         .HintText(GetHintText())
+        .Font(GetFont())  // 폰트 속성 전달
         .IsReadOnly(GetIsReadOnly())
         .IsPassword(GetIsPassword())
         .IsCaretMovedWhenGainFocus(GetIsCaretMovedWhenGainFocus())
@@ -160,6 +363,9 @@ TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
         .ScrollSpeed(ScrollSpeed)
         .StartDelay(StartDelay)
         .EndDelay(EndDelay)
+        .HintTextScrollSpeed(HintTextScrollSpeed)
+        .HintTextStartDelay(HintTextStartDelay)
+        .HintTextEndDelay(HintTextEndDelay)
         .OnTextChanged(BIND_UOBJECT_DELEGATE(FOnTextChanged, HandleOnTextChanged))
         .OnTextCommitted(BIND_UOBJECT_DELEGATE(FOnTextCommitted, HandleOnTextCommitted));
     
@@ -167,6 +373,7 @@ TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
     if (MarqueeEditableTextBox.IsValid())
     {
         SetScrollingEnabled(bIsScrollingEnabled);
+        SetHintTextScrollingEnabled(bIsHintTextScrollingEnabled);
     }
     
     // For compatibility with parent class
@@ -186,7 +393,9 @@ void UPGMarqueeEditableTextBox::SynchronizeProperties()
     if (MarqueeEditableTextBox.IsValid())
     {
         MarqueeEditableTextBox->SetText(GetText());
+        MarqueeEditableTextBox->SetFont(GetFont());  // 폰트 속성 동기화
         MarqueeEditableTextBox->SetScrollingEnabled(bIsScrollingEnabled);
+        MarqueeEditableTextBox->SetHintTextScrollingEnabled(bIsHintTextScrollingEnabled);
     }
 }
 
@@ -229,6 +438,11 @@ void UPGMarqueeEditableTextBox::HandleOnTextCommitted(const FText& InText, EText
     }
 }
 
+FSlateFontInfo UPGMarqueeEditableTextBox::GetFont() const
+{
+    return WidgetStyle.Font_DEPRECATED;
+}
+
 void UPGMarqueeEditableTextBox::SetScrollingEnabled(bool bInIsScrollingEnabled)
 {
     bIsScrollingEnabled = bInIsScrollingEnabled;
@@ -236,6 +450,16 @@ void UPGMarqueeEditableTextBox::SetScrollingEnabled(bool bInIsScrollingEnabled)
     if (MarqueeEditableTextBox.IsValid())
     {
         MarqueeEditableTextBox->SetScrollingEnabled(bIsScrollingEnabled);
+    }
+}
+
+void UPGMarqueeEditableTextBox::SetHintTextScrollingEnabled(bool bInIsHintTextScrollingEnabled)
+{
+    bIsHintTextScrollingEnabled = bInIsHintTextScrollingEnabled;
+    
+    if (MarqueeEditableTextBox.IsValid())
+    {
+        MarqueeEditableTextBox->SetHintTextScrollingEnabled(bIsHintTextScrollingEnabled);
     }
 }
 
@@ -247,7 +471,34 @@ void UPGMarqueeEditableTextBox::ResetScrollState()
     }
 }
 
+void UPGMarqueeEditableTextBox::PauseScrolling()
+{
+    if (MarqueeEditableTextBox.IsValid())
+    {
+        MarqueeEditableTextBox->PauseScrolling();
+    }
+}
+
+void UPGMarqueeEditableTextBox::ResumeScrolling()
+{
+    if (MarqueeEditableTextBox.IsValid())
+    {
+        MarqueeEditableTextBox->ResumeScrolling();
+    }
+}
+
 const UCommonTextScrollStyle* UPGMarqueeEditableTextBox::GetScrollStyleCDO() const
 {
     return ScrollStyle ? Cast<UCommonTextScrollStyle>(ScrollStyle->ClassDefaultObject) : nullptr;
+}
+
+const UCommonTextScrollStyle* UPGMarqueeEditableTextBox::GetHintTextScrollStyleCDO() const
+{
+    // Use the HintTextScrollStyle if set, otherwise fall back to normal ScrollStyle
+    if (HintTextScrollStyle)
+    {
+        return Cast<UCommonTextScrollStyle>(HintTextScrollStyle->ClassDefaultObject);
+    }
+    
+    return GetScrollStyleCDO();
 }
