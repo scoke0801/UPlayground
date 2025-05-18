@@ -75,6 +75,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category="Appearance")
 	FSlateFontInfo GetFont() const;
 	
+	/** 현재 텍스트 색상과 투명도를 가져옵니다 */
+	UFUNCTION(BlueprintCallable, Category="Appearance")
+	FSlateColor GetColorAndOpacity() const;
+	
 private:
 	/** 일반 텍스트에 사용할 스크롤 스타일 에셋을 참조합니다. null로 설정하면 스크롤링이 비활성화됩니다 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
@@ -107,6 +111,22 @@ private:
 	/** 힌트 텍스트 스크롤 후 일시 중지 시간(초) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
 	float HintTextEndDelay = 1.0f;
+	
+	/** 텍스트 스크롤링 시작 시 페이드 인 시간(초) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
+	float FadeInDelay = 0.25f;
+	
+	/** 텍스트 스크롤링 종료 시 페이드 아웃 시간(초) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
+	float FadeOutDelay = 0.25f;
+	
+	/** 힌트 텍스트 스크롤링 시작 시 페이드 인 시간(초) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
+	float HintTextFadeInDelay = 0.25f;
+	
+	/** 힌트 텍스트 스크롤링 종료 시 페이드 아웃 시간(초) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
+	float HintTextFadeOutDelay = 0.25f;
 
 	/** 초기에 스크롤링 활성화/비활성화 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
@@ -169,12 +189,19 @@ private:
 			SLATE_ARGUMENT(float, HintTextScrollSpeed)
 			SLATE_ARGUMENT(float, HintTextStartDelay)
 			SLATE_ARGUMENT(float, HintTextEndDelay)
+			SLATE_ARGUMENT(float, FadeInDelay)
+			SLATE_ARGUMENT(float, FadeOutDelay)
+			SLATE_ARGUMENT(float, HintTextFadeInDelay)
+			SLATE_ARGUMENT(float, HintTextFadeOutDelay)
 		SLATE_END_ARGS()
 
 		void Construct(const FArguments& InArgs);
 		
 		/** 폰트 스타일 설정 */
 		void SetFont(const FSlateFontInfo& InFont);
+		
+		/** 색상 및 투명도 설정 */
+		void SetColorAndOpacity(const FSlateColor& InColorAndOpacity);
 		
 		/** EditableTextBox로 메서드 전달 */
 		void SetText(const TAttribute<FText>& InText);

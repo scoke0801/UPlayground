@@ -47,22 +47,24 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
     TextScrollOptions.Speed = InArgs._ScrollSpeed;
     TextScrollOptions.StartDelay = InArgs._StartDelay;
     TextScrollOptions.EndDelay = InArgs._EndDelay;
-    TextScrollOptions.FadeInDelay = 0.0f;
-    TextScrollOptions.FadeOutDelay = 0.0f;
+    TextScrollOptions.FadeInDelay = InArgs._FadeInDelay;
+    TextScrollOptions.FadeOutDelay = InArgs._FadeOutDelay;
     
     // 힌트 텍스트를 위한 스크롤 옵션 생성
     FTextScrollerOptions HintTextScrollOptions;
     HintTextScrollOptions.Speed = InArgs._HintTextScrollSpeed;
     HintTextScrollOptions.StartDelay = InArgs._HintTextStartDelay;
     HintTextScrollOptions.EndDelay = InArgs._HintTextEndDelay;
-    HintTextScrollOptions.FadeInDelay = 0.0f;
-    HintTextScrollOptions.FadeOutDelay = 0.0f;
+    HintTextScrollOptions.FadeInDelay = InArgs._HintTextFadeInDelay;
+    HintTextScrollOptions.FadeOutDelay = InArgs._HintTextFadeOutDelay;
     
     // 힌트 텍스트 표시를 위한 텍스트 블록 생성
     TSharedRef<STextBlock> HintTextBlock = SNew(STextBlock)
         .Text(InArgs._HintText)
         .Font(InArgs._Font)
         // 힌트 텍스트에 흐린 전경색 사용 - 시스템 스타일링을 존중함
+        // 참고: 힌트 텍스트는 일반적으로 회색으로 표시되기 때문에 ColorAndOpacity를 직접 전달하지 않고
+        // UseSubduedForeground()를 사용하여 현재 테마에 맞는 흐린 색상을 사용합니다.
         .ColorAndOpacity(FSlateColor::UseSubduedForeground());
     
     // 일반 텍스트를 위한 텍스트 스크롤러 생성
@@ -267,17 +269,14 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetFont(const FSlateF
     {
         EditableText->SetFont(InFont);
     }
-    //
-    // // HintTextScroller의 텍스트 블록의 폰트도 업데이트
-    // if (HintTextScroller.IsValid())
-    // {
-    //     TSharedPtr<STextBlock> HintTextBlock = StaticCastSharedRef<STextBlock>(HintTextScroller->Get());
-    //     if (HintTextBlock.IsValid())
-    //     {
-    //         HintTextBlock->SetFont(InFont);
-    //     }
-    // }
+}
 
+void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetColorAndOpacity(const FSlateColor& InColorAndOpacity)
+{
+    if (EditableText.IsValid())
+    {
+        EditableText->SetColorAndOpacity(InColorAndOpacity);
+    }
 }
 
 bool UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ShouldShowHintText() const
@@ -363,6 +362,7 @@ TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
         .Text(GetText())
         .HintText(GetHintText())
         .Font(GetFont())  // 폰트 속성 전달
+        .ColorAndOpacity(GetColorAndOpacity())  // 색상 속성 전달
         .IsReadOnly(GetIsReadOnly())
         .IsPassword(GetIsPassword())
         .IsCaretMovedWhenGainFocus(GetIsCaretMovedWhenGainFocus())
@@ -379,6 +379,10 @@ TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
         .HintTextScrollSpeed(HintTextScrollSpeed)
         .HintTextStartDelay(HintTextStartDelay)
         .HintTextEndDelay(HintTextEndDelay)
+        .FadeInDelay(FadeInDelay)
+        .FadeOutDelay(FadeOutDelay)
+        .HintTextFadeInDelay(HintTextFadeInDelay)
+        .HintTextFadeOutDelay(HintTextFadeOutDelay)
         .OnTextChanged(BIND_UOBJECT_DELEGATE(FOnTextChanged, HandleOnTextChanged))
         .OnTextCommitted(BIND_UOBJECT_DELEGATE(FOnTextCommitted, HandleOnTextCommitted));
     
@@ -407,6 +411,7 @@ void UPGMarqueeEditableTextBox::SynchronizeProperties()
     {
         MarqueeEditableTextBox->SetText(GetText());
         MarqueeEditableTextBox->SetFont(GetFont());  // 폰트 속성 동기화
+        MarqueeEditableTextBox->SetColorAndOpacity(GetColorAndOpacity());  // 색상 속성 동기화
         MarqueeEditableTextBox->SetScrollingEnabled(bIsScrollingEnabled);
         MarqueeEditableTextBox->SetHintTextScrollingEnabled(bIsHintTextScrollingEnabled);
     }
@@ -454,6 +459,11 @@ void UPGMarqueeEditableTextBox::HandleOnTextCommitted(const FText& InText, EText
 FSlateFontInfo UPGMarqueeEditableTextBox::GetFont() const
 {
     return WidgetStyle.TextStyle.Font;
+}
+
+FSlateColor UPGMarqueeEditableTextBox::GetColorAndOpacity() const
+{
+    return WidgetStyle.TextStyle.ColorAndOpacity;
 }
 
 void UPGMarqueeEditableTextBox::SetScrollingEnabled(bool bInIsScrollingEnabled)
