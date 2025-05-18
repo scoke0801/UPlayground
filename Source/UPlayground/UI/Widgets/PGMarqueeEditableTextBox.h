@@ -11,12 +11,12 @@ class STextScroller;
 struct FTextScrollerOptions;
 
 /**
- * EditableTextBox with marquee text scrolling capabilities.
- * - Automatically scrolls only the text (not the background or border)
- * - Stops scrolling when user starts typing
- * - Resumes scrolling when user finishes input and text is longer than available space
- * - Supports different scroll styles for normal text and hint text
- * - Implements scroll state management similar to CommonTextBlock
+ * 마퀴(흐르는 텍스트) 스크롤 기능을 가진 EditableTextBox입니다.
+ * - 텍스트만 자동으로 스크롤됩니다 (배경이나 테두리는 스크롤되지 않음)
+ * - 사용자가 입력을 시작하면 스크롤이 중지됩니다
+ * - 사용자가 입력을 마치고 텍스트가 사용 가능한 공간보다 길면 스크롤이 재개됩니다
+ * - 일반 텍스트와 힌트 텍스트에 대해 서로 다른 스크롤 스타일을 지원합니다
+ * - CommonTextBlock과 유사한 스크롤 상태 관리를 구현합니다
  */
 UCLASS()
 class UPLAYGROUND_API UPGMarqueeEditableTextBox : public UEditableTextBox
@@ -32,31 +32,31 @@ public:
 	// End of UWidget interface
 
 	/** 
-	 * Sets whether text scrolling is enabled
+	 * 텍스트 스크롤링 활성화 여부를 설정합니다
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Marquee Text")
 	void SetScrollingEnabled(bool bInIsScrollingEnabled);
 	
 	/**
-	 * Sets whether hint text scrolling is enabled
+	 * 힌트 텍스트 스크롤링 활성화 여부를 설정합니다
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Marquee Text")
 	void SetHintTextScrollingEnabled(bool bInIsHintTextScrollingEnabled);
 
 	/**
-	 * Resets the scrolling state to the beginning
+	 * 스크롤링 상태를 처음으로 재설정합니다
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Marquee Text")
 	void ResetScrollState();
 
 	/**
-	 * Pauses scrolling temporarily without disabling it
+	 * 스크롤링을 비활성화하지 않고 일시적으로 중지합니다
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Marquee Text")
 	void PauseScrolling();
 
 	/**
-	 * Resumes scrolling if it was paused
+	 * 일시 중지된 스크롤링을 재개합니다
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Marquee Text")
 	void ResumeScrolling();
@@ -66,73 +66,73 @@ protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	// End of UWidget interface
 	
-	/** Callback for when text is changed */
+	/** 텍스트 변경 시 호출되는 콜백 */
 	virtual void HandleOnTextChanged(const FText& InText) override;
 	
-	/** Callback for when text is committed */
+	/** 텍스트가 커밋될 때 호출되는 콜백 */
 	virtual void HandleOnTextCommitted(const FText& InText, ETextCommit::Type CommitMethod) override;
 	
 	UFUNCTION(BlueprintCallable, Category="Appearance")
 	FSlateFontInfo GetFont() const;
 	
 private:
-	/** References the scroll style asset to use for normal text. Setting to null disables scrolling */
+	/** 일반 텍스트에 사용할 스크롤 스타일 에셋을 참조합니다. null로 설정하면 스크롤링이 비활성화됩니다 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
 	TSubclassOf<UCommonTextScrollStyle> ScrollStyle;
 
-	/** References the scroll style asset to use for hint text. Setting to null uses the normal ScrollStyle */
+	/** 힌트 텍스트에 사용할 스크롤 스타일 에셋을 참조합니다. null로 설정하면 일반 ScrollStyle을 사용합니다 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
 	TSubclassOf<UCommonTextScrollStyle> HintTextScrollStyle;
 
-	/** Speed (in Slate units) to scroll per-second for normal text */
+	/** 일반 텍스트의 초당 스크롤 속도(Slate 단위) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
 	float ScrollSpeed = 25.0f;
 
-	/** Speed (in Slate units) to scroll per-second for hint text */
+	/** 힌트 텍스트의 초당 스크롤 속도(Slate 단위) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
 	float HintTextScrollSpeed = 15.0f;
 
-	/** Delay (in seconds) to pause before scrolling the text */
+	/** 텍스트 스크롤을 시작하기 전 일시 중지 시간(초) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
 	float StartDelay = 0.5f;
 
-	/** Delay (in seconds) to pause after scrolling the text */
+	/** 텍스트 스크롤 후 일시 중지 시간(초) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
 	float EndDelay = 0.5f;
 
-	/** Delay (in seconds) to pause before scrolling the hint text */
+	/** 힌트 텍스트 스크롤을 시작하기 전 일시 중지 시간(초) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
 	float HintTextStartDelay = 1.0f;
 
-	/** Delay (in seconds) to pause after scrolling the hint text */
+	/** 힌트 텍스트 스크롤 후 일시 중지 시간(초) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
 	float HintTextEndDelay = 1.0f;
 
-	/** If scrolling is enabled/disabled initially */
+	/** 초기에 스크롤링 활성화/비활성화 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
 	bool bIsScrollingEnabled = true;
 
-	/** If hint text scrolling is enabled/disabled initially */
+	/** 초기에 힌트 텍스트 스크롤링 활성화/비활성화 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
 	bool bIsHintTextScrollingEnabled = true;
 	
-	/** Margin between the text and the box edge */
+	/** 텍스트와 박스 가장자리 사이의 여백 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marquee Text", meta = (AllowPrivateAccess = true))
 	FMargin TextMargin = FMargin(5.0f);
 
-	/** Slate text scroller widget (for the text content only) */
+	/** Slate 텍스트 스크롤러 위젯 (텍스트 내용만을 위한) */
 	TSharedPtr<STextScroller> TextScroller;
 	
-	/** Reference to the inner EditableText widget for style updates */
+	/** 스타일 업데이트를 위한 내부 EditableText 위젯 참조 */
 	TSharedPtr<SEditableText> EditableText;
 
-	/** Get the scroll style CDO for normal text */
+	/** 일반 텍스트의 스크롤 스타일 CDO 가져오기 */
 	const UCommonTextScrollStyle* GetScrollStyleCDO() const;
 	
-	/** Get the scroll style CDO for hint text */
+	/** 힌트 텍스트의 스크롤 스타일 CDO 가져오기 */
 	const UCommonTextScrollStyle* GetHintTextScrollStyleCDO() const;
 	
-	/** States for scrolling */
+	/** 스크롤링 상태 */
 	enum class EScrollState
 	{
 		Idle,
@@ -140,13 +140,14 @@ private:
 		Paused
 	};
 	
-	/** Custom Slate implementation for our marquee editable text box */
+	/** 마퀴 에디터블 텍스트 박스를 위한 커스텀 Slate 구현 */
 	class SPGMarqueeEditableTextBox : public SCompoundWidget
 	{
 	public:
 		SLATE_BEGIN_ARGS(SPGMarqueeEditableTextBox) {}
 			SLATE_ATTRIBUTE(FText, Text)
 			SLATE_ATTRIBUTE(FText, HintText)
+			SLATE_ATTRIBUTE( FSlateColor, ColorAndOpacity )
 			SLATE_ARGUMENT(const FEditableTextBoxStyle*, ScrollStyle)
 			SLATE_ATTRIBUTE(bool, IsReadOnly)
 			SLATE_ATTRIBUTE(bool, IsPassword)
@@ -172,65 +173,65 @@ private:
 
 		void Construct(const FArguments& InArgs);
 		
-		/** Set the font style */
+		/** 폰트 스타일 설정 */
 		void SetFont(const FSlateFontInfo& InFont);
 		
-		/** Pass-through methods to EditableTextBox */
+		/** EditableTextBox로 메서드 전달 */
 		void SetText(const TAttribute<FText>& InText);
 		FText GetText() const;
 		FVector2D GetDesiredSize() const;
 		
-		/** Set whether scrolling is enabled */
+		/** 스크롤링 활성화 여부 설정 */
 		void SetScrollingEnabled(bool bEnabled);
 		
-		/** Set whether hint text scrolling is enabled */
+		/** 힌트 텍스트 스크롤링 활성화 여부 설정 */
 		void SetHintTextScrollingEnabled(bool bEnabled);
 		
-		/** Reset the scrolling state */
+		/** 스크롤링 상태 재설정 */
 		void ResetScrollState();
 		
-		/** Pause scrolling temporarily */
+		/** 스크롤링 일시 중지 */
 		void PauseScrolling();
 		
-		/** Resume scrolling if paused */
+		/** 일시 중지된 경우 스크롤링 재개 */
 		void ResumeScrolling();
 		
-		/** Check if input is currently active */
+		/** 입력이 현재 활성화되어 있는지 확인 */
 		bool IsInputActive() const;
 		
-		/** Called when text edit focus changes */
+		/** 텍스트 편집 포커스가 변경될 때 호출됨 */
 		virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
 		virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
 		
-		/** The editable text widget (actual text input) - public for style updates */
+		/** 편집 가능한 텍스트 위젯 (실제 텍스트 입력) - 스타일 업데이트를 위해 public */
 		TSharedPtr<SEditableText> EditableText;
 
 	private:
-		/** Border widget for styling and background */
+		/** 스타일링 및 배경을 위한 테두리 위젯 */
 		TSharedPtr<SBorder> Border;
 		
-		/** Text scroller for marquee effect */
+		/** 마퀴 효과를 위한 텍스트 스크롤러 */
 		TSharedPtr<STextScroller> TextScroller;
 		
-		/** Text scroller for hint text */
+		/** 힌트 텍스트를 위한 텍스트 스크롤러 */
 		TSharedPtr<STextScroller> HintTextScroller;
 		
-		/** Whether scrolling is currently enabled */
+		/** 현재 스크롤링이 활성화되어 있는지 여부 */
 		bool bIsScrollingEnabled = true;
 		
-		/** Whether hint text scrolling is currently enabled */
+		/** 현재 힌트 텍스트 스크롤링이 활성화되어 있는지 여부 */
 		bool bIsHintTextScrollingEnabled = true;
 		
-		/** Current scroll state */
+		/** 현재 스크롤 상태 */
 		EScrollState ScrollState = EScrollState::Idle;
 		
-		/** Determine if we should show real text or hint text */
+		/** 실제 텍스트 또는 힌트 텍스트를 표시해야 하는지 결정 */
 		bool ShouldShowHintText() const;
 		
-		/** Handle changes in text focus */
+		/** 텍스트 포커스 변경 처리 */
 		void HandleTextFocusChanged(bool bHasFocus);
 	};
 	
-	/** Our custom slate widget instance */
+	/** 우리의 커스텀 slate 위젯 인스턴스 */
 	TSharedPtr<SPGMarqueeEditableTextBox> MarqueeEditableTextBox;
 };

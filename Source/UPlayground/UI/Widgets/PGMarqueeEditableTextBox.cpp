@@ -23,13 +23,14 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
     bIsHintTextScrollingEnabled = true;
     ScrollState = EScrollState::Idle;
     
-    // Get style from the parent EditableTextBox - no need to force a specific style
-    // Create the editable text widget using the default styling
+    // 부모 EditableTextBox에서 스타일 가져오기 - 특정 스타일을 강제할 필요 없음
+    // 기본 스타일링을 사용하여 편집 가능한 텍스트 위젯 생성
     EditableText = SNew(SEditableText)
         .Text(InArgs._Text)
         .HintText(InArgs._HintText)
         .Font(InArgs._Font)  // 폰트 속성 적용
         .IsReadOnly(InArgs._IsReadOnly)
+        .ColorAndOpacity(InArgs._ColorAndOpacity)
         .IsPassword(InArgs._IsPassword)
         .MinDesiredWidth(InArgs._MinDesiredWidth)
         .IsCaretMovedWhenGainFocus(InArgs._IsCaretMovedWhenGainFocus)
@@ -41,7 +42,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
         .OnTextChanged(InArgs._OnTextChanged)
         .OnTextCommitted(InArgs._OnTextCommitted);
     
-    // Create scroll options for the normal text
+    // 일반 텍스트를 위한 스크롤 옵션 생성
     FTextScrollerOptions TextScrollOptions;
     TextScrollOptions.Speed = InArgs._ScrollSpeed;
     TextScrollOptions.StartDelay = InArgs._StartDelay;
@@ -49,7 +50,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
     TextScrollOptions.FadeInDelay = 0.0f;
     TextScrollOptions.FadeOutDelay = 0.0f;
     
-    // Create scroll options for the hint text
+    // 힌트 텍스트를 위한 스크롤 옵션 생성
     FTextScrollerOptions HintTextScrollOptions;
     HintTextScrollOptions.Speed = InArgs._HintTextScrollSpeed;
     HintTextScrollOptions.StartDelay = InArgs._HintTextStartDelay;
@@ -57,27 +58,28 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
     HintTextScrollOptions.FadeInDelay = 0.0f;
     HintTextScrollOptions.FadeOutDelay = 0.0f;
     
-    // Create text block for hint text display
+    // 힌트 텍스트 표시를 위한 텍스트 블록 생성
     TSharedRef<STextBlock> HintTextBlock = SNew(STextBlock)
         .Text(InArgs._HintText)
-        // Use subdued foreground color for hint text - this will respect the system styling
+        .Font(InArgs._Font)
+        // 힌트 텍스트에 흐린 전경색 사용 - 시스템 스타일링을 존중함
         .ColorAndOpacity(FSlateColor::UseSubduedForeground());
     
-    // Create the text scroller for normal text
+    // 일반 텍스트를 위한 텍스트 스크롤러 생성
     TextScroller = SNew(STextScroller)
         .ScrollOptions(TextScrollOptions)
         [
             EditableText.ToSharedRef()
         ];
     
-    // Create the hint text scroller
+    // 힌트 텍스트 스크롤러 생성
     HintTextScroller = SNew(STextScroller)
         .ScrollOptions(HintTextScrollOptions)
         [
             HintTextBlock
         ];
     
-    // Create a container for both scrollers
+    // 두 스크롤러를 위한 컨테이너 생성
     TSharedRef<SWidget> ContentWidget = SNew(SOverlay)
         + SOverlay::Slot()
         [
@@ -100,7 +102,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
             ]
         ];
     
-    // Create the border that will contain the scrollers
+    // 스크롤러를 포함할 테두리 생성
     Border = SNew(SBorder)
         .BorderImage(&InArgs._ScrollStyle->BackgroundImageNormal)
         .Padding(InArgs._TextMargin)
@@ -108,13 +110,13 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::Construct(const FArgu
             ContentWidget
         ];
 
-    // Set the content to the border
+    // 콘텐츠를 테두리로 설정
     ChildSlot
     [
         Border.ToSharedRef()
     ];
     
-    // Start scrolling if enabled
+    // 활성화된 경우 스크롤링 시작
     if (bIsScrollingEnabled)
     {
         TextScroller->StartScrolling();
@@ -265,6 +267,17 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::SetFont(const FSlateF
     {
         EditableText->SetFont(InFont);
     }
+    //
+    // // HintTextScroller의 텍스트 블록의 폰트도 업데이트
+    // if (HintTextScroller.IsValid())
+    // {
+    //     TSharedPtr<STextBlock> HintTextBlock = StaticCastSharedRef<STextBlock>(HintTextScroller->Get());
+    //     if (HintTextBlock.IsValid())
+    //     {
+    //         HintTextBlock->SetFont(InFont);
+    //     }
+    // }
+
 }
 
 bool UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ShouldShowHintText() const
@@ -280,16 +293,16 @@ bool UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::ShouldShowHintText() 
 
 FReply UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
 {
-    // Call base class implementation
+    // 기본 클래스 구현 호출
     FReply Reply = SCompoundWidget::OnFocusReceived(MyGeometry, InFocusEvent);
     
-    // Forward focus to editable text
+    // 에디터블 텍스트로 포커스 전달
     if (EditableText.IsValid())
     {
         FSlateApplication::Get().SetKeyboardFocus(EditableText, EFocusCause::SetDirectly);
     }
     
-    // Handle focus change
+    // 포커스 변경 처리
     HandleTextFocusChanged(true);
     
     return Reply;
@@ -297,19 +310,19 @@ FReply UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::OnFocusReceived(con
 
 void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::OnFocusLost(const FFocusEvent& InFocusEvent)
 {
-    // Call base class implementation
+    // 기본 클래스 구현 호출
     SCompoundWidget::OnFocusLost(InFocusEvent);
     
-    // Handle focus change
+    // 포커스 변경 처리
     HandleTextFocusChanged(false);
 }
 
 void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::HandleTextFocusChanged(bool bHasFocus)
 {
-    // When focus changes, we may need to update which scroller is visible
+    // 포커스가 변경되면 어떤 스크롤러가 보이는지 업데이트해야 할 수 있음
     if (bHasFocus)
     {
-        // Suspend scrolling when text gets focus
+        // 텍스트가 포커스를 얻으면 스크롤링 중지
         if (TextScroller.IsValid())
         {
             TextScroller->SuspendScrolling();
@@ -318,7 +331,7 @@ void UPGMarqueeEditableTextBox::SPGMarqueeEditableTextBox::HandleTextFocusChange
     }
     else
     {
-        // When focus is lost, resume scrolling if needed
+        // 포커스가 사라지면 필요한 경우 스크롤링 재개
         if (TextScroller.IsValid() && bIsScrollingEnabled && !GetText().IsEmpty())
         {
             TextScroller->ResetScrollState();
@@ -344,7 +357,7 @@ UPGMarqueeEditableTextBox::UPGMarqueeEditableTextBox()
 
 TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
 {
-    // Create our custom slate widget
+    // 우리의 커스텀 slate 위젯 생성
     MarqueeEditableTextBox = SNew(SPGMarqueeEditableTextBox)
         .ScrollStyle(&WidgetStyle)
         .Text(GetText())
@@ -369,14 +382,14 @@ TSharedRef<SWidget> UPGMarqueeEditableTextBox::RebuildWidget()
         .OnTextChanged(BIND_UOBJECT_DELEGATE(FOnTextChanged, HandleOnTextChanged))
         .OnTextCommitted(BIND_UOBJECT_DELEGATE(FOnTextCommitted, HandleOnTextCommitted));
     
-    // Cache the text scroller reference for later use
+    // 나중에 사용하기 위해 텍스트 스크롤러 참조 캐싱
     if (MarqueeEditableTextBox.IsValid())
     {
         SetScrollingEnabled(bIsScrollingEnabled);
         SetHintTextScrollingEnabled(bIsHintTextScrollingEnabled);
     }
     
-    // For compatibility with parent class
+    // 부모 클래스와의 호환성을 위해
     MyEditableTextBlock = StaticCastSharedRef<SEditableTextBox>(
         SNew(SEditableTextBox)
         .Style(&WidgetStyle)
@@ -408,10 +421,10 @@ void UPGMarqueeEditableTextBox::ReleaseSlateResources(bool bReleaseChildren)
 
 void UPGMarqueeEditableTextBox::HandleOnTextChanged(const FText& InText)
 {
-    // Call the parent implementation to delegate the text change event
+    // 텍스트 변경 이벤트를 위임하기 위한 부모 구현 호출
     Super::HandleOnTextChanged(InText);
     
-    // Suspend scrolling while user is typing
+    // 사용자가 입력하는 동안 스크롤링 중지
     if (MarqueeEditableTextBox.IsValid())
     {
         MarqueeEditableTextBox->SetScrollingEnabled(false);
@@ -420,10 +433,10 @@ void UPGMarqueeEditableTextBox::HandleOnTextChanged(const FText& InText)
 
 void UPGMarqueeEditableTextBox::HandleOnTextCommitted(const FText& InText, ETextCommit::Type CommitMethod)
 {
-    // Call the parent implementation to delegate the commit event
+    // 커밋 이벤트를 위임하기 위한 부모 구현 호출
     Super::HandleOnTextCommitted(InText, CommitMethod);
     
-    // After text is committed, check if we need to resume scrolling
+    // 텍스트가 커밋된 후 스크롤링을 재개해야 하는지 확인
     if (MarqueeEditableTextBox.IsValid() && bIsScrollingEnabled)
     {
         FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) 
@@ -433,14 +446,14 @@ void UPGMarqueeEditableTextBox::HandleOnTextCommitted(const FText& InText, EText
                 MarqueeEditableTextBox->ResetScrollState();
                 MarqueeEditableTextBox->SetScrollingEnabled(bIsScrollingEnabled);
             }
-            return false; // One-time execution
-        }), 0.1f); // Slight delay to ensure layout is complete
+            return false; // 일회성 실행
+        }), 0.1f); // 레이아웃이 완료되었는지 확인하기 위한 약간의 지연
     }
 }
 
 FSlateFontInfo UPGMarqueeEditableTextBox::GetFont() const
 {
-    return WidgetStyle.Font_DEPRECATED;
+    return WidgetStyle.TextStyle.Font;
 }
 
 void UPGMarqueeEditableTextBox::SetScrollingEnabled(bool bInIsScrollingEnabled)
@@ -494,7 +507,7 @@ const UCommonTextScrollStyle* UPGMarqueeEditableTextBox::GetScrollStyleCDO() con
 
 const UCommonTextScrollStyle* UPGMarqueeEditableTextBox::GetHintTextScrollStyleCDO() const
 {
-    // Use the HintTextScrollStyle if set, otherwise fall back to normal ScrollStyle
+    // 설정된 경우 HintTextScrollStyle 사용, 그렇지 않으면 일반 ScrollStyle로 대체
     if (HintTextScrollStyle)
     {
         return Cast<UCommonTextScrollStyle>(HintTextScrollStyle->ClassDefaultObject);
