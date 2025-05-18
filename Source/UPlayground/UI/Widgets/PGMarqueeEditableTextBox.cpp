@@ -342,11 +342,11 @@ FTextScrollerOptions UPGMarqueeEditableTextBox::CreateScrollOptionsFromStyle(con
     if (StyleCDO)
     {
         // 스타일이 존재하는 경우 기본 스크롤 옵션 설정
-        Options.Speed = 25.0f;       // 기본 스크롤 속도
-        Options.StartDelay = 0.5f;    // 시작 지연 시간
-        Options.EndDelay = 0.5f;      // 종료 지연 시간
-        Options.FadeInDelay = 0.25f;  // 페이드 인 시간
-        Options.FadeOutDelay = 0.25f; // 페이드 아웃 시간
+        Options.Speed = StyleCDO->Speed;       // 기본 스크롤 속도
+        Options.StartDelay = StyleCDO->StartDelay;    // 시작 지연 시간
+        Options.EndDelay = StyleCDO->EndDelay;      // 종료 지연 시간
+        Options.FadeInDelay = StyleCDO->FadeInDelay;  // 페이드 인 시간
+        Options.FadeOutDelay = StyleCDO->FadeOutDelay; // 페이드 아웃 시간
     }
     else
     {
@@ -369,11 +369,11 @@ FTextScrollerOptions UPGMarqueeEditableTextBox::CreateHintTextScrollOptionsFromS
     if (StyleCDO)
     {
         // 스타일이 존재하는 경우 힌트 텍스트 스크롤 옵션 설정
-        Options.Speed = 15.0f;        // 힌트 텍스트는 일반 텍스트보다 느림
-        Options.StartDelay = 1.0f;     // 시작 지연 시간
-        Options.EndDelay = 1.0f;       // 종료 지연 시간
-        Options.FadeInDelay = 0.25f;   // 페이드 인 시간
-        Options.FadeOutDelay = 0.25f;  // 페이드 아웃 시간
+        Options.Speed = StyleCDO->Speed;       // 기본 스크롤 속도
+        Options.StartDelay = StyleCDO->StartDelay;    // 시작 지연 시간
+        Options.EndDelay = StyleCDO->EndDelay;      // 종료 지연 시간
+        Options.FadeInDelay = StyleCDO->FadeInDelay;  // 페이드 인 시간
+        Options.FadeOutDelay = StyleCDO->FadeOutDelay; // 페이드 아웃 시간
     }
     else
     {
