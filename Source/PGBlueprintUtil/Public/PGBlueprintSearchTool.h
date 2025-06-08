@@ -47,36 +47,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Blueprint Search")
 	bool IsSearchInProgress() const { return bIsSearching; }
 
-	/**
-	 * 검색 히스토리를 가져옵니다
-	 */
-	UFUNCTION(BlueprintPure, Category = "Blueprint Search")
-	TArray<FPGSearchHistoryItem> GetSearchHistory() const { return SearchHistory; }
-
-	/**
-	 * 검색 히스토리를 지웁니다
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Blueprint Search")
-	void ClearSearchHistory() { SearchHistory.Empty(); }
-
-	/**
-	 * 북마크를 추가합니다
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Blueprint Search")
-	bool AddBookmark(const FPGBookmarkItem& Bookmark);
-
-	/**
-	 * 북마크를 제거합니다
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Blueprint Search")
-	bool RemoveBookmark(const FString& BookmarkName);
-
-	/**
-	 * 모든 북마크를 가져옵니다
-	 */
-	UFUNCTION(BlueprintPure, Category = "Blueprint Search")
-	TArray<FPGBookmarkItem> GetBookmarks() const { return Bookmarks; }
-
 	/** 검색 완료 델리게이트 */
 	FOnSearchCompleted OnSearchCompleted;
 
@@ -92,24 +62,21 @@ protected:
 	 */
 	bool DoesAssetMatchCriteria(const FAssetData& AssetData, const FPGBlueprintSearchCriteria& SearchCriteria) const;
 
+	/**
+	 * 에셋 데이터가 검색 조건에 맞는지 확인 (스레드 안전)
+	 * @param AssetData 확인할 에셋 데이터
+	 * @param SearchCriteria 검색 조건
+	 * @return 조건에 맞으면 true
+	 */
+	bool DoesAssetMatchCriteriaThreadSafe(const FAssetData& AssetData, const FPGBlueprintSearchCriteria& SearchCriteria) const;
+
 private:
 	/** 현재 검색 진행 상태 */
 	UPROPERTY(Transient)
 	bool bIsSearching = false;
 
-	/** 검색 히스토리 */
-	UPROPERTY()
-	TArray<FPGSearchHistoryItem> SearchHistory;
-
-	/** 북마크 목록 */
-	UPROPERTY()
-	TArray<FPGBookmarkItem> Bookmarks;
-
 	/** 검색 취소 플래그 */
 	bool bCancelRequested = false;
-
-	/** 캐시된 검색 결과 */
-	TMap<FString, TArray<FPGBlueprintSearchResult>> CachedResults;
 
 #if WITH_EDITOR
 	/**
@@ -127,16 +94,10 @@ private:
 	 */
 	bool IsAssetInSearchScope(const FName& PackageName, EPGSearchScope SearchScope) const;
 
+	/** 게임 스레드에서 에셋 목록 가져오기 */
+	void GetAssetListOnGameThread(const FPGBlueprintSearchCriteria& SearchCriteria);
+
 	/** 비동기 검색 작업 */
-	void PerformAsyncSearch(FPGBlueprintSearchCriteria SearchCriteria);
-
-	/** 캐시 키 생성 */
-	FString GenerateCacheKey(const FPGBlueprintSearchCriteria& SearchCriteria) const;
-
-	/** 검색 히스토리에 추가 */
-	void AddToSearchHistory(const FPGBlueprintSearchCriteria& SearchCriteria, int32 ResultCount, float Duration);
-
-	/** 검색 결과 정렬 */
-	void SortResults(TArray<FPGBlueprintSearchResult>& Results, EPGSortCriteria SortCriteria, EPGSortDirection SortDirection) const;
+	void PerformAsyncSearch(FPGBlueprintSearchCriteria SearchCriteria, TArray<FAssetData> AssetDataList);
 #endif
 };

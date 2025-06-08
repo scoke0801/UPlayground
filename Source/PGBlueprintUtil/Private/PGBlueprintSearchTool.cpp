@@ -6,7 +6,6 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Async/Async.h"
 #include "PGBlueprintUtil.h"
-#include "HAL/PlatformFilemanager.h"
 
 UPGBlueprintSearchTool::UPGBlueprintSearchTool()
 {
@@ -20,17 +19,6 @@ TArray<FPGBlueprintSearchResult> UPGBlueprintSearchTool::SearchBlueprints(const 
 	{
 		UE_LOG(LogPGBlueprintUtil, Warning, TEXT("SearchBlueprints: Invalid search criteria"));
 		return TArray<FPGBlueprintSearchResult>();
-	}
-
-	// 시작 시간 기록
-	FDateTime StartTime = FDateTime::Now();
-
-	// 캐시 확인
-	FString CacheKey = GenerateCacheKey(SearchCriteria);
-	if (CachedResults.Contains(CacheKey))
-	{
-		UE_LOG(LogPGBlueprintUtil, Log, TEXT("SearchBlueprints: Using cached results for key: %s"), *CacheKey);
-		return CachedResults[CacheKey];
 	}
 
 	UE_LOG(LogPGBlueprintUtil, Log, TEXT("SearchBlueprints: Starting search for parent class: %s"), 
@@ -87,12 +75,7 @@ TArray<FPGBlueprintSearchResult> UPGBlueprintSearchTool::SearchBlueprints(const 
 		if (DoesAssetMatchCriteria(AssetData, SearchCriteria))
 		{
 			FPGBlueprintSearchResult Result = FPGBlueprintSearchResult::FromAssetData(AssetData, SearchCriteria.ParentClass);
-			
-			// 고급 필터 적용
-			if (Result.MatchesAdvancedFilter(SearchCriteria.AdvancedFilter))
-			{
-				Results.Add(Result);
-			}
+			Results.Add(Result);
 		}
 
 		ProcessedCount++;
@@ -103,21 +86,13 @@ TArray<FPGBlueprintSearchResult> UPGBlueprintSearchTool::SearchBlueprints(const 
 		}
 	}
 
-	// 정렬 적용
-	SortResults(Results, SearchCriteria.AdvancedFilter.SortCriteria, SearchCriteria.AdvancedFilter.SortDirection);
+	// 이름 순으로 기본 정렬
+	Results.Sort([](const FPGBlueprintSearchResult& A, const FPGBlueprintSearchResult& B)
+	{
+		return A.BlueprintName < B.BlueprintName;
+	});
 
-	// 캐시에 저장
-	CachedResults.Add(CacheKey, Results);
-
-	// 검색 완료 시간 계산
-	FDateTime EndTime = FDateTime::Now();
-	float SearchDuration = (EndTime - StartTime).GetTotalSeconds();
-
-	// 검색 히스토리에 추가
-	AddToSearchHistory(SearchCriteria, Results.Num(), SearchDuration);
-
-	UE_LOG(LogPGBlueprintUtil, Log, TEXT("SearchBlueprints: Search completed. Found %d matching blueprints in %.2f seconds"), 
-		   Results.Num(), SearchDuration);
+	UE_LOG(LogPGBlueprintUtil, Log, TEXT("SearchBlueprints: Search completed. Found %d matching blueprints"), Results.Num());
 
 	return Results;
 }
@@ -133,11 +108,8 @@ void UPGBlueprintSearchTool::SearchBlueprintsAsync(const FPGBlueprintSearchCrite
 	bIsSearching = true;
 	bCancelRequested = false;
 
-	// 비동기 작업 시작
-	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this, SearchCriteria]()
-	{
-		PerformAsyncSearch(SearchCriteria);
-	});
+	// 게임 스레드에서 AssetRegistry 접근하여 에셋 목록 가져오기
+	GetAssetListOnGameThread(SearchCriteria);
 }
 
 void UPGBlueprintSearchTool::CancelSearch()
@@ -147,46 +119,6 @@ void UPGBlueprintSearchTool::CancelSearch()
 		bCancelRequested = true;
 		UE_LOG(LogPGBlueprintUtil, Log, TEXT("CancelSearch: Search cancellation requested"));
 	}
-}
-
-bool UPGBlueprintSearchTool::AddBookmark(const FPGBookmarkItem& Bookmark)
-{
-	if (!Bookmark.IsValid())
-	{
-		UE_LOG(LogPGBlueprintUtil, Warning, TEXT("AddBookmark: Invalid bookmark"));
-		return false;
-	}
-
-	// 같은 이름의 북마크가 있는지 확인
-	for (const FPGBookmarkItem& ExistingBookmark : Bookmarks)
-	{
-		if (ExistingBookmark.BookmarkName == Bookmark.BookmarkName)
-		{
-			UE_LOG(LogPGBlueprintUtil, Warning, TEXT("AddBookmark: Bookmark with name '%s' already exists"), *Bookmark.BookmarkName);
-			return false;
-		}
-	}
-
-	Bookmarks.Add(Bookmark);
-	UE_LOG(LogPGBlueprintUtil, Log, TEXT("AddBookmark: Added bookmark '%s'"), *Bookmark.BookmarkName);
-	return true;
-}
-
-bool UPGBlueprintSearchTool::RemoveBookmark(const FString& BookmarkName)
-{
-	int32 RemovedCount = Bookmarks.RemoveAll([&BookmarkName](const FPGBookmarkItem& Item)
-	{
-		return Item.BookmarkName == BookmarkName;
-	});
-
-	if (RemovedCount > 0)
-	{
-		UE_LOG(LogPGBlueprintUtil, Log, TEXT("RemoveBookmark: Removed bookmark '%s'"), *BookmarkName);
-		return true;
-	}
-
-	UE_LOG(LogPGBlueprintUtil, Warning, TEXT("RemoveBookmark: Bookmark '%s' not found"), *BookmarkName);
-	return false;
 }
 
 bool UPGBlueprintSearchTool::DoesAssetMatchCriteria(const FAssetData& AssetData, const FPGBlueprintSearchCriteria& SearchCriteria) const
@@ -200,6 +132,18 @@ bool UPGBlueprintSearchTool::DoesAssetMatchCriteria(const FAssetData& AssetData,
 	// 블루프린트 부모 클래스 가져오기
 	UClass* BlueprintParentClass = GetBlueprintParentClass(AssetData);
 	if (!BlueprintParentClass)
+	{
+		return false;
+	}
+
+	// Deprecated 클래스 확인
+	if (!SearchCriteria.bIncludeDeprecated && BlueprintParentClass->HasAnyClassFlags(CLASS_Deprecated))
+	{
+		return false;
+	}
+
+	// 추상 클래스 확인
+	if (!SearchCriteria.bIncludeAbstractClasses && BlueprintParentClass->HasAnyClassFlags(CLASS_Abstract))
 	{
 		return false;
 	}
@@ -253,90 +197,141 @@ bool UPGBlueprintSearchTool::IsAssetInSearchScope(const FName& PackageName, EPGS
 	}
 }
 
-void UPGBlueprintSearchTool::PerformAsyncSearch(FPGBlueprintSearchCriteria SearchCriteria)
+void UPGBlueprintSearchTool::GetAssetListOnGameThread(const FPGBlueprintSearchCriteria& SearchCriteria)
 {
-	// 백그라운드에서 검색 수행
-	TArray<FPGBlueprintSearchResult> Results = SearchBlueprints(SearchCriteria);
+	// 게임 스레드에서 AssetRegistry 접근
+	check(IsInGameThread());
 
-	// 메인 스레드에서 완료 이벤트 호출
-	AsyncTask(ENamedThreads::GameThread, [this, Results]()
+	// AssetRegistry 가져오기
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+
+	// 블루프린트 에셋 필터 설정
+	FARFilter Filter;
+	Filter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
+	Filter.bRecursiveClasses = true;
+
+	// 검색 범위에 따른 패키지 경로 설정
+	switch (SearchCriteria.SearchScope)
 	{
-		bIsSearching = false;
-		bCancelRequested = false;
-		OnSearchCompleted.Broadcast(Results);
+	case EPGSearchScope::ProjectOnly:
+		Filter.PackagePaths.Add("/Game");
+		break;
+	case EPGSearchScope::IncludePlugins:
+		Filter.PackagePaths.Add("/Game");
+		// 플러그인 경로들도 추가
+		Filter.PackagePaths.Add("/Plugins");
+		break;
+	case EPGSearchScope::IncludeEngine:
+		// 모든 경로 포함 (필터 없음)
+		break;
+	}
+
+	// 에셋 검색
+	TArray<FAssetData> AssetDataList;
+	AssetRegistry.GetAssets(Filter, AssetDataList);
+
+	UE_LOG(LogPGBlueprintUtil, Log, TEXT("GetAssetListOnGameThread: Found %d total blueprint assets"), AssetDataList.Num());
+
+	// 백그라운드 스레드에서 필터링 수행
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this, SearchCriteria, AssetDataList]()
+	{
+		PerformAsyncSearch(SearchCriteria, AssetDataList);
 	});
 }
 
-FString UPGBlueprintSearchTool::GenerateCacheKey(const FPGBlueprintSearchCriteria& SearchCriteria) const
+void UPGBlueprintSearchTool::PerformAsyncSearch(FPGBlueprintSearchCriteria SearchCriteria, TArray<FAssetData> AssetDataList)
 {
-	FString Key = FString::Printf(TEXT("%s_%d_%d_%d_%d_%d_%d_%s_%s"),
-		SearchCriteria.ParentClass ? *SearchCriteria.ParentClass->GetName() : TEXT("None"),
-		static_cast<int32>(SearchCriteria.SearchScope),
-		SearchCriteria.bIncludeAbstractClasses ? 1 : 0,
-		SearchCriteria.bIncludeDeprecated ? 1 : 0,
-		SearchCriteria.bExactMatchOnly ? 1 : 0,
-		static_cast<int32>(SearchCriteria.AdvancedFilter.FileSizeFilter),
-		static_cast<int32>(SearchCriteria.AdvancedFilter.DateFilter),
-		*SearchCriteria.AdvancedFilter.PathFilter,
-		*SearchCriteria.AdvancedFilter.NameFilter
-	);
-	
-	return FMD5::HashAnsiString(*Key);
-}
+	// 백그라운드에서 필터링 수행
+	TArray<FAssetData> MatchingAssets;
 
-void UPGBlueprintSearchTool::AddToSearchHistory(const FPGBlueprintSearchCriteria& SearchCriteria, int32 ResultCount, float Duration)
-{
-	FPGSearchHistoryItem HistoryItem;
-	HistoryItem.SearchCriteria = SearchCriteria;
-	HistoryItem.ResultCount = ResultCount;
-	HistoryItem.SearchDuration = Duration;
-	HistoryItem.SearchTime = FDateTime::Now();
+	// 진행률 추적
+	int32 ProcessedCount = 0;
+	int32 TotalCount = AssetDataList.Num();
 
-	// 히스토리 앞에 추가 (최신순)
-	SearchHistory.Insert(HistoryItem, 0);
-
-	// 히스토리 최대 개수 제한 (예: 50개)
-	const int32 MaxHistoryItems = 50;
-	if (SearchHistory.Num() > MaxHistoryItems)
+	// 각 에셋 검토
+	for (const FAssetData& AssetData : AssetDataList)
 	{
-		SearchHistory.RemoveAt(MaxHistoryItems, SearchHistory.Num() - MaxHistoryItems);
-	}
-}
-
-void UPGBlueprintSearchTool::SortResults(TArray<FPGBlueprintSearchResult>& Results, EPGSortCriteria SortCriteria, EPGSortDirection SortDirection) const
-{
-	auto GetSortValue = [SortCriteria](const FPGBlueprintSearchResult& Item) -> FString
-	{
-		switch (SortCriteria)
+		// 취소 요청 확인
+		if (bCancelRequested)
 		{
-		case EPGSortCriteria::Name:
-			return Item.BlueprintName;
-		case EPGSortCriteria::ParentClass:
-			return Item.ParentClassName;
-		case EPGSortCriteria::Path:
-			return Item.AssetPath;
-		case EPGSortCriteria::Size:
-			return FString::Printf(TEXT("%016lld"), Item.FileSize); // 숫자 정렬을 위해 패딩
-		case EPGSortCriteria::LastModified:
-			return Item.LastModified.ToString();
-		default:
-			return Item.BlueprintName;
+			UE_LOG(LogPGBlueprintUtil, Log, TEXT("PerformAsyncSearch: Search cancelled by user"));
+			break;
 		}
-	};
 
-	if (SortDirection == EPGSortDirection::Ascending)
-	{
-		Results.Sort([&GetSortValue](const FPGBlueprintSearchResult& A, const FPGBlueprintSearchResult& B)
+		// 검색 조건과 일치하는지 확인 (스레드 안전)
+		if (DoesAssetMatchCriteriaThreadSafe(AssetData, SearchCriteria))
 		{
-			return GetSortValue(A) < GetSortValue(B);
+			MatchingAssets.Add(AssetData);
+		}
+
+		ProcessedCount++;
+		if (ProcessedCount % 50 == 0) // 50개마다 진행률 업데이트
+		{
+			float Progress = static_cast<float>(ProcessedCount) / TotalCount;
+			// 게임 스레드에서 진행률 업데이트
+			AsyncTask(ENamedThreads::GameThread, [this, Progress]()
+			{
+				OnSearchProgressUpdated.Broadcast(Progress);
+			});
+		}
+	}
+
+	// 게임 스레드에서 최종 결과 생성 및 완료 처리
+	AsyncTask(ENamedThreads::GameThread, [this, SearchCriteria, MatchingAssets]()
+	{
+		TArray<FPGBlueprintSearchResult> Results;
+		
+		// 게임 스레드에서 안전하게 결과 생성
+		for (const FAssetData& AssetData : MatchingAssets)
+		{
+			FPGBlueprintSearchResult Result = FPGBlueprintSearchResult::FromAssetData(AssetData, SearchCriteria.ParentClass);
+			Results.Add(Result);
+		}
+
+		// 이름 순으로 기본 정렬
+		Results.Sort([](const FPGBlueprintSearchResult& A, const FPGBlueprintSearchResult& B)
+		{
+			return A.BlueprintName < B.BlueprintName;
 		});
+
+		bIsSearching = false;
+		bCancelRequested = false;
+		OnSearchCompleted.Broadcast(Results);
+		UE_LOG(LogPGBlueprintUtil, Log, TEXT("PerformAsyncSearch: Search completed. Found %d matching blueprints"), Results.Num());
+	});
+}
+
+bool UPGBlueprintSearchTool::DoesAssetMatchCriteriaThreadSafe(const FAssetData& AssetData, const FPGBlueprintSearchCriteria& SearchCriteria) const
+{
+	// 에셋 경로가 검색 범위에 포함되는지 확인
+	if (!IsAssetInSearchScope(AssetData.PackageName, SearchCriteria.SearchScope))
+	{
+		return false;
+	}
+
+	// ParentClass 태그에서 부모 클래스 정보 가져오기 (스레드 안전)
+	FAssetTagValueRef ParentClassRef = AssetData.TagsAndValues.FindTag("ParentClass");
+	if (!ParentClassRef.IsSet() || ParentClassRef.AsString().IsEmpty())
+	{
+		return false;
+	}
+
+	// 부모 클래스 이름 비교 (스레드 안전)
+	FString ParentClassPath = ParentClassRef.AsString();
+	FString TargetClassName = SearchCriteria.ParentClass->GetPathName();
+
+	if (SearchCriteria.bExactMatchOnly)
+	{
+		// 정확한 일치만
+		return ParentClassPath == TargetClassName;
 	}
 	else
 	{
-		Results.Sort([&GetSortValue](const FPGBlueprintSearchResult& A, const FPGBlueprintSearchResult& B)
-		{
-			return GetSortValue(A) > GetSortValue(B);
-		});
+		// 상속 계층 포함 - 클래스 이름이 포함되어 있는지 확인
+		// 이는 완전하지 않지만 스레드 안전한 방법입니다
+		FString TargetClassSimpleName = SearchCriteria.ParentClass->GetName();
+		return ParentClassPath.Contains(TargetClassSimpleName) || ParentClassPath == TargetClassName;
 	}
 }
 
