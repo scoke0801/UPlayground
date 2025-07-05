@@ -1,11 +1,28 @@
-
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
 #include "PGDataTableManager.generated.h"
 
 class FAssetRegistryModule;
+
+// 검색 키 인덱스 정보
+USTRUCT()
+struct FPGSearchKeyIndex
+{
+    GENERATED_BODY()
+
+public:
+    // 검색 키 필드의 프로퍼티 정보
+    const FProperty* SearchKeyProperty;
+
+    // 인덱스 맵 (정수 검색 키 값 -> RowName)
+    TMap<int64, FName> IndexMap;
+
+    FPGSearchKeyIndex()
+        : SearchKeyProperty(nullptr)
+    {
+    }
+};
 
 // 데이터 테이블 캐시 엔트리
 USTRUCT()
@@ -18,10 +35,13 @@ struct FPGDataTableCacheEntry
     TObjectPtr<UDataTable> DataTable;
 
     // 마지막 접근 시간
-    double LastAccessTime;
+    float LastAccessTime;
 
     // 메모리 사용량 (바이트)
     int32 MemoryUsage;
+
+    // 검색 키 인덱스
+    TOptional<FPGSearchKeyIndex> SearchKeyIndex;
 
     FPGDataTableCacheEntry()
         : DataTable(nullptr)
@@ -75,20 +95,20 @@ struct FPGDataTableInfo
     }
 };
 
-
 /**
  * 데이터 테이블 관리자
- * - AssetRegistry를 통한 데이터 테이블 스캔
+ * - AssetRegistry를 통한 데이터 테이블 스캔( 경로는 데이터테이블 폴더 하위로만 한정하여 관리
  * - 지연 로딩 및 LRU 캐시 시스템
+ * - SearchKey(정수타입 변수) 메타데이터 기반 검색 / 기본 RowName 기반 검색 지원
  * - 메모리 사용량 모니터링 및 자동 언로드
- * - LRU 대신 스테이트 전환 등 시점에 명시적으로 메모리를 제거해주는 게 좋을 수 있음..
+ *  ㄴ TODO 추후, State 등 변환 시에만 정리하도록 하는 게 좋을 듯
  */
 UCLASS()
 class UPLAYGROUND_API UPGDataTableManager : public UGameInstanceSubsystem
 {
     GENERATED_BODY()
 
-protected:
+private:
     // 에셋 레지스트리 모듈
     FAssetRegistryModule* AssetRegistryModule;
 
@@ -99,23 +119,7 @@ protected:
     // 로드된 데이터 테이블 캐시 (LRU) - 테이블 이름을 키로 사용
     UPROPERTY()
     TMap<FName, FPGDataTableCacheEntry> LoadedDataTables;
-
-    // 최대 캐시 크기
-    UPROPERTY(EditAnywhere, Category = "Cache Settings")
-    int32 MaxCacheSize;
-
-    // 최대 메모리 사용량 (바이트)
-    UPROPERTY(EditAnywhere, Category = "Cache Settings")
-    int32 MaxMemoryUsage;
-
-    // 캐시 정리 주기 (초)
-    UPROPERTY(EditAnywhere, Category = "Cache Settings")
-    float CleanupInterval;
-
-    // 자동 정리 활성화
-    UPROPERTY(EditAnywhere, Category = "Cache Settings")
-    bool bAutoCleanup;
-
+    
     // 캐시 정리 타이머
     FTimerHandle CleanupTimerHandle;
     
@@ -126,31 +130,32 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
 
-    // 데이터 테이블 스캔
-    void ScanDataTables();
-
-    // 데이터 테이블 로드 (지연 로딩) - 테이블 이름으로
+public:
+    // 데이터 테이블 로드 - 테이블 이름으로
     UDataTable* LoadDataTable(const FName& TableName);
-
-    // 특정 행 데이터 가져오기 - 테이블 이름으로
-    uint8* GetRowData(const FName& TableName, const FName& RowName);
-
-    // 템플릿 버전 행 데이터 가져오기 - 테이블 이름으로
-    template<typename T>
-    T* GetRowData(const FName& TableName, const FName& RowName);
-
-    // 필드값으로 행 데이터 가져오기
-    template<typename T, typename FieldType>
-    T* GetRowDataByField(const FName& TableName, const FieldType& FieldValue, 
-                         FieldType T::*FieldPtr);
-
-    // 모든 행 데이터 가져오기
-    template<typename T>
-    TArray<T*> GetAllRowData(const FName& TableName);
 
     // 데이터 테이블 언로드 - 테이블 이름으로
     void UnloadDataTable(const FName& TableName);
 
+public:
+    // 테이블 정보 Getter
+    // 데이터 가져오기 - 테이블 이름으로
+    template<typename T>
+    T* GetRowData(const FName& TableName, const FName& RowName);
+
+    // SearchKey 메타데이터 기반 검색 (정수 키만 지원)
+    template<typename T>
+    T* GetRowData(const FName& TableName, int64 SearchKey);
+    
+    // 모든 행 데이터 가져오기
+    template<typename T>
+    TArray<T*> GetAllRowData(const FName& TableName);
+    
+    // 모든 데이터 테이블 정보 가져오기
+    const TArray<FPGDataTableInfo>& GetAllDataTableInfo() const { return DataTableInfos; }
+
+public:
+    // 캐시 관련
     // 캐시 정리 (LRU 기반)
     void CleanupCache();
 
@@ -160,21 +165,40 @@ public:
     // 캐시 상태 정보
     void GetCacheInfo(int32& LoadedCount, int32& TotalMemoryUsage) const;
 
-    // 모든 데이터 테이블 정보 가져오기
-    const TArray<FPGDataTableInfo>& GetAllDataTableInfo() const { return DataTableInfos; }
-
-    // 설정
-    void SetMaxCacheSize(int32 NewMaxCacheSize) { MaxCacheSize = NewMaxCacheSize; }
-    void SetMaxMemoryUsage(int32 NewMaxMemoryUsage) { MaxMemoryUsage = NewMaxMemoryUsage; }
-
-
 private:
+    // 타이머 관련
+    // 자동 정리 시작( LRU - 타이머구조 )
+    void StartAutoCleanup();
+
+    // 자동 정리 중지
+    void StopAutoCleanup();
+    
+private:
+    // 초기화 관련
+    // 데이터 테이블 스캔
+    void ScanDataTables();
+    
     // 데이터 테이블 정보 수집
     void CollectDataTableInfo(const FAssetData& AssetData);
 
     // 테이블 이름으로 에셋 경로 찾기
     FSoftObjectPath FindAssetPathByName(const FName& TableName) const;
 
+private:
+    // SearchKey 인덱스 생성
+    static void BuildSearchKeyIndex(FPGDataTableCacheEntry& CacheEntry);
+
+    // SearchKey 프로퍼티 찾기( FTableRowBase 하위 클래스에 정의한 메타데이터 )
+    static const FProperty* FindSearchKeyProperty(const UScriptStruct* RowStruct);
+
+    // 정수 프로퍼티를 int64로 변환
+    static bool PropertyToInteger(const FProperty* Property, const void* ValuePtr, int64& OutValue);
+
+    // SearchKey 프로퍼티가 정수 타입인지 검증
+    static bool IsIntegerProperty(const FProperty* Property);
+    
+private:
+    // LRU 정리 관련
     // 메모리 사용량 확인
     int32 GetCurrentMemoryUsage() const;
 
@@ -183,12 +207,6 @@ private:
 
     // 캐시 엔트리 제거
     void RemoveCacheEntry(const FName& TableName);
-
-    // 자동 정리 시작
-    void StartAutoCleanup();
-
-    // 자동 정리 중지
-    void StopAutoCleanup();
 };
 
 
@@ -204,9 +222,8 @@ T* UPGDataTableManager::GetRowData(const FName& TableName, const FName& RowName)
     return DataTable->FindRow<T>(RowName, TEXT("DataTableManager"));
 }
 
-template<typename T, typename FieldType>
-T* UPGDataTableManager::GetRowDataByField(const FName& TableName,
-    const FieldType& FieldValue,  FieldType T::*FieldPtr)
+template<typename T>
+T* UPGDataTableManager::GetRowData(const FName& TableName, int64 SearchKey)
 {
     UDataTable* DataTable = LoadDataTable(TableName);
     if (!DataTable)
@@ -214,17 +231,23 @@ T* UPGDataTableManager::GetRowDataByField(const FName& TableName,
         return nullptr;
     }
 
-    // 모든 행을 순회하면서 필드값 비교
-    TArray<FName> RowNames = DataTable->GetRowNames();
-    for (const FName& RowName : RowNames)
+    // 캐시에서 인덱스 정보 가져오기
+    FPGDataTableCacheEntry* CacheEntry = LoadedDataTables.Find(TableName);
+    if (!CacheEntry)
     {
-        T* RowData = DataTable->FindRow<T>(RowName, TEXT("DataTableManager"));
-        if (RowData && (RowData->*FieldPtr) == FieldValue)
-        {
-            return RowData;
-        }
+        return nullptr;
     }
 
+    // SearchKey 인덱스가 있는 경우
+    if (CacheEntry->SearchKeyIndex.IsSet())
+    {
+        if (const FName* FoundRowName = CacheEntry->SearchKeyIndex->IndexMap.Find(SearchKey))
+        {
+            return DataTable->FindRow<T>(*FoundRowName, TEXT("DataTableManager"));
+        }
+        return nullptr;
+    }
+    
     return nullptr;
 }
 

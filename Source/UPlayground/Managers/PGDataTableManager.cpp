@@ -1,16 +1,14 @@
-
-
 #include "Managements/PGDataTableManager.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Chaos/ChaosPerfTest.h"
 
+constexpr int32 MAX_CACHE_SIZE = 50;
+constexpr int32 MAX_MEMORY_USAGE = 100 * 1024 * 1024;  // 100MB
+constexpr float CACHE_CLEANUP_INTERVAL = 600.0f; // 600 초
 
 UPGDataTableManager::UPGDataTableManager()
     : AssetRegistryModule(nullptr)
-    , MaxCacheSize(50)
-    , MaxMemoryUsage(100 * 1024 * 1024) // 100MB
-    , CleanupInterval(60.0f) // 60초
-    , bAutoCleanup(true)
 {
 }
 
@@ -24,11 +22,8 @@ void UPGDataTableManager::Initialize(FSubsystemCollectionBase& Collection)
     // 데이터 테이블 스캔
     ScanDataTables();
 
-    // 자동 정리 시작
-    if (bAutoCleanup)
-    {
-        StartAutoCleanup();
-    }
+    // 자동 정리 시작.( TODO. State 등 변환 시점마다 필요하다면 정리 하도록 하면 어떨까? )
+    StartAutoCleanup();
 }
 
 void UPGDataTableManager::Deinitialize()
@@ -55,11 +50,15 @@ void UPGDataTableManager::ScanDataTables()
     // 기존 정보 초기화
     DataTableInfos.Empty();
 
-    // AssetRegistry에서 모든 데이터 테이블 에셋 검색
+    /* 
+     * AssetRegistry에서 모든 데이터 테이블 에셋 검색
+     * 경로는 DataTables 하위 폴더로만 한정.
+     */
     FARFilter Filter;
     Filter.ClassPaths.Add(UDataTable::StaticClass()->GetClassPathName());
+    Filter.PackagePaths.Add(TEXT("/Game/DataTables"));
     Filter.bRecursiveClasses = true;
-
+    
     TArray<FAssetData> AssetDataList;
     AssetRegistryModule->Get().GetAssets(Filter, AssetDataList);
 
@@ -123,26 +122,19 @@ UDataTable* UPGDataTableManager::LoadDataTable(const FName& TableName)
 
     // 캐시에 추가 (테이블 이름을 키로 사용)
     FPGDataTableCacheEntry NewEntry(DataTable);
+    
+    // SearchKey 인덱스 생성
+    BuildSearchKeyIndex(NewEntry);
+    
     LoadedDataTables.Add(TableName, NewEntry);
 
     // 캐시 크기 확인 및 정리
-    if (LoadedDataTables.Num() > MaxCacheSize || GetCurrentMemoryUsage() > MaxMemoryUsage)
+    if (LoadedDataTables.Num() > MAX_CACHE_SIZE || GetCurrentMemoryUsage() > MAX_MEMORY_USAGE)
     {
         CleanupCache();
     }
 
     return DataTable;
-}
-
-uint8* UPGDataTableManager::GetRowData(const FName& TableName, const FName& RowName)
-{
-    UDataTable* DataTable = LoadDataTable(TableName);
-    if (!DataTable)
-    {
-        return nullptr;
-    }
-
-    return DataTable->FindRowUnchecked(RowName);
 }
 
 void UPGDataTableManager::UnloadDataTable(const FName& TableName)
@@ -156,13 +148,13 @@ void UPGDataTableManager::UnloadDataTable(const FName& TableName)
 void UPGDataTableManager::CleanupCache()
 {
     // 메모리 사용량 기준으로 정리
-    while (GetCurrentMemoryUsage() > MaxMemoryUsage && LoadedDataTables.Num() > 0)
+    while (GetCurrentMemoryUsage() > MAX_MEMORY_USAGE && LoadedDataTables.Num() > 0)
     {
         RemoveOldestCacheEntry();
     }
 
     // 캐시 크기 기준으로 정리
-    while (LoadedDataTables.Num() > MaxCacheSize)
+    while (LoadedDataTables.Num() > MAX_CACHE_SIZE)
     {
         RemoveOldestCacheEntry();
     }
@@ -254,7 +246,7 @@ void UPGDataTableManager::StartAutoCleanup()
             CleanupTimerHandle,
             this,
             &UPGDataTableManager::CleanupCache,
-            CleanupInterval,
+            CACHE_CLEANUP_INTERVAL,
             true
         );
     }
@@ -266,4 +258,118 @@ void UPGDataTableManager::StopAutoCleanup()
     {
         GetWorld()->GetTimerManager().ClearTimer(CleanupTimerHandle);
     }
+}
+
+void UPGDataTableManager::BuildSearchKeyIndex(FPGDataTableCacheEntry& CacheEntry)
+{
+    if (!CacheEntry.DataTable)
+    {
+        return;
+    }
+
+    const UScriptStruct* RowStruct = CacheEntry.DataTable->GetRowStruct();
+    if (!RowStruct)
+    {
+        return;
+    }
+
+    // SearchKey 프로퍼티 찾기
+    const FProperty* SearchKeyProperty = FindSearchKeyProperty(RowStruct);
+    if (!SearchKeyProperty)
+    {
+        // SearchKey 메타데이터가 없으면 인덱스 생성하지 않음
+        return;
+    }
+
+    // SearchKey 프로퍼티가 정수 타입인지 검증
+    if (!IsIntegerProperty(SearchKeyProperty))
+    {
+        return;
+    }
+
+    // 인덱스 구조체 초기화
+    FPGSearchKeyIndex SearchKeyIndex;
+    SearchKeyIndex.SearchKeyProperty = SearchKeyProperty;
+
+    // 모든 행을 순회하며 인덱스 생성
+    TArray<FName> RowNames = CacheEntry.DataTable->GetRowNames();
+    for (const FName& RowName : RowNames)
+    {
+        uint8* RowData = CacheEntry.DataTable->FindRowUnchecked(RowName);
+        if (!RowData)
+        {
+            continue;
+        }
+
+        // 프로퍼티 값 추출
+        const void* ValuePtr = SearchKeyProperty->ContainerPtrToValuePtr<void>(RowData);
+        int64 SearchKeyValue = 0;
+        
+        if (PropertyToInteger(SearchKeyProperty, ValuePtr, SearchKeyValue))
+        {
+            SearchKeyIndex.IndexMap.Add(SearchKeyValue, RowName);
+        }
+    }
+
+    // 인덱스가 성공적으로 생성되면 유효성 표시
+    if (SearchKeyIndex.IndexMap.Num() > 0)
+    {
+        CacheEntry.SearchKeyIndex = SearchKeyIndex;
+    }
+}
+
+const FProperty* UPGDataTableManager::FindSearchKeyProperty(const UScriptStruct* RowStruct)
+{
+    if (!RowStruct)
+    {
+        return nullptr;
+    }
+
+    // 모든 프로퍼티를 순회하며 SearchKey 메타데이터 찾기
+    for (TFieldIterator<FProperty> It(RowStruct); It; ++It)
+    {
+        const FProperty* Property = *It;
+        if (!Property)
+        {
+            continue;
+        }
+
+        // SearchKey 메타데이터 확인
+        if (Property->HasMetaData(TEXT("SearchKey")))
+        {
+            const FString& SearchKeyValue = Property->GetMetaData(TEXT("SearchKey"));
+            if (SearchKeyValue == TEXT("true") || SearchKeyValue == TEXT("True") || SearchKeyValue == TEXT("1"))
+            {
+                return Property;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+bool UPGDataTableManager::PropertyToInteger(const FProperty* Property, const void* ValuePtr, int64& OutValue)
+{
+    if (!Property || !ValuePtr)
+    {
+        return false;
+    }
+
+    if (const FNumericProperty* NumericProperty = CastField<FNumericProperty>(Property))
+    {
+        OutValue = NumericProperty->GetSignedIntPropertyValue(ValuePtr);
+        return true;
+    }
+
+    return false;
+}
+
+bool UPGDataTableManager::IsIntegerProperty(const FProperty* Property)
+{
+    if (const FNumericProperty* NumericProperty = CastField<FNumericProperty>(Property))
+    {
+        return NumericProperty->IsInteger();    
+    }
+    
+    return false;
 }
