@@ -1,6 +1,5 @@
 
 
-
 #include "Managements/PGDataTableManager.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -94,18 +93,25 @@ void UPGDataTableManager::CollectDataTableInfo(const FAssetData& AssetData)
     DataTableInfos.Add(Info);
 }
 
-UDataTable* UPGDataTableManager::LoadDataTable(const FSoftObjectPath& AssetPath)
+UDataTable* UPGDataTableManager::LoadDataTable(const FName& TableName)
 {
-    if (!AssetPath.IsValid())
+    if (TableName.IsNone())
     {
         return nullptr;
     }
 
     // 이미 로드된 경우 캐시에서 반환
-    if (FPGDataTableCacheEntry* CacheEntry = LoadedDataTables.Find(AssetPath))
+    if (FPGDataTableCacheEntry* CacheEntry = LoadedDataTables.Find(TableName))
     {
         CacheEntry->UpdateAccessTime();
         return CacheEntry->DataTable;
+    }
+
+    // 테이블 이름으로 에셋 경로 찾기
+    FSoftObjectPath AssetPath = FindAssetPathByName(TableName);
+    if (!AssetPath.IsValid())
+    {
+        return nullptr;
     }
 
     // 새로 로드
@@ -115,9 +121,9 @@ UDataTable* UPGDataTableManager::LoadDataTable(const FSoftObjectPath& AssetPath)
         return nullptr;
     }
 
-    // 캐시에 추가
+    // 캐시에 추가 (테이블 이름을 키로 사용)
     FPGDataTableCacheEntry NewEntry(DataTable);
-    LoadedDataTables.Add(AssetPath, NewEntry);
+    LoadedDataTables.Add(TableName, NewEntry);
 
     // 캐시 크기 확인 및 정리
     if (LoadedDataTables.Num() > MaxCacheSize || GetCurrentMemoryUsage() > MaxMemoryUsage)
@@ -128,23 +134,9 @@ UDataTable* UPGDataTableManager::LoadDataTable(const FSoftObjectPath& AssetPath)
     return DataTable;
 }
 
-UDataTable* UPGDataTableManager::LoadDataTableByName(const FString& AssetName)
+uint8* UPGDataTableManager::GetRowData(const FName& TableName, const FName& RowName)
 {
-    // 이름으로 에셋 경로 찾기
-    for (const FPGDataTableInfo& Info : DataTableInfos)
-    {
-        if (Info.AssetName == AssetName)
-        {
-            return LoadDataTable(Info.AssetPath);
-        }
-    }
-
-    return nullptr;
-}
-
-uint8* UPGDataTableManager::GetRowData(const FSoftObjectPath& AssetPath, const FName& RowName)
-{
-    UDataTable* DataTable = LoadDataTable(AssetPath);
+    UDataTable* DataTable = LoadDataTable(TableName);
     if (!DataTable)
     {
         return nullptr;
@@ -153,11 +145,11 @@ uint8* UPGDataTableManager::GetRowData(const FSoftObjectPath& AssetPath, const F
     return DataTable->FindRowUnchecked(RowName);
 }
 
-void UPGDataTableManager::UnloadDataTable(const FSoftObjectPath& AssetPath)
+void UPGDataTableManager::UnloadDataTable(const FName& TableName)
 {
-    if (LoadedDataTables.Contains(AssetPath))
+    if (LoadedDataTables.Contains(TableName))
     {
-        RemoveCacheEntry(AssetPath);
+        RemoveCacheEntry(TableName);
     }
 }
 
@@ -194,6 +186,21 @@ void UPGDataTableManager::GetCacheInfo(int32& LoadedCount, int32& TotalMemoryUsa
     TotalMemoryUsage = GetCurrentMemoryUsage();
 }
 
+FSoftObjectPath UPGDataTableManager::FindAssetPathByName(const FName& TableName) const
+{
+    FString TableNameString = TableName.ToString();
+    
+    for (const FPGDataTableInfo& Info : DataTableInfos)
+    {
+        if (Info.AssetName == TableNameString)
+        {
+            return Info.AssetPath;
+        }
+    }
+
+    return FSoftObjectPath();
+}
+
 int32 UPGDataTableManager::GetCurrentMemoryUsage() const
 {
     int32 TotalMemory = 0;
@@ -212,7 +219,7 @@ void UPGDataTableManager::RemoveOldestCacheEntry()
     }
 
     // 가장 오래된 항목 찾기 (LRU)
-    FSoftObjectPath OldestPath;
+    FName OldestTableName;
     double OldestTime = DBL_MAX;
 
     for (const auto& Pair : LoadedDataTables)
@@ -220,22 +227,22 @@ void UPGDataTableManager::RemoveOldestCacheEntry()
         if (Pair.Value.LastAccessTime < OldestTime)
         {
             OldestTime = Pair.Value.LastAccessTime;
-            OldestPath = Pair.Key;
+            OldestTableName = Pair.Key;
         }
     }
 
     // 제거
-    if (OldestPath.IsValid())
+    if (!OldestTableName.IsNone())
     {
-        RemoveCacheEntry(OldestPath);
+        RemoveCacheEntry(OldestTableName);
     }
 }
 
-void UPGDataTableManager::RemoveCacheEntry(const FSoftObjectPath& AssetPath)
+void UPGDataTableManager::RemoveCacheEntry(const FName& TableName)
 {
-    if (FPGDataTableCacheEntry* CacheEntry = LoadedDataTables.Find(AssetPath))
+    if (FPGDataTableCacheEntry* CacheEntry = LoadedDataTables.Find(TableName))
     {
-        LoadedDataTables.Remove(AssetPath);
+        LoadedDataTables.Remove(TableName);
     }
 }
 
