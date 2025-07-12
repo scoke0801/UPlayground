@@ -14,7 +14,6 @@ public class UPlayground : ModuleRules
 		// 모듈 헤더 공개 설정
 		PublicIncludePaths.AddRange(new string[] {
 			"UPlayground",
-			"UPlayground/Equipment"
 		});
 	
 		PublicDependencyModuleNames.AddRange(new string[] { 

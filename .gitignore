@@ -84,3 +84,19 @@ Content/*
 **/.idea
 **/.sentry-native
 /Content
+
+# Script folders and Korean filenames
+Script/
+**/Script/
+**/*클래스*
+**/*다이어그램*
+**/*한글*
+**/*[ㄱ-ㅎ]*
+**/*[가-힣]*
+
+# Exclude all PNG files in script directories
+Script/**/*.png
+**/Script/**/*.png
+
+# Temporary workaround for Unicode filename issues
+**/[!A-Za-z0-9_./-]*
