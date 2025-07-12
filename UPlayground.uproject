@@ -8,11 +8,6 @@
 			"Name": "UPlayground",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "PGBlueprintUtil",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
@@ -37,6 +32,10 @@
 		},
 		{
 			"Name": "CommonUI",
+			"Enabled": true
+		},
+		{
+			"Name": "PGBlueprintUtil",
 			"Enabled": true
 		}
 	]

@@ -80,7 +80,6 @@ ExternalAssets/*
 Content/*
 **/Model
 **/.env
-**/Plugins
 **/.idea
 **/.sentry-native
 /Content

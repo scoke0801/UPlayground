@@ -1,0 +1,21 @@
+{
+	"FileVersion": 1,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "PGBlueprintUtil",
+	"Description": "Add Blueprint utility",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "PGBlueprintUtil",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}
