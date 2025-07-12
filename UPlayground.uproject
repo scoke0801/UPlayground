@@ -10,11 +10,6 @@
 			"LoadingPhase": "Default"
 		},
 		{
-			"Name": "PGDataModule",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
 			"Name": "PGBlueprintUtil",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
