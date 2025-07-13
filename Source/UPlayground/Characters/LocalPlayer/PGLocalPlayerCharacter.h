@@ -13,5 +13,7 @@ UCLASS()
 class UPLAYGROUND_API APGLocalPlayerCharacter : public APGCharacterBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	virtual void BeginPlay() override;
 };
