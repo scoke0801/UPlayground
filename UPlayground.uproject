@@ -7,6 +7,14 @@
 		{
 			"Name": "UPlayground",
 			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		},
+		{
+			"Name": "PGData",
+			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
 	],

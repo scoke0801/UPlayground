@@ -14,6 +14,7 @@ public class UPlayground : ModuleRules
 		// 모듈 헤더 공개 설정
 		PublicIncludePaths.AddRange(new string[] {
 			"UPlayground",
+			"PGData"
 		});
 	
 		PublicDependencyModuleNames.AddRange(new string[] { 
@@ -26,7 +27,8 @@ public class UPlayground : ModuleRules
             "DeveloperSettings",
 			"UMG",
 			"Niagara",
-			"CommonUI" // CommonUI 모듈 추가
+			"CommonUI",
+			"PGData"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 

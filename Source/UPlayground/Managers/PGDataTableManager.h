@@ -141,7 +141,7 @@ public:
     // 테이블 정보 Getter
     // 데이터 가져오기 - 테이블 이름으로
     template<typename T>
-    T* GetRowData(const FName& TableName, const FName& RowName);
+    T* GetRowDataByName(const FName& TableName, const FName& RowName);
 
     // SearchKey 메타데이터 기반 검색 (정수 키만 지원)
     template<typename T>
@@ -211,7 +211,7 @@ private:
 
 
 template<typename T>
-T* UPGDataTableManager::GetRowData(const FName& TableName, const FName& RowName)
+T* UPGDataTableManager::GetRowDataByName(const FName& TableName, const FName& RowName)
 {
     UDataTable* DataTable = LoadDataTable(TableName);
     if (!DataTable)
