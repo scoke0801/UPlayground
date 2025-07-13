@@ -13,5 +13,7 @@ UCLASS()
 class UPLAYGROUND_API APGGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	APGGameModeBase();
 };

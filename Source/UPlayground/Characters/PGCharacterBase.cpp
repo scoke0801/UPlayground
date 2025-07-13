@@ -6,15 +6,10 @@
 // Sets default values
 APGCharacterBase::APGCharacterBase()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
-}
-
-// Called when the game starts or when spawned
-void APGCharacterBase::BeginPlay()
-{
-	Super::BeginPlay();
-	
+	GetMesh()->bReceivesDecals = false;
 }
 

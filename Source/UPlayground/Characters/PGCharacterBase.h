@@ -3,20 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "PGCharacterBase.generated.h"
 
 UCLASS()
-class UPLAYGROUND_API APGCharacterBase : public AActor
+class UPLAYGROUND_API APGCharacterBase : public ACharacter
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
 	APGCharacterBase();
-
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
 };

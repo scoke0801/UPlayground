@@ -34,7 +34,7 @@ public class UPlayground : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[] { 
             "GameplayTasks", 
             "GameFeatures",
-            "ModularGameplay"
+            "ModularGameplay", "AnimGraphRuntime", "AIModule"
 		});
 
 		// UI 시스템을 위한 Slate 및 SlateCore 의존성 추가

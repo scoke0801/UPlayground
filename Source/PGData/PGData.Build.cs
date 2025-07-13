@@ -17,7 +17,8 @@ public class PGData : ModuleRules
 			{
 				"Core",
 				"CoreUObject",
-				"Engine"
+				"Engine",
+				"GameplayTags"
 			}
 		);
 	}
