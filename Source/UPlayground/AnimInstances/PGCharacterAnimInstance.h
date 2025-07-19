@@ -30,11 +30,26 @@ protected:
 	UCharacterMovementComponent* OwningMovementComponent;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
-	float GroundSpeed;
+	float CurrentVelocity;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
 	bool bHasAcceleration;
+	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
+	bool bHasVelocity;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
 	float LocomotionDirection;
+	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
+	FVector CurrentWorldLocation;
+
+	// 지난 프레임에서부터 현재 프레임까지 이동거리
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData|DistanceMatching")
+	float DisplacementSinceLastUpdate;
+	
+	// 지난 프레임에서부터 현재 프레임까지의 이동속도
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData|DistanceMatching")
+	float DisplacementSpeed;
+
 };
