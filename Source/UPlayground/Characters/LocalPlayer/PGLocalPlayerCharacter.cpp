@@ -18,14 +18,14 @@ APGLocalPlayerCharacter::APGLocalPlayerCharacter()
 {
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
 
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
+	//bUseControllerRotationPitch = false;
+	//bUseControllerRotationYaw = false;
+	//bUseControllerRotationRoll = false;
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
-	CameraBoom->TargetArmLength = 200.0f;
-	CameraBoom->SocketOffset = FVector(0.f,55.f, 65.f);
+	CameraBoom->TargetArmLength = 400.0f;
+	CameraBoom->SocketOffset = FVector(0.f,55.f, 55.f);
 	CameraBoom->bUsePawnControlRotation = true;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -34,8 +34,8 @@ APGLocalPlayerCharacter::APGLocalPlayerCharacter()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
-	GetCharacterMovement()->MaxWalkSpeed = 400.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
+	//GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	//GetCharacterMovement()->BrakingDecelerationWalking = 100.f;
 
 	CurrentComboState = EComboState::None;
 	CurrentComboCount = 0;
@@ -120,12 +120,14 @@ void APGLocalPlayerCharacter::Input_Move(const FInputActionValue& InputActionVal
 
 	if (0 != MovementVector.Y)
 	{
+		//const FVector FowardVector = Controller->GetControlRotation().RotateVector(FVector::ForwardVector);
 		const FVector FowardVector = MovementRotation.RotateVector(FVector::ForwardVector);
 		AddMovementInput(FowardVector, MovementVector.Y);
 	}
 
 	if (0 != MovementVector.X)
 	{
+		//const FVector RightVector = Controller->GetControlRotation().RotateVector(FVector::RightVector);
 		const FVector RightVector = MovementRotation.RotateVector(FVector::RightVector);
 		AddMovementInput(RightVector, MovementVector.X);
 	}
