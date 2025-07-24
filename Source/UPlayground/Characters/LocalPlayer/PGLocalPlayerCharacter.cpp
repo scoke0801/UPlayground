@@ -18,24 +18,32 @@ APGLocalPlayerCharacter::APGLocalPlayerCharacter()
 {
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
 
-	//bUseControllerRotationPitch = false;
-	//bUseControllerRotationYaw = false;
-	//bUseControllerRotationRoll = false;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 	CameraBoom->TargetArmLength = 400.0f;
 	CameraBoom->SocketOffset = FVector(0.f,55.f, 55.f);
-	CameraBoom->bUsePawnControlRotation = true;
-
+	CameraBoom->bUsePawnControlRotation = true;  // 컨트롤러 회전에 따라 SpringArm 회전
+	CameraBoom->bInheritPitch = true;           // 피치 회전 허용
+	CameraBoom->bInheritYaw = true;             // 요 회전 허용
+	CameraBoom->bInheritRoll = false;           // 롤 회전 비허용
+	
+	CameraBoom->bEnableCameraLag = true;
+	CameraBoom->CameraLagSpeed = 3.0f;
+	CameraBoom->bEnableCameraRotationLag = true;
+	CameraBoom->CameraRotationLagSpeed = 8.0f;
+	
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->bUsePawnControlRotation = false;
-
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	FollowCamera->bUsePawnControlRotation = false;	// 카메라 자체는 회전 안함
+	
+	GetCharacterMovement()->bOrientRotationToMovement = false;  // 수동 회전 제어
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
-	//GetCharacterMovement()->MaxWalkSpeed = 600.f;
-	//GetCharacterMovement()->BrakingDecelerationWalking = 100.f;
+	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	GetCharacterMovement()->BrakingDecelerationWalking = 100.f;
 
 	CurrentComboState = EComboState::None;
 	CurrentComboCount = 0;
@@ -116,36 +124,38 @@ void APGLocalPlayerCharacter::EndSkillWindow()
 void APGLocalPlayerCharacter::Input_Move(const FInputActionValue& InputActionValue)
 {
 	const FVector2D MovementVector = InputActionValue.Get<FVector2D>();
-	const FRotator MovementRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
-
-	if (0 != MovementVector.Y)
+    
+	if (MovementVector.SizeSquared() > 0.1f)
 	{
-		//const FVector FowardVector = Controller->GetControlRotation().RotateVector(FVector::ForwardVector);
-		const FVector FowardVector = MovementRotation.RotateVector(FVector::ForwardVector);
-		AddMovementInput(FowardVector, MovementVector.Y);
-	}
-
-	if (0 != MovementVector.X)
-	{
-		//const FVector RightVector = Controller->GetControlRotation().RotateVector(FVector::RightVector);
-		const FVector RightVector = MovementRotation.RotateVector(FVector::RightVector);
-		AddMovementInput(RightVector, MovementVector.X);
+		// 카메라(컨트롤러) 방향 기준으로 이동
+		const FRotator ControlRotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+        
+		const FVector ForwardDirection = YawRotation.RotateVector(FVector::ForwardVector);
+		const FVector RightDirection = YawRotation.RotateVector(FVector::RightVector);
+		const FVector MovementDirection = (ForwardDirection * MovementVector.Y + RightDirection * MovementVector.X).GetSafeNormal();
+        
+		AddMovementInput(MovementDirection, 1.0f);
+        
+		// 이동 방향으로 캐릭터 회전 (카메라는 독립적으로 공전)
+		const FRotator TargetRotation = MovementDirection.Rotation();
+		const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, GetWorld()->GetDeltaSeconds(), 8.0f);
+		SetActorRotation(NewRotation);
 	}
 }
 
 void APGLocalPlayerCharacter::Input_Look(const FInputActionValue& InputActionValue)
 {
-	
 	const FVector2D LookAxisVector = InputActionValue.Get<FVector2D>();
 
 	if (0.f != LookAxisVector.X)
 	{
-		AddControllerYawInput(LookAxisVector.X);
+		AddControllerYawInput(LookAxisVector.X * MouseSensitivityX);  // 좌우 회전
 	}
 
 	if (0.f != LookAxisVector.Y)
 	{
-		AddControllerPitchInput(LookAxisVector.Y);
+		AddControllerPitchInput(LookAxisVector.Y * MouseSensitivityY); // 상하 회전
 	}
 }
 

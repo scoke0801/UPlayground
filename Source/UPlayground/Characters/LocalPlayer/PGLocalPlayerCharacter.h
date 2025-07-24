@@ -28,6 +28,14 @@ class UPLAYGROUND_API APGLocalPlayerCharacter : public APGCharacterBase
 {
 	GENERATED_BODY()
 
+protected:
+	// 카메라 회전 민감도 설정
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
+	float MouseSensitivityX = 1.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
+	float MouseSensitivityY = 1.0f;
+
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Camera", meta = (AllowPrivateAccess = true))
 	USpringArmComponent* CameraBoom;
