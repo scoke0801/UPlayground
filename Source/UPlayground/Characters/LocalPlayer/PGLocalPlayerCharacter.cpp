@@ -31,10 +31,10 @@ APGLocalPlayerCharacter::APGLocalPlayerCharacter()
 	CameraBoom->bInheritYaw = true;             // 요 회전 허용
 	CameraBoom->bInheritRoll = false;           // 롤 회전 비허용
 	
-	CameraBoom->bEnableCameraLag = true;
-	CameraBoom->CameraLagSpeed = 3.0f;
-	CameraBoom->bEnableCameraRotationLag = true;
-	CameraBoom->CameraRotationLagSpeed = 8.0f;
+	//CameraBoom->bEnableCameraLag = true;
+	//CameraBoom->CameraLagSpeed = 3.0f;
+	//CameraBoom->bEnableCameraRotationLag = true;
+	//CameraBoom->CameraRotationLagSpeed = 8.0f;
 	
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);

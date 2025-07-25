@@ -8,12 +8,13 @@
 
 class UCharacterMovementComponent;
 class APGCharacterBase;
+class UInputAction;
+class UEnhancedInputComponent;
 
 UENUM(BlueprintType)
 enum class EPGLocomotionDirection : uint8
 {
-	None = 0,
-	Forward,
+	Forward = 0,
 	Back,
 	Left,
 	Right
@@ -27,21 +28,29 @@ class UPLAYGROUND_API UPGCharacterAnimInstance : public UPGBaseAnimInstance
 	GENERATED_BODY()
 	
 protected:
-	UPROPERTY()
+	UPROPERTY(Transient)
 	APGCharacterBase* OwningCharacter;
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	UCharacterMovementComponent* OwningMovementComponent;
 
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
-	float CurrentVelocity;
+	UPROPERTY(Transient)
+	UEnhancedInputComponent* OwningEIC;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimData")
+	UInputAction* MoveInputAction;
+
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
-	bool bHasAcceleration;
+	FVector Velocity;
 	
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
 	bool bHasVelocity;
 
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
+	FVector Acceleration;
+	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
+	bool bHasAcceleration;
 	
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
 	FVector CurrentWorldLocation;
@@ -58,17 +67,17 @@ protected:
 	float DisplacementSpeed;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData|Pose Wrapping")
-	EPGLocomotionDirection PoseWrappingEnum = EPGLocomotionDirection::None;
+	EPGLocomotionDirection PoseWrappingEnum = EPGLocomotionDirection::Forward;
 	
 public:
 	virtual void NativeInitializeAnimation() override;
-
+	virtual void NativeBeginPlay() override;
+	
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 
 private:
 	void UpdateHasVelocity();
 	void UpdateHasAcceleration();
-	void UpdateLocomotionAngle();
 	void UpdateLocomotionDirection();
 	void UpdateDisplacementSpeed(float DeltaSeconds);
 };
