@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class PGAbilitySystem : ModuleRules
+public class PGUI : ModuleRules
 {
-	public PGAbilitySystem(ReadOnlyTargetRules Target) : base(Target)
+	public PGUI(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         
@@ -21,7 +21,5 @@ public class PGAbilitySystem : ModuleRules
 				"GameplayTags"
 			}
 		);
-		
-		PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities" });
 	}
 }
