@@ -86,6 +86,8 @@ void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Look);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Attack,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Attack);
+	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Jump,
+		ETriggerEvent::Triggered, this, &ThisClass::Input_Jump);
 }
 
 void APGCharacterPlayer::StartSkillWindow()
@@ -125,7 +127,7 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 {
 	const FVector2D MovementVector = InputActionValue.Get<FVector2D>();
     
-	if (MovementVector.SizeSquared() > 0.1f)
+	if (MovementVector.SizeSquared() > 0.1f && false == bIsJump)
 	{
 		// 카메라(컨트롤러) 방향 기준으로 이동
 		const FRotator ControlRotation = Controller->GetControlRotation();
@@ -186,6 +188,18 @@ void APGCharacterPlayer::Input_Attack(const FInputActionValue& InputActionValue)
 				UE_LOG(LogTemp, Log, TEXT("Attack input queued during combo window"));
 			}
 			break;
+		}
+	}
+}
+
+void APGCharacterPlayer::Input_Jump(const FInputActionValue& InputActionValue)
+{
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		if (false == MovementComponent->IsFalling() && false == bIsJump)
+		{
+			Jump();
+			bIsJump = true;
 		}
 	}
 }

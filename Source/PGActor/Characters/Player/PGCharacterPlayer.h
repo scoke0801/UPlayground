@@ -60,6 +60,10 @@ private:
 	bool bHasQueuedInput;
 
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat")
+	bool bIsJump = false;
+	
+public:
 	APGCharacterPlayer();
 	
 protected:
@@ -81,11 +85,14 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	UPGPlayerCombatComponent* GetPlayerCombatComponent() const {return nullptr;}
-
+	UFUNCTION(BlueprintPure, Category = "PG|Combat")
+	bool GetIsJumping() const {return bIsJump;}
 private:
 	void Input_Move(const FInputActionValue& InputActionValue);
 	void Input_Look(const FInputActionValue& InputActionValue);
 	void Input_Attack(const FInputActionValue& InputActionValue);
+	void Input_Jump(const FInputActionValue& InputActionValue);
+	
 	void ExecuteAttack(int32 ComboIndex);
 	void SetComboState(EComboState NewState);
 	void ResetCombo();
