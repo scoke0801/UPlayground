@@ -5,6 +5,7 @@
 
 #include "GameplayAbilitySpec.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGAbilitySystem/Abilities/PGPlayerGameplayAbility.h"
 
 void UPGDataAsset_PlayerStartUpData::GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive,
 	int32 ApplyLevel)

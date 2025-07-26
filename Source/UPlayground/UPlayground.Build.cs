@@ -28,13 +28,18 @@ public class UPlayground : ModuleRules
 			"UMG",
 			"Niagara",
 			"CommonUI",
-			"PGData"
+			"PGData",
+			"PGAbilitySystem",
+			"PGActor"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 
             "GameplayTasks", 
             "GameFeatures",
-            "ModularGameplay", "AnimGraphRuntime", "AIModule", "AnimGraphRuntime", "PGActor"
+            "GameplayAbilities",
+            "ModularGameplay", 
+            "AnimGraphRuntime", 
+            "AIModule"
 		});
 
 		// UI 시스템을 위한 Slate 및 SlateCore 의존성 추가

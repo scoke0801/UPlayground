@@ -19,9 +19,10 @@ public class PGData : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"GameplayTags",
-				"PGAbilitySystem",
 				"GameplayAbilities",
-				"GameplayTasks"
+				"GameplayTasks",
+				"EnhancedInput",
+				"PGAbilitySystem"
 			}
 		);
 		

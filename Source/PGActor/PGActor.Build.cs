@@ -19,7 +19,8 @@ public class PGActor : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"GameplayTags",
-				"EnhancedInput"
+				"EnhancedInput",
+				"PGData"
 			}
 		);
 		

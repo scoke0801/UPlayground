@@ -79,7 +79,7 @@ void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	Subsystem->AddMappingContext(InputConfigDataAsset->DefaultMappingContext, 0);
 	UPGInputComponent* PgInputComponent = CastChecked<UPGInputComponent>(PlayerInputComponent);
-
+	
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Move,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Move);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Look,

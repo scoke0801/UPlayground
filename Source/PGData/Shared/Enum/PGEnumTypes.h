@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "PGEnumTypes.generated.h"
 
 UENUM(BlueprintType)
 enum class EPGConfirmType : uint8

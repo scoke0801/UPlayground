@@ -13,7 +13,7 @@
  * 게임플레이 태그 기반의 입력 바인딩과 어빌리티 입력 처리를 제공
  */
 UCLASS()
-class UPLAYGROUND_API UPGInputComponent : public UEnhancedInputComponent
+class PGACTOR_API UPGInputComponent : public UEnhancedInputComponent
 {
 	GENERATED_BODY()
 

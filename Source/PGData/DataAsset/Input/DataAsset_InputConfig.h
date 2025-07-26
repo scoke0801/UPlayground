@@ -5,11 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
+#include "EnhancedInput/Public/InputAction.h"
+#include "EnhancedInput/Public/InputMappingContext.h"
 #include "DataAsset_InputConfig.generated.h"
-
-
-class UInputAction;
-class UInputMappingContext;
 
 USTRUCT(BlueprintType)
 struct FPGInputActionConfig

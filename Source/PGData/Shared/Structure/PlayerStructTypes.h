@@ -3,9 +3,11 @@
 #pragma once
 #include "GameplayTagContainer.h"
 #include "ScalableFloat.h"
+#include "InputMappingContext.h"
+#include "GameplayTagContainer.h"
+#include "Engine/Texture2D.h"
 #include "PlayerStructTypes.generated.h"
 
-class UInputMappingContext;
 class UPGPlayerAnimLayer;
 class UPGPlayerGameplayAbility;
 
@@ -31,8 +33,8 @@ struct PGDATA_API FPGPlayerWeaponData
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly )
-	TSubclassOf<UPGPlayerAnimLayer> WeaponAnimLayerToLink;
+	// UPROPERTY(EditDefaultsOnly, BlueprintReadOnly )
+	// TSubclassOf<UPGPlayerAnimLayer> WeaponAnimLayerToLink;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly )
 	UInputMappingContext* WeaponInputMappingContext;
