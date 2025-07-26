@@ -20,7 +20,7 @@ class IPGPawnUIInterface;
  * 캐릭터의 체력, 분노, 공격력, 방어력 등의 속성을 관리
  */
 UCLASS()
-class UPLAYGROUND_API UPGAtrributeSet : public UAttributeSet
+class PGABILITYSYSTEM_API UPGAtrributeSet : public UAttributeSet
 {
 	GENERATED_BODY()
 

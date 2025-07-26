@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class UPLAYGROUND_API APGPlayerController : public APlayerController
+class PGACTOR_API APGPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	

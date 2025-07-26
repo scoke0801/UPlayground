@@ -1,9 +1,9 @@
 
 
 
-#include "Types/PlayerStructTypes.h"
+#include "PlayerStructTypes.h"
 
-#include "AbilitySystem/Abilities/PGGameplayAbility.h"
+#include "PGAbilitySystem/Abilities/PGPlayerGameplayAbility.h"
 
 bool FPGPlayerAbilitySet::IsValid() const
 {

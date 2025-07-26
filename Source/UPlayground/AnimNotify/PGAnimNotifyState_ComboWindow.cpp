@@ -3,14 +3,14 @@
 
 #include "AnimNotify/PGAnimNotifyState_ComboWindow.h"
 
-#include "Characters/LocalPlayer/PGLocalPlayerCharacter.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
 
 void UPGAnimNotifyState_ComboWindow::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                                                  float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
-	if (APGLocalPlayerCharacter* localPlayer = Cast<APGLocalPlayerCharacter>(MeshComp->GetOwner()))
+	if (APGCharacterPlayer* localPlayer = Cast<APGCharacterPlayer>(MeshComp->GetOwner()))
 	{
 		localPlayer->StartSkillWindow();
 	}
@@ -21,7 +21,7 @@ void UPGAnimNotifyState_ComboWindow::NotifyEnd(USkeletalMeshComponent* MeshComp,
 {
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 
-	if (APGLocalPlayerCharacter* localPlayer = Cast<APGLocalPlayerCharacter>(MeshComp->GetOwner()))
+	if (APGCharacterPlayer* localPlayer = Cast<APGCharacterPlayer>(MeshComp->GetOwner()))
 	{
 		localPlayer->EndSkillWindow();
 	}

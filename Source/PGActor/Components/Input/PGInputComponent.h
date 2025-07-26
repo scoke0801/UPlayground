@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "EnhancedInputComponent.h"
 #include "GameplayTagContainer.h"
-#include "DataAssets/Input/DataAsset_InputConfig.h"
+#include "PGData/DataAsset/Input/DataAsset_InputConfig.h"
 #include "PGInputComponent.generated.h"
 
 /**

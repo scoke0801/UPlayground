@@ -2,15 +2,15 @@
 
 #pragma once
 #include "GameplayTagContainer.h"
-#include "AbilitySystem/Abilities/PGPlayerGameplayAbility.h"
-
+#include "ScalableFloat.h"
 #include "PlayerStructTypes.generated.h"
 
 class UInputMappingContext;
 class UPGPlayerAnimLayer;
+class UPGPlayerGameplayAbility;
 
 USTRUCT(BlueprintType)
-struct FPGPlayerAbilitySet
+struct PGDATA_API FPGPlayerAbilitySet
 {
 	GENERATED_BODY()
 
@@ -26,7 +26,7 @@ public:
 
 
 USTRUCT(BlueprintType)
-struct FPGPlayerWeaponData
+struct PGDATA_API FPGPlayerWeaponData
 {
 	GENERATED_BODY()
 

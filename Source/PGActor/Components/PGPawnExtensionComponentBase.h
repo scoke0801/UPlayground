@@ -12,7 +12,7 @@
  * 폰과 관련된 공통 기능을 제공하는 액터 컴포넌트의 기본 클래스
  */
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UPLAYGROUND_API UPGPawnExtensionComponentBase : public UActorComponent
+class PGACTOR_API UPGPawnExtensionComponentBase : public UActorComponent
 {
 	GENERATED_BODY()
 

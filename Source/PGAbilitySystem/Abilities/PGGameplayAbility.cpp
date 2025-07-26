@@ -1,11 +1,12 @@
 
 
 
-#include "AbilitySystem//Abilities/PGGameplayAbility.h"
+#include "PGGameplayAbility.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystem/PGAbilitySystemComponent.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGData/Shared/Enum/PGEnumTypes.h"
 
 void UPGGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
 {
@@ -32,11 +33,6 @@ void UPGGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 			ActorInfo->AbilitySystemComponent->ClearAbility(Handle);
 		}
 	}
-}
-
-UPGPawnCombatComponent* UPGGameplayAbility::GetPawnCombatComponentFromActorInfo() const
-{
-	return GetAvatarActorFromActorInfo()->FindComponentByClass<UPGPawnCombatComponent>();
 }
 
 UPGAbilitySystemComponent* UPGGameplayAbility::GetPGAbilitySystemComponentFromActorInfo() const

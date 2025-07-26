@@ -1,20 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Characters/LocalPlayer/PGLocalPlayerCharacter.h"
+#include "PGCharacterPlayer.h"
 
 #include "EnhancedInputSubsystems.h"
 #include "Animation/AnimMontage.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/Input/PGInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Managers/PGDataTableManager.h"
-#include "Skill/PGSkillDataRow.h"
-#include "Tag/PGGamePlayTags.h"
+//#include "Managers/PGDataTableManager.h"
+//#include "Skill/PGSkillDataRow.h"
+#include "PGActor/Components/Input/PGInputComponent.h"
+#include "PGData/Shared/Tag/PGGamePlayTags.h"
 
-APGLocalPlayerCharacter::APGLocalPlayerCharacter()
+APGCharacterPlayer::APGCharacterPlayer()
 {
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
 
@@ -51,22 +51,22 @@ APGLocalPlayerCharacter::APGLocalPlayerCharacter()
 	bHasQueuedInput = false;
 }
 
-void APGLocalPlayerCharacter::BeginPlay()
+void APGCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
-	{
-		FPGSkillDataRow* skillData = dataTableManager->GetRowData<FPGSkillDataRow>(1);
-
-		if (skillData)
-		{
-			UE_LOG(LogTemp, Log, TEXT("%d"), skillData->SkillID);
-		}
-	}
+	// if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
+	// {
+	// 	FPGSkillDataRow* skillData = dataTableManager->GetRowData<FPGSkillDataRow>(1);
+	//
+	// 	if (skillData)
+	// 	{
+	// 		UE_LOG(LogTemp, Log, TEXT("%d"), skillData->SkillID);
+	// 	}
+	// }
 }
 
-void APGLocalPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
@@ -88,7 +88,7 @@ void APGLocalPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Attack);
 }
 
-void APGLocalPlayerCharacter::StartSkillWindow()
+void APGCharacterPlayer::StartSkillWindow()
 {
 	UE_LOG(LogTemp, Log, TEXT("Combo Window Started - Current State: %d, Count: %d"), 
 		(int32)CurrentComboState, CurrentComboCount);
@@ -96,7 +96,7 @@ void APGLocalPlayerCharacter::StartSkillWindow()
 	SetComboState(EComboState::ComboWindow);
 }
 
-void APGLocalPlayerCharacter::EndSkillWindow()
+void APGCharacterPlayer::EndSkillWindow()
 {
 	UE_LOG(LogTemp, Log, TEXT("Combo Window Ended - Current State: %d, Count: %d, HasQueuedInput: %s"), 
 		(int32)CurrentComboState, CurrentComboCount, bHasQueuedInput ? TEXT("True") : TEXT("False"));
@@ -121,7 +121,7 @@ void APGLocalPlayerCharacter::EndSkillWindow()
 	}
 }
 
-void APGLocalPlayerCharacter::Input_Move(const FInputActionValue& InputActionValue)
+void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 {
 	const FVector2D MovementVector = InputActionValue.Get<FVector2D>();
     
@@ -144,7 +144,7 @@ void APGLocalPlayerCharacter::Input_Move(const FInputActionValue& InputActionVal
 	}
 }
 
-void APGLocalPlayerCharacter::Input_Look(const FInputActionValue& InputActionValue)
+void APGCharacterPlayer::Input_Look(const FInputActionValue& InputActionValue)
 {
 	const FVector2D LookAxisVector = InputActionValue.Get<FVector2D>();
 
@@ -159,7 +159,7 @@ void APGLocalPlayerCharacter::Input_Look(const FInputActionValue& InputActionVal
 	}
 }
 
-void APGLocalPlayerCharacter::Input_Attack(const FInputActionValue& InputActionValue)
+void APGCharacterPlayer::Input_Attack(const FInputActionValue& InputActionValue)
 {
 	switch (CurrentComboState)
 	{
@@ -190,35 +190,35 @@ void APGLocalPlayerCharacter::Input_Attack(const FInputActionValue& InputActionV
 	}
 }
 
-void APGLocalPlayerCharacter::ExecuteAttack(int32 ComboIndex)
+void APGCharacterPlayer::ExecuteAttack(int32 ComboIndex)
 {
-	if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
-	{
-		int32 SkillID = ComboIndex;
-		FPGSkillDataRow* skillData = dataTableManager->GetRowData<FPGSkillDataRow>(SkillID);
-
-		if (skillData && !skillData->MontagePath.IsNull())
-		{
-			UAnimMontage* AttackMontage = Cast<UAnimMontage>(skillData->MontagePath.TryLoad());
-			
-			if (AttackMontage && GetMesh() && GetMesh()->GetAnimInstance())
-			{
-				if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
-				{
-					GetMesh()->GetAnimInstance()->StopAllMontages(0.1f);
-				}
-				
-				GetMesh()->GetAnimInstance()->Montage_Play(AttackMontage);
-				
-				CurrentComboCount = ComboIndex;
-				SetComboState(EComboState::Attacking);
-				bHasQueuedInput = false;
-			}
-		}
-	}
+	// if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
+	// {
+	// 	int32 SkillID = ComboIndex;
+	// 	FPGSkillDataRow* skillData = dataTableManager->GetRowData<FPGSkillDataRow>(SkillID);
+	//
+	// 	if (skillData && !skillData->MontagePath.IsNull())
+	// 	{
+	// 		UAnimMontage* AttackMontage = Cast<UAnimMontage>(skillData->MontagePath.TryLoad());
+	// 		
+	// 		if (AttackMontage && GetMesh() && GetMesh()->GetAnimInstance())
+	// 		{
+	// 			if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
+	// 			{
+	// 				GetMesh()->GetAnimInstance()->StopAllMontages(0.1f);
+	// 			}
+	// 			
+	// 			GetMesh()->GetAnimInstance()->Montage_Play(AttackMontage);
+	// 			
+	// 			CurrentComboCount = ComboIndex;
+	// 			SetComboState(EComboState::Attacking);
+	// 			bHasQueuedInput = false;
+	// 		}
+	// 	}
+	// }
 }
 
-void APGLocalPlayerCharacter::SetComboState(EComboState NewState)
+void APGCharacterPlayer::SetComboState(EComboState NewState)
 {
 	if (CurrentComboState != NewState)
 	{
@@ -230,7 +230,7 @@ void APGLocalPlayerCharacter::SetComboState(EComboState NewState)
 	}
 }
 
-void APGLocalPlayerCharacter::ResetCombo()
+void APGCharacterPlayer::ResetCombo()
 {
 	UE_LOG(LogTemp, Log, TEXT("Combo Reset"));
 	
@@ -239,7 +239,7 @@ void APGLocalPlayerCharacter::ResetCombo()
 	bHasQueuedInput = false;
 }
 
-bool APGLocalPlayerCharacter::CanCombo() const
+bool APGCharacterPlayer::CanCombo() const
 {
 	return CurrentComboCount < MaxComboCount;
 }

@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Characters/PGCharacterBase.h"
-#include "PGEnemyCharacter.generated.h"
+#include "PGActor/Characters/PGCharacterBase.h"
+#include "PGCharacterEnemy.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class UPLAYGROUND_API APGEnemyCharacter : public APGCharacterBase
+class PGACTOR_API APGCharacterEnemy : public APGCharacterBase
 {
 	GENERATED_BODY()
 	

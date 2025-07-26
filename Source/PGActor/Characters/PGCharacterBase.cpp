@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Characters/PGCharacterBase.h"
+#include "PGCharacterBase.h"
 
 // Sets default values
 APGCharacterBase::APGCharacterBase()

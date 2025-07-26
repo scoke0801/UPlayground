@@ -22,6 +22,6 @@ public class PGAbilitySystem : ModuleRules
 			}
 		);
 		
-		PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities", "PGData", "PGActor" });
 	}
 }

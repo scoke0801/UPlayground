@@ -12,7 +12,7 @@
  * 플레이어의 입력 처리와 무기 어빌리티 관리를 담당
  */
 UCLASS()
-class UPLAYGROUND_API UPGAbilitySystemComponent : public UAbilitySystemComponent
+class PGABILITYSYSTEM_API UPGAbilitySystemComponent : public UAbilitySystemComponent
 {
 	GENERATED_BODY()
 

@@ -13,7 +13,7 @@ class UPGGameplayAbility;
  * 
  */
 UCLASS()
-class UPLAYGROUND_API UPGDataAsset_StartUpDataBase : public UDataAsset
+class PGDATA_API UPGDataAsset_StartUpDataBase : public UDataAsset
 {
 	GENERATED_BODY()
 

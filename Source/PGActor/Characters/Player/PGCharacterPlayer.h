@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
-#include "Characters/PGCharacterBase.h"
-#include "PGLocalPlayerCharacter.generated.h"
+#include "PGActor/Characters/PGCharacterBase.h"
+#include "PGCharacterPlayer.generated.h"
 
 class UDataAsset_InputConfig;
 class USpringArmComponent;
@@ -24,7 +24,7 @@ enum class EComboState : uint8
  * 
  */
 UCLASS()
-class UPLAYGROUND_API APGLocalPlayerCharacter : public APGCharacterBase
+class PGACTOR_API APGCharacterPlayer : public APGCharacterBase
 {
 	GENERATED_BODY()
 
@@ -59,7 +59,7 @@ private:
 	bool bHasQueuedInput;
 
 public:
-	APGLocalPlayerCharacter();
+	APGCharacterPlayer();
 	
 protected:
 	virtual void BeginPlay() override;

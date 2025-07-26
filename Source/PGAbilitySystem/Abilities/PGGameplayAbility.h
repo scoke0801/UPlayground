@@ -4,8 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "Components/Combat/PGPawnCombatComponent.h"
-#include "Types/PGEnumTypes.h"
 #include "PGGameplayAbility.generated.h"
 
 class UPGAbilitySystemComponent;
@@ -24,7 +22,7 @@ enum class EPGAbilityActivationPolicy : uint8
  * 모든 커스텀 어빌리티의 베이스 클래스로 사용
  */
 UCLASS()
-class UPLAYGROUND_API UPGGameplayAbility : public UGameplayAbility
+class PGABILITYSYSTEM_API UPGGameplayAbility : public UGameplayAbility
 { 
 	GENERATED_BODY()
 
@@ -34,7 +32,6 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Ability")
 	EPGAbilityActivationPolicy AbilityActivationPolicy = EPGAbilityActivationPolicy::OnTriggerd;
-
 
 public:
 	/**
@@ -48,12 +45,6 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	/**
-	 * 액터 정보로부터 폰 컴뱃 컴포넌트를 가져오는 함수
-	 */
-	UFUNCTION(BlueprintPure, Category= "Ability")
-	UPGPawnCombatComponent* GetPawnCombatComponentFromActorInfo() const;
-
 	/**
 	 * 액터 정보로부터 PG 어빌리티 시스템 컴포넌트를 가져오는 함수
 	 */

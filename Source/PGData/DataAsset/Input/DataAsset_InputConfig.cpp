@@ -1,7 +1,7 @@
 
 
 
-#include "DataAssets/Input/DataAsset_InputConfig.h"
+#include "DataAsset_InputConfig.h"
 
 UInputAction* UDataAsset_InputConfig::FindNativeInputActionsByTag(const FGameplayTag& InInputTag) const
 {

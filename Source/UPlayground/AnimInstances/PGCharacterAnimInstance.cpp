@@ -2,14 +2,11 @@
 
 
 #include "PGCharacterAnimInstance.h"
-#include "AnimInstances/PGCharacterAnimInstance.h"
 
 #include "EnhancedInputComponent.h"
-#include "KismetAnimationLibrary.h"
-#include "Characters/LocalPlayer/PGLocalPlayerCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Helper/Debug/PGDebugHelper.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "PGActor/Characters/PGCharacterBase.h"
 
 void UPGCharacterAnimInstance::NativeInitializeAnimation()
 {

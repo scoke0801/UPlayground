@@ -32,7 +32,7 @@ public:
  * 
  */
 UCLASS()
-class UPLAYGROUND_API UDataAsset_InputConfig : public UDataAsset
+class PGDATA_API UDataAsset_InputConfig : public UDataAsset
 {
 	GENERATED_BODY()
 

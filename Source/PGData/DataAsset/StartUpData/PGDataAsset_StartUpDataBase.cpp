@@ -1,10 +1,10 @@
 
 
 
-#include "DataAssets/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGDataAsset_StartUpDataBase.h"
 
-#include "AbilitySystem/PGAbilitySystemComponent.h"
-#include "AbilitySystem/Abilities/PGGameplayAbility.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGAbilitySystem/Abilities/PGGameplayAbility.h"
 
 void UPGDataAsset_StartUpDataBase::GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive, int32 ApplyLevel)
 {

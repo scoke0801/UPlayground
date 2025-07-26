@@ -21,5 +21,8 @@ public class PGActor : ModuleRules
 				"GameplayTags"
 			}
 		);
+		
+		PrivateDependencyModuleNames.AddRange(new string[] { "EnhancedInput" });
+
 	}
 }

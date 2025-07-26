@@ -7,7 +7,7 @@
 #include "PGCharacterBase.generated.h"
 
 UCLASS()
-class UPLAYGROUND_API APGCharacterBase : public ACharacter
+class PGACTOR_API APGCharacterBase : public ACharacter
 {
 	GENERATED_BODY()
 	

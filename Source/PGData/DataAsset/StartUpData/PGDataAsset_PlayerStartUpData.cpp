@@ -1,11 +1,10 @@
 
 
 
-#include "DataAssets/StartUpData/PGDataAsset_PlayerStartUpData.h"
+#include "PGDataAsset_PlayerStartUpData.h"
 
-#include "AbilitySystem/PGAbilitySystemComponent.h"
-#include "AbilitySystem/Abilities/PGGameplayAbility.h"
-#include "Types/PlayerStructTypes.h"
+#include "GameplayAbilitySpec.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 
 void UPGDataAsset_PlayerStartUpData::GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive,
 	int32 ApplyLevel)
@@ -18,7 +17,6 @@ void UPGDataAsset_PlayerStartUpData::GiveToAbilitySystemComponent(UPGAbilitySyst
 		{
 			continue;
 		}
-
 		FGameplayAbilitySpec AbilitySpec(AbilitySet.AbilityToGrant);
 		AbilitySpec.SourceObject = InASCToGive->GetAvatarActor();
 		AbilitySpec.Level = ApplyLevel;

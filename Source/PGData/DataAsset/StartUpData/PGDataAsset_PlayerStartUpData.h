@@ -3,15 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DataAssets/StartUpData/PGDataAsset_StartUpDataBase.h"
-#include "Types/PlayerStructTypes.h"
+#include "PGDataAsset_StartUpDataBase.h"
+#include "PGData/Shared/Structure/PlayerStructTypes.h"
 #include "PGDataAsset_PlayerStartUpData.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class UPLAYGROUND_API UPGDataAsset_PlayerStartUpData : public UPGDataAsset_StartUpDataBase
+class PGDATA_API UPGDataAsset_PlayerStartUpData : public UPGDataAsset_StartUpDataBase
 {
 	GENERATED_BODY()
 

@@ -3,15 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AbilitySystem/Abilities/PGEnemyGameplayAbility.h"
-#include "DataAssets/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGAbilitySystem/Abilities/PGEnemyGameplayAbility.h"
+#include "PGDataAsset_StartUpDataBase.h"
 #include "PGDataAsset_EnemyStartUpData.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class UPLAYGROUND_API UPGDataAsset_EnemyStartUpData : public UPGDataAsset_StartUpDataBase
+class PGDATA_API UPGDataAsset_EnemyStartUpData : public UPGDataAsset_StartUpDataBase
 {
 	GENERATED_BODY()
 

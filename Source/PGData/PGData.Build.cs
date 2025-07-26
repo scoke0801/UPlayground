@@ -18,8 +18,12 @@ public class PGData : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
-				"GameplayTags"
+				"GameplayTags",
+				"PGAbilitySystem"
 			}
 		);
+		
+		PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities" });
+
 	}
 }

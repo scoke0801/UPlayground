@@ -1,9 +1,9 @@
 
 
 
-#include "DataAssets/StartUpData/PGDataAsset_EnemyStartUpData.h"
+#include "PGDataAsset_EnemyStartUpData.h"
 
-#include "AbilitySystem/PGAbilitySystemComponent.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 
 void UPGDataAsset_EnemyStartUpData::GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive,
                                                                  int32 ApplyLevel)
