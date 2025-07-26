@@ -1,15 +1,9 @@
 
 
 
-#include "AbilitySystem/PGAtrributeSet.h"
+#include "PGAtrributeSet.h"
 
 #include "GameplayEffectExtension.h"
-#include "PGGamePlayTags.h"
-#include "Components/UI/PGPawnUIComponent.h"
-#include "Components/UI/PGPlayerUIComponent.h"
-#include "Helper/Debug/PGDebugHelper.h"
-#include "Interfaces/PGPawnUIInterface.h"
-#include "Utils/PGFunctionLibrary.h"
 
 /**
  * 기본 생성자
@@ -31,54 +25,5 @@ UPGAtrributeSet::UPGAtrributeSet()
  */
 void UPGAtrributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
 {
-	if (false == CachedPawnUIInterface.IsValid())
-	{
-		CachedPawnUIInterface = TWeakInterfacePtr<IPGPawnUIInterface>(Data.Target.GetAvatarActor());
-	}
-	check(CachedPawnUIInterface.IsValid());
 
-	UPGPawnUIComponent* PawnUIComponent = CachedPawnUIInterface->GetUIComponent();
-	check(PawnUIComponent);
-	
-	// 현재 체력 어트리뷰트가 변경된 경우, 0과 최대 체력 사이로 클램핑
-	if ( Data.EvaluatedData.Attribute == GetCurrentHealthAttribute())
-	{
-		const float NewCurrentHealth = FMath::Clamp(GetCurrentHealth(), 0.f, GetMaxHealth());
-
-		SetCurrentHealth(NewCurrentHealth);
-
-		PawnUIComponent->OnPercentChanged.Broadcast(GetCurrentHealth() / GetMaxHealth());
-	}
-
-	// 현재 분노 어트리뷰트가 변경된 경우, 0과 최대 분노 사이로 클램핑
-	if (Data.EvaluatedData.Attribute == GetCurrentRageAttribute())
-	{
-		const float NewCurrentRage = FMath::Clamp(GetCurrentRage(), 0.f, GetMaxRage());
-
-		SetCurrentRage(NewCurrentRage);
-
-		if (UPGPlayerUIComponent* PlayerUIComponent = CachedPawnUIInterface->GetPlayerUIComponent())
-		{
-			PlayerUIComponent->OnCurrentRageChanged.Broadcast(GetCurrentRage() / GetMaxRage());
-		}
-	}
-
-	// 데미지를 받은 경우, 현재 체력에서 데미지만큼 차감
-	if (Data.EvaluatedData.Attribute == GetDamageTakenAttribute())
-	{
-		const float OldHealth = GetCurrentHealth();
-		const float DamageDone = GetDamageTaken();
-
-		const float NewCurrentHealth = FMath::Clamp(OldHealth - DamageDone, 0.f, GetMaxHealth());
-
-		SetCurrentHealth(NewCurrentHealth);
-
-		PawnUIComponent->OnPercentChanged.Broadcast(GetCurrentHealth() / GetMaxHealth());
-		
-		if (GetCurrentHealth() == 0.f)
-		{
-			UPGFunctionLibrary::AddGameplayTagToActorIfNone(Data.Target.GetAvatarActor(),
-				PGGamePlayTags::Shared_Status_Dead);
-		}
-	}
 }

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGCharacterPlayer.generated.h"
 
 class UDataAsset_InputConfig;
@@ -77,6 +78,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	bool CanCombo() const;
+
+	UFUNCTION(BlueprintPure, Category = "PG|Combat")
+	UPGPlayerCombatComponent* GetPlayerCombatComponent() const {return nullptr;}
 
 private:
 	void Input_Move(const FInputActionValue& InputActionValue);

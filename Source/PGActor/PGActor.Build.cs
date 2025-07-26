@@ -18,11 +18,11 @@ public class PGActor : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
-				"GameplayTags"
+				"GameplayTags",
+				"EnhancedInput"
 			}
 		);
 		
-		PrivateDependencyModuleNames.AddRange(new string[] { "EnhancedInput" });
 
 	}
 }

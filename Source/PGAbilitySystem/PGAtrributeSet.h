@@ -89,5 +89,5 @@ public:
 	ATTRIBUTE_ACCESSORS(UPGAtrributeSet, DamageTaken)
 
 private:
-	TWeakInterfacePtr<IPGPawnUIInterface> CachedPawnUIInterface;
+	//TWeakInterfacePtr<IPGPawnUIInterface> CachedPawnUIInterface;
 };
