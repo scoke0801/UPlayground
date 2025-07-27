@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "PGData/Shared/Enum/PGEnumTypes.h"
 #include "PGFunctionLibrary.generated.h"
 
 struct FGameplayTag;

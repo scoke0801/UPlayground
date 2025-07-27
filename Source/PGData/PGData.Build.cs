@@ -22,9 +22,25 @@ public class PGData : ModuleRules
 				"GameplayAbilities",
 				"GameplayTasks",
 				"EnhancedInput",
-				"PGAbilitySystem"
 			}
 		);
+		CircularlyReferencedDependentModules.AddRange(
+			new string[]
+			{
+				"PGAbilitySystem",
+			});
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"PGShared",
+				"PGAbilitySystem",
+			});
+		
+		PrivateIncludePathModuleNames.AddRange(
+			new string[]
+			{
+				
+			});
 		
 
 	}

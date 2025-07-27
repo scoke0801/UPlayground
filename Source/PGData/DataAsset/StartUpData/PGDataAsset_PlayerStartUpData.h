@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PGDataAsset_StartUpDataBase.h"
-#include "PGData/Shared/Structure/PlayerStructTypes.h"
+#include "PGShared/Shared/Structure/PlayerStructTypes.h"
 #include "PGDataAsset_PlayerStartUpData.generated.h"
 
 /**

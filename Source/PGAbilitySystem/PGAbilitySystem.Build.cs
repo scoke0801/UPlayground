@@ -21,14 +21,14 @@ public class PGAbilitySystem : ModuleRules
 				"GameplayTags",
 				"GameplayAbilities",
 				"GameplayTasks",
-				"PGData"
 			}
 		);
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"PGActor"
+				"PGActor",
+				"PGShared"
 			}
 		);
 	}

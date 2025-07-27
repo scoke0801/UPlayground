@@ -7,7 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
-#include "PGData/Shared/Enum/PGEnumTypes.h"
+#include "PGShared/Shared/Enum/PGEnumTypes.h"
 
 void UPGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,

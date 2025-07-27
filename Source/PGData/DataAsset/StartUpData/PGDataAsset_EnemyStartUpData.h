@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PGAbilitySystem/Abilities/PGEnemyGameplayAbility.h"
 #include "PGDataAsset_StartUpDataBase.h"
 #include "PGDataAsset_EnemyStartUpData.generated.h"
 
+class UPGEnemyGameplayAbility;
 /**
  * 
  */

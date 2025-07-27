@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
-#include "PGData/Shared/Structure/PlayerStructTypes.h"
+#include "PGShared/Shared/Structure/PlayerStructTypes.h"
 #include "PGAbilitySystemComponent.generated.h"
 
 /**

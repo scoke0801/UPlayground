@@ -15,7 +15,7 @@
 #include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGActor/Components/Input/PGInputComponent.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
-#include "PGData/Shared/Tag/PGGamePlayTags.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 APGCharacterPlayer::APGCharacterPlayer()
 {

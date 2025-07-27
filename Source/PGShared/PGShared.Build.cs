@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class PGActor : ModuleRules
+public class PGShared : ModuleRules
 {
-	public PGActor(ReadOnlyTargetRules Target) : base(Target)
+	public PGShared(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         
@@ -20,16 +20,14 @@ public class PGActor : ModuleRules
 				"Engine",
 				"GameplayTags",
 				"GameplayAbilities",
+				"GameplayTasks",
 				"EnhancedInput",
 			}
 		);
 		
-		PrivateDependencyModuleNames.AddRange(
+		PublicIncludePathModuleNames.AddRange(
 			new string[]
 			{
-				"PGShared",
-				
-				"PGData",
 				"PGAbilitySystem"
 			});
 	}

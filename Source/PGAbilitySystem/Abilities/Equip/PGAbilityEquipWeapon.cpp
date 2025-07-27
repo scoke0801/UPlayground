@@ -8,7 +8,7 @@
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
-#include "PGData/Shared/Tag/PGGamePlayTags.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void UPGAbilityEquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                             const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,

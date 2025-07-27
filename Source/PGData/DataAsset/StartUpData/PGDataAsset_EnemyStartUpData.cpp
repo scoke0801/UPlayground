@@ -4,6 +4,7 @@
 #include "PGDataAsset_EnemyStartUpData.h"
 
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGAbilitySystem/Abilities/PGEnemyGameplayAbility.h"
 
 void UPGDataAsset_EnemyStartUpData::GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive,
                                                                  int32 ApplyLevel)

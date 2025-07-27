@@ -7,12 +7,11 @@
 #include "Engine/Texture2D.h"
 #include "PlayerStructTypes.generated.h"
 
-class UPGGameplayAbility;
-class UPGPlayerAnimLayer;
-class UPGPlayerGameplayAbility;
+
+class UGameplayAbility;
 
 USTRUCT(BlueprintType)
-struct PGDATA_API FPGPlayerAbilitySet
+struct PGSHARED_API FPGPlayerAbilitySet
 {
 	GENERATED_BODY()
 
@@ -21,14 +20,14 @@ public:
 	FGameplayTag InputTag;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UPGGameplayAbility> AbilityToGrant;
+	TSubclassOf<UGameplayAbility> AbilityToGrant;
 
 	bool IsValid() const;
 };
 
 
 USTRUCT(BlueprintType)
-struct PGDATA_API FPGPlayerWeaponData
+struct PGSHARED_API FPGPlayerWeaponData
 {
 	GENERATED_BODY()
 
