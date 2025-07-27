@@ -48,6 +48,8 @@ APGCharacterPlayer::APGCharacterPlayer()
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 100.f;
 
+	CombatComponent = CreateDefaultSubobject<UPGPlayerCombatComponent>(TEXT("PlayerCombatComponent"));
+
 	CurrentComboState = EComboState::None;
 	CurrentComboCount = 0;
 	MaxComboCount = 4;
