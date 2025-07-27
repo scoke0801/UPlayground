@@ -6,7 +6,7 @@
 #include "AnimInstances/PGCharacterAnimInstance.h"
 #include "PGPlayerAnimInstance.generated.h"
 
-class APGLocalPlayerCharacter;
+class APGCharacterPlayer;
 /**
  * 
  */
@@ -23,7 +23,7 @@ public:
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|References")
-	APGLocalPlayerCharacter* OwningPlayerCharacter;
+	APGCharacterPlayer* OwningPlayerCharacter;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
 	bool bShouldEnterRelaxState;

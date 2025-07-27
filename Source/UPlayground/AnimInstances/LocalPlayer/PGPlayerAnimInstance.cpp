@@ -3,8 +3,7 @@
 
 #include "AnimInstances/LocalPlayer/PGPlayerAnimInstance.h"
 
-#include "Characters/PGCharacterBase.h"
-#include "Characters/LocalPlayer/PGLocalPlayerCharacter.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
 
 void UPGPlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -12,7 +11,7 @@ void UPGPlayerAnimInstance::NativeInitializeAnimation()
 
 	if (nullptr != OwningCharacter)
 	{
-		OwningPlayerCharacter = Cast<APGLocalPlayerCharacter>(OwningCharacter);
+		OwningPlayerCharacter = Cast<APGCharacterPlayer>(OwningCharacter);
 	}
 }
 

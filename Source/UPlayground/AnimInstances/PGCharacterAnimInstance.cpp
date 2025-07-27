@@ -2,14 +2,12 @@
 
 
 #include "PGCharacterAnimInstance.h"
-#include "AnimInstances/PGCharacterAnimInstance.h"
 
 #include "EnhancedInputComponent.h"
-#include "KismetAnimationLibrary.h"
-#include "Characters/LocalPlayer/PGLocalPlayerCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Helper/Debug/PGDebugHelper.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
 
 void UPGCharacterAnimInstance::NativeInitializeAnimation()
 {
@@ -52,6 +50,13 @@ void UPGCharacterAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSecond
 	UpdateHasVelocity();
 	UpdateDisplacementSpeed(DeltaSeconds);
 	UpdateLocomotionDirection();
+
+	UpdateIsFalling();
+}
+
+void UPGCharacterAnimInstance::SetIsFalling(bool InIsFalling)
+{
+	bIsJumping = InIsFalling;
 }
 
 void UPGCharacterAnimInstance::UpdateHasAcceleration()
@@ -120,4 +125,14 @@ void UPGCharacterAnimInstance::UpdateDisplacementSpeed(float DeltaSeconds)
     
 	// 다음 프레임을 위해 현재 위치 저장
 	CurrentWorldLocation = NewWorldLocation;
+}
+
+void UPGCharacterAnimInstance::UpdateIsFalling()
+{
+	if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(OwningCharacter))
+	{
+		bIsJumping = Player->bIsJump;
+	}
+	
+	bIsOnFalling = OwningMovementComponent->IsFalling();
 }

@@ -54,7 +54,13 @@ protected:
 	
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
 	FVector CurrentWorldLocation;
+	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
+	bool bIsJumping;
 
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData")
+	bool bIsOnFalling;
+	
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,Category = "AnimData|LocomotionData", meta = (DisplayName = "Local Velocity Direction Angle"))
 	float LocalVelocityDirectionAngle;
 	
@@ -75,9 +81,13 @@ public:
 	
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 
+public:
+	void SetIsFalling(bool InIsFalling);
+	
 private:
 	void UpdateHasVelocity();
 	void UpdateHasAcceleration();
 	void UpdateLocomotionDirection();
 	void UpdateDisplacementSpeed(float DeltaSeconds);
+	void UpdateIsFalling();
 };
