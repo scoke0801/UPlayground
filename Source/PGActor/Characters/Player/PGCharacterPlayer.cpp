@@ -11,7 +11,10 @@
 #include "GameFramework/SpringArmComponent.h"
 //#include "Managers/PGDataTableManager.h"
 //#include "Skill/PGSkillDataRow.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGActor/Components/Input/PGInputComponent.h"
+#include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 #include "PGData/Shared/Tag/PGGamePlayTags.h"
 
 APGCharacterPlayer::APGCharacterPlayer()
@@ -88,6 +91,22 @@ void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Attack);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Jump,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Jump);
+
+	PgInputComponent->BindAbilityInputAction(InputConfigDataAsset, this,
+		&ThisClass::Input_AbilityInputPressed, &ThisClass::input_AbilityInputReleased);
+}
+
+void APGCharacterPlayer::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	if (false == CharacterStartUpData.IsNull())
+	{
+		if (UPGDataAsset_StartUpDataBase* LoadedData = CharacterStartUpData.LoadSynchronous())
+		{
+			LoadedData->GiveToAbilitySystemComponent(AbilitySystemComponent);
+		}
+	}
 }
 
 void APGCharacterPlayer::StartSkillWindow()
@@ -204,6 +223,16 @@ void APGCharacterPlayer::Input_Jump(const FInputActionValue& InputActionValue)
 	}
 }
 
+void APGCharacterPlayer::Input_AbilityInputPressed(FGameplayTag InInputTag)
+{
+	AbilitySystemComponent->OnAbilityInputPressed(InInputTag);	
+}
+
+void APGCharacterPlayer::input_AbilityInputReleased(FGameplayTag InInputTag)
+{
+	AbilitySystemComponent->OnAbilityInputReleased(InInputTag);
+}
+
 void APGCharacterPlayer::ExecuteAttack(int32 ComboIndex)
 {
 	// if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
@@ -256,4 +285,9 @@ void APGCharacterPlayer::ResetCombo()
 bool APGCharacterPlayer::CanCombo() const
 {
 	return CurrentComboCount < MaxComboCount;
+}
+
+UPGPawnCombatComponent* APGCharacterPlayer::GetCombatComponent() const
+{
+	return CombatComponent;
 }

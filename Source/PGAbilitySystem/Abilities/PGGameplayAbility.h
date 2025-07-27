@@ -8,6 +8,7 @@
 
 #include "PGGameplayAbility.generated.h"
 
+class UPGPawnCombatComponent;
 class UPGAbilitySystemComponent;
 
 /**
@@ -35,7 +36,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability")
 	EPGAbilityActivationPolicy AbilityActivationPolicy = EPGAbilityActivationPolicy::OnTriggerd;
 
+protected:
+	UPROPERTY(Transient)
+	FGameplayAbilitySpecHandle CachedSpecHandle;
+
+	UPROPERTY(Transient)
+	FGameplayAbilityActivationInfo CachedActivationInfo;
+
+	const FGameplayAbilityActorInfo* CachedActorInfo;
+	
 public:
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	/**
 	 * 어빌리티가 부여될 때 호출되는 함수
 	 */
@@ -46,6 +57,13 @@ public:
 	 */
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+public:
+	/**
+	 * 액터 정보로부터 컴뱃 컴포넌트를 가져오는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category="PG|Ability")
+	UPGPawnCombatComponent* GetCombatComponentFromActorInfo();
+	
 protected:
 	/**
 	 * 액터 정보로부터 PG 어빌리티 시스템 컴포넌트를 가져오는 함수

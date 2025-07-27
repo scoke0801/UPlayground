@@ -3,3 +3,9 @@
 
 #include "PGCharacterEnemy.h"
 
+#include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
+
+UPGPawnCombatComponent* APGCharacterEnemy::GetCombatComponent() const
+{
+	return CombatComponent;
+}

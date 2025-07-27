@@ -25,7 +25,10 @@
 		{
 			"Name": "PGActor",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		},
 		{
 			"Name": "PGUI",
@@ -79,6 +82,10 @@
 		},
 		{
 			"Name": "AbilitySystemGameFeatureActions",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayAbilities",
 			"Enabled": true
 		}
 	]

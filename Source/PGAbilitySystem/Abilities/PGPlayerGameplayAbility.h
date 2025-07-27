@@ -35,8 +35,7 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category="PG|Ability")
 	UPGPlayerCombatComponent* GetPlayerCombatComponentFromActorInfo();
-public:
-	
+
 private:
 	/**
 	 * 캐시된 플레이어 캐릭터 참조

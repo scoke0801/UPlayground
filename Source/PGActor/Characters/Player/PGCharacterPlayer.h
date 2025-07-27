@@ -5,9 +5,10 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "PGActor/Characters/PGCharacterBase.h"
-#include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGCharacterPlayer.generated.h"
 
+struct FGameplayTag;
+class UPGPlayerCombatComponent;
 class UDataAsset_InputConfig;
 class USpringArmComponent;
 class UCameraComponent;
@@ -59,6 +60,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat", meta = (AllowPrivateAccess = "true"))
 	bool bHasQueuedInput;
 
+	/** 플레이어 컴뱃 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Combat", meta = (AllowPrivateAccess = true))
+	UPGPlayerCombatComponent* CombatComponent;
+	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat")
 	bool bIsJump = false;
@@ -69,7 +74,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
+	virtual void PossessedBy(AController* NewController) override;
+	
 public:
 	void StartSkillWindow();
 	void EndSkillWindow();
@@ -84,7 +90,11 @@ public:
 	bool CanCombo() const;
 
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
-	UPGPlayerCombatComponent* GetPlayerCombatComponent() const {return nullptr;}
+	UPGPlayerCombatComponent* GetPlayerCombatComponent() const {return CombatComponent;}
+
+	UFUNCTION(BlueprintPure, Category = "PG|Combat")
+	virtual UPGPawnCombatComponent* GetCombatComponent() const override;
+	
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	bool GetIsJumping() const {return bIsJump;}
 private:
@@ -92,6 +102,9 @@ private:
 	void Input_Look(const FInputActionValue& InputActionValue);
 	void Input_Attack(const FInputActionValue& InputActionValue);
 	void Input_Jump(const FInputActionValue& InputActionValue);
+	
+	void Input_AbilityInputPressed(FGameplayTag InInputTag);
+	void input_AbilityInputReleased(FGameplayTag InInputTag);
 	
 	void ExecuteAttack(int32 ComboIndex);
 	void SetComboState(EComboState NewState);

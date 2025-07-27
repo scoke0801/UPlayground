@@ -4,10 +4,10 @@
 #include "GameplayTagContainer.h"
 #include "ScalableFloat.h"
 #include "InputMappingContext.h"
-#include "GameplayTagContainer.h"
 #include "Engine/Texture2D.h"
 #include "PlayerStructTypes.generated.h"
 
+class UPGGameplayAbility;
 class UPGPlayerAnimLayer;
 class UPGPlayerGameplayAbility;
 
@@ -21,7 +21,7 @@ public:
 	FGameplayTag InputTag;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UPGPlayerGameplayAbility> AbilityToGrant;
+	TSubclassOf<UPGGameplayAbility> AbilityToGrant;
 
 	bool IsValid() const;
 };

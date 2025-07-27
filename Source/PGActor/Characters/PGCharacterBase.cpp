@@ -3,6 +3,8 @@
 
 #include "PGCharacterBase.h"
 
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+
 // Sets default values
 APGCharacterBase::APGCharacterBase()
 {
@@ -11,5 +13,27 @@ APGCharacterBase::APGCharacterBase()
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	GetMesh()->bReceivesDecals = false;
+	
+	AbilitySystemComponent = CreateDefaultSubobject<UPGAbilitySystemComponent>(TEXT("PGAbilitySystemComponent"));
+}
+
+void APGCharacterBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (nullptr != AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
+}
+
+UAbilitySystemComponent* APGCharacterBase::GetAbilitySystemComponent() const
+{
+	return GetPGAbilitySystemComponent();
+}
+
+UPGAbilitySystemComponent* APGCharacterBase::GetPGAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
 }
 

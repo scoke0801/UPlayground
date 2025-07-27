@@ -6,7 +6,19 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGActor/Characters/PGCharacterBase.h"
 #include "PGData/Shared/Enum/PGEnumTypes.h"
+
+void UPGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+	const FGameplayEventData* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	CachedSpecHandle = Handle;
+	CachedActivationInfo = ActivationInfo;
+	CachedActorInfo = ActorInfo;
+}
 
 void UPGGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
 {
@@ -33,6 +45,16 @@ void UPGGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 			ActorInfo->AbilitySystemComponent->ClearAbility(Handle);
 		}
 	}
+}
+
+UPGPawnCombatComponent* UPGGameplayAbility::GetCombatComponentFromActorInfo()
+{
+	if (APGCharacterBase* Character = Cast<APGCharacterBase>(GetOwningActorFromActorInfo()))
+	{
+		return Character->GetCombatComponent();
+	}
+
+	return nullptr;
 }
 
 UPGAbilitySystemComponent* UPGGameplayAbility::GetPGAbilitySystemComponentFromActorInfo() const
