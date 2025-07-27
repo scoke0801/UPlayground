@@ -1,11 +1,6 @@
 #include "Managers/PGDataTableManager.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "Chaos/ChaosPerfTest.h"
-
-constexpr int32 MAX_CACHE_SIZE = 50;
-constexpr int32 MAX_MEMORY_USAGE = 100 * 1024 * 1024;  // 100MB
-constexpr float CACHE_CLEANUP_INTERVAL = 600.0f; // 600 초
 
 UPGDataTableManager::UPGDataTableManager()
     : AssetRegistryModule(nullptr)
@@ -34,6 +29,9 @@ void UPGDataTableManager::Deinitialize()
     // 모든 캐시 정리
     LoadedDataTables.Empty();
     DataTableInfos.Empty();
+    
+    // 구조체 타입 매핑 정리
+    StructTypeToTableNameMap.Empty();
 
     AssetRegistryModule = nullptr;
 
@@ -44,24 +42,27 @@ void UPGDataTableManager::ScanDataTables()
 {
     if (!AssetRegistryModule)
     {
+        UE_LOG(LogTemp, Error, TEXT("AssetRegistryModule이 null입니다!"));
         return;
     }
 
     // 기존 정보 초기화
     DataTableInfos.Empty();
+    StructTypeToTableNameMap.Empty();
 
+    IAssetRegistry& AssetRegistry = AssetRegistryModule->Get();
     /* 
      * AssetRegistry에서 모든 데이터 테이블 에셋 검색
      * 경로는 DataTables 하위 폴더로만 한정.
      */
     FARFilter Filter;
     Filter.ClassPaths.Add(UDataTable::StaticClass()->GetClassPathName());
-    Filter.PackagePaths.Add(TEXT("/Game/DataTables"));
+    Filter.PackagePaths.Add(TEXT("/Game/DataCenter/DataTables"));
     Filter.bRecursiveClasses = true;
-    
-    TArray<FAssetData> AssetDataList;
-    AssetRegistryModule->Get().GetAssets(Filter, AssetDataList);
+    Filter.bRecursivePaths = true;    
 
+    TArray<FAssetData> AssetDataList;
+    AssetRegistry.GetAssets(Filter, AssetDataList);
     // 각 에셋 정보 수집
     for (const FAssetData& AssetData : AssetDataList)
     {
@@ -74,75 +75,35 @@ void UPGDataTableManager::CollectDataTableInfo(const FAssetData& AssetData)
     FPGDataTableInfo Info;
     Info.AssetPath = AssetData.GetSoftObjectPath();
     Info.AssetName = AssetData.AssetName.ToString();
-
+    
     // 행 구조체 타입 정보 가져오기
     FString RowStructName;
-    if (AssetData.GetTagValue(GET_MEMBER_NAME_CHECKED(UDataTable, RowStruct), RowStructName))
+    if (AssetData.GetTagValue(TEXT("RowStructure"), RowStructName))
     {
         Info.RowStructName = RowStructName;
+        
+        // 구조체 타입 이름으로 실제 UScriptStruct 찾기
+        Info.RowStructType = FindStructTypeByName(RowStructName);
+        
+        if (Info.RowStructType)
+        {
+            // 구조체 타입 매핑 등록 (테이블명은 에셋 이름 사용)
+            FName TableName = FName(*Info.AssetName);
+            StructTypeToTableNameMap.Add(Info.RowStructType, TableName);
+            UE_LOG(LogTemp, Warning, TEXT("✓ 구조체 매핑 성공: %s -> %s"), 
+                *Info.RowStructType->GetName(), *TableName.ToString());
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("✗ UScriptStruct를 찾을 수 없음: %s"), *RowStructName);
+        }
     }
-
-    // 예상 메모리 사용량 (대략적으로 계산)
-    int32 ApproximateSize = 0;
-    if (AssetData.GetTagValue(GET_MEMBER_NAME_CHECKED(UDataTable, ImportKeyField), ApproximateSize))
-    {
-        Info.EstimatedMemoryUsage = ApproximateSize;
-    }
+    
+    // 예상 메모리 사용량
+    Info.EstimatedMemoryUsage = 1024; // 기본값
 
     DataTableInfos.Add(Info);
-}
-
-UDataTable* UPGDataTableManager::LoadDataTable(const FName& TableName)
-{
-    if (TableName.IsNone())
-    {
-        return nullptr;
-    }
-
-    // 이미 로드된 경우 캐시에서 반환
-    if (FPGDataTableCacheEntry* CacheEntry = LoadedDataTables.Find(TableName))
-    {
-        CacheEntry->UpdateAccessTime();
-        return CacheEntry->DataTable;
-    }
-
-    // 테이블 이름으로 에셋 경로 찾기
-    FSoftObjectPath AssetPath = FindAssetPathByName(TableName);
-    if (!AssetPath.IsValid())
-    {
-        return nullptr;
-    }
-
-    // 새로 로드
-    UDataTable* DataTable = Cast<UDataTable>(AssetPath.TryLoad());
-    if (!DataTable)
-    {
-        return nullptr;
-    }
-
-    // 캐시에 추가 (테이블 이름을 키로 사용)
-    FPGDataTableCacheEntry NewEntry(DataTable);
-    
-    // SearchKey 인덱스 생성
-    BuildSearchKeyIndex(NewEntry);
-    
-    LoadedDataTables.Add(TableName, NewEntry);
-
-    // 캐시 크기 확인 및 정리
-    if (LoadedDataTables.Num() > MAX_CACHE_SIZE || GetCurrentMemoryUsage() > MAX_MEMORY_USAGE)
-    {
-        CleanupCache();
-    }
-
-    return DataTable;
-}
-
-void UPGDataTableManager::UnloadDataTable(const FName& TableName)
-{
-    if (LoadedDataTables.Contains(TableName))
-    {
-        RemoveCacheEntry(TableName);
-    }
+    UE_LOG(LogTemp, Warning, TEXT("데이터 테이블 정보 추가 완료.\n"));
 }
 
 void UPGDataTableManager::CleanupCache()
@@ -162,7 +123,7 @@ void UPGDataTableManager::CleanupCache()
 
 void UPGDataTableManager::ForceCleanupMemory()
 {
-    // 모든 캐시 제거
+    // 모든 캐시 제거 (구조체 타입 매핑은 유지)
     LoadedDataTables.Empty();
     
     // 가비지 컬렉션 강제 실행
@@ -236,6 +197,67 @@ void UPGDataTableManager::RemoveCacheEntry(const FName& TableName)
     {
         LoadedDataTables.Remove(TableName);
     }
+}
+
+const UScriptStruct* UPGDataTableManager::FindStructTypeByName(const FString& StructTypeName) const
+{
+    if (StructTypeName.IsEmpty())
+    {
+        return nullptr;
+    }
+
+    // 구조체 타입 이름에서 경로 정보 추출
+    // 예: "Script/PGData.PGSkillDataRow" -> "PGSkillDataRow"
+    FString StructName = StructTypeName;
+    int32 LastDotIndex;
+    if (StructName.FindLastChar('.', LastDotIndex))
+    {
+        StructName = StructName.RightChop(LastDotIndex + 1);
+    }
+
+    // UScriptStruct 찾기 - 여러 방법 시도
+    const UScriptStruct* FoundStruct = nullptr;
+
+    // 방법 1: StaticFindObject 사용
+    FoundStruct = FindObject<UScriptStruct>(nullptr, *StructTypeName);
+    if (FoundStruct)
+    {
+        return FoundStruct;
+    }
+
+    // 방법 2: 패키지 경로 없이 구조체 이름만으로 찾기
+    FoundStruct = FindObject<UScriptStruct>(nullptr, *StructName);
+    if (FoundStruct)
+    {
+        return FoundStruct;
+    }
+
+    // 방법 3: 일반적인 패키지 경로들을 시도
+    TArray<FString> CommonPaths = {
+        FString::Printf(TEXT("/Script/PGData.%s"), *StructName),
+        FString::Printf(TEXT("/Script/UPlayground.%s"), *StructName),
+        FString::Printf(TEXT("/Script/Engine.%s"), *StructName)
+    };
+
+    for (const FString& Path : CommonPaths)
+    {
+        FoundStruct = FindObject<UScriptStruct>(nullptr, *Path);
+        if (FoundStruct)
+        {
+            return FoundStruct;
+        }
+    }
+
+    return nullptr;
+}
+
+FName UPGDataTableManager::FindTableNameByStructType(const UScriptStruct* StructType) const
+{
+    if (const FName* FoundTableName = StructTypeToTableNameMap.Find(StructType))
+    {
+        return *FoundTableName;
+    }
+    return FName();
 }
 
 void UPGDataTableManager::StartAutoCleanup()

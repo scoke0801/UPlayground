@@ -14,7 +14,7 @@ public class UPlayground : ModuleRules
 		// 모듈 헤더 공개 설정
 		PublicIncludePaths.AddRange(new string[] {
 			"UPlayground",
-			"UPlayground/Equipment"
+			"PGData"
 		});
 	
 		PublicDependencyModuleNames.AddRange(new string[] { 
@@ -27,13 +27,21 @@ public class UPlayground : ModuleRules
             "DeveloperSettings",
 			"UMG",
 			"Niagara",
-			"CommonUI" // CommonUI 모듈 추가
+			"CommonUI",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 
             "GameplayTasks", 
             "GameFeatures",
-            "ModularGameplay"
+            "GameplayAbilities",
+            "ModularGameplay", 
+            "AnimGraphRuntime", 
+            "AIModule",
+            
+            "PGData",
+            "PGAbilitySystem",
+            "PGActor",
+            "PGShared"
 		});
 
 		// UI 시스템을 위한 Slate 및 SlateCore 의존성 추가

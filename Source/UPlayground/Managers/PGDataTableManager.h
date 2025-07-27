@@ -81,16 +81,20 @@ struct FPGDataTableInfo
     UPROPERTY()
     FString AssetName;
 
-    // 행 구조체 타입
+    // 행 구조체 타입 이름 (문자열)
     UPROPERTY()
     FString RowStructName;
+
+    // 행 구조체 타입 (실제 타입)
+    const UScriptStruct* RowStructType;
 
     // 예상 메모리 사용량
     UPROPERTY()
     int32 EstimatedMemoryUsage;
 
     FPGDataTableInfo()
-        : EstimatedMemoryUsage(0)
+        : RowStructType(nullptr)
+        , EstimatedMemoryUsage(0)
     {
     }
 };
@@ -101,12 +105,18 @@ struct FPGDataTableInfo
  * - 지연 로딩 및 LRU 캐시 시스템
  * - SearchKey(정수타입 변수) 메타데이터 기반 검색 / 기본 RowName 기반 검색 지원
  * - 메모리 사용량 모니터링 및 자동 언로드
- *  ㄴ TODO 추후, State 등 변환 시에만 정리하도록 하는 게 좋을 듯
+ * - 동적 타입 기반 테이블 찾기 (구조체 타입 -> 테이블명 매핑)
  */
 UCLASS()
 class UPLAYGROUND_API UPGDataTableManager : public UGameInstanceSubsystem
 {
     GENERATED_BODY()
+
+private:
+    // 캐시 설정 상수
+    static constexpr int32 MAX_CACHE_SIZE = 50;
+    static constexpr int32 MAX_MEMORY_USAGE = 100 * 1024 * 1024;  // 100MB
+    static constexpr float CACHE_CLEANUP_INTERVAL = 600.0f; // 600 초
 
 private:
     // 에셋 레지스트리 모듈
@@ -120,6 +130,9 @@ private:
     UPROPERTY()
     TMap<FName, FPGDataTableCacheEntry> LoadedDataTables;
     
+    // 구조체 타입 -> 테이블명 매핑 (동적 타입 기반 테이블 찾기)
+    TMap<const UScriptStruct*, FName> StructTypeToTableNameMap;
+    
     // 캐시 정리 타이머
     FTimerHandle CleanupTimerHandle;
     
@@ -131,25 +144,26 @@ public:
     virtual void Deinitialize() override;
 
 public:
-    // 데이터 테이블 로드 - 테이블 이름으로
-    UDataTable* LoadDataTable(const FName& TableName);
-
-    // 데이터 테이블 언로드 - 테이블 이름으로
-    void UnloadDataTable(const FName& TableName);
-
-public:
-    // 테이블 정보 Getter
-    // 데이터 가져오기 - 테이블 이름으로
+    // === 동적 타입 기반 API ===
+    // 타입에서 자동으로 테이블을 찾아서 로딩
     template<typename T>
-    T* GetRowData(const FName& TableName, const FName& RowName);
-
-    // SearchKey 메타데이터 기반 검색 (정수 키만 지원)
-    template<typename T>
-    T* GetRowData(const FName& TableName, int64 SearchKey);
+    UDataTable* LoadDataTable();
     
-    // 모든 행 데이터 가져오기
+    // 타입에서 자동으로 테이블을 찾아서 SearchKey로 데이터 가져오기
     template<typename T>
-    TArray<T*> GetAllRowData(const FName& TableName);
+    T* GetRowData(int64 SearchKey);
+    
+    // 타입에서 자동으로 테이블을 찾아서 RowName으로 데이터 가져오기
+    template<typename T>
+    T* GetRowDataByName(const FName& RowName);
+    
+    // 타입에서 자동으로 테이블을 찾아서 모든 데이터 가져오기
+    template<typename T>
+    TArray<T*> GetAllRowData();
+    
+    // 데이터 테이블 언로드 - 타입으로
+    template<typename T>
+    void UnloadDataTable();
     
     // 모든 데이터 테이블 정보 가져오기
     const TArray<FPGDataTableInfo>& GetAllDataTableInfo() const { return DataTableInfos; }
@@ -181,8 +195,14 @@ private:
     // 데이터 테이블 정보 수집
     void CollectDataTableInfo(const FAssetData& AssetData);
 
+    // 구조체 타입 이름으로 실제 UScriptStruct 찾기
+    const UScriptStruct* FindStructTypeByName(const FString& StructTypeName) const;
+
     // 테이블 이름으로 에셋 경로 찾기
     FSoftObjectPath FindAssetPathByName(const FName& TableName) const;
+
+    // 구조체 타입으로 테이블명 찾기
+    FName FindTableNameByStructType(const UScriptStruct* StructType) const;
 
 private:
     // SearchKey 인덱스 생성
@@ -210,27 +230,72 @@ private:
 };
 
 
+// === 동적 타입 기반 API 구현 ===
+
 template<typename T>
-T* UPGDataTableManager::GetRowData(const FName& TableName, const FName& RowName)
+UDataTable* UPGDataTableManager::LoadDataTable()
 {
-    UDataTable* DataTable = LoadDataTable(TableName);
+    static_assert(TIsDerivedFrom<T, FTableRowBase>::IsDerived, "T must be derived from FTableRowBase");
+    
+    // 구조체 타입으로 테이블명 찾기
+    FName TableName = FindTableNameByStructType(T::StaticStruct());
+    if (TableName.IsNone())
+    {
+        return nullptr;
+    }
+    
+    // 이미 로드된 경우 캐시에서 반환
+    if (FPGDataTableCacheEntry* CacheEntry = LoadedDataTables.Find(TableName))
+    {
+        CacheEntry->UpdateAccessTime();
+        return CacheEntry->DataTable;
+    }
+
+    // 테이블 이름으로 에셋 경로 찾기
+    FSoftObjectPath AssetPath = FindAssetPathByName(TableName);
+    if (!AssetPath.IsValid())
+    {
+        return nullptr;
+    }
+
+    // 새로 로드
+    UDataTable* DataTable = Cast<UDataTable>(AssetPath.TryLoad());
     if (!DataTable)
     {
         return nullptr;
     }
 
-    return DataTable->FindRow<T>(RowName, TEXT("DataTableManager"));
+    // 캐시에 추가 (테이블 이름을 키로 사용)
+    FPGDataTableCacheEntry NewEntry(DataTable);
+    
+    // SearchKey 인덱스 생성
+    BuildSearchKeyIndex(NewEntry);
+    
+    LoadedDataTables.Add(TableName, NewEntry);
+
+    // 캐시 크기 확인 및 정리
+    if (LoadedDataTables.Num() > MAX_CACHE_SIZE || GetCurrentMemoryUsage() > MAX_MEMORY_USAGE)
+    {
+        CleanupCache();
+    }
+
+    return DataTable;
 }
 
 template<typename T>
-T* UPGDataTableManager::GetRowData(const FName& TableName, int64 SearchKey)
+T* UPGDataTableManager::GetRowData(int64 SearchKey)
 {
-    UDataTable* DataTable = LoadDataTable(TableName);
+    static_assert(TIsDerivedFrom<T, FTableRowBase>::IsDerived, "T must be derived from FTableRowBase");
+    
+    UDataTable* DataTable = LoadDataTable<T>();
     if (!DataTable)
     {
         return nullptr;
     }
 
+    // 구조체 타입으로 테이블명 찾기
+    FName TableName = FindTableNameByStructType(T::StaticStruct());
+    
     // 캐시에서 인덱스 정보 가져오기
     FPGDataTableCacheEntry* CacheEntry = LoadedDataTables.Find(TableName);
     if (!CacheEntry)
@@ -252,11 +317,27 @@ T* UPGDataTableManager::GetRowData(const FName& TableName, int64 SearchKey)
 }
 
 template<typename T>
-TArray<T*> UPGDataTableManager::GetAllRowData(const FName& TableName)
+T* UPGDataTableManager::GetRowDataByName(const FName& RowName)
 {
+    static_assert(TIsDerivedFrom<T, FTableRowBase>::IsDerived, "T must be derived from FTableRowBase");
+    
+    UDataTable* DataTable = LoadDataTable<T>();
+    if (!DataTable)
+    {
+        return nullptr;
+    }
+
+    return DataTable->FindRow<T>(RowName, TEXT("DataTableManager"));
+}
+
+template<typename T>
+TArray<T*> UPGDataTableManager::GetAllRowData()
+{
+    static_assert(TIsDerivedFrom<T, FTableRowBase>::IsDerived, "T must be derived from FTableRowBase");
+    
     TArray<T*> Results;
     
-    UDataTable* DataTable = LoadDataTable(TableName);
+    UDataTable* DataTable = LoadDataTable<T>();
     if (!DataTable)
     {
         return Results;
@@ -273,4 +354,17 @@ TArray<T*> UPGDataTableManager::GetAllRowData(const FName& TableName)
     }
 
     return Results;
+}
+
+template<typename T>
+void UPGDataTableManager::UnloadDataTable()
+{
+    static_assert(TIsDerivedFrom<T, FTableRowBase>::IsDerived, "T must be derived from FTableRowBase");
+    
+    // 구조체 타입으로 테이블명 찾기
+    FName TableName = FindTableNameByStructType(T::StaticStruct());
+    if (!TableName.IsNone() && LoadedDataTables.Contains(TableName))
+    {
+        RemoveCacheEntry(TableName);
+    }
 }
