@@ -57,12 +57,21 @@ public:
 	 */
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+protected:
+	void EndAbilitySelf();
+	
 public:
 	/**
 	 * 액터 정보로부터 컴뱃 컴포넌트를 가져오는 함수
 	 */
 	UFUNCTION(BlueprintPure, Category="PG|Ability")
-	UPGPawnCombatComponent* GetCombatComponentFromActorInfo();
+	UPGPawnCombatComponent* GetCombatComponentFromActorInfo() const;
+	
+	/**
+	 * 액터 정보로부터 플레이어 컨트롤러를 가져오는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category="PG|Ability")
+	APGPlayerController* GetPlayerControllerFromActorInfo() const;
 	
 protected:
 	/**

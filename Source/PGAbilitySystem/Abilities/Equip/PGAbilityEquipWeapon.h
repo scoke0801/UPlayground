@@ -6,11 +6,7 @@
 #include "PGAbilitySystem/Abilities/PGGameplayAbility.h"
 #include "PGAbilityEquipWeapon.generated.h"
 
-
-struct my_struct
-{
-	
-};
+class APGWeaponBase;
 /**
  * 
  */
@@ -41,6 +37,9 @@ protected:
 public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
+protected:
+	virtual void HandleEquipWeapon(APGWeaponBase* Weapon);
+	
 private:
 	UFUNCTION()
 	void OnMontageCompleted();

@@ -4,6 +4,7 @@
 #include "PGWeaponBase.h"
 
 #include "Components/BoxComponent.h"
+#include "PGData/PGDataTableManager.h"
 
 // Sets default values
 APGWeaponBase::APGWeaponBase()
@@ -48,9 +49,10 @@ void APGWeaponBase::OnCollisionBoxEndOverlap(UPrimitiveComponent* OverlappedComp
 void APGWeaponBase::AssignGrantAbilitySpecHandles(const TArray<FGameplayAbilitySpecHandle>& InSpecHandles)
 {
 	AbilitySpecHandles = InSpecHandles;
+
 }
 
-TArray<FGameplayAbilitySpecHandle> APGWeaponBase::GetGrantedAbilitySpecHandles() const
+TArray<FGameplayAbilitySpecHandle> APGWeaponBase::GetGrantedAbilitySpecHandles()
 {
 	return AbilitySpecHandles;
 }

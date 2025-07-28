@@ -108,7 +108,7 @@ struct FPGDataTableInfo
  * - 동적 타입 기반 테이블 찾기 (구조체 타입 -> 테이블명 매핑)
  */
 UCLASS()
-class UPLAYGROUND_API UPGDataTableManager : public UGameInstanceSubsystem
+class PGDATA_API UPGDataTableManager : public UGameInstanceSubsystem
 {
     GENERATED_BODY()
 

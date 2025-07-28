@@ -1,4 +1,4 @@
-#include "Managers/PGDataTableManager.h"
+#include "PGDataTableManager.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
 

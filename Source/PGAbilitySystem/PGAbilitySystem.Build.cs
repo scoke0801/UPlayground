@@ -21,6 +21,7 @@ public class PGAbilitySystem : ModuleRules
 				"GameplayTags",
 				"GameplayAbilities",
 				"GameplayTasks",
+				"EnhancedInput"
 			}
 		);
 

@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Controllers/PGPlayerController.h"
 #include "PGShared/Shared/Enum/PGEnumTypes.h"
 
 void UPGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -47,7 +48,12 @@ void UPGGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 	}
 }
 
-UPGPawnCombatComponent* UPGGameplayAbility::GetCombatComponentFromActorInfo()
+void UPGGameplayAbility::EndAbilitySelf()
+{
+	EndAbility(CachedSpecHandle, CachedActorInfo, CachedActivationInfo, true, true);
+}
+
+UPGPawnCombatComponent* UPGGameplayAbility::GetCombatComponentFromActorInfo() const
 {
 	if (APGCharacterBase* Character = Cast<APGCharacterBase>(GetOwningActorFromActorInfo()))
 	{
@@ -55,6 +61,11 @@ UPGPawnCombatComponent* UPGGameplayAbility::GetCombatComponentFromActorInfo()
 	}
 
 	return nullptr;
+}
+
+APGPlayerController* UPGGameplayAbility::GetPlayerControllerFromActorInfo() const
+{
+	return Cast<APGPlayerController>(CurrentActorInfo->PlayerController);
 }
 
 UPGAbilitySystemComponent* UPGGameplayAbility::GetPGAbilitySystemComponentFromActorInfo() const
