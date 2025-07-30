@@ -29,7 +29,7 @@ public class PGAbilitySystem : ModuleRules
 			new string[]
 			{
 				"PGActor",
-				"PGShared"
+				"PGShared", "PGData", "PGData"
 			}
 		);
 	}

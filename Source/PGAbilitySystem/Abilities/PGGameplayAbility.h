@@ -58,6 +58,10 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
+	UFUNCTION()
+	virtual void OnMontageCompleted();
+	
+protected:
 	void EndAbilitySelf();
 	
 public:

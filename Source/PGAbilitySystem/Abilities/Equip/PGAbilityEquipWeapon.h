@@ -42,8 +42,5 @@ protected:
 	
 private:
 	UFUNCTION()
-	void OnMontageCompleted();
-
-	UFUNCTION()
 	void OnEventReceived(FGameplayEventData Payload);
 };

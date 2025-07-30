@@ -31,7 +31,7 @@ private:
 	TArray<FGameplayAbilitySpecHandle> AbilitySpecHandles;
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, category = "WeaponData")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, category = "PG|WeaponData")
 	FPGPlayerWeaponData PlayerWeaponData;
 	
 public:	

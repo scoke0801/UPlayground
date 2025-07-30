@@ -75,11 +75,6 @@ void UPGAbilityUnEquipWeapon::OnEventReceived(FGameplayEventData Payload)
 	}
 }
 
-void UPGAbilityUnEquipWeapon::OnMontageCompleted()
-{
-	EndAbilitySelf();
-}
-
 void UPGAbilityUnEquipWeapon::HandleUnEquipWeapon(APGWeaponBase* Weapon)
 {
 	if (nullptr == Weapon)

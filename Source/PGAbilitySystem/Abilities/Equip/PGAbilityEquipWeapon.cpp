@@ -18,7 +18,7 @@ void UPGAbilityEquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Han
                                             const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
+	
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this, NAME_None, MontageToPlay);
 	if (nullptr == MontageTask)
@@ -26,7 +26,7 @@ void UPGAbilityEquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		EndAbilitySelf();
 		return;
 	}
-	
+
 	MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCompleted);
 	MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
 	MontageTask->OnBlendOut.AddDynamic(this, &ThisClass::OnMontageCompleted);
@@ -77,11 +77,6 @@ void UPGAbilityEquipWeapon::HandleEquipWeapon(APGWeaponBase* Weapon)
 
 		Weapon->AssignGrantAbilitySpecHandles(GrantedAbilitySpecHandles);
 	}
-}
-
-void UPGAbilityEquipWeapon::OnMontageCompleted()
-{
-	EndAbilitySelf();
 }
 
 void UPGAbilityEquipWeapon::OnEventReceived(FGameplayEventData Payload)

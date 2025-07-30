@@ -48,6 +48,11 @@ void UPGGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 	}
 }
 
+void UPGGameplayAbility::OnMontageCompleted()
+{
+	EndAbilitySelf();
+}
+
 void UPGGameplayAbility::EndAbilitySelf()
 {
 	EndAbility(CachedSpecHandle, CachedActorInfo, CachedActivationInfo, true, true);

@@ -23,3 +23,15 @@ enum class EPGSuccessType : uint8
 	Failed
 };
 
+UENUM(BlueprintType)
+enum class EPGSkillSlot : uint8
+{
+	NormalAttack = 0,
+	SkillSlot_1,
+	SkillSlot_2,
+	SkillSlot_3,
+	SkillSlot_4,
+	SkillSlot_5,
+	SkillSlot_6,
+	
+};

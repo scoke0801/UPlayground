@@ -38,9 +38,6 @@ public:
 private:
 	UFUNCTION()
 	void OnEventReceived(FGameplayEventData Payload);
-	
-	UFUNCTION()
-	void OnMontageCompleted();
 
 private:
 	void HandleUnEquipWeapon(APGWeaponBase* Weapon);
