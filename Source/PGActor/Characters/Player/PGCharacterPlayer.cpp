@@ -9,12 +9,13 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-//#include "Managers/PGDataTableManager.h"
-//#include "Skill/PGSkillDataRow.h"
+
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGActor/Components/Input/PGInputComponent.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 APGCharacterPlayer::APGCharacterPlayer()
@@ -60,15 +61,8 @@ void APGCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
-	// {
-	// 	FPGSkillDataRow* skillData = dataTableManager->GetRowData<FPGSkillDataRow>(1);
-	//
-	// 	if (skillData)
-	// 	{
-	// 		UE_LOG(LogTemp, Log, TEXT("%d"), skillData->SkillID);
-	// 	}
-	// }
+	// [TODO] 데이터를 주입할 수 있는 다른 방안을 모색해보자.
+	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 1);
 }
 
 void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
