@@ -135,10 +135,14 @@ private:
     
     // 캐시 정리 타이머
     FTimerHandle CleanupTimerHandle;
+
+    static TWeakObjectPtr<UPGDataTableManager> WeakThis;
     
 public:
     UPGDataTableManager();
 
+    static UPGDataTableManager* Get();
+    
     // USubsystem interface
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;

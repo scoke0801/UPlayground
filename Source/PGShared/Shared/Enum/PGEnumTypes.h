@@ -32,6 +32,12 @@ enum class EPGSkillSlot : uint8
 	SkillSlot_3,
 	SkillSlot_4,
 	SkillSlot_5,
-	SkillSlot_6,
-	
+	SkillSlot_6,	// End Of Player Skill
+
+	// 
+	SkillSlot_7,
+	SkillSlot_8,
+	SkillSlot_9,
+	SkillSlot_10,
+
 };

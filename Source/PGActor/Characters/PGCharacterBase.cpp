@@ -4,6 +4,7 @@
 #include "PGCharacterBase.h"
 
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
 
 // Sets default values
 APGCharacterBase::APGCharacterBase()
@@ -15,6 +16,22 @@ APGCharacterBase::APGCharacterBase()
 	GetMesh()->bReceivesDecals = false;
 	
 	AbilitySystemComponent = CreateDefaultSubobject<UPGAbilitySystemComponent>(TEXT("PGAbilitySystemComponent"));
+}
+
+void APGCharacterBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	SkillHandler = FPGHandler::Create<FPGSkillHandler>();
+}
+
+void APGCharacterBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (nullptr != SkillHandler)
+	{
+		delete SkillHandler;
+	}
+	Super::EndPlay(EndPlayReason);
 }
 
 void APGCharacterBase::PossessedBy(AController* NewController)

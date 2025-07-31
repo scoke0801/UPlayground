@@ -2,15 +2,28 @@
 
 #include "AssetRegistry/AssetRegistryModule.h"
 
+TWeakObjectPtr<UPGDataTableManager> UPGDataTableManager::WeakThis = nullptr;
+
 UPGDataTableManager::UPGDataTableManager()
     : AssetRegistryModule(nullptr)
 {
+}
+
+UPGDataTableManager* UPGDataTableManager::Get()
+{
+    if (WeakThis.IsValid())
+    {
+        return WeakThis.Get();
+    }
+    return nullptr;
 }
 
 void UPGDataTableManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
+    WeakThis = MakeWeakObjectPtr(this);
+    
     // AssetRegistry 모듈 가져오기
     AssetRegistryModule = &FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 
@@ -35,6 +48,8 @@ void UPGDataTableManager::Deinitialize()
 
     AssetRegistryModule = nullptr;
 
+    WeakThis = nullptr;
+    
     Super::Deinitialize();
 }
 
