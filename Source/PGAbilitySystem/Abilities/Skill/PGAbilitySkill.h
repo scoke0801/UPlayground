@@ -6,6 +6,8 @@
 #include "PGAbilitySystem/Abilities/PGGameplayAbility.h"
 #include "PGAbilitySkill.generated.h"
 
+enum class EPGSkillSlot : uint8;
+
 /**
  * 
  */
@@ -16,7 +18,7 @@ class PGABILITYSYSTEM_API UPGAbilitySkill : public UPGGameplayAbility
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Ability")
-	EPGSkillSlot _slotIndex;
+	EPGSkillSlot SlotIndex;
 	
 public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;

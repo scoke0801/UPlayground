@@ -46,6 +46,9 @@ public:
 	void AddSkill(const EPGSkillSlot InSlotId, const PGSkillId InSkillId);
 	void RemoveSkill(const EPGSkillSlot InSlotID);
 	
-	int32 GetSkillID(const EPGSkillSlot InSlotId);
 	bool IsCanUseSkill(const EPGSkillSlot InSlotId);
+
+public:
+	virtual void UseSkill(const EPGSkillSlot InSlotId) {}
+	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId);
 };

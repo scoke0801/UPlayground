@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "PGShared/Shared/Enum/PGEnumTypes.h"
 
 #include "PGGameplayAbility.generated.h"
 

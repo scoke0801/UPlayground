@@ -13,6 +13,7 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGActor/Components/Input/PGInputComponent.h"
+#include "PGActor/Handler/Skill/PGPlayerSkillHandler.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
@@ -62,6 +63,7 @@ void APGCharacterPlayer::BeginPlay()
 	Super::BeginPlay();
 
 	// [TODO] 데이터를 주입할 수 있는 다른 방안을 모색해보자.
+	SkillHandler =  FPGHandler::Create<FPGPlayerSkillHandler>();
 	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 1);
 }
 

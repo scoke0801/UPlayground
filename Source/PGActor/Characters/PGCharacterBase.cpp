@@ -22,7 +22,7 @@ void APGCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SkillHandler = FPGHandler::Create<FPGSkillHandler>();
+	// SkillHandler = FPGHandler::Create<FPGSkillHandler>();
 }
 
 void APGCharacterBase::EndPlay(const EEndPlayReason::Type EndPlayReason)

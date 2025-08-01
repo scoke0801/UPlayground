@@ -50,7 +50,7 @@ protected:
 
 public:
 	virtual UPGPawnCombatComponent* GetCombatComponent() const {return nullptr;}
-	
+	virtual FPGSkillHandler* GetSkillHandler() const {return SkillHandler;} 
 public:
 	/**
 	 * 어빌리티 시스템 컴포넌트를 반환하는 인터페이스 구현 함수

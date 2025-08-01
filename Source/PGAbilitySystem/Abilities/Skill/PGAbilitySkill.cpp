@@ -5,6 +5,8 @@
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
@@ -15,14 +17,21 @@ void UPGAbilitySkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	UPGDataTableManager* dataTableManager = GetAvatarActorFromActorInfo()->GetGameInstance()->GetSubsystem<UPGDataTableManager>();
-	if (nullptr == dataTableManager)
+	APGCharacterBase* Character = Cast<APGCharacterBase>(GetOwningActorFromActorInfo());
+	if (nullptr == Character)
+	{
+		EndAbilitySelf();
+		return;
+	}
+
+	FPGSkillHandler* SkillHandler = Character->GetSkillHandler();
+	if (nullptr == SkillHandler || false == SkillHandler->IsCanUseSkill(SlotIndex))
 	{
 		EndAbilitySelf();
 		return;
 	}
 	
-	FPGSkillDataRow* Row = dataTableManager->GetRowData<FPGSkillDataRow>(1);
+	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(SlotIndex));
 	if(nullptr == Row)
 	{
 		EndAbilitySelf();
@@ -53,4 +62,5 @@ void UPGAbilitySkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCompleted);
 	
 	MontageTask->ReadyForActivation();
+	SkillHandler->UseSkill(SlotIndex);
 }
