@@ -30,6 +30,34 @@ void UPGAbilitySkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		EndAbilitySelf();
 		return;
 	}
+
+	// 현재 실행 중인 몽타주의 재생시간이 20% 이상 남았다면 스킬 사용 제한
+	if (USkeletalMeshComponent* MeshComp = Character->GetMesh())
+	{
+		if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+		{
+			if (UAnimMontage* ActivatedMontage = AnimInstance->GetCurrentActiveMontage())
+			{
+				float CurrentPosition = AnimInstance->Montage_GetPosition(ActivatedMontage);
+				float MontageLength = ActivatedMontage->GetPlayLength();
+				float PlayRate = AnimInstance->Montage_GetPlayRate(ActivatedMontage);
+				
+				if (PlayRate > 0.0f) // 정방향 재생 중인 경우
+				{
+					float RemainingTime = (MontageLength - CurrentPosition) / PlayRate;
+					float TotalTime = MontageLength / PlayRate;
+					float RemainingRatio = RemainingTime / TotalTime;
+					
+					// 남은 재생시간이 20% 이상이면 스킬 사용 제한
+					if (RemainingRatio >= 0.2f)
+					{
+						EndAbilitySelf();
+						return;
+					}
+				}
+			}
+		}
+	}
 	
 	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(SlotIndex));
 	if(nullptr == Row)
