@@ -23,4 +23,7 @@ protected:
 public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
+
+private:
+	void OnMessage(class FPGMessageParam* InParam) {}
 };

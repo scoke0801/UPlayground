@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class PGAbilitySystem : ModuleRules
+public class PGMessage : ModuleRules
 {
-	public PGAbilitySystem(ReadOnlyTargetRules Target) : base(Target)
+	public PGMessage(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         
@@ -18,18 +18,6 @@ public class PGAbilitySystem : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
-				"GameplayTags",
-				"GameplayAbilities",
-				"GameplayTasks",
-				"EnhancedInput"
-			}
-		);
-
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"PGActor",
-				"PGShared", "PGData", "PGData", "PGMessage"
 			}
 		);
 	}
