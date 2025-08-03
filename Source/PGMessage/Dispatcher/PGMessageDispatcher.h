@@ -14,7 +14,6 @@ public:
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FPGMessageDelegate, FPGMessageParam*);
 
-
 /**
  * 
  */
