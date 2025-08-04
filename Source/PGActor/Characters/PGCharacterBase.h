@@ -11,6 +11,7 @@ class FPGSkillHandler;
 class UPGDataAsset_StartUpDataBase;
 class UPGPawnCombatComponent;
 class UPGAbilitySystemComponent;
+class UMotionWarpingComponent;
 
 UCLASS()
 class PGACTOR_API APGCharacterBase : public ACharacter, public IAbilitySystemInterface
@@ -30,6 +31,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|CharacterData")
 	TSoftObjectPtr<UPGDataAsset_StartUpDataBase> CharacterStartUpData;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|MotionWarping")
+	UMotionWarpingComponent* MotionWarpingComponent;
+	
 protected:
 	TObjectPtr<FPGSkillHandler> SkillHandler;
 	

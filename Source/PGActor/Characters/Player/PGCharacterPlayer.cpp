@@ -65,6 +65,7 @@ void APGCharacterPlayer::BeginPlay()
 	// [TODO] 데이터를 주입할 수 있는 다른 방안을 모색해보자.
 	SkillHandler =  FPGHandler::Create<FPGPlayerSkillHandler>();
 	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 1);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 100);
 }
 
 void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

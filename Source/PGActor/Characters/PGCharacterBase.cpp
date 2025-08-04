@@ -3,8 +3,10 @@
 
 #include "PGCharacterBase.h"
 
+#include "MotionWarpingComponent.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
+#include "MotionWarpingComponent.h"
 
 // Sets default values
 APGCharacterBase::APGCharacterBase()
@@ -16,6 +18,9 @@ APGCharacterBase::APGCharacterBase()
 	GetMesh()->bReceivesDecals = false;
 	
 	AbilitySystemComponent = CreateDefaultSubobject<UPGAbilitySystemComponent>(TEXT("PGAbilitySystemComponent"));
+
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+
 }
 
 void APGCharacterBase::BeginPlay()
