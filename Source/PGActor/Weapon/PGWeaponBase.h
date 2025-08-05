@@ -20,19 +20,20 @@ public:
 	FOnTargetInteractedDelegate OnWeaponHitTarget;
 	FOnTargetInteractedDelegate OnWeaponPullTarget;
 	
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, category = "WeaponData")
+	FPGWeaponData WeaponData;
+	
 protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
 	UStaticMeshComponent* WeaponMesh;
 	
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
 	UBoxComponent* WeaponCollisionBox;
+
 	
 private:
 	TArray<FGameplayAbilitySpecHandle> AbilitySpecHandles;
-
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, category = "PG|WeaponData")
-	FPGPlayerWeaponData PlayerWeaponData;
 	
 public:	
 	// Sets default values for this actor's properties
@@ -46,15 +47,14 @@ public:
 	UFUNCTION()
 	virtual void OnCollisionBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex);
-	
+
+public:
 	UFUNCTION(BlueprintCallable)
 	void AssignGrantAbilitySpecHandles(const TArray<FGameplayAbilitySpecHandle>& InSpecHandles);
 
 	UFUNCTION(BlueprintPure)
-	TArray<FGameplayAbilitySpecHandle> GetGrantedAbilitySpecHandles();
-
+	TArray<FGameplayAbilitySpecHandle> GetGrantedAbilitySpecHandles() const;
+	
 public:
 	FORCEINLINE UBoxComponent* GetWeaponCollisionBox() const { return WeaponCollisionBox;}
-
-
 };

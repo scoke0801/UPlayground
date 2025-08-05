@@ -91,7 +91,7 @@ void UPGAbilityUnEquipWeapon::HandleUnEquipWeapon(APGWeaponBase* Weapon)
 		{
 			return;
 		}
-		if (UInputMappingContext* Context = Weapon->PlayerWeaponData.WeaponInputMappingContext)
+		if (UInputMappingContext* Context = Weapon->WeaponData.WeaponInputMappingContext)
 		{
 			
 			InputSubSystem->RemoveMappingContext(Context);

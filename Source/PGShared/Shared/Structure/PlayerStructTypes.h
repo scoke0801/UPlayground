@@ -27,7 +27,7 @@ public:
 
 
 USTRUCT(BlueprintType)
-struct PGSHARED_API FPGPlayerWeaponData
+struct PGSHARED_API FPGWeaponData
 {
 	GENERATED_BODY()
 
@@ -39,7 +39,7 @@ public:
 	UInputMappingContext* WeaponInputMappingContext;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (TitleProperty = "InputTag"))
-	TArray<FPGPlayerAbilitySet> DefaultWeaponAbilies;
+	TArray<FPGPlayerAbilitySet> DefaultWeaponAbilities;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly )
 	FScalableFloat WeaponBaseDamage;

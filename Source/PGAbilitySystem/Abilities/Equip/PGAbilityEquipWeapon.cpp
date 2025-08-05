@@ -61,7 +61,7 @@ void UPGAbilityEquipWeapon::HandleEquipWeapon(APGWeaponBase* Weapon)
 			return;
 		}
 
-		if (UInputMappingContext* Context = Weapon->PlayerWeaponData.WeaponInputMappingContext)
+		if (UInputMappingContext* Context = Weapon->WeaponData.WeaponInputMappingContext)
 		{
 			InputSubSystem->AddMappingContext(Context, 1);	
 		}
@@ -72,7 +72,7 @@ void UPGAbilityEquipWeapon::HandleEquipWeapon(APGWeaponBase* Weapon)
 	{
 		TArray<FGameplayAbilitySpecHandle> GrantedAbilitySpecHandles;
 		constexpr int32 ApplyLevel = 1;
-		AbilitySystemComponent->GrantPlayerWeaponAbilities(Weapon->PlayerWeaponData.DefaultWeaponAbilies,
+		AbilitySystemComponent->GrantPlayerWeaponAbilities(Weapon->WeaponData.DefaultWeaponAbilities,
 			ApplyLevel, GrantedAbilitySpecHandles);
 
 		Weapon->AssignGrantAbilitySpecHandles(GrantedAbilitySpecHandles);

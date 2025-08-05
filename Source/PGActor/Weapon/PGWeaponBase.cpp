@@ -49,9 +49,14 @@ void APGWeaponBase::AssignGrantAbilitySpecHandles(const TArray<FGameplayAbilityS
 {
 	AbilitySpecHandles = InSpecHandles;
 
+	if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
+	{
+		// TODO
+	}
 }
 
-TArray<FGameplayAbilitySpecHandle> APGWeaponBase::GetGrantedAbilitySpecHandles()
+TArray<FGameplayAbilitySpecHandle> APGWeaponBase::GetGrantedAbilitySpecHandles() const
 {
 	return AbilitySpecHandles;
 }
+

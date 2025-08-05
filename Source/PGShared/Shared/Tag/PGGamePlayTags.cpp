@@ -31,10 +31,18 @@ namespace PGGamePlayTags
 	// Event Tags
 	UE_DEFINE_GAMEPLAY_TAG(Player_Event_Equip_Weapon, "Player.Event.Equip.Weapon");
 	UE_DEFINE_GAMEPLAY_TAG(Player_Event_UnEquip_Weapon, "Player.Event.UnEquip.Weapon");
+	
+	UE_DEFINE_GAMEPLAY_TAG(Player_Event_HitPause, "Player.Event.HitPause");
 
+	
 	// Weapon Tags
 	UE_DEFINE_GAMEPLAY_TAG(Weapon_Sword, "Weapon.Sword");
 	UE_DEFINE_GAMEPLAY_TAG(Weapon_Bow, "Weapon.Bow");
 	UE_DEFINE_GAMEPLAY_TAG(Weapon_Staff, "Weapon.Staff");
+
+
+	// Shared Tags
+	UE_DEFINE_GAMEPLAY_TAG(Shared_Event_MeleeHit, "Shared.Event.MeleeHit");
+	UE_DEFINE_GAMEPLAY_TAG(Shared_Event_HitReact, "Shared.Event.HitReact");
 	
 }

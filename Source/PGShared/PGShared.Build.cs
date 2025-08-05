@@ -6,6 +6,7 @@ public class PGShared : ModuleRules
 {
 	public PGShared(ReadOnlyTargetRules Target) : base(Target)
 	{
+		PrivateDependencyModuleNames.AddRange(new string[] { "AIModule", "AIModule", "AIModule" });
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         
         // C++ 20 사용 설정

@@ -15,4 +15,6 @@ class PGACTOR_API UPGEnemyCombatComponent : public UPGPawnCombatComponent
 {
 	GENERATED_BODY()
 
+public:
+	virtual void OnHitTargetActor(AActor* HitActor) override;
 };
