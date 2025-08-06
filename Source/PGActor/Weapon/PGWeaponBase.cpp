@@ -4,6 +4,7 @@
 #include "PGWeaponBase.h"
 
 #include "Components/BoxComponent.h"
+#include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGData/PGDataTableManager.h"
 
 // Sets default values
@@ -31,6 +32,10 @@ void APGWeaponBase::OnCollisionBoxBeginOverlap(UPrimitiveComponent* OverlappedCo
 
 	if (APawn* HitPawn = Cast<APawn>(OtherActor))
 	{
+		if (UPGAbilityBPLibrary::IsTargetPawnHostile(WeaponOwningPawn,HitPawn))
+		{
+			OnWeaponHitTarget.ExecuteIfBound(OtherActor);
+		}
 	}
 }
 
@@ -41,7 +46,10 @@ void APGWeaponBase::OnCollisionBoxEndOverlap(UPrimitiveComponent* OverlappedComp
 
 	if (APawn* HitPawn = Cast<APawn>(OtherActor))
 	{
-	
+		if (UPGAbilityBPLibrary::IsTargetPawnHostile(WeaponOwningPawn,HitPawn))
+		{
+			OnWeaponPullTarget.ExecuteIfBound(OtherActor);
+		}
 	}
 }
 

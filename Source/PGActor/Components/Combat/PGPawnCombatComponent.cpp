@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "Components/BoxComponent.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
+#include "PGShared/Shared/Enum/PGEnumTypes.h"
 
 APGWeaponBase* UPGPawnCombatComponent::GetCharacterCarriedWeaponByTag(FGameplayTag InWeaponTagToGet) const
 {
@@ -25,8 +26,8 @@ void UPGPawnCombatComponent::RegisterSpawnedWeapon(FGameplayTag InWeaponTagToReg
 {
 	CharacterCarriedWeaponMap.Emplace(InWeaponTagToRegister, InWeaponToRegister);
 
-	//InWeaponToRegister->OnWeaponHitTarget.BindUObject(this, &ThisClass::OnHitTargetActor);
-	//InWeaponToRegister->OnWeaponPullTarget.BindUObject(this, &ThisClass::OnWeaponPulledFromTargetActor);
+	InWeaponToRegister->OnWeaponHitTarget.BindUObject(this, &ThisClass::OnHitTargetActor);
+	InWeaponToRegister->OnWeaponPullTarget.BindUObject(this, &ThisClass::OnWeaponPulledFromTargetActor);
 	
 	if (bRegsisterAsEquippedWeapon)
 	{
