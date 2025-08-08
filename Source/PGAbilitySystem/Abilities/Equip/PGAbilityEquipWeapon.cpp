@@ -11,6 +11,7 @@
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
 #include "PGActor/Controllers/PGPlayerController.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void UPGAbilityEquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Handle,

@@ -6,6 +6,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Abilities/GameplayAbilityTypes.h"
 #include "PGActor/Weapon/PGPlayerWeapon.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void UPGPlayerCombatComponent::OnHitTargetActor(AActor* HitActor)

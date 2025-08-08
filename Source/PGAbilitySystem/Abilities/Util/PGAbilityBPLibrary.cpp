@@ -7,6 +7,7 @@
 #include "GenericTeamAgentInterface.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 UPGAbilitySystemComponent* UPGAbilityBPLibrary::NativeGetPGASCFromActor(AActor* InActor)

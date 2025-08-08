@@ -17,6 +17,7 @@
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
+#include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 APGCharacterPlayer::APGCharacterPlayer()

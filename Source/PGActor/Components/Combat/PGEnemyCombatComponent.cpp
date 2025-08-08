@@ -2,6 +2,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Abilities/GameplayAbilityTypes.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void UPGEnemyCombatComponent::OnHitTargetActor(AActor* HitActor)
