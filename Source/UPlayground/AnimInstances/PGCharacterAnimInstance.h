@@ -33,9 +33,6 @@ protected:
 
 	UPROPERTY(Transient)
 	UCharacterMovementComponent* OwningMovementComponent;
-
-	UPROPERTY(Transient)
-	UEnhancedInputComponent* OwningEIC;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimData")
 	UInputAction* MoveInputAction;
@@ -85,9 +82,11 @@ public:
 	void SetIsFalling(bool InIsFalling);
 	
 private:
+	virtual void UpdateLocomotionDirection();
+	
+private:
 	void UpdateHasVelocity();
 	void UpdateHasAcceleration();
-	void UpdateLocomotionDirection();
 	void UpdateDisplacementSpeed(float DeltaSeconds);
 	void UpdateIsFalling();
 };
