@@ -7,6 +7,7 @@
 #include "Engine/StreamableManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
+#include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 
 UPGPawnCombatComponent* APGCharacterEnemy::GetCombatComponent() const
@@ -30,11 +31,16 @@ APGCharacterEnemy::APGCharacterEnemy()
 	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
 
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
+
+	SkillHandler =  FPGHandler::Create<FPGEnemySkillHandler>();
 }
 
 void APGCharacterEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	// [TODO] 데이터를 주입할 수 있는 다른 방안을 모색해보자.
+	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 1001);
 }
 
 void APGCharacterEnemy::PossessedBy(AController* NewController)

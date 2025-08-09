@@ -2,25 +2,18 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "PGAbilitySystem/Abilities/PGGameplayAbility.h"
-#include "PGAbilitySkill.generated.h"
-
-enum class EPGSkillSlot : uint8;
+#include "PGAbilitySystem/Abilities/PGEnemyGameplayAbility.h"
+#include "PGEnemyAbilityAttack.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PGABILITYSYSTEM_API UPGAbilitySkill : public UPGGameplayAbility
+class PGABILITYSYSTEM_API UPGEnemyAbilityAttack : public UPGEnemyGameplayAbility
 {
 	GENERATED_BODY()
 
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Ability")
-	EPGSkillSlot SlotIndex;
-	
 public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-
+	
 };

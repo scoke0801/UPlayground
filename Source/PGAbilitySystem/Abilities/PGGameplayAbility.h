@@ -7,6 +7,7 @@
 
 #include "PGGameplayAbility.generated.h"
 
+class APGCharacterBase;
 class UPGPawnCombatComponent;
 class UPGAbilitySystemComponent;
 
@@ -75,6 +76,12 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category="PG|Ability")
 	APGPlayerController* GetPlayerControllerFromActorInfo() const;
+
+	UFUNCTION(BlueprintPure, Category="PG|Ability")
+	APGCharacterBase* GetCharacter() const;
+
+public:
+	bool CheckMontageIsPlaying(APGCharacterBase* Character, float CheckRatio) const;
 	
 protected:
 	/**

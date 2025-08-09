@@ -14,4 +14,8 @@ class PGACTOR_API APGPlayerWeapon : public APGWeaponBase
 {
 	GENERATED_BODY()
 
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, category = "WeaponData")
+	FPGWeaponData WeaponData;
+	
 };

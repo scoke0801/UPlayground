@@ -10,6 +10,7 @@
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
 #include "PGActor/Controllers/PGPlayerController.h"
+#include "PGActor/Weapon/PGPlayerWeapon.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
@@ -92,11 +93,15 @@ void UPGAbilityUnEquipWeapon::HandleUnEquipWeapon(APGWeaponBase* Weapon)
 		{
 			return;
 		}
-		if (UInputMappingContext* Context = Weapon->WeaponData.WeaponInputMappingContext)
+
+		if (APGPlayerWeapon* PlayerWeapon = Cast<APGPlayerWeapon>(Weapon))
 		{
-			
-			InputSubSystem->RemoveMappingContext(Context);
+			if (UInputMappingContext* Context = PlayerWeapon->WeaponData.WeaponInputMappingContext)
+			{
+				InputSubSystem->RemoveMappingContext(Context);
+			}
 		}
+
 	}
 	
 	// Remove Ability Of Weapon, To Owner

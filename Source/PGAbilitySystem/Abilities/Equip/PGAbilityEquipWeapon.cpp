@@ -10,6 +10,7 @@
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
 #include "PGActor/Controllers/PGPlayerController.h"
+#include "PGActor/Weapon/PGPlayerWeapon.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
@@ -52,6 +53,7 @@ void UPGAbilityEquipWeapon::HandleEquipWeapon(APGWeaponBase* Weapon)
 	{
 		return;
 	}
+	APGPlayerWeapon* PlayerWeapon = Cast<APGPlayerWeapon>(Weapon);
 
 	// Add Mapping Context
 	if (APGPlayerController* PlayerController = GetPlayerControllerFromActorInfo())
@@ -62,21 +64,28 @@ void UPGAbilityEquipWeapon::HandleEquipWeapon(APGWeaponBase* Weapon)
 			return;
 		}
 
-		if (UInputMappingContext* Context = Weapon->WeaponData.WeaponInputMappingContext)
+		if (PlayerWeapon)
 		{
-			InputSubSystem->AddMappingContext(Context, 1);	
+			if (UInputMappingContext* Context = PlayerWeapon->WeaponData.WeaponInputMappingContext)
+			{
+				InputSubSystem->AddMappingContext(Context, 1);	
+			}
 		}
 	}
 	
 	// Add Ability Of Weapon, To Owner
 	if (UPGAbilitySystemComponent* AbilitySystemComponent = GetPGAbilitySystemComponentFromActorInfo())
 	{
-		TArray<FGameplayAbilitySpecHandle> GrantedAbilitySpecHandles;
-		constexpr int32 ApplyLevel = 1;
-		AbilitySystemComponent->GrantPlayerWeaponAbilities(Weapon->WeaponData.DefaultWeaponAbilities,
-			ApplyLevel, GrantedAbilitySpecHandles);
+		if (PlayerWeapon)
+		{
+			TArray<FGameplayAbilitySpecHandle> GrantedAbilitySpecHandles;
+			constexpr int32 ApplyLevel = 1;
+			
+			AbilitySystemComponent->GrantPlayerWeaponAbilities(PlayerWeapon->WeaponData.DefaultWeaponAbilities,
+				ApplyLevel, GrantedAbilitySpecHandles);
 
-		Weapon->AssignGrantAbilitySpecHandles(GrantedAbilitySpecHandles);
+			Weapon->AssignGrantAbilitySpecHandles(GrantedAbilitySpecHandles);
+		}
 	}
 }
 

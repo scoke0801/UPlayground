@@ -20,13 +20,12 @@ public:
 	FOnTargetInteractedDelegate OnWeaponHitTarget;
 	FOnTargetInteractedDelegate OnWeaponPullTarget;
 	
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, category = "WeaponData")
-	FPGWeaponData WeaponData;
-	
 protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
 	UStaticMeshComponent* WeaponMesh;
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
+	USkeletalMeshComponent* SkeletalWeaponMesh;
 	
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
 	UBoxComponent* WeaponCollisionBox;

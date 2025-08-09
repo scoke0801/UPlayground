@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PGAbilitySystem/Abilities/PGGameplayAbility.h"
-#include "PGAbilitySkill.generated.h"
+#include "PGAbilityPlayerSkill.generated.h"
 
 enum class EPGSkillSlot : uint8;
 
@@ -12,7 +12,7 @@ enum class EPGSkillSlot : uint8;
  * 
  */
 UCLASS()
-class PGABILITYSYSTEM_API UPGAbilitySkill : public UPGGameplayAbility
+class PGABILITYSYSTEM_API UPGAbilityPlayerSkill : public UPGGameplayAbility
 {
 	GENERATED_BODY()
 
