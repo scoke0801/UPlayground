@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "PGShared/Shared/Enum/PGEnumTypes.h"
 
 #include "PGGameplayAbility.generated.h"
 
+class UAbilityTask_PlayMontageAndWait;
+class APGCharacterBase;
 class UPGPawnCombatComponent;
 class UPGAbilitySystemComponent;
 
@@ -57,12 +58,34 @@ public:
 	 */
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+protected:
+	UFUNCTION()
+	virtual void OnMontageCompleted();
+
+	virtual UAbilityTask_PlayMontageAndWait* PlayMontageWait(UAnimMontage* MontageToPlay);
+	virtual void PlayMontageNoWait(UAnimMontage* MontageToPlay);
+	
+protected:
+	void EndAbilitySelf();
+	
 public:
 	/**
 	 * 액터 정보로부터 컴뱃 컴포넌트를 가져오는 함수
 	 */
 	UFUNCTION(BlueprintPure, Category="PG|Ability")
-	UPGPawnCombatComponent* GetCombatComponentFromActorInfo();
+	UPGPawnCombatComponent* GetCombatComponentFromActorInfo() const;
+	
+	/**
+	 * 액터 정보로부터 플레이어 컨트롤러를 가져오는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category="PG|Ability")
+	APGPlayerController* GetPlayerControllerFromActorInfo() const;
+
+	UFUNCTION(BlueprintPure, Category="PG|Ability")
+	APGCharacterBase* GetCharacter() const;
+
+public:
+	bool CheckMontageIsPlaying(APGCharacterBase* Character, float CheckRatio) const;
 	
 protected:
 	/**

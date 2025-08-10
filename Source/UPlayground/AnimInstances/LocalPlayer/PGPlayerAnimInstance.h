@@ -15,8 +15,13 @@ class UPLAYGROUND_API UPGPlayerAnimInstance : public UPGCharacterAnimInstance
 {
 	GENERATED_BODY()
 
-
+protected:
+	UPROPERTY(Transient)
+	class UEnhancedInputComponent* OwningEIC;
+	
 public:
+	virtual void NativeBeginPlay() override;
+	
 	virtual void NativeInitializeAnimation() override;
 
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
@@ -32,4 +37,7 @@ protected:
 	float EnterRelaxStateThreshold = 5.f;
 
 	float IdleElapsedTime = 0.f;
+
+private:
+	virtual void UpdateLocomotionDirection() override;
 };

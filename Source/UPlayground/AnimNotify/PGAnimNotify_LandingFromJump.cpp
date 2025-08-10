@@ -20,7 +20,6 @@ void UPGAnimNotify_LandingFromJump::Notify(USkeletalMeshComponent* MeshComp, UAn
 	}
 	else
 	{
-		
 		PG_Debug::Print(TEXT("Fail Land"));
 	}
 

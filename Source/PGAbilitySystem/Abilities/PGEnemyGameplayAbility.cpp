@@ -4,7 +4,7 @@
 #include "PGEnemyGameplayAbility.h"
 
 #include "AbilitySystemComponent.h"
-#include "PGActor/Characters/NonPlayer/PGCharacterEnemy.h"
+#include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 
 APGCharacterEnemy* UPGEnemyGameplayAbility::GetEnemyCharacterFromActorInfo()
 {

@@ -23,3 +23,14 @@ enum class EPGSuccessType : uint8
 	Failed
 };
 
+
+/**
+ * 데미지 토글 타입을 정의하는 열거형
+ */
+UENUM(BlueprintType)
+enum class EToggleDamageType : uint8
+{
+	CurrentEquippedWeapon,	// 현재 장착 무기
+	LeftHand,				// 왼손(맨손)
+	RightHand,				// 오른손(맨손)
+};

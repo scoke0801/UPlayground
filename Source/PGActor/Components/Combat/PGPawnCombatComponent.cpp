@@ -4,6 +4,9 @@
 #include "PGPawnCombatComponent.h"
 
 #include "GameplayTagContainer.h"
+#include "Components/BoxComponent.h"
+#include "PGActor/Weapon/PGWeaponBase.h"
+#include "PGShared/Shared/Enum/PGEnumTypes.h"
 
 APGWeaponBase* UPGPawnCombatComponent::GetCharacterCarriedWeaponByTag(FGameplayTag InWeaponTagToGet) const
 {
@@ -23,8 +26,8 @@ void UPGPawnCombatComponent::RegisterSpawnedWeapon(FGameplayTag InWeaponTagToReg
 {
 	CharacterCarriedWeaponMap.Emplace(InWeaponTagToRegister, InWeaponToRegister);
 
-	//InWeaponToRegister->OnWeaponHitTarget.BindUObject(this, &ThisClass::OnHitTargetActor);
-	//InWeaponToRegister->OnWeaponPullTarget.BindUObject(this, &ThisClass::OnWeaponPulledFromTargetActor);
+	InWeaponToRegister->OnWeaponHitTarget.BindUObject(this, &ThisClass::OnHitTargetActor);
+	InWeaponToRegister->OnWeaponPullTarget.BindUObject(this, &ThisClass::OnWeaponPulledFromTargetActor);
 	
 	if (bRegsisterAsEquippedWeapon)
 	{
@@ -45,4 +48,32 @@ APGWeaponBase* UPGPawnCombatComponent::GetCharacterCurrentEquippedWeapon() const
 void UPGPawnCombatComponent::SetCurrentEquippWeaponTag(FGameplayTag WeaponTag)
 {
 	CurrentEquippedWeaponTag = WeaponTag;
+}
+
+void UPGPawnCombatComponent::ToggleWeaponCollision(bool bShouldEnable, EToggleDamageType ToggleDamageType)
+{
+	if (EToggleDamageType::CurrentEquippedWeapon == ToggleDamageType)
+	{
+		APGWeaponBase* WeaponToToggle = GetCharacterCurrentEquippedWeapon();
+
+		check(WeaponToToggle);
+
+		if (bShouldEnable)
+		{
+			WeaponToToggle->GetWeaponCollisionBox()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		}
+		else
+		{
+			WeaponToToggle->GetWeaponCollisionBox()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			OverlappedActors.Empty();
+		}
+	}
+}
+
+void UPGPawnCombatComponent::OnHitTargetActor(AActor* HitActor)
+{
+}
+
+void UPGPawnCombatComponent::OnWeaponPulledFromTargetActor(AActor* InteractedActor)
+{
 }

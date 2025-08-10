@@ -9,17 +9,7 @@
 
 class APGWeaponBase;
 
-/**
- * 데미지 토글 타입을 정의하는 열거형
- */
-UENUM(BlueprintType)
-enum class EToggleDamageType : uint8
-{
-	CurrentEquippedWeapon,	// 현재 장착 무기
-	LeftHand,				// 왼손(맨손)
-	RightHand,				// 오른손(맨손)
-};
-
+enum class EToggleDamageType : uint8;
 /**
  * 폰의 전투 관련 기능을 담당하는 컴포넌트 클래스
  * 무기 관리, 충돌 처리, 전투 액션 등을 제공
@@ -77,4 +67,27 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "PG|Combat")
 	void SetCurrentEquippWeaponTag(FGameplayTag WeaponTag);
+
+public:
+	// 무기 충돌 관련
+	
+	/**
+	 * 무기 충돌을 토글하는 함수
+	 * @param bShouldEnable 충돌 활성화 여부
+	 * @param ToggleDamageType 토글할 데미지 타입
+	 */
+	UFUNCTION(BlueprintCallable, Category = "PG|Combat")
+	void ToggleWeaponCollision(bool bShouldEnable, EToggleDamageType ToggleDamageType);
+
+	/**
+	 * 대상 액터를 히트했을 때 호출되는 가상 함수
+	 * @param HitActor 히트된 액터
+	 */
+	virtual void OnHitTargetActor(AActor* HitActor);
+	
+	/**
+	 * 대상 액터에서 무기가 빠졌을 때 호출되는 가상 함수
+	 * @param InteractedActor 상호작용한 액터
+	 */
+	virtual void OnWeaponPulledFromTargetActor(AActor* InteractedActor);
 };
