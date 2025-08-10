@@ -4,6 +4,7 @@
 #include "PGAbilitySystemComponent.h"
 
 #include "Abilities/PGPlayerGameplayAbility.h"
+#include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInputTag)

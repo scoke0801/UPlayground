@@ -1,0 +1,83 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "PGAbilityHitReact.h"
+
+#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "Kismet/KismetMathLibrary.h"
+
+void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+                                         const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+                                         const FGameplayEventData* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	// 타겟 방향 회전
+	FaceToAttacker(TriggerEventData->Instigator);
+
+	// 메테리얼 Hit이펙트 적용
+	if (bool HasHitReactMontage = 0 < MontagePaths.Num())
+	{
+		// 몽타쥬 재생
+		int32 Index = FMath::RandRange(0, MontagePaths.Num() - 1);
+		if (MontagePaths.IsValidIndex(Index))
+		{
+			UAnimMontage* MontageToPlay = nullptr;
+			if (UObject* LoadedObject = MontagePaths[Index].TryLoad())
+			{
+				MontageToPlay = Cast<UAnimMontage>(LoadedObject);
+			}
+			if (nullptr == MontageToPlay)
+			{
+				EndAbilitySelf();
+				return;
+			}
+
+			if (auto MontageTask =  PlayMontageWait(MontageToPlay))
+			{
+				MontageTask->ReadyForActivation();
+			}
+		}
+		
+		SetHitFxSwitchParameter(1.0f);
+	}
+	else
+	{
+		SetHitFxSwitchParameter(1.0f);
+
+		EndAbilitySelf();
+		return;
+	}
+}
+
+void UPGAbilityHitReact::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	// Material Parameter 세팅
+	SetHitFxSwitchParameter(0.0f);
+	
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UPGAbilityHitReact::FaceToAttacker(const AActor* Attacker)
+{
+	if (nullptr == Attacker || false == FaceToTarget)
+	{
+		return;
+	}
+
+	FVector AttackerLocation = Attacker->GetActorLocation();
+	FVector OwnerLocation = GetOwningActorFromActorInfo()->GetActorLocation();
+
+	FRotator NewRotator = UKismetMathLibrary::FindLookAtRotation(OwnerLocation, AttackerLocation);
+
+	GetOwningActorFromActorInfo()->SetActorRotation(NewRotator);
+}
+
+void UPGAbilityHitReact::SetHitFxSwitchParameter(float Value)
+{
+	if (USkeletalMeshComponent* SkeletalMeshComp = GetOwningComponentFromActorInfo())
+	{
+		SkeletalMeshComp->SetScalarParameterValueOnMaterials(MaterialParameterName, Value);
+	}
+}

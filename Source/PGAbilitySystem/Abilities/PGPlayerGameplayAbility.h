@@ -17,33 +17,23 @@ class PGABILITYSYSTEM_API UPGPlayerGameplayAbility : public UPGGameplayAbility
 {
 	GENERATED_BODY()
 
-public:
-	/**
-	 * 액터 정보로부터 플레이어 캐릭터를 가져오는 함수
-	 */
-	UFUNCTION(BlueprintPure, Category="PG|Ability")
-	APGCharacterPlayer* GetPlayerCharacterFromActorInfo();
-
-	/**
-	 * 액터 정보로부터 플레이어 컨트롤러를 가져오는 함수
-	 */
-	UFUNCTION(BlueprintPure, Category="PG|Ability")
-	APGPlayerController* GetPlayerControllerFromActorInfo();
-
-	/**
-	 * 액터 정보로부터 플레이어 컴뱃 컴포넌트를 가져오는 함수
-	 */
-	UFUNCTION(BlueprintPure, Category="PG|Ability")
-	UPGPlayerCombatComponent* GetPlayerCombatComponentFromActorInfo();
-
 private:
 	/**
 	 * 캐시된 플레이어 캐릭터 참조
 	 */
 	TWeakObjectPtr<APGCharacterPlayer> CachedPlayerCharacter;
 	
+public:
 	/**
-	 * 캐시된 플레이어 컨트롤러 참조
+	 * 액터 정보로부터 플레이어 캐릭터를 가져오는 함수
 	 */
-	TWeakObjectPtr<APGPlayerController> CachedPlayerController;
+	UFUNCTION(BlueprintPure, Category="PG|Ability")
+	APGCharacterPlayer* GetPlayerCharacterFromActorInfo();
+	
+	/**
+	 * 액터 정보로부터 플레이어 컴뱃 컴포넌트를 가져오는 함수
+	 */
+	UFUNCTION(BlueprintPure, Category="PG|Ability")
+	UPGPlayerCombatComponent* GetPlayerCombatComponentFromActorInfo();
+
 };

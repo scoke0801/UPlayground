@@ -7,9 +7,11 @@
 #include "GameFramework/Character.h"
 #include "PGCharacterBase.generated.h"
 
+class FPGSkillHandler;
 class UPGDataAsset_StartUpDataBase;
 class UPGPawnCombatComponent;
 class UPGAbilitySystemComponent;
+class UMotionWarpingComponent;
 
 UCLASS()
 class PGACTOR_API APGCharacterBase : public ACharacter, public IAbilitySystemInterface
@@ -28,10 +30,20 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|CharacterData")
 	TSoftObjectPtr<UPGDataAsset_StartUpDataBase> CharacterStartUpData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|MotionWarping")
+	UMotionWarpingComponent* MotionWarpingComponent;
+	
+protected:
+	TObjectPtr<FPGSkillHandler> SkillHandler;
 	
 public:	
 	// Sets default values for this actor's properties
 	APGCharacterBase();
+
+public:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 protected:
 	/**
@@ -39,10 +51,10 @@ protected:
 	 * @param NewController 새로운 컨트롤러
 	 */
 	virtual void PossessedBy(AController* NewController) override;
-	
+
 public:
 	virtual UPGPawnCombatComponent* GetCombatComponent() const {return nullptr;}
-	
+	virtual FPGSkillHandler* GetSkillHandler() const {return SkillHandler;} 
 public:
 	/**
 	 * 어빌리티 시스템 컴포넌트를 반환하는 인터페이스 구현 함수

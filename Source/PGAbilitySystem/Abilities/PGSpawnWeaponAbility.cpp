@@ -51,7 +51,7 @@ EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);
 		CombatComponent->RegisterSpawnedWeapon(
 			WeaponTagToRegister,
 			SpawnedWeapon,
-			RegsisterAsEquippedWeapon
+			RegisterAsEquippedWeapon
 		);
 	}
 }

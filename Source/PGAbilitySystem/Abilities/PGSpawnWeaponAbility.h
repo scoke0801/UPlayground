@@ -26,7 +26,7 @@ protected:
 	FGameplayTag WeaponTagToRegister;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="PG|Abilities")
-	bool RegsisterAsEquippedWeapon;
+	bool RegisterAsEquippedWeapon;
 
 public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;

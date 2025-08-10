@@ -21,6 +21,7 @@ public class PGAbilitySystem : ModuleRules
 				"GameplayTags",
 				"GameplayAbilities",
 				"GameplayTasks",
+				"EnhancedInput"
 			}
 		);
 
@@ -28,7 +29,7 @@ public class PGAbilitySystem : ModuleRules
 			new string[]
 			{
 				"PGActor",
-				"PGShared"
+				"PGShared", "PGData", "PGData", "PGMessage", "MotionWarping", "AIModule"
 			}
 		);
 	}

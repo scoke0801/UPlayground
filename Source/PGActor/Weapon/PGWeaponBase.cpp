@@ -4,6 +4,8 @@
 #include "PGWeaponBase.h"
 
 #include "Components/BoxComponent.h"
+#include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
+#include "PGData/PGDataTableManager.h"
 
 // Sets default values
 APGWeaponBase::APGWeaponBase()
@@ -21,7 +23,6 @@ APGWeaponBase::APGWeaponBase()
 	WeaponCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this,&ThisClass::OnCollisionBoxBeginOverlap);
 	WeaponCollisionBox->OnComponentEndOverlap.AddUniqueDynamic(this, &ThisClass::OnCollisionBoxEndOverlap);
-
 }
 
 void APGWeaponBase::OnCollisionBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -31,6 +32,10 @@ void APGWeaponBase::OnCollisionBoxBeginOverlap(UPrimitiveComponent* OverlappedCo
 
 	if (APawn* HitPawn = Cast<APawn>(OtherActor))
 	{
+		if (UPGAbilityBPLibrary::IsTargetPawnHostile(WeaponOwningPawn,HitPawn))
+		{
+			OnWeaponHitTarget.ExecuteIfBound(OtherActor);
+		}
 	}
 }
 
@@ -41,16 +46,25 @@ void APGWeaponBase::OnCollisionBoxEndOverlap(UPrimitiveComponent* OverlappedComp
 
 	if (APawn* HitPawn = Cast<APawn>(OtherActor))
 	{
-	
+		if (UPGAbilityBPLibrary::IsTargetPawnHostile(WeaponOwningPawn,HitPawn))
+		{
+			OnWeaponPullTarget.ExecuteIfBound(OtherActor);
+		}
 	}
 }
 
 void APGWeaponBase::AssignGrantAbilitySpecHandles(const TArray<FGameplayAbilitySpecHandle>& InSpecHandles)
 {
 	AbilitySpecHandles = InSpecHandles;
+
+	if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
+	{
+		// TODO
+	}
 }
 
 TArray<FGameplayAbilitySpecHandle> APGWeaponBase::GetGrantedAbilitySpecHandles() const
 {
 	return AbilitySpecHandles;
 }
+

@@ -26,5 +26,15 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	virtual UPGPawnCombatComponent* GetCombatComponent() const override;
+
+public:
+	APGCharacterEnemy();
 	
+protected:
+	virtual void BeginPlay() override;
+
+	virtual void PossessedBy(AController* NewController) override;
+
+private:
+	void InitEnemyStartUpData();
 };

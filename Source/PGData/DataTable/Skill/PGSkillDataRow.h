@@ -19,4 +19,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<int32> ChainSkillIdList;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 SkillCoolTime;
 };
