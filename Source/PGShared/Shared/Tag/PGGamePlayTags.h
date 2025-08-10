@@ -16,7 +16,10 @@ namespace PGGamePlayTags
 	// Enemy Ability
 	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Ability_Melee);
 	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Ability_Range);
-	
+
+	// Shared Ability
+	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Shared_Ability_HitReact);
+
 	// Weapon Tag
 	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Sword);
 	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Bow);

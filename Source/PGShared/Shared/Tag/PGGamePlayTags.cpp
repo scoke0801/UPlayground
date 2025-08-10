@@ -13,7 +13,10 @@ namespace PGGamePlayTags
 	// Enemy Ability
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_Melee, "Enemy.Ability.Melee");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_Range, "Enemy.Ability.Range");
-
+	
+	// Shared Ability
+	UE_DEFINE_GAMEPLAY_TAG(Shared_Ability_HitReact, "Shared.Ability.HitReact");
+	
 	// Weapon Tags
 	UE_DEFINE_GAMEPLAY_TAG(Weapon_Sword, "Weapon.Sword");
 	UE_DEFINE_GAMEPLAY_TAG(Weapon_Bow, "Weapon.Bow");

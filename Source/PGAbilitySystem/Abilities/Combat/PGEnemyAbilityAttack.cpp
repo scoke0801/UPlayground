@@ -52,20 +52,12 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	{
 		EndAbilitySelf();
 	}
-	
-	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-		this, NAME_None, MontageToPlay);
-	if (nullptr == MontageTask)
+
+	if (UAbilityTask_PlayMontageAndWait* MontageTask = PlayMontageWait(MontageToPlay))
 	{
-		EndAbilitySelf();
-		return;
+		MontageTask->ReadyForActivation();
 	}
 	
-	MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnBlendOut.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	
-	MontageTask->ReadyForActivation();
 	SkillHandler->UseSkill(EPGSkillSlot::NormalAttack);
+
 }

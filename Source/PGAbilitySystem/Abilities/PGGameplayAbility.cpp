@@ -5,6 +5,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Controllers/PGPlayerController.h"
@@ -51,6 +52,28 @@ void UPGGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 void UPGGameplayAbility::OnMontageCompleted()
 {
 	EndAbilitySelf();
+}
+
+UAbilityTask_PlayMontageAndWait* UPGGameplayAbility::PlayMontageWait(UAnimMontage* MontageToPlay)
+{
+	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+		this, NAME_None, MontageToPlay);
+	if (nullptr == MontageTask)
+	{
+		EndAbilitySelf();
+		return nullptr;
+	}
+	
+	MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCompleted);
+	MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
+	MontageTask->OnBlendOut.AddDynamic(this, &ThisClass::OnMontageCompleted);
+	MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCompleted);
+
+	return MontageTask;
+}
+
+void UPGGameplayAbility::PlayMontageNoWait(UAnimMontage* MontageToPlay)
+{
 }
 
 void UPGGameplayAbility::EndAbilitySelf()

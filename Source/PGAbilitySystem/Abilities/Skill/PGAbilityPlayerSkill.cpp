@@ -3,6 +3,7 @@
 
 #include "PGAbilityPlayerSkill.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
@@ -10,6 +11,7 @@
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGMessage/Dispatcher/PGMessageDispatcher.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -54,20 +56,41 @@ void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	{
 		EndAbilitySelf();
 	}
-	
-	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-		this, NAME_None, MontageToPlay);
-	if (nullptr == MontageTask)
+
+	if (UAbilityTask_PlayMontageAndWait* MontageTask = PlayMontageWait(MontageToPlay))
 	{
-		EndAbilitySelf();
-		return;
+		MontageTask->ReadyForActivation();
 	}
-	
-	MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnBlendOut.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	
-	MontageTask->ReadyForActivation();
 	SkillHandler->UseSkill(SlotIndex);
+
+	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+		this,
+		PGGamePlayTags::Shared_Event_MeleeHit);
+	if (nullptr != WaitEventTask)
+	{
+		WaitEventTask->EventReceived.AddDynamic(this, &ThisClass::OnGameplayEventReceived);
+
+		WaitEventTask->ReadyForActivation();
+	}
+}
+
+void UPGAbilityPlayerSkill::EndAbility(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+	bool bReplicateEndAbility, bool bWasCancelled)
+{
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UPGAbilityPlayerSkill::OnGameplayEventReceived(FGameplayEventData Payload)
+{
+	FGameplayEventData Data;
+	Data.Instigator = Payload.Instigator;
+	Data.Target = Payload.Target;
+
+	AActor* TargetActor = const_cast<AActor*>(Payload.Target.Get());
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+		TargetActor,
+		PGGamePlayTags::Shared_Event_HitReact,
+		Data
+		);
 }

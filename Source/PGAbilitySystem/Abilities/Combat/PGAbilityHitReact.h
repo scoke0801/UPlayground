@@ -4,28 +4,33 @@
 
 #include "CoreMinimal.h"
 #include "PGAbilitySystem/Abilities/PGGameplayAbility.h"
-#include "PGAbilityPlayerSkill.generated.h"
-
-enum class EPGSkillSlot : uint8;
+#include "PGAbilityHitReact.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PGABILITYSYSTEM_API UPGAbilityPlayerSkill : public UPGGameplayAbility
+class PGABILITYSYSTEM_API UPGAbilityHitReact : public UPGGameplayAbility
 {
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Ability")
-	EPGSkillSlot SlotIndex;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Ability")
+	TArray<FSoftObjectPath> MontagePaths;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Ability")
+	bool FaceToTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Ability")
+	FName MaterialParameterName;
 	
 public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
-	
-protected:
-	UFUNCTION()
-	void OnGameplayEventReceived(FGameplayEventData Payload);
+
+private:
+	void FaceToAttacker(const AActor* Attacker);
+
+	void SetHitFxSwitchParameter(float Value);
 };

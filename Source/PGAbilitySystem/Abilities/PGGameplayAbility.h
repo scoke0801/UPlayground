@@ -7,6 +7,7 @@
 
 #include "PGGameplayAbility.generated.h"
 
+class UAbilityTask_PlayMontageAndWait;
 class APGCharacterBase;
 class UPGPawnCombatComponent;
 class UPGAbilitySystemComponent;
@@ -60,6 +61,9 @@ public:
 protected:
 	UFUNCTION()
 	virtual void OnMontageCompleted();
+
+	virtual UAbilityTask_PlayMontageAndWait* PlayMontageWait(UAnimMontage* MontageToPlay);
+	virtual void PlayMontageNoWait(UAnimMontage* MontageToPlay);
 	
 protected:
 	void EndAbilitySelf();
