@@ -19,24 +19,16 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	if (bool HasHitReactMontage = 0 < MontagePaths.Num())
 	{
 		// 몽타쥬 재생
-		int32 Index = FMath::RandRange(0, MontagePaths.Num() - 1);
-		if (MontagePaths.IsValidIndex(Index))
+		UAnimMontage* MontageToPlay = GetMontageToPlay();
+		if (nullptr == MontageToPlay)
 		{
-			UAnimMontage* MontageToPlay = nullptr;
-			if (UObject* LoadedObject = MontagePaths[Index].TryLoad())
-			{
-				MontageToPlay = Cast<UAnimMontage>(LoadedObject);
-			}
-			if (nullptr == MontageToPlay)
-			{
-				EndAbilitySelf();
-				return;
-			}
+			EndAbilitySelf();
+			return;
+		}
 
-			if (auto MontageTask =  PlayMontageWait(MontageToPlay))
-			{
-				MontageTask->ReadyForActivation();
-			}
+		if (auto MontageTask =  PlayMontageWait(MontageToPlay))
+		{
+			MontageTask->ReadyForActivation();
 		}
 		
 		SetHitFxSwitchParameter(1.0f);
@@ -46,7 +38,6 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		SetHitFxSwitchParameter(1.0f);
 
 		EndAbilitySelf();
-		return;
 	}
 }
 
@@ -57,6 +48,19 @@ void UPGAbilityHitReact::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 	SetHitFxSwitchParameter(0.0f);
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+UAnimMontage* UPGAbilityHitReact::GetMontageToPlay() const
+{
+	int32 Index = FMath::RandRange(0, MontagePaths.Num() - 1);
+	if (MontagePaths.IsValidIndex(Index))
+	{
+		if (UObject* LoadedObject = MontagePaths[Index].TryLoad())
+		{
+			return Cast<UAnimMontage>(LoadedObject);
+		}
+	}
+	return nullptr;
 }
 
 void UPGAbilityHitReact::FaceToAttacker(const AActor* Attacker)

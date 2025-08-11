@@ -61,46 +61,6 @@ float UPGAbilityBPLibrary::GetScalableFloatValueAtLevel(const FScalableFloat& In
 	return InScalableFloat.GetValueAtLevel(InLevel);
 }
 
-FGameplayTag UPGAbilityBPLibrary::ComputeHitReactDirectionTag(AActor* InAttacker, AActor* InVictim,
-	float& OutAngleDifference)
-{
-	const FVector VictimForVector = InVictim->GetActorForwardVector();
-	const FVector VictimToAttackerNormalized = (InAttacker->GetActorLocation()
-		- InVictim->GetActorLocation()).GetSafeNormal();
-
-	const float DotResult = FVector::DotProduct(VictimForVector, VictimToAttackerNormalized);
-
-	OutAngleDifference = UKismetMathLibrary::DegAcos(DotResult);
-
-	// 왼손 좌표계
-	// 두번째 벡터가 첫번째 벡터 우측에 있으면, 아래 방향
-	// 좌측에 있으면 위 방향
-	const FVector CrossResult = FVector::CrossProduct(VictimForVector, VictimToAttackerNormalized);
-	if (CrossResult.Z < 0.f)
-	{
-		// 아래방향을 가르키고 있다면, 방향을 반대로
-		OutAngleDifference *= -1.f;
-	}
-
-	if (OutAngleDifference >= -45.0f && OutAngleDifference <= 45.0f)
-	{
-		return PGGamePlayTags::Shared_Status_HitReact_Front;
-	}
-	else if (OutAngleDifference < -45.0f && OutAngleDifference >= -135.f)
-	{
-		return PGGamePlayTags::Shared_Status_HitReact_Left;
-	}
-	else if (OutAngleDifference < -135.0f || OutAngleDifference > 135.f)
-	{
-		return PGGamePlayTags::Shared_Status_HitReact_Back;
-	}
-	else if (OutAngleDifference > 45.0f && OutAngleDifference<= 135.0f)
-	{
-		return PGGamePlayTags::Shared_Status_HitReact_Right;
-	}
-	return PGGamePlayTags::Shared_Status_HitReact_Front;
-}
-
 bool UPGAbilityBPLibrary::IsValidBlock(AActor* InAttacker, AActor* InDefender)
 {
 	const float DotResult = FVector::DotProduct(InAttacker->GetActorForwardVector(),
