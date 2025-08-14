@@ -18,8 +18,13 @@ public:
 	FSoftObjectPath MontagePath;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FSoftObjectPath SkillIconPath;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<int32> ChainSkillIdList;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int32 SkillCoolTime;
+
+	
 };
