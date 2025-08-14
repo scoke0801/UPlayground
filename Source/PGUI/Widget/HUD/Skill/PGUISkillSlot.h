@@ -3,27 +3,30 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PGShared/Shared/Define/PGSkillDefine.h"
 #include "PGUI/Widget/Base/PGWidgetBase.h"
-#include "PGUIHudPlayerInfo.generated.h"
+#include "PGUISkillSlot.generated.h"
 
+class UImage;
+class UTextBlock;
 /**
  * 
  */
 UCLASS(meta = (DisableNativeTick))
-class PGUI_API UPGUIHudPlayerInfo : public UPGWidgetBase
+class PGUI_API UPGUISkillSlot : public UPGWidgetBase
 {
 	GENERATED_BODY()
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	class UTextBlock* LevelText;
+	TObjectPtr<UImage> SkillImage;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	class UPGWidgetBase* HpBar;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	class UImage* PlayerImage;
-
+	TObjectPtr<UTextBlock> CoolTimeText;
+	
 protected:
-	virtual void NativeOnInitialized() override;
+	PGSkillId SkillId;
+
+public:
+	void SetData(const PGSkillId InSkillId);
 };
