@@ -19,10 +19,10 @@ class PGUI_API UPGUISkillSlot : public UPGWidgetBase
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
 	TObjectPtr<UImage> SkillImage;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
 	TObjectPtr<UTextBlock> CoolTimeText;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|UI", meta = (BindWidget))

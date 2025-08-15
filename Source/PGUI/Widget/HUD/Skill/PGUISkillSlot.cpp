@@ -17,9 +17,9 @@ void UPGUISkillSlot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	FrameImageSwitcher->SetActiveWidgetIndex(LOCKED_FRAME_INDEX);
-	SkillImage->SetVisibility(ESlateVisibility::Collapsed);
-	CoolTimeText->SetVisibility(ESlateVisibility::Collapsed);
+	// FrameImageSwitcher->SetActiveWidgetIndex(LOCKED_FRAME_INDEX);
+	// SkillImage->SetVisibility(ESlateVisibility::Collapsed);
+	// CoolTimeText->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UPGUISkillSlot::SetData(const PGSkillId InSkillId)

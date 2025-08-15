@@ -33,4 +33,7 @@ private:
 	void BindSkillSlots();
 
 	TObjectPtr<UPGUISkillSlot> GetSkillSlot(const EPGSkillSlot) const;
+
+private:
+	void OnPlayerInit(const class IPGEventData* InData);
 };

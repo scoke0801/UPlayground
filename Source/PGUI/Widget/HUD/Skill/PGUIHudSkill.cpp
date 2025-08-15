@@ -6,6 +6,8 @@
 #include "PGUISkillSlot.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 
 constexpr int32 FIRST_SKILL_SLOT = 1;
@@ -16,6 +18,12 @@ void UPGUIHudSkill::NativeOnInitialized()
 	Super::NativeOnInitialized();
 	
 	BindSkillSlots();
+
+	UPGMessageManager::Get()->RegisterDelegate(EPGMessageType::PlayerInit,
+		this,
+		&ThisClass::OnPlayerInit);
+
+	OnPlayerInit(nullptr);
 }
 
 void UPGUIHudSkill::SetSkillSlot(const EPGSkillSlot InSkillSlot) const
@@ -46,7 +54,6 @@ void UPGUIHudSkill::BindSkillSlots()
 		FString SlotName = SkillSlotName + FString::FromInt(i);
 		if (UPGUISkillSlot* SkillSlot = Cast<UPGUISkillSlot>(GetWidgetFromName(FName(*SlotName))))
 		{
-			SkillSlot->SetData(i);
 			SkillSlots.Add(SkillSlot);
 		}
 	}
@@ -76,4 +83,18 @@ TObjectPtr<UPGUISkillSlot> UPGUIHudSkill::GetSkillSlot(const EPGSkillSlot InSkil
 	default: break;
 	}
 	return nullptr;
+}
+
+void UPGUIHudSkill::OnPlayerInit(const IPGEventData* InData)
+{
+	SetSkillSlot(EPGSkillSlot::NormalAttack);
+	SetSkillSlot(EPGSkillSlot::SkillSlot_1);
+	SetSkillSlot(EPGSkillSlot::SkillSlot_2);
+	SetSkillSlot(EPGSkillSlot::SkillSlot_3);
+	SetSkillSlot(EPGSkillSlot::SkillSlot_4);
+	SetSkillSlot(EPGSkillSlot::SkillSlot_5);
+	SetSkillSlot(EPGSkillSlot::SkillSlot_6);
+	
+	
+	
 }

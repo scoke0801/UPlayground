@@ -16,6 +16,8 @@
 #include "PGActor/Handler/Skill/PGPlayerSkillHandler.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
@@ -57,16 +59,6 @@ APGCharacterPlayer::APGCharacterPlayer()
 void APGCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// [TODO] 데이터를 주입할 수 있는 다른 방안을 모색해보자.
-	SkillHandler =  FPGHandler::Create<FPGPlayerSkillHandler>();
-	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 100);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_1, 110);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_2, 111);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_3, 112);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_4, 113);
-
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 10);
 }
 
 void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -107,6 +99,17 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 			LoadedData->GiveToAbilitySystemComponent(AbilitySystemComponent);
 		}
 	}
+
+	SkillHandler =  FPGHandler::Create<FPGPlayerSkillHandler>();
+	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 100);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_1, 110);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_2, 111);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_3, 112);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_4, 113);
+
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 10);
+	UPGMessageManager::Get()->SendMessage(EPGMessageType::PlayerInit, nullptr);
+
 }
 
 void APGCharacterPlayer::StartSkillWindow()

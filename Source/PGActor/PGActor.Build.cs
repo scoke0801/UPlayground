@@ -30,7 +30,7 @@ public class PGActor : ModuleRules
 				"PGShared",
 				
 				"PGData",
-				"PGAbilitySystem", "MotionWarping", "AIModule"
+				"PGAbilitySystem", "MotionWarping", "AIModule", "PGMessage"
 			});
 	}
 }
