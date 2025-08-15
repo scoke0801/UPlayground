@@ -5,6 +5,7 @@
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
 
 void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                          const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
@@ -32,6 +33,10 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		}
 		
 		SetHitFxSwitchParameter(1.0f);
+		if(APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetOwningActorFromActorInfo()))
+		{
+			Player->SetIsCanControl(false);
+		}
 	}
 	else
 	{
@@ -46,7 +51,11 @@ void UPGAbilityHitReact::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 {
 	// Material Parameter 세팅
 	SetHitFxSwitchParameter(0.0f);
-	
+
+	if(APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetOwningActorFromActorInfo()))
+	{
+		Player->SetIsCanControl(true);
+	}
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 

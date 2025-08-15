@@ -8,6 +8,7 @@ namespace PGGamePlayTags
 	UE_DEFINE_GAMEPLAY_TAG(InputTag_Look, "InputTag.Look");
 	UE_DEFINE_GAMEPLAY_TAG(InputTag_Roll, "InputTag.Roll");
 	UE_DEFINE_GAMEPLAY_TAG(InputTag_Jump, "InputTag.Jump");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Zoom, "InputTag.Zoom");
 	
 	UE_DEFINE_GAMEPLAY_TAG(InputTag_Equip_Weapon, "InputTag.Equip.Weapon");
 	UE_DEFINE_GAMEPLAY_TAG(InputTag_UnEquip_Weapon, "InputTag.UnEquip.Weapon");
