@@ -15,6 +15,9 @@ public:
 	int32 SkillID;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FString Desc;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FSoftObjectPath MontagePath;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)

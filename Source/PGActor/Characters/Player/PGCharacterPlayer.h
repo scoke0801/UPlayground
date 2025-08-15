@@ -38,19 +38,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
 	float MouseSensitivityY = 1.0f;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
 	float CameraMinOffset = 100.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
 	float CameraMaxOffset = 600.0f;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
 	float CameraUpdateSpeed = 20.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
 	float CameraMinPitch = -60.0f;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
 	float CameraMaxPitch = 30.0f;
 	
 private:

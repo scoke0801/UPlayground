@@ -9,6 +9,7 @@
 
 class UImage;
 class UTextBlock;
+class UWidgetSwitcher;
 /**
  * 
  */
@@ -24,9 +25,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
 	TObjectPtr<UTextBlock> CoolTimeText;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|UI", meta = (BindWidget))
+	TObjectPtr<UWidgetSwitcher> FrameImageSwitcher;
+	
 protected:
 	PGSkillId SkillId;
 
+protected:
+	virtual void NativeConstruct() override;
+	
 public:
 	void SetData(const PGSkillId InSkillId);
+	
 };

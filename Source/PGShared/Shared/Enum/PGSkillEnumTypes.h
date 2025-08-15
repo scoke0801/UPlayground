@@ -16,6 +16,7 @@ enum class EPGSkillSlot : uint8
 
 	SkillSlot_Jump,
 	SkillSlot_Dash,
+	SkillSlot_Roll,
 
 	// 예약
 	SkillSlot_7,
