@@ -7,12 +7,23 @@
 #include "Engine/StreamableManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
+#include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 
 UPGPawnCombatComponent* APGCharacterEnemy::GetCombatComponent() const
 {
 	return CombatComponent;
+}
+
+UPGStatComponent* APGCharacterEnemy::GetStatComponent() const
+{
+	return EnemyStatComponent;
+}
+
+UPGEnemyStatComponent* APGCharacterEnemy::GetEnemyStatComponent() const
+{
+	return EnemyStatComponent;
 }
 
 APGCharacterEnemy::APGCharacterEnemy()
@@ -33,6 +44,7 @@ APGCharacterEnemy::APGCharacterEnemy()
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
 
 	SkillHandler =  FPGHandler::Create<FPGEnemySkillHandler>();
+	EnemyStatComponent = CreateDefaultSubobject<UPGEnemyStatComponent>(TEXT("EnemyStatComponent"));
 }
 
 void APGCharacterEnemy::BeginPlay()

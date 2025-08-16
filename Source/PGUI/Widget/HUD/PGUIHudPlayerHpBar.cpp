@@ -1,14 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "PGUIHudPlayerInfo.h"
+#include "PGUIHudPlayerHpBar.h"
 
+#include "Components/ProgressBar.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Enum/PGStatEnumTypes.h"
 #include "PGShared/Shared/Message/Stat/PGStatUpdateEventData.h"
 
-void UPGUIHudPlayerInfo::NativeOnInitialized()
+void UPGUIHudPlayerHpBar::NativeConstruct()
 {
 	Super::NativeOnInitialized();
 
@@ -17,16 +18,14 @@ void UPGUIHudPlayerInfo::NativeOnInitialized()
 		this, &ThisClass::OnStatUpdate);
 }
 
-void UPGUIHudPlayerInfo::OnStatUpdate(const IPGEventData* InEventData)
+void UPGUIHudPlayerHpBar::OnStatUpdate(const IPGEventData* InEventData)
 {
 	const FPGStatUpdateEventData* EventData = static_cast<const FPGStatUpdateEventData*>(InEventData);
-	if (nullptr == EventData)
+	if (nullptr == EventData || EPGStatType::Hp != EventData->StatType)
 	{
 		return;
 	}
 
-	if (EPGStatType::Hp == EventData->StatType)
-	{
-		
-	}
+	float Percent = static_cast<float>(EventData->Current) / EventData->Max;
+	HpBar->SetPercent(Percent);
 }

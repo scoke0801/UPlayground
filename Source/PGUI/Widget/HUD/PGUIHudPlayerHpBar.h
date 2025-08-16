@@ -2,31 +2,25 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "PGShared/Shared/Message/Base/PGMessageEventDataBase.h"
 #include "PGUI/Widget/Base/PGWidgetBase.h"
-#include "PGUIHudPlayerInfo.generated.h"
+#include "PGUIHudPlayerHpBar.generated.h"
 
+class UProgressBar;
 /**
  * 
  */
 UCLASS(meta = (DisableNativeTick))
-class PGUI_API UPGUIHudPlayerInfo : public UPGWidgetBase
+class PGUI_API UPGUIHudPlayerHpBar : public UPGWidgetBase
 {
 	GENERATED_BODY()
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	class UTextBlock* LevelText;
+	class UProgressBar* HpBar;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	class UPGWidgetBase* HpBar;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	class UImage* PlayerImage;
-
 protected:
-	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
 
 private:
 	void OnStatUpdate(const IPGEventData* InEventData);

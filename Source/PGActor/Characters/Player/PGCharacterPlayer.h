@@ -12,6 +12,8 @@ class UPGPlayerCombatComponent;
 class UDataAsset_InputConfig;
 class USpringArmComponent;
 class UCameraComponent;
+class UPGPlayerStatComponent;
+class UPGStatComponent;
 
 UENUM(BlueprintType)
 enum class EComboState : uint8
@@ -66,6 +68,9 @@ private:
 	/** 플레이어 컴뱃 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Combat", meta = (AllowPrivateAccess = true))
 	UPGPlayerCombatComponent* CombatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Stat", meta = (AllowPrivateAccess = true))
+	UPGPlayerStatComponent* PlayerStatComponent;
 	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat")
@@ -82,6 +87,9 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
+
+public:
+	virtual void OnHit(UPGStatComponent* StatComponent) override;
 	
 public:
 	void StartSkillWindow();
@@ -92,6 +100,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	virtual UPGPawnCombatComponent* GetCombatComponent() const override;
+
+	virtual UPGStatComponent* GetStatComponent() const override;
+	UPGPlayerStatComponent* GetPlayerStatComponent() const;
 	
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	bool GetIsJumping() const {return bIsJump;}

@@ -13,12 +13,15 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGActor/Components/Input/PGInputComponent.h"
+#include "PGActor/Components/Stat/PGPlayerStatComponent.h"
 #include "PGActor/Handler/Skill/PGPlayerSkillHandler.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
+#include "PGShared/Shared/Enum/PGStatEnumTypes.h"
+#include "PGShared/Shared/Message/Stat/PGStatUpdateEventData.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 
@@ -54,6 +57,8 @@ APGCharacterPlayer::APGCharacterPlayer()
 	GetCharacterMovement()->BrakingDecelerationWalking = 100.f;
 
 	CombatComponent = CreateDefaultSubobject<UPGPlayerCombatComponent>(TEXT("PlayerCombatComponent"));
+	PlayerStatComponent = CreateDefaultSubobject<UPGPlayerStatComponent>(TEXT("PlayerStatComponent"));
+
 }
 
 void APGCharacterPlayer::BeginPlay()
@@ -110,6 +115,18 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_6, 115);
 
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 10);
+}
+
+void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
+{
+	int32 CurrentHp = PlayerStatComponent->CurrentHP;
+
+	// TODO 데미지 계산하도록 수정 필요
+	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - 10);
+
+	FPGStatUpdateEventData EventData(EPGStatType::Hp,
+		PlayerStatComponent->CurrentHP, PlayerStatComponent->MaxHP);
+	PGMessage()->SendMessage(EPGUIMessageType::StatUpdate, &EventData);
 }
 
 void APGCharacterPlayer::StartSkillWindow()
@@ -222,4 +239,14 @@ void APGCharacterPlayer::input_AbilityInputReleased(FGameplayTag InInputTag)
 UPGPawnCombatComponent* APGCharacterPlayer::GetCombatComponent() const
 {
 	return CombatComponent;
+}
+
+UPGStatComponent* APGCharacterPlayer::GetStatComponent() const
+{
+	return PlayerStatComponent;
+}
+
+UPGPlayerStatComponent* APGCharacterPlayer::GetPlayerStatComponent() const
+{
+	return PlayerStatComponent;
 }

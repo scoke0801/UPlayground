@@ -148,7 +148,7 @@ public:
             MessageDelegates[Key]->Broadcast(Data);
         }
     }
-    
+
     /**
      * 특정 키의 모든 델리게이터 제거
      * @param Key 메시지 키

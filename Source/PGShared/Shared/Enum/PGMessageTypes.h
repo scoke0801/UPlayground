@@ -28,3 +28,23 @@ enum class EPGPlayerMessageType : uint8
     
     Max UMETA(Hidden)
 };
+
+UENUM(BlueprintType)
+enum class EPGSharedMessageType : uint8
+{
+    None = 0,
+
+    OnHit,
+    
+    Max UMETA(Hidden)
+};
+
+UENUM(BlueprintType)
+enum class EPGUIMessageType : uint8
+{
+    None = 0,
+    
+    StatUpdate,
+
+    Max UMETA(Hidden)
+};

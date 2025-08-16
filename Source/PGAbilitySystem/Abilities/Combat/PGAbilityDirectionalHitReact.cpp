@@ -4,13 +4,16 @@
 #include "PGAbilityDirectionalHitReact.h"
 
 #include "Kismet/KismetMathLibrary.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 
 void UPGAbilityDirectionalHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                                     const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
                                                     const FGameplayEventData* TriggerEventData)
 {
 	ComputeHitReactDirection(TriggerEventData->Instigator);
-	
+
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 

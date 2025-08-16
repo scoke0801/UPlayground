@@ -5,6 +5,7 @@
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "LevelInstance/LevelInstanceTypes.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 
 void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -16,6 +17,14 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	// 타겟 방향 회전
 	FaceToAttacker(TriggerEventData->Instigator);
 
+	if (const APGCharacterBase* Instigator = Cast<APGCharacterBase>(TriggerEventData->Instigator))
+	{
+		if (APGCharacterBase* Owner = GetCharacter())
+		{
+			Owner->OnHit(Instigator->GetStatComponent());
+		}
+	}
+	
 	// 메테리얼 Hit이펙트 적용
 	if (bool HasHitReactMontage = 0 < MontagePaths.Num())
 	{
@@ -35,6 +44,7 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		SetHitFxSwitchParameter(1.0f);
 		if(APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetOwningActorFromActorInfo()))
 		{
+			// TODO 여기 수정하자
 			Player->SetIsCanControl(false);
 		}
 	}
@@ -44,6 +54,7 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 
 		EndAbilitySelf();
 	}
+
 }
 
 void UPGAbilityHitReact::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGCharacterEnemy.generated.h"
+class UPGEnemyStatComponent;
 class UPGEnemyCombatComponent;
 /**
  * 
@@ -18,15 +19,10 @@ protected:
 	/** 컴뱃 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Combat", meta = (AllowPrivateAccess = true))
 	UPGEnemyCombatComponent* CombatComponent;
-	
-public:
-	
-	UFUNCTION(BlueprintPure, Category = "PG|Combat")
-	UPGEnemyCombatComponent* GetEnemyCombatComponent() const {return CombatComponent;}
 
-	UFUNCTION(BlueprintPure, Category = "PG|Combat")
-	virtual UPGPawnCombatComponent* GetCombatComponent() const override;
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Stat", meta = (AllowPrivateAccess = true))
+	UPGEnemyStatComponent* EnemyStatComponent;
+	
 public:
 	APGCharacterEnemy();
 	
@@ -35,6 +31,16 @@ protected:
 
 	virtual void PossessedBy(AController* NewController) override;
 
+public:
+	UFUNCTION(BlueprintPure, Category = "PG|Combat")
+	UPGEnemyCombatComponent* GetEnemyCombatComponent() const {return CombatComponent;}
+
+	UFUNCTION(BlueprintPure, Category = "PG|Combat")
+	virtual UPGPawnCombatComponent* GetCombatComponent() const override;
+
+	virtual UPGStatComponent* GetStatComponent() const override;
+	UPGEnemyStatComponent* GetEnemyStatComponent() const;
+	
 private:
 	void InitEnemyStartUpData();
 };
