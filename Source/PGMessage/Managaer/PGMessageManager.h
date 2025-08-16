@@ -38,12 +38,14 @@ struct FPGEnumKey
     {
         return TypeHash == Other.TypeHash && Value == Other.Value;
     }
+
+    // friend 함수로 변경하여 ADL 제한
+    friend uint32 GetTypeHash(const FPGEnumKey& Key)
+    {
+        return HashCombine(Key.TypeHash, ::GetTypeHash(Key.Value));
+    }
 };
 
-FORCEINLINE uint32 GetTypeHash(const FPGEnumKey& Key)
-{
-    return HashCombine(Key.TypeHash, GetTypeHash(Key.Value));
-}
 
 /**
  * 메시지 매니저 - FPGEnumKey를 키로 사용하여 델리게이트를 관리

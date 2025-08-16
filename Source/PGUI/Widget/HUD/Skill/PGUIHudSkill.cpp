@@ -19,10 +19,6 @@ void UPGUIHudSkill::NativeOnInitialized()
 	
 	BindSkillSlots();
 
-	UPGMessageManager::Get()->RegisterDelegate(EPGMessageType::PlayerInit,
-		this,
-		&ThisClass::OnPlayerInit);
-
 	OnPlayerInit(nullptr);
 }
 
@@ -94,7 +90,4 @@ void UPGUIHudSkill::OnPlayerInit(const IPGEventData* InData)
 	SetSkillSlot(EPGSkillSlot::SkillSlot_4);
 	SetSkillSlot(EPGSkillSlot::SkillSlot_5);
 	SetSkillSlot(EPGSkillSlot::SkillSlot_6);
-	
-	
-	
 }
