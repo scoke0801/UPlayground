@@ -5,6 +5,9 @@
 
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 
 void FPGPlayerSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 {
@@ -29,6 +32,9 @@ void FPGPlayerSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 
 	LastUsedSlot = InSlotId;
 	LastUsedTime = FPlatformTime::Seconds();
+
+	FPGEventDataTwoParam<PGSkillId, EPGSkillSlot> ToSendData(SkillId, InSlotId);
+	UPGMessageManager::Get()->SendMessage(EPGPlayerMessageType::UseSkill, &ToSendData);
 }
 
 PGSkillId FPGPlayerSkillHandler::GetSkillID(const EPGSkillSlot InSlotId)

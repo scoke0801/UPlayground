@@ -108,8 +108,6 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_4, 113);
 
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 10);
-	UPGMessageManager::Get()->SendMessage(EPGMessageType::PlayerInit, nullptr);
-
 }
 
 void APGCharacterPlayer::StartSkillWindow()

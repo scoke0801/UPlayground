@@ -9,6 +9,10 @@
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
+#include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 
 constexpr int32 NORMAL_FRAME_INDEX = 0;
 constexpr int32 LOCKED_FRAME_INDEX = 1;
@@ -17,9 +21,8 @@ void UPGUISkillSlot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// FrameImageSwitcher->SetActiveWidgetIndex(LOCKED_FRAME_INDEX);
-	// SkillImage->SetVisibility(ESlateVisibility::Collapsed);
-	// CoolTimeText->SetVisibility(ESlateVisibility::Collapsed);
+	UPGMessageManager::Get()->RegisterDelegate(EPGPlayerMessageType::UseSkill, this,
+		&ThisClass::OnPlayerUseSkill);
 }
 
 void UPGUISkillSlot::SetData(const PGSkillId InSkillId)
@@ -40,4 +43,22 @@ void UPGUISkillSlot::SetData(const PGSkillId InSkillId)
 
 	FrameImageSwitcher->SetActiveWidgetIndex(LOCKED_FRAME_INDEX);
 	SkillImage->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UPGUISkillSlot::SetCoolTime()
+{
+}
+
+void UPGUISkillSlot::OnPlayerUseSkill(const class IPGEventData* InData)
+{
+	const FPGEventDataTwoParam<PGSkillId, EPGSkillSlot>* CastedParam =
+		static_cast<const FPGEventDataTwoParam<PGSkillId, EPGSkillSlot>*>(InData);
+
+	if (nullptr == CastedParam ||
+		CastedParam->ValueB != SkillSlot)
+	{
+		return;
+	}
+
+	SetCoolTime();
 }

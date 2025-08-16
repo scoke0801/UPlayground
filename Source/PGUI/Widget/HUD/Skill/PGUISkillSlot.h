@@ -7,6 +7,7 @@
 #include "PGUI/Widget/Base/PGWidgetBase.h"
 #include "PGUISkillSlot.generated.h"
 
+enum class EPGSkillSlot : uint8;
 class UImage;
 class UTextBlock;
 class UWidgetSwitcher;
@@ -30,11 +31,15 @@ protected:
 	
 protected:
 	PGSkillId SkillId;
+	EPGSkillSlot SkillSlot;
 
 protected:
 	virtual void NativeConstruct() override;
 	
 public:
 	void SetData(const PGSkillId InSkillId);
-	
+
+private:
+	void SetCoolTime();
+	void OnPlayerUseSkill(const class IPGEventData* InData);
 };

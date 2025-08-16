@@ -18,3 +18,13 @@ enum class EPGMessageType : uint8
     UIUpdate,
     Max UMETA(Hidden)
 };
+
+UENUM(BlueprintType)
+enum class EPGPlayerMessageType : uint8
+{
+    None = 0,
+
+    UseSkill,
+    
+    Max UMETA(Hidden)
+};
