@@ -38,7 +38,7 @@ void UPGUIHudSkill::SetSkillSlot(const EPGSkillSlot InSkillSlot) const
 
 	if (UPGUISkillSlot* SkillSlot = GetSkillSlot(InSkillSlot))
 	{
-		SkillSlot->SetData(SkillHandler->GetSkillID(InSkillSlot));
+		SkillSlot->SetData(InSkillSlot, SkillHandler->GetSkillID(InSkillSlot));
 	}
 }
 

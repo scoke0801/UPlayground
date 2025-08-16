@@ -106,6 +106,8 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_2, 111);
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_3, 112);
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_4, 113);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_5, 114);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_6, 115);
 
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 10);
 }

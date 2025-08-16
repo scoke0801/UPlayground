@@ -31,8 +31,12 @@ void FPGPlayerSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 	}
 
 	LastUsedSlot = InSlotId;
-	LastUsedTime = FPlatformTime::Seconds();
 
+	if (FPGSkillData* Data = SkillDataMap.Find(InSlotId))
+	{
+		Data->LastSkillUsedTime = FPlatformTime::Seconds();
+	}
+	
 	FPGEventDataTwoParam<PGSkillId, EPGSkillSlot> ToSendData(SkillId, InSlotId);
 	UPGMessageManager::Get()->SendMessage(EPGPlayerMessageType::UseSkill, &ToSendData);
 }

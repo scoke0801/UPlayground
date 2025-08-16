@@ -11,25 +11,34 @@
 template<typename T>
 struct TEnumTypeID
 {
-    static inline uint32 GetID()
+    static inline uint32 GetID(uint8 value)
     {
-        static const uint32 ID = GetTypeHash(typeid(T).name());
-        return ID;
+        if (const UEnum* EnumPtr = StaticEnum<T>())
+        {
+            // C++ 식별자 이름 사용 - DLL 경계에서 안전
+            FString EnumName = EnumPtr->GetNameStringByValue(value);
+            
+            return GetTypeHash(EnumName);
+        }
+
+        checkf(nullptr, TEXT("T Must be UENUM"));
+        
+        return 0;
     }
 };
 
 // 통합 키 (메모리 효율적)
 struct FPGEnumKey
 {
-    uint32 TypeHash;  // 타입 해시
     uint8 Value;      // enum 값 (uint8로 제한)
+    uint32 TypeHash;  // 타입 해시
 
-    FPGEnumKey() : TypeHash(0), Value(0) {}
+    FPGEnumKey() : Value(0),TypeHash(0) {}
     
     template<typename EnumType>
     FPGEnumKey(EnumType InEnum)
-        : TypeHash(TEnumTypeID<EnumType>::GetID())
-        , Value(static_cast<uint8>(InEnum))
+        : Value(static_cast<uint8>(InEnum))
+        , TypeHash(TEnumTypeID<EnumType>::GetID(Value))
     {
         static_assert(sizeof(EnumType) == sizeof(uint8), "Enum must be uint8 based");
     }
@@ -161,3 +170,5 @@ public:
      */
     void ClearAllDelegates();
 };
+
+#define PGMessage() UPGMessageManager::Get()

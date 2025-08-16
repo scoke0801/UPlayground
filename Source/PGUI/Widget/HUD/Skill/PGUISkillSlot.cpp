@@ -21,12 +21,26 @@ void UPGUISkillSlot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	UPGMessageManager::Get()->RegisterDelegate(EPGPlayerMessageType::UseSkill, this,
+	DelegateHandle = UPGMessageManager::Get()->RegisterDelegate(EPGPlayerMessageType::UseSkill, this,
 		&ThisClass::OnPlayerUseSkill);
 }
 
-void UPGUISkillSlot::SetData(const PGSkillId InSkillId)
+void UPGUISkillSlot::NativeDestruct()
 {
+	PGMessage()->UnregisterDelegate(EPGPlayerMessageType::UseSkill,DelegateHandle);
+
+	if (CoolTimeTimerHandle.IsValid())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CoolTimeTimerHandle);
+	}
+	Super::NativeDestruct();
+}
+
+void UPGUISkillSlot::SetData(const EPGSkillSlot InSkillSlot, const PGSkillId InSkillId)
+{
+	SkillSlot = InSkillSlot;
+	SkillId = InSkillId;
+	
 	if (FPGSkillDataRow* Data = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(InSkillId))
 	{
 		if (UObject* LoadedObject = Data->SkillIconPath.TryLoad())
@@ -47,6 +61,23 @@ void UPGUISkillSlot::SetData(const PGSkillId InSkillId)
 
 void UPGUISkillSlot::SetCoolTime()
 {
+	if (nullptr == CachedSkillData)
+	{
+		CachedSkillData = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillId);
+	}
+
+	if (nullptr == CachedSkillData)
+	{
+		return;
+	}
+
+	if (0 < CachedSkillData->SkillCoolTime)
+	{
+		RemainCoolTime = CachedSkillData->SkillCoolTime;
+		CoolTimeText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		CoolTimeText->SetText(FText::FromString(FString::FromInt(RemainCoolTime)));
+		GetWorld()->GetTimerManager().SetTimer(CoolTimeTimerHandle, this, &UPGUISkillSlot::UpdateCoolTime, CoolTimeTick,true);
+	}
 }
 
 void UPGUISkillSlot::OnPlayerUseSkill(const class IPGEventData* InData)
@@ -61,4 +92,16 @@ void UPGUISkillSlot::OnPlayerUseSkill(const class IPGEventData* InData)
 	}
 
 	SetCoolTime();
+}
+
+void UPGUISkillSlot::UpdateCoolTime()
+{
+	RemainCoolTime -= CoolTimeTick;
+	if (FMath::IsNearlyEqual(0, RemainCoolTime))
+	{
+		CoolTimeText->SetVisibility(ESlateVisibility::Collapsed);
+		GetWorld()->GetTimerManager().ClearTimer(CoolTimeTimerHandle);
+	}
+
+	CoolTimeText->SetText(FText::FromString(FString::FromInt(RemainCoolTime)));
 }
