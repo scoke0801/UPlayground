@@ -7,11 +7,15 @@
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGCharacterPlayer.generated.h"
 
+class UPGUIPlayerHpBar;
+class UPGWidgetComponentBase;
 struct FGameplayTag;
 class UPGPlayerCombatComponent;
 class UDataAsset_InputConfig;
 class USpringArmComponent;
 class UCameraComponent;
+class UPGPlayerStatComponent;
+class UPGStatComponent;
 
 UENUM(BlueprintType)
 enum class EComboState : uint8
@@ -37,7 +41,22 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
 	float MouseSensitivityY = 1.0f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
+	float CameraMinOffset = 100.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
+	float CameraMaxOffset = 600.0f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
+	float CameraUpdateSpeed = 20.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
+	float CameraMinPitch = -60.0f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
+	float CameraMaxPitch = 30.0f;
+	
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Camera", meta = (AllowPrivateAccess = true))
 	USpringArmComponent* CameraBoom;
@@ -48,25 +67,27 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|Character", meta = (AllowPrivateAccess = "true"))
 	UDataAsset_InputConfig* InputConfigDataAsset;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat", meta = (AllowPrivateAccess = "true"))
-	EComboState CurrentComboState;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat", meta = (AllowPrivateAccess = "true"))
-	int32 CurrentComboCount;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "PG|Combat", meta = (AllowPrivateAccess = "true"))
-	int32 MaxComboCount;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat", meta = (AllowPrivateAccess = "true"))
-	bool bHasQueuedInput;
-
 	/** 플레이어 컴뱃 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Combat", meta = (AllowPrivateAccess = true))
 	UPGPlayerCombatComponent* CombatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Stat", meta = (AllowPrivateAccess = true))
+	UPGPlayerStatComponent* PlayerStatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|UI", meta = (AllowPrivateAccess = true))
+	UPGWidgetComponentBase* PlayerHpWidgetComponent;
+
+private:
+	UPROPERTY(Transient)
+	UPGUIPlayerHpBar* PlayerHpWidget;
 	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat")
 	bool bIsJump = false;
+
+protected:
+	UPROPERTY(Transient)
+	bool bIsCanControl = true;
 	
 public:
 	APGCharacterPlayer();
@@ -75,38 +96,41 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
+
+public:
+	virtual void OnHit(UPGStatComponent* StatComponent) override;
 	
 public:
 	void StartSkillWindow();
 	void EndSkillWindow();
 
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
-	EComboState GetCurrentComboState() const { return CurrentComboState; }
-
-	UFUNCTION(BlueprintPure, Category = "PG|Combat")
-	int32 GetCurrentComboCount() const { return CurrentComboCount; }
-
-	UFUNCTION(BlueprintPure, Category = "PG|Combat")
-	bool CanCombo() const;
-
-	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	UPGPlayerCombatComponent* GetPlayerCombatComponent() const {return CombatComponent;}
 
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	virtual UPGPawnCombatComponent* GetCombatComponent() const override;
+
+	virtual UPGStatComponent* GetStatComponent() const override;
+	UPGPlayerStatComponent* GetPlayerStatComponent() const;
 	
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	bool GetIsJumping() const {return bIsJump;}
+
+	UFUNCTION(BlueprintPure, Category = "PG|Combat")
+	bool GetIsCacControl()const { return bIsCanControl;}
+	
+	void SetIsCanControl(bool IsCanControl) {bIsCanControl = IsCanControl;}
+
 private:
 	void Input_Move(const FInputActionValue& InputActionValue);
 	void Input_Look(const FInputActionValue& InputActionValue);
-	void Input_Attack(const FInputActionValue& InputActionValue);
 	void Input_Jump(const FInputActionValue& InputActionValue);
+	void Input_Zoom(const FInputActionValue& InputActionValue);
 	
 	void Input_AbilityInputPressed(FGameplayTag InInputTag);
 	void input_AbilityInputReleased(FGameplayTag InInputTag);
-	
-	void ExecuteAttack(int32 ComboIndex);
-	void SetComboState(EComboState NewState);
-	void ResetCombo();
+
+private:
+	void InitUIComponents();
+	void UpdateHpComponent();
 };

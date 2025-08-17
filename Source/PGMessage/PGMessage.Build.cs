@@ -20,5 +20,10 @@ public class PGMessage : ModuleRules
 				"Engine",
 			}
 		);
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"PGShared"
+			});
 	}
 }

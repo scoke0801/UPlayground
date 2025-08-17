@@ -12,6 +12,7 @@ class UPGDataAsset_StartUpDataBase;
 class UPGPawnCombatComponent;
 class UPGAbilitySystemComponent;
 class UMotionWarpingComponent;
+class UPGStatComponent;
 
 UCLASS()
 class PGACTOR_API APGCharacterBase : public ACharacter, public IAbilitySystemInterface
@@ -19,6 +20,9 @@ class PGACTOR_API APGCharacterBase : public ACharacter, public IAbilitySystemInt
 	GENERATED_BODY()
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG")
+	int32 CharacterTID = 0;
+	
 	/**
 	 * 어빌리티 시스템 컴포넌트
 	 */
@@ -44,7 +48,7 @@ public:
 public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	
+
 protected:
 	/**
 	 * 컨트롤러에 의해 소유될 때 호출되는 오버라이드 함수
@@ -54,7 +58,15 @@ protected:
 
 public:
 	virtual UPGPawnCombatComponent* GetCombatComponent() const {return nullptr;}
-	virtual FPGSkillHandler* GetSkillHandler() const {return SkillHandler;} 
+	virtual FPGSkillHandler* GetSkillHandler() const {return SkillHandler;}
+	virtual UPGStatComponent* GetStatComponent() const { return nullptr; }
+
+public:
+	virtual void OnHit(UPGStatComponent* StatComponent) {}
+	
+public:
+	int32 GetCharacterTID() const {return CharacterTID;}
+	
 public:
 	/**
 	 * 어빌리티 시스템 컴포넌트를 반환하는 인터페이스 구현 함수

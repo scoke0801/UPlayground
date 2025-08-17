@@ -7,6 +7,7 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "MotionWarpingComponent.h"
+#include "PGActor/Components/Stat/PGStatComponent.h"
 
 // Sets default values
 APGCharacterBase::APGCharacterBase()
@@ -20,13 +21,16 @@ APGCharacterBase::APGCharacterBase()
 	AbilitySystemComponent = CreateDefaultSubobject<UPGAbilitySystemComponent>(TEXT("PGAbilitySystemComponent"));
 
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
-
 }
 
 void APGCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (nullptr != GetStatComponent())
+	{
+		GetStatComponent()->InitData(CharacterTID);
+	}
 	// SkillHandler = FPGHandler::Create<FPGSkillHandler>();
 }
 

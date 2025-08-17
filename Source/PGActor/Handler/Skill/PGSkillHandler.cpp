@@ -19,7 +19,7 @@ void FPGSkillData::Init(const PGSkillId InSkillId)
 		{
 			SkillId = InSkillId;
 			CoolTime = SkillData->SkillCoolTime;
-			LastSkillUsedTime = FPlatformTime::Seconds();
+			//LastSkillUsedTime = FPlatformTime::Seconds();
 		}
 	}
 }
