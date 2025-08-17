@@ -13,12 +13,19 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGActor/Components/Input/PGInputComponent.h"
+#include "PGActor/Components/Stat/PGPlayerStatComponent.h"
 #include "PGActor/Handler/Skill/PGPlayerSkillHandler.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
+#include "PGShared/Shared/Enum/PGStatEnumTypes.h"
+#include "PGShared/Shared/Message/Stat/PGStatUpdateEventData.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
-#include "PGShared/Shared/Tag/PGGamePlayTags.h"
+#include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
+#include "PGUI/Component/Base/PGWidgetComponentBase.h"
+#include "PGUI/Widget/Billboard/PGUIPlayerHpBar.h"
 
 APGCharacterPlayer::APGCharacterPlayer()
 {
@@ -31,7 +38,7 @@ APGCharacterPlayer::APGCharacterPlayer()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 	CameraBoom->TargetArmLength = 400.0f;
-	CameraBoom->SocketOffset = FVector(0.f,55.f, 55.f);
+	CameraBoom->SocketOffset = FVector(0.f,0.f, 55.f);
 	CameraBoom->bUsePawnControlRotation = true;  // 컨트롤러 회전에 따라 SpringArm 회전
 	CameraBoom->bInheritPitch = true;           // 피치 회전 허용
 	CameraBoom->bInheritYaw = true;             // 요 회전 허용
@@ -52,21 +59,26 @@ APGCharacterPlayer::APGCharacterPlayer()
 	GetCharacterMovement()->BrakingDecelerationWalking = 100.f;
 
 	CombatComponent = CreateDefaultSubobject<UPGPlayerCombatComponent>(TEXT("PlayerCombatComponent"));
+	PlayerStatComponent = CreateDefaultSubobject<UPGPlayerStatComponent>(TEXT("PlayerStatComponent"));
+	PlayerHpWidgetComponent = CreateDefaultSubobject<UPGWidgetComponentBase>(TEXT("PlayerHpWidget"));
+	if (PlayerHpWidgetComponent)
+	{
+		PlayerHpWidgetComponent->SetupAttachment(GetCapsuleComponent());
+		// 캡슐의 Half Height 가져오기
+		float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
-	CurrentComboState = EComboState::None;
-	CurrentComboCount = 0;
-	MaxComboCount = 4;
-	bHasQueuedInput = false;
+		FVector BottomPosition = FVector(0.0f, 0.0f, -CapsuleHalfHeight);
+		PlayerHpWidgetComponent->SetRelativeLocation(BottomPosition);
+
+		PlayerHpWidget = Cast<UPGUIPlayerHpBar>(PlayerHpWidgetComponent->GetWidget());
+	}
 }
 
 void APGCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// [TODO] 데이터를 주입할 수 있는 다른 방안을 모색해보자.
-	SkillHandler =  FPGHandler::Create<FPGPlayerSkillHandler>();
-	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 1);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 100);
+	InitUIComponents();
 }
 
 void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -87,10 +99,10 @@ void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Move);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Look,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Look);
-	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Attack,
-		ETriggerEvent::Triggered, this, &ThisClass::Input_Attack);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Jump,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Jump);
+	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Zoom,
+		ETriggerEvent::Triggered, this, &ThisClass::Input_Zoom);
 
 	PgInputComponent->BindAbilityInputAction(InputConfigDataAsset, this,
 		&ThisClass::Input_AbilityInputPressed, &ThisClass::input_AbilityInputReleased);
@@ -107,45 +119,51 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 			LoadedData->GiveToAbilitySystemComponent(AbilitySystemComponent);
 		}
 	}
+
+	SkillHandler =  FPGHandler::Create<FPGPlayerSkillHandler>();
+	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 100);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_1, 110);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_2, 111);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_3, 112);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_4, 113);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_5, 114);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_6, 115);
+
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 10);
+}
+
+void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
+{
+	int32 CurrentHp = PlayerStatComponent->CurrentHP;
+
+	// TODO 데미지 계산하도록 수정 필요
+	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - 10);
+
+	FPGStatUpdateEventData EventData(EPGStatType::Hp,
+		PlayerStatComponent->CurrentHP, PlayerStatComponent->MaxHP);
+	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
+	
+	UpdateHpComponent();
 }
 
 void APGCharacterPlayer::StartSkillWindow()
 {
-	UE_LOG(LogTemp, Log, TEXT("Combo Window Started - Current State: %d, Count: %d"), 
-		(int32)CurrentComboState, CurrentComboCount);
-	
-	SetComboState(EComboState::ComboWindow);
 }
 
 void APGCharacterPlayer::EndSkillWindow()
 {
-	UE_LOG(LogTemp, Log, TEXT("Combo Window Ended - Current State: %d, Count: %d, HasQueuedInput: %s"), 
-		(int32)CurrentComboState, CurrentComboCount, bHasQueuedInput ? TEXT("True") : TEXT("False"));
-	
-	if (bHasQueuedInput)
-	{
-		bHasQueuedInput = false;
-		
-		if (CurrentComboCount < MaxComboCount)
-		{
-			ExecuteAttack(CurrentComboCount + 1);
-		}
-		else
-		{
-			ResetCombo();
-		}
-	}
-	else
-	{
-		SetComboState(EComboState::ComboEnd);
-		ResetCombo();
-	}
+
 }
 
 void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 {
+	if (false == GetIsCacControl())
+	{
+		return;
+	}
+	
 	const FVector2D MovementVector = InputActionValue.Get<FVector2D>();
-    
+
 	if (MovementVector.SizeSquared() > 0.1f && false == bIsJump)
 	{
 		// 카메라(컨트롤러) 방향 기준으로 이동
@@ -169,50 +187,44 @@ void APGCharacterPlayer::Input_Look(const FInputActionValue& InputActionValue)
 {
 	const FVector2D LookAxisVector = InputActionValue.Get<FVector2D>();
 
-	if (0.f != LookAxisVector.X)
+   
+	if (Controller != nullptr)
 	{
-		AddControllerYawInput(LookAxisVector.X * MouseSensitivityX);  // 좌우 회전
+		// 현재 Control Rotation 가져오기
+		FRotator CurrentRotation = GetControlRotation();
+        
+		// 새로운 Pitch 계산
+		float NewPitch = CurrentRotation.Pitch + (LookAxisVector.Y * -1.0f * MouseSensitivityY); // Y축 반전
+        
+		// Pitch 제한 적용
+		NewPitch = FMath::ClampAngle(NewPitch, CameraMinPitch, CameraMaxPitch);
+        
+		// Yaw는 제한 없이
+		float NewYaw = CurrentRotation.Yaw + LookAxisVector.X * MouseSensitivityX;
+        
+		// 새로운 Rotation 설정
+		FRotator NewRotation = FRotator(NewPitch, NewYaw, 0.0f);
+		Controller->SetControlRotation(NewRotation);
 	}
-
-	if (0.f != LookAxisVector.Y)
-	{
-		AddControllerPitchInput(LookAxisVector.Y * MouseSensitivityY); // 상하 회전
-	}
-}
-
-void APGCharacterPlayer::Input_Attack(const FInputActionValue& InputActionValue)
-{
-	switch (CurrentComboState)
-	{
-		case EComboState::None:
-		case EComboState::ComboEnd:
-		{
-			ExecuteAttack(1);
-			break;
-		}
-		case EComboState::Attacking:
-		{
-			if (CanCombo())
-			{
-				bHasQueuedInput = true;
-				UE_LOG(LogTemp, Log, TEXT("Attack input queued"));
-			}
-			break;
-		}
-		case EComboState::ComboWindow:
-		{
-			if (CanCombo())
-			{
-				bHasQueuedInput = true;
-				UE_LOG(LogTemp, Log, TEXT("Attack input queued during combo window"));
-			}
-			break;
-		}
-	}
+	
+	// if (0.f != LookAxisVector.X)
+	// {
+	// 	AddControllerYawInput(LookAxisVector.X * MouseSensitivityX);  // 좌우 회전
+	// }
+	//
+	// if (0.f != LookAxisVector.Y)
+	// {
+	// 	AddControllerPitchInput(LookAxisVector.Y * MouseSensitivityY); // 상하 회전
+	// }
 }
 
 void APGCharacterPlayer::Input_Jump(const FInputActionValue& InputActionValue)
 {
+	if (false == GetIsCacControl())
+	{
+		return;
+	}
+
 	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
 	{
 		if (false == MovementComponent->IsFalling() && false == bIsJump)
@@ -221,6 +233,14 @@ void APGCharacterPlayer::Input_Jump(const FInputActionValue& InputActionValue)
 			bIsJump = true;
 		}
 	}
+}
+
+void APGCharacterPlayer::Input_Zoom(const FInputActionValue& InputActionValue)
+{
+	const float Delta = InputActionValue.Get<float>();
+
+	float NewLength = FMath::Clamp(CameraBoom->TargetArmLength - Delta * CameraUpdateSpeed, CameraMinOffset, CameraMaxOffset);
+	CameraBoom->TargetArmLength = NewLength;
 }
 
 void APGCharacterPlayer::Input_AbilityInputPressed(FGameplayTag InInputTag)
@@ -232,62 +252,36 @@ void APGCharacterPlayer::input_AbilityInputReleased(FGameplayTag InInputTag)
 {
 	AbilitySystemComponent->OnAbilityInputReleased(InInputTag);
 }
-
-void APGCharacterPlayer::ExecuteAttack(int32 ComboIndex)
-{
-	// if (UPGDataTableManager* dataTableManager = GetGameInstance()->GetSubsystem<UPGDataTableManager>())
-	// {
-	// 	int32 SkillID = ComboIndex;
-	// 	FPGSkillDataRow* skillData = dataTableManager->GetRowData<FPGSkillDataRow>(SkillID);
-	//
-	// 	if (skillData && !skillData->MontagePath.IsNull())
-	// 	{
-	// 		UAnimMontage* AttackMontage = Cast<UAnimMontage>(skillData->MontagePath.TryLoad());
-	// 		
-	// 		if (AttackMontage && GetMesh() && GetMesh()->GetAnimInstance())
-	// 		{
-	// 			if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
-	// 			{
-	// 				GetMesh()->GetAnimInstance()->StopAllMontages(0.1f);
-	// 			}
-	// 			
-	// 			GetMesh()->GetAnimInstance()->Montage_Play(AttackMontage);
-	// 			
-	// 			CurrentComboCount = ComboIndex;
-	// 			SetComboState(EComboState::Attacking);
-	// 			bHasQueuedInput = false;
-	// 		}
-	// 	}
-	// }
-}
-
-void APGCharacterPlayer::SetComboState(EComboState NewState)
-{
-	if (CurrentComboState != NewState)
-	{
-		EComboState PreviousState = CurrentComboState;
-		CurrentComboState = NewState;
-		
-		UE_LOG(LogTemp, Log, TEXT("Combo State Changed: %d -> %d"), 
-			(int32)PreviousState, (int32)NewState);
-	}
-}
-
-void APGCharacterPlayer::ResetCombo()
-{
-	UE_LOG(LogTemp, Log, TEXT("Combo Reset"));
-	
-	CurrentComboCount = 0;
-	SetComboState(EComboState::None);
-	bHasQueuedInput = false;
-}
-
-bool APGCharacterPlayer::CanCombo() const
-{
-	return CurrentComboCount < MaxComboCount;
-}
-
 UPGPawnCombatComponent* APGCharacterPlayer::GetCombatComponent() const
 {
 	return CombatComponent;
+}
+
+UPGStatComponent* APGCharacterPlayer::GetStatComponent() const
+{
+	return PlayerStatComponent;
+}
+
+UPGPlayerStatComponent* APGCharacterPlayer::GetPlayerStatComponent() const
+{
+	return PlayerStatComponent;
+}
+
+void APGCharacterPlayer::InitUIComponents()
+{
+	if (PlayerHpWidgetComponent)
+	{
+		PlayerHpWidget = Cast<UPGUIPlayerHpBar>(PlayerHpWidgetComponent->GetWidget());
+	}
+	
+	UpdateHpComponent();	
+}
+
+void APGCharacterPlayer::UpdateHpComponent()
+{
+	if (nullptr == PlayerHpWidget)
+	{
+		return;
+	}
+	PlayerHpWidget->SetHpPercent(static_cast<float>(PlayerStatComponent->CurrentHP) / PlayerStatComponent->MaxHP);
 }

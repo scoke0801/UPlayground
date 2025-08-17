@@ -3,11 +3,14 @@
 
 #include "PGEnemyAbilityAttack.h"
 
+#include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
 void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                             const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
@@ -29,6 +32,7 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		return;
 	}
 
+	// TODO: 단순히 NormalAttack이 아니라, 스킬을 사용할거라면 스킬 ID를 가져와야 한다
 	FPGEnemySkillHandler* SkillHandler = static_cast<FPGEnemySkillHandler*>(Character->GetSkillHandler());
 	if (nullptr == SkillHandler || false == SkillHandler->IsCanUseSkill(EPGSkillSlot::NormalAttack))
 	{
@@ -59,5 +63,30 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	}
 	
 	SkillHandler->UseSkill(EPGSkillSlot::NormalAttack);
+	
+	// TODO: Wait 대신 메시지 기반 구조로 변경가능할 지 + 중복 코드 제거( PGAbilityPlayerSkill )
+	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+		this,
+		PGGamePlayTags::Shared_Event_Hit);
+	if (nullptr != WaitEventTask)
+	{
+		WaitEventTask->EventReceived.AddDynamic(this, &ThisClass::OnGameplayEventReceived);
 
+		WaitEventTask->ReadyForActivation();
+	}
+}
+
+void UPGEnemyAbilityAttack::OnGameplayEventReceived(FGameplayEventData Payload)
+{
+	if (const APGCharacterBase* TargetActor = Cast<APGCharacterBase>(Payload.Target.Get()))
+	{
+		if (UAbilitySystemComponent* ASC = TargetActor->GetAbilitySystemComponent())
+		{
+			FGameplayEventData Data;
+			Data.Instigator = Payload.Instigator;
+			Data.Target = Payload.Target;
+			
+			ASC->HandleGameplayEvent(PGGamePlayTags::Shared_Event_HitReact, &Data);
+		}
+	}
 }

@@ -16,7 +16,6 @@ class PGACTOR_API FPGPlayerSkillHandler : public FPGSkillHandler
 private:
 	int32 ComboCount = 0;
 	EPGSkillSlot LastUsedSlot = EPGSkillSlot::NormalAttack;
-	float LastUsedTime = 0;
 	
 public:
 	virtual ~FPGPlayerSkillHandler() = default;

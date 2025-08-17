@@ -24,7 +24,7 @@ void UPGPlayerCombatComponent::OnHitTargetActor(AActor* HitActor)
 
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
 		GetOwningPawn(),
-		PGGamePlayTags::Shared_Event_MeleeHit,
+		PGGamePlayTags::Shared_Event_Hit,
 		Data
 		);
 
