@@ -3,11 +3,13 @@
 
 #include "PGCharacterAnimInstance.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
 void UPGCharacterAnimInstance::NativeInitializeAnimation()
 {
@@ -98,8 +100,18 @@ void UPGCharacterAnimInstance::UpdateIsFalling()
 {
 	if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(OwningCharacter))
 	{
-		bIsJumping = Player->bIsJump;
+		bIsJumping = Player->GetIsJumping();
 	}
-	
+
+	bool CurrentIsFalling =OwningMovementComponent->IsFalling();
+	if (true == bIsOnFalling && false == CurrentIsFalling)
+	{
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+			GetOwningActor(),
+			PGGamePlayTags::Player_Event_JumpLanded,
+			FGameplayEventData()
+		);
+		bIsJumping = false;
+	}
 	bIsOnFalling = OwningMovementComponent->IsFalling();
 }

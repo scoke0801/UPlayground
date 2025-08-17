@@ -17,6 +17,10 @@ class PGACTOR_API APGPlayerController : public APlayerController, public IGeneri
 
 private:
 	FGenericTeamId PlayerTeamId;
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI")
+	TSubclassOf<UUserWidget> HUDWidgetClass;
 	
 public:
 	APGPlayerController(const FObjectInitializer& ObjectInitializer);
@@ -26,4 +30,7 @@ public:
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return PlayerTeamId; }
+
+protected:
+	virtual void BeginPlay() override;
 };

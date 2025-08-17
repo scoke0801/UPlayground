@@ -3,7 +3,7 @@
 
 #include "Cheat/Component/PGUICheatComponent.h"
 
-#include "Helper/Debug/PGDebugHelper.h"
+#include "PGShared/Shared/Debug/PGDebugHelper.h"
 
 void UPGUICheatComponent::UICheatTest(bool IsTest)
 {
