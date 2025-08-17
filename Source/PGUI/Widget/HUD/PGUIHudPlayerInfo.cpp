@@ -13,7 +13,7 @@ void UPGUIHudPlayerInfo::NativeOnInitialized()
 	Super::NativeOnInitialized();
 
 	// Player 정보 가져와야 한다...
-	PGMessage()->RegisterDelegate(EPGUIMessageType::StatUpdate,
+	PGMessage()->RegisterDelegate(EPGPlayerMessageType::StatUpdate,
 		this, &ThisClass::OnStatUpdate);
 }
 

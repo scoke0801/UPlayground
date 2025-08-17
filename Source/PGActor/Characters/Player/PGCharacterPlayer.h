@@ -7,6 +7,8 @@
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGCharacterPlayer.generated.h"
 
+class UPGUIPlayerHpBar;
+class UPGWidgetComponentBase;
 struct FGameplayTag;
 class UPGPlayerCombatComponent;
 class UDataAsset_InputConfig;
@@ -71,6 +73,13 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Stat", meta = (AllowPrivateAccess = true))
 	UPGPlayerStatComponent* PlayerStatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|UI", meta = (AllowPrivateAccess = true))
+	UPGWidgetComponentBase* PlayerHpWidgetComponent;
+
+private:
+	UPROPERTY(Transient)
+	UPGUIPlayerHpBar* PlayerHpWidget;
 	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat")
@@ -111,7 +120,7 @@ public:
 	bool GetIsCacControl()const { return bIsCanControl;}
 	
 	void SetIsCanControl(bool IsCanControl) {bIsCanControl = IsCanControl;}
-	
+
 private:
 	void Input_Move(const FInputActionValue& InputActionValue);
 	void Input_Look(const FInputActionValue& InputActionValue);
@@ -120,4 +129,8 @@ private:
 	
 	void Input_AbilityInputPressed(FGameplayTag InInputTag);
 	void input_AbilityInputReleased(FGameplayTag InInputTag);
+
+private:
+	void InitUIComponents();
+	void UpdateHpComponent();
 };

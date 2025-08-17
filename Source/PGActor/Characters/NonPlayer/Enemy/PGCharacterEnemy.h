@@ -5,8 +5,11 @@
 #include "CoreMinimal.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGCharacterEnemy.generated.h"
+class UPGUIEnemyNamePlate;
 class UPGEnemyStatComponent;
 class UPGEnemyCombatComponent;
+class UPGWidgetComponentBase;
+class UUserWidget;
 /**
  * 
  */
@@ -22,6 +25,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Stat", meta = (AllowPrivateAccess = true))
 	UPGEnemyStatComponent* EnemyStatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|UI", meta = (AllowPrivateAccess = true))
+	UPGWidgetComponentBase* EnemyNameplateWidgetComponent;
+
+private:
+	UPROPERTY(Transient)
+	UPGUIEnemyNamePlate* EnemyNamePlate;
 	
 public:
 	APGCharacterEnemy();
@@ -30,6 +40,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void PossessedBy(AController* NewController) override;
+
+	virtual void OnHit(UPGStatComponent* StatComponent) override;
 
 public:
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
@@ -43,4 +55,7 @@ public:
 	
 private:
 	void InitEnemyStartUpData();
+	void InitUIComponents();
+	
+	void UpdateHpBar();
 };

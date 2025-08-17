@@ -25,6 +25,11 @@ enum class EPGPlayerMessageType : uint8
     None = 0,
 
     UseSkill,
+    LevelUp,
+
+    ExpUpdate,
+    
+    StatUpdate,
     
     Max UMETA(Hidden)
 };
@@ -43,8 +48,6 @@ UENUM(BlueprintType)
 enum class EPGUIMessageType : uint8
 {
     None = 0,
-    
-    StatUpdate,
 
     Max UMETA(Hidden)
 };

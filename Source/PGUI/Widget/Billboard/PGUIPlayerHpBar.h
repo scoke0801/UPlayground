@@ -4,14 +4,14 @@
 
 #include "PGShared/Shared/Message/Base/PGMessageEventDataBase.h"
 #include "PGUI/Widget/Base/PGWidgetBase.h"
-#include "PGUIHudPlayerHpBar.generated.h"
+#include "PGUIPlayerHpBar.generated.h"
 
 class UProgressBar;
 /**
  * 
  */
 UCLASS(meta = (DisableNativeTick))
-class PGUI_API UPGUIHudPlayerHpBar : public UPGWidgetBase
+class PGUI_API UPGUIPlayerHpBar : public UPGWidgetBase
 {
 	GENERATED_BODY()
 
@@ -22,6 +22,9 @@ protected:
 protected:
 	virtual void NativeConstruct() override;
 
+public:
+	void SetHpPercent(const float Percent);
+	
 private:
 	void OnStatUpdate(const IPGEventData* InEventData);
 };

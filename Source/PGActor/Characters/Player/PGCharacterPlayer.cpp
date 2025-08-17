@@ -24,6 +24,8 @@
 #include "PGShared/Shared/Message/Stat/PGStatUpdateEventData.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
+#include "PGUI/Component/Base/PGWidgetComponentBase.h"
+#include "PGUI/Widget/Billboard/PGUIPlayerHpBar.h"
 
 APGCharacterPlayer::APGCharacterPlayer()
 {
@@ -58,12 +60,25 @@ APGCharacterPlayer::APGCharacterPlayer()
 
 	CombatComponent = CreateDefaultSubobject<UPGPlayerCombatComponent>(TEXT("PlayerCombatComponent"));
 	PlayerStatComponent = CreateDefaultSubobject<UPGPlayerStatComponent>(TEXT("PlayerStatComponent"));
+	PlayerHpWidgetComponent = CreateDefaultSubobject<UPGWidgetComponentBase>(TEXT("PlayerHpWidget"));
+	if (PlayerHpWidgetComponent)
+	{
+		PlayerHpWidgetComponent->SetupAttachment(GetCapsuleComponent());
+		// 캡슐의 Half Height 가져오기
+		float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
+		FVector BottomPosition = FVector(0.0f, 0.0f, -CapsuleHalfHeight);
+		PlayerHpWidgetComponent->SetRelativeLocation(BottomPosition);
+
+		PlayerHpWidget = Cast<UPGUIPlayerHpBar>(PlayerHpWidgetComponent->GetWidget());
+	}
 }
 
 void APGCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitUIComponents();
 }
 
 void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -126,7 +141,9 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 
 	FPGStatUpdateEventData EventData(EPGStatType::Hp,
 		PlayerStatComponent->CurrentHP, PlayerStatComponent->MaxHP);
-	PGMessage()->SendMessage(EPGUIMessageType::StatUpdate, &EventData);
+	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
+	
+	UpdateHpComponent();
 }
 
 void APGCharacterPlayer::StartSkillWindow()
@@ -235,7 +252,6 @@ void APGCharacterPlayer::input_AbilityInputReleased(FGameplayTag InInputTag)
 {
 	AbilitySystemComponent->OnAbilityInputReleased(InInputTag);
 }
-
 UPGPawnCombatComponent* APGCharacterPlayer::GetCombatComponent() const
 {
 	return CombatComponent;
@@ -249,4 +265,23 @@ UPGStatComponent* APGCharacterPlayer::GetStatComponent() const
 UPGPlayerStatComponent* APGCharacterPlayer::GetPlayerStatComponent() const
 {
 	return PlayerStatComponent;
+}
+
+void APGCharacterPlayer::InitUIComponents()
+{
+	if (PlayerHpWidgetComponent)
+	{
+		PlayerHpWidget = Cast<UPGUIPlayerHpBar>(PlayerHpWidgetComponent->GetWidget());
+	}
+	
+	UpdateHpComponent();	
+}
+
+void APGCharacterPlayer::UpdateHpComponent()
+{
+	if (nullptr == PlayerHpWidget)
+	{
+		return;
+	}
+	PlayerHpWidget->SetHpPercent(static_cast<float>(PlayerStatComponent->CurrentHP) / PlayerStatComponent->MaxHP);
 }

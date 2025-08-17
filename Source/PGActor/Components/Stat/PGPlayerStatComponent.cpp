@@ -13,5 +13,5 @@ void UPGPlayerStatComponent::InitData(int32 CharacterTID)
 	Super::InitData(CharacterTID);
 
 	FPGStatUpdateEventData EventData(EPGStatType::Hp, CurrentHP, MaxHP);
-	PGMessage()->SendMessage(EPGUIMessageType::StatUpdate, &EventData);
+	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
 }

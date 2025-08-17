@@ -21,6 +21,7 @@ public class PGActor : ModuleRules
 				"GameplayTags",
 				"GameplayAbilities",
 				"EnhancedInput",
+				"UMG"
 			}
 		);
 		
@@ -30,7 +31,11 @@ public class PGActor : ModuleRules
 				"PGShared",
 				
 				"PGData",
-				"PGAbilitySystem", "MotionWarping", "AIModule", "PGMessage"
+				"PGAbilitySystem", 
+				"MotionWarping",
+				"AIModule", 
+				"PGMessage",
+				"PGUI"
 			});
 	}
 }
