@@ -89,7 +89,11 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 
 	// TODO 데미지 계산하도록 수정 필요
 	EnemyStatComponent->CurrentHP = FMath::Max(0, CurrentHp - 10);
-	
+
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->ShowWidget(5.0f);
+	}
 	UpdateHpBar();
 }
 
@@ -117,6 +121,9 @@ void APGCharacterEnemy::InitUIComponents()
 	if (EnemyNameplateWidgetComponent)
 	{
 		EnemyNamePlate = Cast<UPGUIEnemyNamePlate>(EnemyNameplateWidgetComponent->GetWidget());
+
+		// 기본적으로 노출하지 않는다. 피격 시에만 노출
+		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 
