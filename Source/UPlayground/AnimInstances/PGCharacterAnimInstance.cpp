@@ -102,16 +102,5 @@ void UPGCharacterAnimInstance::UpdateIsFalling()
 	{
 		bIsJumping = Player->GetIsJumping();
 	}
-
-	bool CurrentIsFalling =OwningMovementComponent->IsFalling();
-	if (true == bIsOnFalling && false == CurrentIsFalling)
-	{
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-			GetOwningActor(),
-			PGGamePlayTags::Player_Event_JumpLanded,
-			FGameplayEventData()
-		);
-		bIsJumping = false;
-	}
 	bIsOnFalling = OwningMovementComponent->IsFalling();
 }

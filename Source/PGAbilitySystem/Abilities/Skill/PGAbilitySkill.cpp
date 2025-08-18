@@ -69,25 +69,22 @@ void UPGAbilitySkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	if (UObject* LoadedObject = Row->MontagePath.TryLoad())
 	{
 		MontageToPlay = Cast<UAnimMontage>(LoadedObject);
-	}
-	if (nullptr == MontageToPlay)
-	{
-		EndAbilitySelf();
-	}
+
+		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+	this, NAME_None, MontageToPlay);
+		if (nullptr == MontageTask)
+		{
+			EndAbilitySelf();
+			return;
+		}
 	
-	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-		this, NAME_None, MontageToPlay);
-	if (nullptr == MontageTask)
-	{
-		EndAbilitySelf();
-		return;
+		MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCompleted);
+		MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
+		MontageTask->OnBlendOut.AddDynamic(this, &ThisClass::OnMontageCompleted);
+		MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCompleted);
+	
+		MontageTask->ReadyForActivation();
 	}
-	
-	MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnBlendOut.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	
-	MontageTask->ReadyForActivation();
+
 	SkillHandler->UseSkill(SlotIndex);
 }

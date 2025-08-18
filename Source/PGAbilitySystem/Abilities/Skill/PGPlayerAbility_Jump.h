@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class PGABILITYSYSTEM_API UPGPlayerAbility_Jump : public UPGGameplayAbility
+class PGABILITYSYSTEM_API UPGPlayerAbility_Jump : public UPGAbilitySkill
 {
 	GENERATED_BODY()
 

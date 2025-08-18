@@ -62,6 +62,7 @@ void UPGPlayerAbility_Jump::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetOwningActorFromActorInfo());
 	if (nullptr != Player)
 	{
+		// 외부에서 강제적으로 취소 되는 경우를 대비
 		Player->SetIsJump(false);
 	}
 	else
@@ -73,5 +74,11 @@ void UPGPlayerAbility_Jump::EndAbility(const FGameplayAbilitySpecHandle Handle,
 
 void UPGPlayerAbility_Jump::OnGameplayEventReceived(FGameplayEventData Payload)
 {
+	APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetOwningActorFromActorInfo());
+	if (nullptr != Player)
+	{
+		Player->SetIsJump(false);
+	}
+
 	EndAbilitySelf();
 }

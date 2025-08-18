@@ -129,6 +129,7 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_6, 115);
 
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Roll, 10000);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Jump, 20000);
 }
 
 void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
