@@ -6,6 +6,29 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "PGDamageFloaterManager.generated.h"
 
+enum class EPGDamageType : uint8;
+class UPGUIDamageFloater;
+
+USTRUCT(BlueprintType)
+struct FDamageFloaterData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DamageAmount;
+    
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EPGDamageType DamageType;
+    
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector WorldLocation;
+    
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FLinearColor TextColor;
+    
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsCritical;
+};
 /**
  * 
  */
@@ -14,4 +37,21 @@ class PGUI_API UPGDamageFloaterManager : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	
+	static TWeakObjectPtr<UPGDamageFloaterManager> WeakThis;
+
+private:
+	UPROPERTY()
+	TArray<UPGUIDamageFloater*> AvailableFloaters;
+    
+	UPROPERTY()
+	TArray<UPGUIDamageFloater*> ActiveFloaters;
+
+public:
+	static UPGDamageFloaterManager* Get();
+	
+public:
+	UPGUIDamageFloater* GetPooledFloater();
+	void ReturnFloaterToPool(UPGUIDamageFloater* Floater);
 };
+
+#define PGDamageFloater() UPGDamageFloaterManager::Get();
