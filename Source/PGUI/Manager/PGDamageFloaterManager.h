@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "PGDamageFloaterManager.generated.h"
 
+
 enum class EPGDamageType : uint8;
 class UPGUIDamageFloater;
 
@@ -52,6 +53,9 @@ public:
 public:
 	UPGUIDamageFloater* GetPooledFloater();
 	void ReturnFloaterToPool(UPGUIDamageFloater* Floater);
+
+public:
+	void AddFloater(float DamageAmount,EPGDamageType DamageType, bool IsPlayer);
 };
 
 #define PGDamageFloater() UPGDamageFloaterManager::Get();

@@ -23,3 +23,8 @@ UPGUIDamageFloater* UPGDamageFloaterManager::GetPooledFloater()
 void UPGDamageFloaterManager::ReturnFloaterToPool(UPGUIDamageFloater* Floater)
 {
 }
+
+void UPGDamageFloaterManager::AddFloater(float DamageAmount, EPGDamageType DamageType, bool IsPlayer)
+{
+	
+}
