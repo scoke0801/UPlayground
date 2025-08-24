@@ -19,6 +19,6 @@ public:
 	EPGDamageFloaterCurveType CurveType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSoftObjectPtr<UCurveBase> Curve;
+	UCurveBase* Curve;
 };
 

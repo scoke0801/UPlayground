@@ -92,11 +92,23 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 	{
 		return;
 	}
-
-	Floater->SetDamage(DamageAmount, DamageType);
-	//Floater->SetPositionInViewport(FVector2D(Location));
 	
+	// 뷰포트에 추가
 	Floater->AddToViewport();
+	
+	// 3D 월드 좌표를 2D 스크린 좌표로 변환하여 위치 설정
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			FVector2D ScreenPosition;
+			if (PC->ProjectWorldLocationToScreen(Location, ScreenPosition))
+			{
+				Floater->SetDamage(DamageAmount, DamageType, FVector2D(ScreenPosition));
+				Floater->SetPositionInViewport(ScreenPosition);
+			}
+		}
+	}
 }
 
 void UPGDamageFloaterManager::CleanupExpiredFloaters()
