@@ -3,3 +3,6 @@
 
 #include "PGUIDamageFloater.h"
 
+void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType DamageType)
+{
+}

@@ -7,6 +7,7 @@
 #include "PGUI/Widget/Base/PGWidgetBase.h"
 #include "PGUIDamageFloater.generated.h"
 
+enum class EPGDamageType : uint8;
 class UTextBlock;
 /**
  * 
@@ -24,5 +25,5 @@ protected:
 	UTextBlock* DamageText;
 
 public:
-	void SetDamage(float Damage);
+	void SetDamage(float Damage, EPGDamageType DamageType);
 };

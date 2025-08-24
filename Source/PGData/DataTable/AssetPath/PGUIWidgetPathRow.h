@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "UObject/SoftObjectPath.h"
 #include "PGUIWidgetPathRow.generated.h"
 
@@ -12,11 +13,11 @@ struct PGDATA_API FPGUIWidgetPathRow : public FTableRowBase
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	FString Key;
-
+	EPGDamageType Key;
+	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString Desc;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FSoftObjectPath AssetPath;
+	FSoftClassPath ClassPath;
 };

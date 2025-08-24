@@ -30,6 +30,16 @@ struct FDamageFloaterData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsCritical;
 };
+
+USTRUCT(BlueprintType)
+struct FPGDamageFloaterPool
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<UPGUIDamageFloater*> Widgets;
+};
+
 /**
  * 
  */
@@ -41,21 +51,51 @@ class PGUI_API UPGDamageFloaterManager : public UGameInstanceSubsystem
 	static TWeakObjectPtr<UPGDamageFloaterManager> WeakThis;
 
 private:
+	// 풀링된 플로터들
 	UPROPERTY()
-	TArray<UPGUIDamageFloater*> AvailableFloaters;
-    
+	TMap<EPGDamageType, FPGDamageFloaterPool> Pools;
+
+	// 현재 활성화된 플로터들
 	UPROPERTY()
 	TArray<UPGUIDamageFloater*> ActiveFloaters;
+
+	// 풀 설정
+	UPROPERTY(EditAnywhere, Category = "PG|PoolSettings")
+	int32 MaxPoolSize = 50;
+
+	// 사용하지 않는 풀 제거 타이머
+	UPROPERTY(EditAnywhere, Category = "PG|Performance")
+	float CleanupInterval = 120.0f;
+	
+private:
+	// 정리 타이머
+	FTimerHandle CleanupTimerHandle;
 
 public:
 	static UPGDamageFloaterManager* Get();
 	
 public:
-	UPGUIDamageFloater* GetPooledFloater();
-	void ReturnFloaterToPool(UPGUIDamageFloater* Floater);
+	UPGUIDamageFloater* GetPooledFloater(EPGDamageType DamageType);
+	void ReturnFloaterToPool(EPGDamageType DamageType, UPGUIDamageFloater* Floater);
 
+protected:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+	
 public:
-	void AddFloater(float DamageAmount,EPGDamageType DamageType, bool IsPlayer);
+	void AddFloater(float DamageAmount,
+		EPGDamageType DamageType,
+		FVector Location,
+		bool IsPlayer);
+
+protected:
+	// 플로터 정리 타이머
+	UFUNCTION()
+	void CleanupExpiredFloaters();
+	
+private:
+	UPGUIDamageFloater* CreateFloaterWidget(EPGDamageType DamageType);
+	void ClearPool();
 };
 
-#define PGDamageFloater() UPGDamageFloaterManager::Get();
+#define PGDamageFloater() UPGDamageFloaterManager::Get()

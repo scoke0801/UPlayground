@@ -19,6 +19,7 @@
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Debug/PGDebugHelper.h"
+#include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGShared/Shared/Enum/PGStatEnumTypes.h"
@@ -26,6 +27,7 @@
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 #include "PGUI/Component/Base/PGWidgetComponentBase.h"
+#include "PGUI/Manager/PGDamageFloaterManager.h"
 #include "PGUI/Widget/Billboard/PGUIPlayerHpBar.h"
 
 APGCharacterPlayer::APGCharacterPlayer()
@@ -137,12 +139,21 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 	int32 CurrentHp = PlayerStatComponent->CurrentHP;
 
 	// TODO 데미지 계산하도록 수정 필요
-	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - 10);
+	int32 DamageAmount = 10;
+	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
 
 	FPGStatUpdateEventData EventData(EPGStatType::Hp,
 		PlayerStatComponent->CurrentHP, PlayerStatComponent->MaxHP);
 	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
-	
+
+	if (UPGDamageFloaterManager* Manager = UPGDamageFloaterManager::Get())
+	{
+		Manager->AddFloater(DamageAmount,
+		EPGDamageType::Normal, GetActorLocation(), true);
+	}
+	// PGDamageFloater()->AddFloater(DamageAmount,
+	// 	EPGDamageType::Normal, GetActorLocation(), true);
+	//
 	UpdateHpComponent();
 }
 
