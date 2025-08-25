@@ -3,7 +3,7 @@
 
 #include "Cheat/Component/PGStatCheatComponent.h"
 
-#include "Helper/Debug/PGDebugHelper.h"
+#include "PGShared/Shared/Debug/PGDebugHelper.h"
 
 void UPGStatCheatComponent::StatCheatTest(bool IsTest)
 {

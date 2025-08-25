@@ -18,6 +18,8 @@
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Debug/PGDebugHelper.h"
+#include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGShared/Shared/Enum/PGStatEnumTypes.h"
@@ -25,6 +27,7 @@
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 #include "PGUI/Component/Base/PGWidgetComponentBase.h"
+#include "PGUI/Manager/PGDamageFloaterManager.h"
 #include "PGUI/Widget/Billboard/PGUIPlayerHpBar.h"
 
 APGCharacterPlayer::APGCharacterPlayer()
@@ -99,8 +102,6 @@ void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Move);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Look,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Look);
-	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Jump,
-		ETriggerEvent::Triggered, this, &ThisClass::Input_Jump);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Zoom,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Zoom);
 
@@ -129,7 +130,8 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_5, 114);
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_6, 115);
 
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Dash, 10);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Roll, 10000);
+	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Jump, 20000);
 }
 
 void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
@@ -137,12 +139,21 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 	int32 CurrentHp = PlayerStatComponent->CurrentHP;
 
 	// TODO 데미지 계산하도록 수정 필요
-	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - 10);
+	int32 DamageAmount = 10;
+	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
 
 	FPGStatUpdateEventData EventData(EPGStatType::Hp,
 		PlayerStatComponent->CurrentHP, PlayerStatComponent->MaxHP);
 	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
-	
+
+	if (UPGDamageFloaterManager* Manager = UPGDamageFloaterManager::Get())
+	{
+		Manager->AddFloater(DamageAmount,
+		EPGDamageType::Normal, GetActorLocation(), true);
+	}
+	// PGDamageFloater()->AddFloater(DamageAmount,
+	// 	EPGDamageType::Normal, GetActorLocation(), true);
+	//
 	UpdateHpComponent();
 }
 
@@ -155,6 +166,29 @@ void APGCharacterPlayer::EndSkillWindow()
 
 }
 
+void APGCharacterPlayer::SetIsJump(bool IsJump)
+{
+	FString Msg = FString::Printf(TEXT("SetIsJump %p, %d"), this, IsJump);
+	PG_Debug::Print(Msg);
+
+	bIsJump = IsJump;
+}
+
+bool APGCharacterPlayer::IsCanJump() const
+{
+	if (false == GetIsCacControl())
+	{
+		return false;
+	}
+
+	if (UPawnMovementComponent* MovementComponent = GetMovementComponent())
+	{
+		return !GetIsJumping() && !MovementComponent->IsFalling();
+	}
+	
+	return false;
+}
+
 void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 {
 	if (false == GetIsCacControl())
@@ -164,7 +198,7 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 	
 	const FVector2D MovementVector = InputActionValue.Get<FVector2D>();
 
-	if (MovementVector.SizeSquared() > 0.1f && false == bIsJump)
+	if (MovementVector.SizeSquared() > 0.1f)
 	{
 		// 카메라(컨트롤러) 방향 기준으로 이동
 		const FRotator ControlRotation = Controller->GetControlRotation();
@@ -216,23 +250,6 @@ void APGCharacterPlayer::Input_Look(const FInputActionValue& InputActionValue)
 	// {
 	// 	AddControllerPitchInput(LookAxisVector.Y * MouseSensitivityY); // 상하 회전
 	// }
-}
-
-void APGCharacterPlayer::Input_Jump(const FInputActionValue& InputActionValue)
-{
-	if (false == GetIsCacControl())
-	{
-		return;
-	}
-
-	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
-	{
-		if (false == MovementComponent->IsFalling() && false == bIsJump)
-		{
-			Jump();
-			bIsJump = true;
-		}
-	}
 }
 
 void APGCharacterPlayer::Input_Zoom(const FInputActionValue& InputActionValue)

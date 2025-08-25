@@ -398,6 +398,14 @@ bool UPGDataTableManager::PropertyToInteger(const FProperty* Property, const voi
         return true;
     }
 
+    if (const FEnumProperty* EnumProperty = CastField<FEnumProperty>(Property))
+    {
+        if (const FNumericProperty* UnderlyingProperty = EnumProperty->GetUnderlyingProperty())
+        {
+            OutValue = UnderlyingProperty->GetSignedIntPropertyValue(ValuePtr);
+            return true;
+        }
+    }
     return false;
 }
 
@@ -406,6 +414,14 @@ bool UPGDataTableManager::IsIntegerProperty(const FProperty* Property)
     if (const FNumericProperty* NumericProperty = CastField<FNumericProperty>(Property))
     {
         return NumericProperty->IsInteger();    
+    }
+
+    if (const FEnumProperty* EnumProperty = CastField<FEnumProperty>(Property))
+    {
+        if (const FNumericProperty* UnderlyingProperty = EnumProperty->GetUnderlyingProperty())
+        {
+            return true;
+        }
     }
     
     return false;
