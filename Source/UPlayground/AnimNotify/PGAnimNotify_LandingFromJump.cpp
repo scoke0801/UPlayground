@@ -3,10 +3,10 @@
 
 #include "AnimNotify/PGAnimNotify_LandingFromJump.h"
 
-#include "AnimInstances/PGCharacterAnimInstance.h"
-#include "Helper/Debug/PGDebugHelper.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
-#include "Slate/SGameLayerManager.h"
+#include "PGShared/Shared/Debug/PGDebugHelper.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
 
 void UPGAnimNotify_LandingFromJump::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -14,14 +14,19 @@ void UPGAnimNotify_LandingFromJump::Notify(USkeletalMeshComponent* MeshComp, UAn
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
+	PG_Debug::Print("Notify Landed");
 	if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(MeshComp->GetOwner()))
 	{
-		Player->bIsJump = false;
-	}
-	else
-	{
-		PG_Debug::Print(TEXT("Fail Land"));
+		FGameplayEventData Data;
+		Data.EventTag = PGGamePlayTags::Player_Event_JumpLanded;
+		Data.Instigator = Player;
+		Data.Target = Player;
+		
+ 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+			Player,
+			PGGamePlayTags::Player_Event_JumpLanded,
+			Data
+		);
 	}
 
-	PG_Debug::Print(TEXT("JumpLanded"));
 }

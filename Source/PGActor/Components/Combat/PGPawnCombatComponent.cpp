@@ -6,7 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "Components/BoxComponent.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
-#include "PGShared/Shared/Enum/PGEnumTypes.h"
+#include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 
 APGWeaponBase* UPGPawnCombatComponent::GetCharacterCarriedWeaponByTag(FGameplayTag InWeaponTagToGet) const
 {

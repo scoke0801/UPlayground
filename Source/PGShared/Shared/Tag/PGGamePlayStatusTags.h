@@ -6,7 +6,10 @@
 
 namespace PGGamePlayTags
 {
-	// Event Tags
+	// Player Tags
+	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Player_Status_Jumping);
+	
+	// Enemy Tags
 	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Status_Strafing);
 	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Status_UnderAttack);
 

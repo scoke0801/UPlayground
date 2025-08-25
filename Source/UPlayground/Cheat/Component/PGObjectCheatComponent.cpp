@@ -3,7 +3,7 @@
 
 #include "Cheat/Component/PGObjectCheatComponent.h"
 
-#include "Helper/Debug/PGDebugHelper.h"
+#include "PGShared/Shared/Debug/PGDebugHelper.h"
 
 void UPGObjectCheatComponent::ObjectCheatTest(bool IsTest)
 {

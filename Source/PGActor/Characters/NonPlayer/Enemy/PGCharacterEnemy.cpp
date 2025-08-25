@@ -11,7 +11,9 @@
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "PGUI/Component/Base/PGWidgetComponentBase.h"
+#include "PGUI/Manager/PGDamageFloaterManager.h"
 #include "PGUI/Widget/Billboard/PGUIEnemyNamePlate.h"
 
 UPGPawnCombatComponent* APGCharacterEnemy::GetCombatComponent() const
@@ -88,12 +90,17 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	int32 CurrentHp = EnemyStatComponent->CurrentHP;
 
 	// TODO 데미지 계산하도록 수정 필요
-	EnemyStatComponent->CurrentHP = FMath::Max(0, CurrentHp - 10);
+	int32 DamageAmount = 10;
+	EnemyStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
 
 	if (EnemyNamePlate)
 	{
 		EnemyNamePlate->ShowWidget(5.0f);
 	}
+
+	PGDamageFloater()->AddFloater(DamageAmount,
+		EPGDamageType::Normal, GetActorLocation(), true);
+	
 	UpdateHpBar();
 }
 

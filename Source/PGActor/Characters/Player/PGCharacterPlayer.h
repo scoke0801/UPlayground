@@ -81,14 +81,12 @@ private:
 	UPROPERTY(Transient)
 	UPGUIPlayerHpBar* PlayerHpWidget;
 	
-public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Combat")
+	UPROPERTY(Transient)
 	bool bIsJump = false;
-
-protected:
+	
 	UPROPERTY(Transient)
 	bool bIsCanControl = true;
-	
+
 public:
 	APGCharacterPlayer();
 	
@@ -120,11 +118,12 @@ public:
 	bool GetIsCacControl()const { return bIsCanControl;}
 	
 	void SetIsCanControl(bool IsCanControl) {bIsCanControl = IsCanControl;}
+	void SetIsJump(bool IsJump);
+	bool IsCanJump() const;
 
 private:
 	void Input_Move(const FInputActionValue& InputActionValue);
 	void Input_Look(const FInputActionValue& InputActionValue);
-	void Input_Jump(const FInputActionValue& InputActionValue);
 	void Input_Zoom(const FInputActionValue& InputActionValue);
 	
 	void Input_AbilityInputPressed(FGameplayTag InInputTag);

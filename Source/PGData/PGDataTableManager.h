@@ -372,3 +372,5 @@ void UPGDataTableManager::UnloadDataTable()
         RemoveCacheEntry(TableName);
     }
 }
+
+#define PGData() UPGDataTableManager::Get()
