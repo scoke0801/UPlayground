@@ -101,10 +101,8 @@ bool UPGUIDamageFloater::PlayTranslationAnimation(UCurveVector* Curve, float Del
 	{
 		FVector Result = Curve->GetVectorValue(ElapsedTime);
 
-		// 베이스 위치 + 커브 오프셋
-		FVector2D FinalPosition = BasePosition + FVector2D(Result);
-		
-		SetPositionInViewport(FinalPosition, true);
+		SetRenderTranslation(FVector2D(Result));
+
 		return true;
 	}
 	return false;
@@ -118,7 +116,8 @@ bool UPGUIDamageFloater::PlayScaleAnimation(UCurveVector* Curve, float DeltaTime
 	if (MaxTime > ElapsedTime)
 	{
 		FVector Result = Curve->GetVectorValue(ElapsedTime);
-		
+
+		SetRenderScale(FVector2D(Result));
 		return true;
 	}
 	
