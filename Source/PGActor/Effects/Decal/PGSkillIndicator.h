@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "PGDecalActor.h"
-#include "PGDecalActor.h"
 #include "PGSkillIndicator.generated.h"
 
 /**
@@ -14,5 +13,11 @@ UCLASS()
 class PGACTOR_API APGSkillIndicator : public APGDecalActor
 {
 	GENERATED_BODY()
+
+public:
+	APGSkillIndicator();
 	
+public:
+	UFUNCTION(BlueprintCallable, Category = "PG")
+	void InidicatorScale(FVector Scale);
 };
