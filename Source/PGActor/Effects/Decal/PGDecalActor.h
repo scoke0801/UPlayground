@@ -13,5 +13,6 @@ UCLASS()
 class PGACTOR_API APGDecalActor : public ADecalActor
 {
 	GENERATED_BODY()
+
 	
 };
