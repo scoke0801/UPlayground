@@ -71,7 +71,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "PG|Animation")
 	float GetAnimationProgress() const;
-	
+
 private:
 	// 애니메이션 함수들
 	UFUNCTION()

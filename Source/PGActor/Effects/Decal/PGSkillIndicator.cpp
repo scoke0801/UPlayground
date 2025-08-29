@@ -88,13 +88,16 @@ void APGSkillIndicator::StartAnimation()
 void APGSkillIndicator::EndAnimation()
 {
 	// 타이머 정리
-	if (FillTimerHandle.IsValid())
+	if (UWorld* World = GetWorld())
 	{
-		GetWorldTimerManager().ClearTimer(FillTimerHandle);
-	}
-	if (DestroyTimerHandle.IsValid())
-	{
-		GetWorldTimerManager().ClearTimer(DestroyTimerHandle);
+		if (FillTimerHandle.IsValid())
+		{
+			World->GetTimerManager().ClearTimer(FillTimerHandle);
+		}
+		if (DestroyTimerHandle.IsValid())
+		{
+			World->GetTimerManager().ClearTimer(DestroyTimerHandle);
+		}
 	}
 	
 	bIsAnimating = false;
@@ -151,7 +154,6 @@ void APGSkillIndicator::OnAnimationComplete()
 				{
 					if (WeakThis.IsValid())
 					{
-						WeakThis->EndAnimation();
 						WeakThis->Destroy();
 					}
 				},
