@@ -6,21 +6,24 @@
 #include "PGActor/Projectile/PGProjectileBase.h"
 #include "PGPooledProjectile.generated.h"
 
+class UPGProjectilePool;
+
 /**
- * 
+ * 풀링되는 투사체
  */
 UCLASS()
 class PGACTOR_API APGPooledProjectile : public APGProjectileBase
 {
 	GENERATED_BODY()
 
-	friend class APGProjectilePool;
+	friend class UPGProjectilePool;
 	
 private:
 	bool bInUse = false;
 
-	UPROPERTY(Transient)
-	class APGProjectilePool* OwnerPool = nullptr;
+	// UObject 기반 Pool 참조
+	UPROPERTY()
+	UPGProjectilePool* OwnerPool = nullptr;
 	
 public:
 	// 풀로 반환
@@ -36,4 +39,8 @@ public:
 	virtual void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
 
 	virtual void OnLifeTimeExpired() override;
+	
+protected:
+	// Actor 생명주기
+	virtual void BeginDestroy() override;
 };
