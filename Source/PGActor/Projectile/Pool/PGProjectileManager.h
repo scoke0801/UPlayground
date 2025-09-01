@@ -6,8 +6,12 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "PGProjectileManager.generated.h"
 
+enum class EPGProjectileType : uint8;
+class UPGProjectilePool;
+class APGPooledProjectile;
+
 /**
- * 
+ * 투사체 매니저 - GameInstance Subsystem
  */
 UCLASS()
 class PGACTOR_API UPGProjectileManager : public UGameInstanceSubsystem
@@ -17,25 +21,24 @@ class PGACTOR_API UPGProjectileManager : public UGameInstanceSubsystem
 	static TWeakObjectPtr<UPGProjectileManager> WeakThis;
 
 private:
-	// 풀 맵
+	// 풀 맵 (UObject 기반)
 	UPROPERTY()
-	TMap<EPGProjectileType, class APGProjectilePool*> ProjectilePools;
+	TMap<EPGProjectileType, UPGProjectilePool*> ProjectilePools;
 
 public:
 	static UPGProjectileManager* Get();
-    
+	
 	// USubsystem interface
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
 public:
-	
 	// 투사체 발사 (메인 인터페이스)
 	UFUNCTION(BlueprintCallable, Category = "Projectile Manager")
-	class APGPooledProjectile* FireProjectile(int32 ProjectileId, 
-										   const FVector& Origin, 
-										   const FVector& Direction,
-										   float Speed = -1.0f);
+	APGPooledProjectile* FireProjectile(int32 ProjectileId, 
+										const FVector& Origin, 
+										const FVector& Direction,
+										float Speed = -1.0f);
 
 	// 풀 관리
 	UFUNCTION(BlueprintCallable, Category = "Pool Management")
@@ -43,8 +46,8 @@ public:
 	
 private:
 	void PreAllocPools();
-
-	class APGProjectilePool* CreateProjectilePool(EPGProjectileType Type);
+	UPGProjectilePool* CreateProjectilePool(EPGProjectileType Type);
+	void CleanupAllPools();
 };
 
 #define PGProjectile() UPGProjectileManager::Get()

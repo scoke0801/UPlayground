@@ -3,13 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "UObject/NoExportTypes.h"
 #include "PGProjectilePool.generated.h"
 
 class APGPooledProjectile;
 
+/**
+ * UObject 기반 투사체 풀
+ */
 UCLASS()
-class PGACTOR_API APGProjectilePool : public AActor
+class PGACTOR_API UPGProjectilePool : public UObject
 {
 	GENERATED_BODY()
 
@@ -25,19 +28,28 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Pool Settings")
 	int32 MaxPoolSize = 100;
-	
 
 private:
-	UPROPERTY(Transient)
+	// World 캐싱
+	UPROPERTY()
+	UWorld* CachedWorld = nullptr;
+
+	// 풀 관리 배열
+	UPROPERTY()
 	TArray<APGPooledProjectile*> AvailableProjectiles;
 
-	UPROPERTY(Transient)
+	UPROPERTY()
 	TArray<APGPooledProjectile*> ActiveProjectiles;
 
 public:
-	APGProjectilePool();
+	// UObject interface
+	virtual UWorld* GetWorld() const override;
+	virtual void BeginDestroy() override;
 	
 public:
+	// 초기화
+	void Initialize(UWorld* InWorld);
+	
 	// 투사체 요청/반환
 	UFUNCTION(BlueprintCallable)
 	class APGPooledProjectile* RequestProjectile();
@@ -48,7 +60,7 @@ public:
 	bool IsProjectileClassLoaded() const;
 	
 	// 풀 설정
-    void SetProjectileClass(const FSoftClassPath& InClassPath);
+	void SetProjectileClass(const FSoftClassPath& InClassPath);
 	void SetProjectileClass(TSubclassOf<APGPooledProjectile> InClass) { ProjectileClass = InClass; }
 	void SetPoolSize(int32 Initial, int32 Max) { InitialPoolSize = Initial; MaxPoolSize = Max; }
 
@@ -62,8 +74,10 @@ public:
 	int32 GetAvailableCount() const { return AvailableProjectiles.Num(); }
 	int32 GetTotalCount() const { return GetActiveCount() + GetAvailableCount(); }
 
+	// 풀 정리
+	void CleanupPool();
+
 private:
 	APGPooledProjectile* CreateNewProjectile();
-	
 	bool LoadProjectileClass();
 };
