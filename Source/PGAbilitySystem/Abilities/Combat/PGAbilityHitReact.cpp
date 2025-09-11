@@ -92,7 +92,8 @@ void UPGAbilityHitReact::FaceToAttacker(const AActor* Attacker)
 
 	FVector AttackerLocation = Attacker->GetActorLocation();
 	FVector OwnerLocation = GetOwningActorFromActorInfo()->GetActorLocation();
-
+	AttackerLocation.Z = OwnerLocation.Z;
+	
 	FRotator NewRotator = UKismetMathLibrary::FindLookAtRotation(OwnerLocation, AttackerLocation);
 
 	GetOwningActorFromActorInfo()->SetActorRotation(NewRotator);
