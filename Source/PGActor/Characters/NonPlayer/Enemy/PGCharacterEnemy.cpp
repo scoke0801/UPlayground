@@ -10,7 +10,10 @@
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
+#include "PGData/PGDataTableManager.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGData/DataTable/Skill/PGEnemyDataRow.h"
+#include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "PGUI/Component/Base/PGWidgetComponentBase.h"
 #include "PGUI/Manager/PGDamageFloaterManager.h"
@@ -69,9 +72,19 @@ void APGCharacterEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// [TODO] 데이터를 주입할 수 있는 다른 방안을 모색해보자.
-	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 1001);
-	
+	if(FPGEnemyDataRow* EnemyData = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
+	{
+		uint8 Index = 0;
+		for (int32 SkillId : EnemyData->SkillIdList)
+		{
+			if(FPGSkillDataRow* SkillIDataRow = PGData()->GetRowData<FPGSkillDataRow>(SkillId))
+			{
+				EPGSkillSlot SkillSlot = static_cast<EPGSkillSlot>(Index++);
+				SkillHandler->AddSkill(SkillSlot, SkillId);
+			}
+		}
+	}
+
 	InitEnemyStartUpData();
 	InitUIComponents();
 	
