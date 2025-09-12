@@ -20,9 +20,9 @@ void UPGUIEnemyNamePlate::SetHpPercent(const float Percent)
 	HpBar->SetPercent(Percent);
 }
 
-void UPGUIEnemyNamePlate::SetNameText(const FString& Name)
+void UPGUIEnemyNamePlate::SetNameText(const FName& Name)
 {
-	NameTextBlock->SetText(FText::FromString(Name));
+	NameTextBlock->SetText(FText::FromName(Name));
 }
 
 void UPGUIEnemyNamePlate::ShowWidget(float InLifeTime)

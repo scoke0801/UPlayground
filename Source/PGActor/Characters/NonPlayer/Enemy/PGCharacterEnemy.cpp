@@ -144,6 +144,11 @@ void APGCharacterEnemy::InitUIComponents()
 
 		// 기본적으로 노출하지 않는다. 피격 시에만 노출
 		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+
+		if (FPGEnemyDataRow* EnemyData = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
+		{
+			EnemyNamePlate->SetNameText(EnemyData->EnemyName);
+		}
 	}
 }
 
