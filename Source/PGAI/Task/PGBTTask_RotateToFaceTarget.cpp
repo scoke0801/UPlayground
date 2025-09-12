@@ -136,10 +136,13 @@ void UPGBTTask_RotateToFaceTarget::TickTask(UBehaviorTreeComponent& OwnerComp, u
 	}
 	else
 	{
-		// 폰 위치에서 타겟을 바라보는 회전값 계산
-		const FRotator LookAtRot = UKismetMathLibrary::FindLookAtRotation(
-			Memory->OwningPawn->GetActorLocation(),
-			Memory->TargetActor->GetActorLocation());
+		// 높이 차이를 무시하기 위해 Z값을 같게 맞춤
+		FVector OwnerLocation = Memory->OwningPawn->GetActorLocation();
+		FVector TargetLocation = Memory->TargetActor->GetActorLocation();
+		TargetLocation.Z = OwnerLocation.Z; // 타겟의 높이를 폰의 높이와 같게 설정
+
+		// 폰 위치에서 타겟을 바라보는 회전값 계산 (수평면에서만)
+		const FRotator LookAtRot = UKismetMathLibrary::FindLookAtRotation(OwnerLocation, TargetLocation);
 
 		// 현재 회전에서 목표 회전으로 부드럽게 보간
 		const FRotator TargetRot = FMath::RInterpTo(Memory->OwningPawn->GetActorRotation(),
@@ -160,11 +163,14 @@ void UPGBTTask_RotateToFaceTarget::TickTask(UBehaviorTreeComponent& OwnerComp, u
 bool UPGBTTask_RotateToFaceTarget::HasReachedAnglePrecision(APawn* QueryPawn, AActor* TargetActor)
 {
 	// 폰의 전방 방향 벡터를 가져옴
-	const FVector OwnerForward = QueryPawn->GetActorForwardVector();
+	FVector OwnerForward = QueryPawn->GetActorForwardVector();
+	OwnerForward.Z = 0.0f;
+	OwnerForward.Normalize();
 
-	// 폰에서 타겟으로의 정규화된 방향 벡터를 계산
-	const FVector OwnerToTargetNormalized = (TargetActor->GetActorLocation() -
-		QueryPawn->GetActorLocation()).GetSafeNormal();
+	// 폰에서 타겟으로의 방향 벡터 계산 (높이 차이 무시)
+	FVector OwnerToTarget = TargetActor->GetActorLocation() - QueryPawn->GetActorLocation();
+	OwnerToTarget.Z = 0.0f;
+	const FVector OwnerToTargetNormalized = OwnerToTarget.GetSafeNormal();
 
 	// 두 벡터의 내적을 계산 (코사인 값)
 	const float DotResult = FVector::DotProduct(OwnerForward, OwnerToTargetNormalized);
