@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "UObject/SoftObjectPath.h"
-#include "PGEnemyDataRow.generated.h"
+#include "PGDeathDataRow.generated.h"
 
 USTRUCT(BlueprintType)
 struct PGDATA_API FPGDeathDataRow : public FTableRowBase
@@ -18,5 +18,5 @@ public:
 	TArray<FSoftObjectPath> DeathMontagePath;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FSoftObjectPath DissolveVFXPath;
+	TSoftObjectPtr<class UNiagaraSystem> DissolveVFXPath;
 };

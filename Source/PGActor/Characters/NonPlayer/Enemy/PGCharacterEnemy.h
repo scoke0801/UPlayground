@@ -59,4 +59,5 @@ private:
 	void InitUIComponents();
 	
 	void UpdateHpBar();
+	
 };

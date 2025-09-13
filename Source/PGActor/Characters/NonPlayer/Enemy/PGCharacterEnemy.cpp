@@ -3,7 +3,11 @@
 
 #include "PGCharacterEnemy.h"
 
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/TimelineComponent.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -13,6 +17,7 @@
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGData/DataTable/ActorAssetPath/PGDeathDataRow.h"
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
@@ -136,8 +141,38 @@ void APGCharacterEnemy::OnDied()
 	}
 
 	// 보유 위젯 비활성화
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+	}
 
-	// 나이아가라 이펙트 재생
+	// Dissolve VFX 재생
+	if (FPGDeathDataRow* Data = PGData()->GetRowData<FPGDeathDataRow>(CharacterTID))
+	{
+		if (false == Data->DissolveVFXPath.IsNull())
+		{
+			UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				Data->DissolveVFXPath.ToSoftObjectPath(),
+				FStreamableDelegate::CreateLambda([this, VFXPath = Data->DissolveVFXPath]()
+				{
+					if (UNiagaraSystem* Template = VFXPath.Get())
+					{
+						UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+							GetWorld(), Template, GetActorLocation(), GetActorRotation());
+						
+						if (SpawnedVFX)
+						{
+							UE_LOG(LogTemp, Warning, TEXT("VFX Component Created: %s"), *SpawnedVFX->GetName());
+							UE_LOG(LogTemp, Warning, TEXT("Is Valid: %s"), SpawnedVFX->IsValidLowLevel() ? TEXT("true") : TEXT("false"));
+						}
+						else
+						{
+							UE_LOG(LogTemp, Error, TEXT("Failed to create VFX component"));
+						}
+					}
+				}));
+		}
+	}
 }
 
 void APGCharacterEnemy::InitEnemyStartUpData()

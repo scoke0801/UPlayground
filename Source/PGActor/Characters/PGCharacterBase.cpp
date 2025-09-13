@@ -67,3 +67,7 @@ UPGAbilitySystemComponent* APGCharacterBase::GetPGAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+void APGCharacterBase::PlayVFX(UNiagaraSystem* ToPlayTemplate)
+{
+}
+
