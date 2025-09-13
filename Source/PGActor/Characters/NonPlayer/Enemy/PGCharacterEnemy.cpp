@@ -3,7 +3,6 @@
 
 #include "PGCharacterEnemy.h"
 
-#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Components/CapsuleComponent.h"
@@ -15,6 +14,7 @@
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
+#include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
 #include "PGData/DataTable/ActorAssetPath/PGDeathDataRow.h"
@@ -57,6 +57,7 @@ APGCharacterEnemy::APGCharacterEnemy()
 	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
 
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
+	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimeline"));
 
 	SkillHandler =  FPGHandler::Create<FPGEnemySkillHandler>();
 	EnemyStatComponent = CreateDefaultSubobject<UPGEnemyStatComponent>(TEXT("EnemyStatComponent"));
@@ -157,22 +158,14 @@ void APGCharacterEnemy::OnDied()
 				{
 					if (UNiagaraSystem* Template = VFXPath.Get())
 					{
-						UNiagaraComponent* SpawnedVFX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+						UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 							GetWorld(), Template, GetActorLocation(), GetActorRotation());
-						
-						if (SpawnedVFX)
-						{
-							UE_LOG(LogTemp, Warning, TEXT("VFX Component Created: %s"), *SpawnedVFX->GetName());
-							UE_LOG(LogTemp, Warning, TEXT("Is Valid: %s"), SpawnedVFX->IsValidLowLevel() ? TEXT("true") : TEXT("false"));
-						}
-						else
-						{
-							UE_LOG(LogTemp, Error, TEXT("Failed to create VFX component"));
-						}
 					}
 				}));
 		}
 	}
+	
+	StartDissolveEffect();
 }
 
 void APGCharacterEnemy::InitEnemyStartUpData()
@@ -217,4 +210,63 @@ void APGCharacterEnemy::UpdateHpBar()
 		return;
 	}
 	EnemyNamePlate->SetHpPercent(static_cast<float>(EnemyStatComponent->CurrentHP) / EnemyStatComponent->MaxHP);
+}
+
+void APGCharacterEnemy::StartDissolveEffect()
+{
+	if (!DissolveTimeline || !DissolveCurve)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DissolveTimeline 또는 DissolveCurve가 설정되지 않았습니다."));
+
+		OnDissolveTimelineFinished();
+		return;
+	}
+
+	FOnTimelineFloat DissolveTimelineUpdateDelegate;
+	DissolveTimelineUpdateDelegate.BindDynamic(this, &APGCharacterEnemy::OnDissolveTimelineUpdate);
+	DissolveTimeline->AddInterpFloat(DissolveCurve, DissolveTimelineUpdateDelegate);
+
+	FOnTimelineEvent DissolveTimelineFinishedDelegate;
+	DissolveTimelineFinishedDelegate.BindDynamic(this, &APGCharacterEnemy::OnDissolveTimelineFinished);
+	DissolveTimeline->SetTimelineFinishedFunc(DissolveTimelineFinishedDelegate);
+	
+	// Timeline 재생 시작
+	DissolveTimeline->SetTimelineLength(1.0f / TotalDissolveTime);
+	DissolveTimeline->PlayFromStart();
+}
+
+void APGCharacterEnemy::OnDissolveTimelineUpdate(float Value)
+{
+	// 캐릭터 메쉬에 DissolveAmount 파라미터 설정
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetScalarParameterValueOnMaterials(FName("DissolveAmount"), Value);
+	}
+
+	// 현재 장착된 무기가 있다면 해당 무기 메쉬에도 적용
+	if (CombatComponent)
+	{
+		if (APGWeaponBase* CurrentWeapon = CombatComponent->GetCharacterCurrentEquippedWeapon())
+		{
+			// if (UStaticMeshComponent* WeaponMesh = CurrentWeapon->GetWeaponMesh())
+			// {
+			// 	WeaponMesh->SetScalarParameterValueOnMaterials(FName("DissolveAmount"), Value);
+			// }
+		}
+	}
+}
+
+void APGCharacterEnemy::OnDissolveTimelineFinished()
+{
+	// 무기가 있다면 먼저 파괴
+	if (CombatComponent)
+	{
+		if (APGWeaponBase* CurrentWeapon = CombatComponent->GetCharacterCurrentEquippedWeapon())
+		{
+			CurrentWeapon->Destroy();
+		}
+	}
+
+	// 캐릭터 액터 파괴
+	Destroy();
 }
