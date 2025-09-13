@@ -63,6 +63,8 @@ public:
 
 public:
 	virtual void OnHit(UPGStatComponent* StatComponent) {}
+
+	virtual void OnDied();
 	
 public:
 	int32 GetCharacterTID() const {return CharacterTID;}

@@ -53,6 +53,10 @@ void APGCharacterBase::PossessedBy(AController* NewController)
 	}
 }
 
+void APGCharacterBase::OnDied()
+{
+}
+
 UAbilitySystemComponent* APGCharacterBase::GetAbilitySystemComponent() const
 {
 	return GetPGAbilitySystemComponent();

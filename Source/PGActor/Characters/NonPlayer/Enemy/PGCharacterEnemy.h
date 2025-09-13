@@ -42,7 +42,8 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void OnHit(UPGStatComponent* StatComponent) override;
-
+	virtual void OnDied() override;
+	
 public:
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
 	UPGEnemyCombatComponent* GetEnemyCombatComponent() const {return CombatComponent;}

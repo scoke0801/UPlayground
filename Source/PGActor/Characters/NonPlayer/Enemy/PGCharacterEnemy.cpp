@@ -117,6 +117,15 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	UpdateHpBar();
 }
 
+void APGCharacterEnemy::OnDied()
+{
+	// 충돌 비활성화
+
+	// 보유 위젯 비활성화
+
+	// 나이아가라 이펙트 재생
+}
+
 void APGCharacterEnemy::InitEnemyStartUpData()
 {
 	if (CharacterStartUpData.IsNull())
