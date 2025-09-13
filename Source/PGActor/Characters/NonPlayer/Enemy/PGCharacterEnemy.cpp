@@ -127,6 +127,13 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 void APGCharacterEnemy::OnDied()
 {
 	// 충돌 비활성화
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->bPauseAnims = true;
+
+		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 
 	// 보유 위젯 비활성화
 

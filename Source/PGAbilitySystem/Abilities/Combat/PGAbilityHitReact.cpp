@@ -7,6 +7,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "LevelInstance/LevelInstanceTypes.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Components/Stat/PGStatComponent.h"
 
 void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                          const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
@@ -14,17 +15,27 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// 타겟 방향 회전
-	FaceToAttacker(TriggerEventData->Instigator);
-
 	if (const APGCharacterBase* Instigator = Cast<APGCharacterBase>(TriggerEventData->Instigator))
 	{
 		if (APGCharacterBase* Owner = GetCharacter())
 		{
 			Owner->OnHit(Instigator->GetStatComponent());
+
+			// 사망한 대상에게는 추가 처리 진행하지 않는다.
+			if (UPGStatComponent* StatComponent = Owner->GetStatComponent())
+			{
+				if (FMath::IsNearlyZero(StatComponent->CurrentHP, 0.01f))
+				{
+					EndAbilitySelf();
+					return;
+				}
+			}
 		}
 	}
 	
+	// 타겟 방향 회전
+	FaceToAttacker(TriggerEventData->Instigator);
+
 	// 메테리얼 Hit이펙트 적용
 	if (bool HasHitReactMontage = 0 < MontagePaths.Num())
 	{
