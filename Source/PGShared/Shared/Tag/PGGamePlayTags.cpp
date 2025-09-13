@@ -17,6 +17,7 @@ namespace PGGamePlayTags
 	
 	// Shared Ability
 	UE_DEFINE_GAMEPLAY_TAG(Shared_Ability_HitReact, "Shared.Ability.HitReact");
+	UE_DEFINE_GAMEPLAY_TAG(Shared_Ability_Death, "Shared.Ability.Death");
 	
 	// Weapon Tags
 	UE_DEFINE_GAMEPLAY_TAG(Weapon_Sword, "Weapon.Sword");

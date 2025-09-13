@@ -12,17 +12,24 @@ APGWeaponBase::APGWeaponBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	
-	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 
-	SetRootComponent(WeaponMesh);
+	Root = CreateDefaultSubobject<USceneComponent>("Root");
+	SetRootComponent(Root);
+	
+	StaticWeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
+	StaticWeaponMesh->SetupAttachment(RootComponent);
+	
+	SkeletalWeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalWeaponMesh"));
+	SkeletalWeaponMesh->SetupAttachment(RootComponent);
 
 	WeaponCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("WeaponCollisionBox"));
-	WeaponCollisionBox->SetupAttachment(GetRootComponent());
+	WeaponCollisionBox->SetupAttachment(StaticWeaponMesh);
 	WeaponCollisionBox->SetBoxExtent(FVector(20.0f));
 	WeaponCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this,&ThisClass::OnCollisionBoxBeginOverlap);
 	WeaponCollisionBox->OnComponentEndOverlap.AddUniqueDynamic(this, &ThisClass::OnCollisionBoxEndOverlap);
+	
+	WeaponMeshType = EPGWeaponMeshType::StaticMesh;
 }
 
 void APGWeaponBase::OnCollisionBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -67,4 +74,27 @@ TArray<FGameplayAbilitySpecHandle> APGWeaponBase::GetGrantedAbilitySpecHandles()
 {
 	return AbilitySpecHandles;
 }
+#if WITH_EDITOR
+void APGWeaponBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
 
+	if (PropertyChangedEvent.Property)
+	{
+		const FName PropertyName = PropertyChangedEvent.Property->GetFName();
+        
+		// WeaponMeshType이 변경되었을 때
+		if (PropertyName == GET_MEMBER_NAME_CHECKED(APGWeaponBase, WeaponMeshType))
+		{
+			if (EPGWeaponMeshType::SkeletalMesh == WeaponMeshType)
+			{
+				WeaponCollisionBox->AttachToComponent(SkeletalWeaponMesh, FAttachmentTransformRules::KeepRelativeTransform);
+			}
+			else
+			{
+				WeaponCollisionBox->AttachToComponent(StaticWeaponMesh, FAttachmentTransformRules::KeepRelativeTransform);
+			}
+		}
+	}
+}
+#endif

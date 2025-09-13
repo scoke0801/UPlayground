@@ -11,6 +11,13 @@
 class UBoxComponent;
 DECLARE_DELEGATE_OneParam(FOnTargetInteractedDelegate, AActor*)
 
+UENUM(BlueprintType)
+enum class EPGWeaponMeshType : uint8
+{
+	StaticMesh		UMETA(DisplayName = "Static Mesh"),
+	SkeletalMesh	UMETA(DisplayName = "Skeletal Mesh")
+};
+
 UCLASS()
 class PGACTOR_API APGWeaponBase : public AActor
 {
@@ -22,7 +29,10 @@ public:
 	
 protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
-	UStaticMeshComponent* WeaponMesh;
+	USceneComponent* Root;
+	
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
+	UStaticMeshComponent* StaticWeaponMesh;
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
 	USkeletalMeshComponent* SkeletalWeaponMesh;
@@ -30,6 +40,8 @@ protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG|Weapons")
 	UBoxComponent* WeaponCollisionBox;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|Weapons")
+	EPGWeaponMeshType WeaponMeshType = EPGWeaponMeshType::StaticMesh;
 	
 private:
 	TArray<FGameplayAbilitySpecHandle> AbilitySpecHandles;
@@ -56,4 +68,9 @@ public:
 	
 public:
 	FORCEINLINE UBoxComponent* GetWeaponCollisionBox() const { return WeaponCollisionBox;}
+
+#if WITH_EDITOR
+public:
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 };

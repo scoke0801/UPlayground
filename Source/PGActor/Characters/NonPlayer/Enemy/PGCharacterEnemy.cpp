@@ -7,6 +7,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
@@ -15,6 +16,7 @@
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
+#include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 #include "PGUI/Component/Base/PGWidgetComponentBase.h"
 #include "PGUI/Manager/PGDamageFloaterManager.h"
 #include "PGUI/Widget/Billboard/PGUIEnemyNamePlate.h"
@@ -103,7 +105,7 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	int32 CurrentHp = EnemyStatComponent->CurrentHP;
 
 	// TODO 데미지 계산하도록 수정 필요
-	int32 DamageAmount = 10;
+	int32 DamageAmount = FMath::RandRange(20,50);
 	EnemyStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
 
 	if (EnemyNamePlate)
@@ -115,6 +117,11 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 		EPGDamageType::Normal, GetActorLocation(), true);
 	
 	UpdateHpBar();
+
+	if (EnemyStatComponent->CurrentHP == 0.f)
+	{
+		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
+	}
 }
 
 void APGCharacterEnemy::OnDied()
