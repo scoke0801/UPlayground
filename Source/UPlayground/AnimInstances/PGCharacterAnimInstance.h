@@ -28,6 +28,12 @@ class UPLAYGROUND_API UPGCharacterAnimInstance : public UPGBaseAnimInstance
 	GENERATED_BODY()
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Jump Settings")
+	float MinJumpHeight = 150.0f; // 150cm = 1.5m
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Jump Settings") 
+	float GroundCheckDistance = 1000.0f;
+	
 	UPROPERTY(Transient)
 	APGCharacterBase* OwningCharacter;
 
@@ -79,7 +85,6 @@ public:
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 
 public:
-	void SetIsFalling(bool InIsFalling);
 	
 private:
 	virtual void UpdateLocomotionDirection();
@@ -89,4 +94,8 @@ private:
 	void UpdateHasAcceleration();
 	void UpdateDisplacementSpeed(float DeltaSeconds);
 	void UpdateIsFalling();
+	void UpdateIsJumping();
+
+private:
+	float GetDistanceToGround();
 };

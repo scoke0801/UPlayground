@@ -172,9 +172,6 @@ void APGCharacterPlayer::EndSkillWindow()
 
 void APGCharacterPlayer::SetIsJump(bool IsJump)
 {
-	FString Msg = FString::Printf(TEXT("SetIsJump %p, %d"), this, IsJump);
-	PG_Debug::Print(Msg);
-
 	bIsJump = IsJump;
 }
 
@@ -187,7 +184,7 @@ bool APGCharacterPlayer::IsCanJump() const
 
 	if (UPawnMovementComponent* MovementComponent = GetMovementComponent())
 	{
-		return !GetIsJumping() && !MovementComponent->IsFalling();
+		return !MovementComponent->IsFalling();
 	}
 	
 	return false;

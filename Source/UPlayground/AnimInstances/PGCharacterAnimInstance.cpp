@@ -5,6 +5,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "EnhancedInputComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PGActor/Characters/PGCharacterBase.h"
@@ -48,11 +49,7 @@ void UPGCharacterAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSecond
 	UpdateLocomotionDirection();
 
 	UpdateIsFalling();
-}
-
-void UPGCharacterAnimInstance::SetIsFalling(bool InIsFalling)
-{
-	bIsJumping = InIsFalling;
+	UpdateIsJumping();
 }
 
 void UPGCharacterAnimInstance::UpdateHasAcceleration()
@@ -98,9 +95,84 @@ void UPGCharacterAnimInstance::UpdateDisplacementSpeed(float DeltaSeconds)
 
 void UPGCharacterAnimInstance::UpdateIsFalling()
 {
+	bool PrevState = bIsOnFalling;
+	bIsOnFalling = OwningMovementComponent->IsFalling();
+	if (bIsOnFalling && PrevState != bIsOnFalling)
+	{
+		// 떨어진다면, 점프상태로 변경
+		if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(OwningCharacter))
+		{
+			// 너무 낮으면 안뜀
+			if (MinJumpHeight <= GetDistanceToGround())
+			{
+				Player->SetIsJump(true);
+			}
+		}
+	}
+}
+
+void UPGCharacterAnimInstance::UpdateIsJumping()
+{
 	if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(OwningCharacter))
 	{
 		bIsJumping = Player->GetIsJumping();
 	}
-	bIsOnFalling = OwningMovementComponent->IsFalling();
 }
+
+float UPGCharacterAnimInstance::GetDistanceToGround()
+{
+	if (!OwningCharacter)
+	{
+		return 0.0f;
+	}
+
+	// 캐릭터의 발 위치에서 시작 (Capsule 하단)
+	FVector StartLocation = OwningCharacter->GetActorLocation();
+	if (UCapsuleComponent* Capsule = OwningCharacter->GetCapsuleComponent())
+	{
+		float CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+		StartLocation.Z -= CapsuleHalfHeight; // 캡슐 하단으로 조정
+	}
+    
+	// 아래쪽으로 LineTrace
+	FVector EndLocation = StartLocation - FVector(0, 0, GroundCheckDistance);
+    
+	// Collision 설정
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(OwningCharacter);
+	QueryParams.bTraceComplex = false;
+    
+	// LineTrace 실행
+	FHitResult HitResult;
+	bool bHit = OwningCharacter->GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		StartLocation,
+		EndLocation,
+		ECC_WorldStatic, // 지면만 체크 (WorldStatic)
+		QueryParams
+	);
+
+// #if WITH_EDITOR
+// 	FVector MinHeightPoint = StartLocation - FVector(0, 0, MinJumpHeight);
+// 	DrawDebugSphere(
+// 		OwningCharacter->GetWorld(),
+// 		MinHeightPoint,
+// 		20.0f,
+// 		12,
+// 		FColor::Yellow,
+// 		false,
+// 		0.1f
+// 	);
+// #endif
+	
+	if (bHit)
+	{
+		// 지면까지의 거리 반환
+		float Distance = FVector::Dist(StartLocation, HitResult.Location);
+		return Distance;
+	}
+    
+	// 지면을 찾지 못한 경우 최대 거리 반환
+	return GroundCheckDistance;
+}
+
