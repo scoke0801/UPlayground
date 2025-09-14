@@ -3,6 +3,7 @@
 
 #include "PGCharacterEnemy.h"
 
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Components/CapsuleComponent.h"
@@ -153,19 +154,25 @@ void APGCharacterEnemy::OnDied()
 		if (false == Data->DissolveVFXPath.IsNull())
 		{
 			UAssetManager::GetStreamableManager().RequestAsyncLoad(
-				Data->DissolveVFXPath.ToSoftObjectPath(),
+				Data->DissolveVFXPath.ToSoftObjectPath(), 
 				FStreamableDelegate::CreateLambda([this, VFXPath = Data->DissolveVFXPath]()
 				{
 					if (UNiagaraSystem* Template = VFXPath.Get())
 					{
-						UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-							GetWorld(), Template, GetActorLocation(), GetActorRotation());
+						PlayDeathDissolveVFX(Template);
+						StartDissolveEffect();
 					}
 				}));
 		}
+		else
+		{
+			StartDissolveEffect();
+		}
 	}
-	
-	StartDissolveEffect();
+	else
+	{
+		StartDissolveEffect();
+	}
 }
 
 void APGCharacterEnemy::InitEnemyStartUpData()
@@ -231,7 +238,7 @@ void APGCharacterEnemy::StartDissolveEffect()
 	DissolveTimeline->SetTimelineFinishedFunc(DissolveTimelineFinishedDelegate);
 	
 	// Timeline 재생 시작
-	DissolveTimeline->SetTimelineLength(1.0f / TotalDissolveTime);
+	DissolveTimeline->SetPlayRate(1.0f / TotalDissolveTime);
 	DissolveTimeline->PlayFromStart();
 }
 
@@ -248,10 +255,10 @@ void APGCharacterEnemy::OnDissolveTimelineUpdate(float Value)
 	{
 		if (APGWeaponBase* CurrentWeapon = CombatComponent->GetCharacterCurrentEquippedWeapon())
 		{
-			// if (UStaticMeshComponent* WeaponMesh = CurrentWeapon->GetWeaponMesh())
-			// {
-			// 	WeaponMesh->SetScalarParameterValueOnMaterials(FName("DissolveAmount"), Value);
-			// }
+			if (UMeshComponent* WeaponMesh = CurrentWeapon->GetMeshComponent())
+			{
+				WeaponMesh->SetScalarParameterValueOnMaterials(FName("DissolveAmount"), Value);
+			}
 		}
 	}
 }

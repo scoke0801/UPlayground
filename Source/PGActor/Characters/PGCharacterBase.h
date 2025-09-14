@@ -86,4 +86,6 @@ public:
 
 protected:
 	void PlayVFX(UNiagaraSystem* ToPlayTemplate);
+
+	void PlayDeathDissolveVFX(UNiagaraSystem* ToPlayTemplate);
 };

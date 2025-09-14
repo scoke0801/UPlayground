@@ -68,7 +68,8 @@ public:
 	
 public:
 	FORCEINLINE UBoxComponent* GetWeaponCollisionBox() const { return WeaponCollisionBox;}
-
+	UMeshComponent* GetMeshComponent() const;
+	
 #if WITH_EDITOR
 public:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

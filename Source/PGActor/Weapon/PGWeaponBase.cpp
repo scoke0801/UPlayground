@@ -74,6 +74,16 @@ TArray<FGameplayAbilitySpecHandle> APGWeaponBase::GetGrantedAbilitySpecHandles()
 {
 	return AbilitySpecHandles;
 }
+
+UMeshComponent* APGWeaponBase::GetMeshComponent() const
+{
+	if (EPGWeaponMeshType::SkeletalMesh == WeaponMeshType)
+	{
+		return SkeletalWeaponMesh;
+	}
+	return StaticWeaponMesh;
+}
+
 #if WITH_EDITOR
 void APGWeaponBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
