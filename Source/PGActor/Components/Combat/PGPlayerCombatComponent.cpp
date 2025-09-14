@@ -12,10 +12,11 @@
 
 void UPGPlayerCombatComponent::OnHitTargetActor(AActor* HitActor)
 {
-	if (OverlappedActors.Contains(HitActor))
-	{
-		return;
-	}
+	// 여러 번 피격해도 괜찮게 보여서 우선 주석처리
+	//if (OverlappedActors.Contains(HitActor))
+	//{
+	//	return;
+	//}
 
 	OverlappedActors.AddUnique(HitActor);
 
@@ -38,15 +39,15 @@ void UPGPlayerCombatComponent::OnHitTargetActor(AActor* HitActor)
 
 void UPGPlayerCombatComponent::OnWeaponPulledFromTargetActor(AActor* InteractedActor)
 {
-	FGameplayEventData Data;
-	Data.Instigator = GetOwningPawn();
-	Data.Target = InteractedActor;
-
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-		GetOwningPawn(),
-		PGGamePlayTags::Shared_Event_Hit,
-		Data
-		);
+	// FGameplayEventData Data;
+	// Data.Instigator = GetOwningPawn();
+	// Data.Target = InteractedActor;
+	//
+	// UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+	// 	GetOwningPawn(),
+	// 	PGGamePlayTags::Shared_Event_Hit,
+	// 	Data
+	// 	);
 
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
 		GetOwningPawn(),
