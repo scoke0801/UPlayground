@@ -5,7 +5,6 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
-#include "PGShared/Shared/Debug/PGDebugHelper.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
 
@@ -14,7 +13,6 @@ void UPGAnimNotify_LandingFromJump::Notify(USkeletalMeshComponent* MeshComp, UAn
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	PG_Debug::Print("Notify Landed");
 	if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(MeshComp->GetOwner()))
 	{
 		FGameplayEventData Data;
@@ -27,6 +25,7 @@ void UPGAnimNotify_LandingFromJump::Notify(USkeletalMeshComponent* MeshComp, UAn
 			PGGamePlayTags::Player_Event_JumpLanded,
 			Data
 		);
+		
+//		Player->SetIsJump(false);
 	}
-
 }
