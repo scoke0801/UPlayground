@@ -66,7 +66,7 @@ public:
 	APGWeaponBase* GetCharacterCurrentEquippedWeapon() const;
 	
 	UFUNCTION(BlueprintCallable, Category = "PG|Combat")
-	void SetCurrentEquippWeaponTag(FGameplayTag WeaponTag);
+	void SetCurrentEquippedWeaponTag(FGameplayTag WeaponTag);
 
 public:
 	// 무기 충돌 관련

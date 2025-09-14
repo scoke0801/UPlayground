@@ -11,6 +11,7 @@
 #include "GameFramework/SpringArmComponent.h"
 
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
 #include "PGActor/Components/Input/PGInputComponent.h"
 #include "PGActor/Components/Stat/PGPlayerStatComponent.h"
@@ -139,7 +140,7 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 	int32 CurrentHp = PlayerStatComponent->CurrentHP;
 
 	// TODO 데미지 계산하도록 수정 필요
-	int32 DamageAmount = 10;
+	int32 DamageAmount = FMath::RandRange(1,20);
 	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
 
 	FPGStatUpdateEventData EventData(EPGStatType::Hp,
@@ -151,10 +152,13 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 		Manager->AddFloater(DamageAmount,
 		EPGDamageType::Normal, GetActorLocation(), true);
 	}
-	// PGDamageFloater()->AddFloater(DamageAmount,
-	// 	EPGDamageType::Normal, GetActorLocation(), true);
-	//
+
 	UpdateHpComponent();
+	
+	if (PlayerStatComponent->CurrentHP == 0.f)
+	{
+		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
+	}
 }
 
 void APGCharacterPlayer::StartSkillWindow()

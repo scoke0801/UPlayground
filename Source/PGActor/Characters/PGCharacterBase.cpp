@@ -7,7 +7,12 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "MotionWarpingComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
+
+const FName DissolveEdgeColorName = FName("DissolveEdgeColor");
+const FName DissolveParticleColorName = FName("DissolveParticleColor");
 
 // Sets default values
 APGCharacterBase::APGCharacterBase()
@@ -53,6 +58,10 @@ void APGCharacterBase::PossessedBy(AController* NewController)
 	}
 }
 
+void APGCharacterBase::OnDied()
+{
+}
+
 UAbilitySystemComponent* APGCharacterBase::GetAbilitySystemComponent() const
 {
 	return GetPGAbilitySystemComponent();
@@ -61,5 +70,32 @@ UAbilitySystemComponent* APGCharacterBase::GetAbilitySystemComponent() const
 UPGAbilitySystemComponent* APGCharacterBase::GetPGAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
+}
+
+void APGCharacterBase::PlayVFX(UNiagaraSystem* ToPlayTemplate)
+{
+}
+
+void APGCharacterBase::PlayDeathDissolveVFX(UNiagaraSystem* ToPlayTemplate)
+{
+	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+						ToPlayTemplate, GetMesh(), NAME_None,
+						FVector::ZeroVector,FRotator::ZeroRotator, EAttachLocation::Type::KeepRelativeOffset,
+						true,true);
+
+
+	UMaterialInstanceDynamic* DynamicMaterial = GetMesh()->CreateDynamicMaterialInstance(0, GetMesh()->GetMaterial(0));
+	if (!DynamicMaterial)
+	{
+		return;
+	}
+
+	FLinearColor DissolveEdgeColor;
+	if (DynamicMaterial->GetVectorParameterValue(DissolveEdgeColorName, DissolveEdgeColor))
+	{
+		NiagaraComp->SetVariableLinearColor(DissolveParticleColorName, DissolveEdgeColor);
+	}
+	
+	NiagaraComp->SetCustomTimeDilation(3.0f);
 }
 

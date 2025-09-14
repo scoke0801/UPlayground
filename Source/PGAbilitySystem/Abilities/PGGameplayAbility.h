@@ -46,7 +46,7 @@ protected:
 
 	const FGameplayAbilityActorInfo* CachedActorInfo;
 	
-public:
+protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	/**
 	 * 어빌리티가 부여될 때 호출되는 함수

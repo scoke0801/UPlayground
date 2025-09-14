@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "PGCharacterBase.generated.h"
 
+class UNiagaraSystem;
 class FPGSkillHandler;
 class UPGDataAsset_StartUpDataBase;
 class UPGPawnCombatComponent;
@@ -63,6 +64,8 @@ public:
 
 public:
 	virtual void OnHit(UPGStatComponent* StatComponent) {}
+
+	virtual void OnDied();
 	
 public:
 	int32 GetCharacterTID() const {return CharacterTID;}
@@ -80,4 +83,9 @@ public:
 	 * @return PG 어빌리티 시스템 컴포넌트
 	 */
 	UPGAbilitySystemComponent* GetPGAbilitySystemComponent() const;
+
+protected:
+	void PlayVFX(UNiagaraSystem* ToPlayTemplate);
+
+	void PlayDeathDissolveVFX(UNiagaraSystem* ToPlayTemplate);
 };

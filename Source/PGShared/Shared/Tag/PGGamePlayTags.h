@@ -20,6 +20,7 @@ namespace PGGamePlayTags
 
 	// Shared Ability
 	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Shared_Ability_HitReact);
+	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Shared_Ability_Death);
 
 	// Weapon Tag
 	PGSHARED_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Sword);

@@ -29,11 +29,13 @@ public class PGData : ModuleRules
 			{
 				"PGAbilitySystem",
 			});
+		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"PGShared",
-				"PGAbilitySystem",
+				"PGAbilitySystem", 
+				"Niagara",
 			});
 		
 		PrivateIncludePathModuleNames.AddRange(

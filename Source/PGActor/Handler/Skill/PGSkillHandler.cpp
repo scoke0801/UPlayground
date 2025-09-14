@@ -63,6 +63,14 @@ int32 FPGSkillHandler::GetSkillID(const EPGSkillSlot InSlotId)
 	return INVALID_SKILL_ID;
 }
 
+EPGSkillSlot FPGSkillHandler::GetRandomSkillSlot() const
+{
+	TArray<EPGSkillSlot> KeyList;
+	SkillDataMap.GetKeys(KeyList);
+    
+	return KeyList[FMath::RandRange(0, KeyList.Num() - 1)];
+}
+
 bool FPGSkillHandler::IsCanUseSkill(const EPGSkillSlot InSlotId)
 {
 	if (FPGSkillData* Data = SkillDataMap.Find(InSlotId))

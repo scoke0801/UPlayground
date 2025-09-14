@@ -31,7 +31,7 @@ protected:
 	
 public:
 	void SetHpPercent(const float Percent);
-	void SetNameText(const FString& Name);
+	void SetNameText(const FName& Name);
 
 	void ShowWidget(float InLifeTime);
 

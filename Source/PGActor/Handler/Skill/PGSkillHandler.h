@@ -51,4 +51,7 @@ public:
 public:
 	virtual void UseSkill(const EPGSkillSlot InSlotId) {}
 	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId);
+
+public:
+	virtual EPGSkillSlot GetRandomSkillSlot() const;
 };

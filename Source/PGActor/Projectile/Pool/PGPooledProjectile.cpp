@@ -14,12 +14,6 @@ void APGPooledProjectile::Fire(const FVector& StartLocation, const FVector& Dire
 		MovementComponent->SetUpdatedComponent(RootComponent);
 	}
 
-	FString Msg = FString::Printf(TEXT("Fire Projectile: %p, Loc (%f, %f, %f), Dir (%f, %f, %f)"), this,
-		StartLocation.X, StartLocation.Y, StartLocation.Z,
-		Direction.X, Direction.Y, Direction.Z);
-	
-	PG_Debug::Print(Msg);
-	
 	Super::Fire(StartLocation, Direction, Speed, InDamage);
 	
 	bInUse = true;

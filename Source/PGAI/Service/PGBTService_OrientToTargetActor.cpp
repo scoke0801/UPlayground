@@ -53,8 +53,12 @@ void UPGBTService_OrientToTargetActor::TickNode(UBehaviorTreeComponent& OwnerCom
 	APawn* OwningPawn = OwnerComp.GetAIOwner()->GetPawn();
 	if (OwningPawn && TargetActor)
 	{
+		FVector OwnerLocation = OwningPawn->GetActorLocation();
+		FVector TargetLocation = TargetActor->GetActorLocation();
+		TargetLocation.Z = OwnerLocation.Z;
+		
 		const FRotator LookAtRot = UKismetMathLibrary::FindLookAtRotation(
-			OwningPawn->GetActorLocation(), TargetActor->GetActorLocation());
+			OwnerLocation, TargetLocation);
 
 		const FRotator TargetRot = FMath::RInterpTo(OwningPawn->GetActorRotation(),
 			LookAtRot, DeltaSeconds, RotationInterpSpeed);

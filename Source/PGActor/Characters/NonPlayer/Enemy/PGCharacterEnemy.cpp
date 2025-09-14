@@ -3,15 +3,26 @@
 
 #include "PGCharacterEnemy.h"
 
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/TimelineComponent.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
+#include "PGActor/Weapon/PGWeaponBase.h"
+#include "PGData/PGDataTableManager.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
+#include "PGData/DataTable/ActorAssetPath/PGDeathDataRow.h"
+#include "PGData/DataTable/Skill/PGEnemyDataRow.h"
+#include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
+#include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 #include "PGUI/Component/Base/PGWidgetComponentBase.h"
 #include "PGUI/Manager/PGDamageFloaterManager.h"
 #include "PGUI/Widget/Billboard/PGUIEnemyNamePlate.h"
@@ -47,6 +58,7 @@ APGCharacterEnemy::APGCharacterEnemy()
 	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
 
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
+	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimeline"));
 
 	SkillHandler =  FPGHandler::Create<FPGEnemySkillHandler>();
 	EnemyStatComponent = CreateDefaultSubobject<UPGEnemyStatComponent>(TEXT("EnemyStatComponent"));
@@ -69,9 +81,19 @@ void APGCharacterEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// [TODO] 데이터를 주입할 수 있는 다른 방안을 모색해보자.
-	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 1001);
-	
+	if(FPGEnemyDataRow* EnemyData = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
+	{
+		uint8 Index = 0;
+		for (int32 SkillId : EnemyData->SkillIdList)
+		{
+			if(FPGSkillDataRow* SkillIDataRow = PGData()->GetRowData<FPGSkillDataRow>(SkillId))
+			{
+				EPGSkillSlot SkillSlot = static_cast<EPGSkillSlot>(Index++);
+				SkillHandler->AddSkill(SkillSlot, SkillId);
+			}
+		}
+	}
+
 	InitEnemyStartUpData();
 	InitUIComponents();
 	
@@ -90,7 +112,7 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	int32 CurrentHp = EnemyStatComponent->CurrentHP;
 
 	// TODO 데미지 계산하도록 수정 필요
-	int32 DamageAmount = 10;
+	int32 DamageAmount = FMath::RandRange(20,50);
 	EnemyStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
 
 	if (EnemyNamePlate)
@@ -102,6 +124,55 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 		EPGDamageType::Normal, GetActorLocation(), true);
 	
 	UpdateHpBar();
+
+	if (EnemyStatComponent->CurrentHP == 0.f)
+	{
+		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
+	}
+}
+
+void APGCharacterEnemy::OnDied()
+{
+	// 충돌 비활성화
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->bPauseAnims = true;
+
+		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	// 보유 위젯 비활성화
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// Dissolve VFX 재생
+	if (FPGDeathDataRow* Data = PGData()->GetRowData<FPGDeathDataRow>(CharacterTID))
+	{
+		if (false == Data->DissolveVFXPath.IsNull())
+		{
+			UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				Data->DissolveVFXPath.ToSoftObjectPath(), 
+				FStreamableDelegate::CreateLambda([this, VFXPath = Data->DissolveVFXPath]()
+				{
+					if (UNiagaraSystem* Template = VFXPath.Get())
+					{
+						PlayDeathDissolveVFX(Template);
+						StartDissolveEffect();
+					}
+				}));
+		}
+		else
+		{
+			StartDissolveEffect();
+		}
+	}
+	else
+	{
+		StartDissolveEffect();
+	}
 }
 
 void APGCharacterEnemy::InitEnemyStartUpData()
@@ -131,6 +202,11 @@ void APGCharacterEnemy::InitUIComponents()
 
 		// 기본적으로 노출하지 않는다. 피격 시에만 노출
 		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+
+		if (FPGEnemyDataRow* EnemyData = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
+		{
+			EnemyNamePlate->SetNameText(EnemyData->EnemyName);
+		}
 	}
 }
 
@@ -141,4 +217,63 @@ void APGCharacterEnemy::UpdateHpBar()
 		return;
 	}
 	EnemyNamePlate->SetHpPercent(static_cast<float>(EnemyStatComponent->CurrentHP) / EnemyStatComponent->MaxHP);
+}
+
+void APGCharacterEnemy::StartDissolveEffect()
+{
+	if (!DissolveTimeline || !DissolveCurve)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DissolveTimeline 또는 DissolveCurve가 설정되지 않았습니다."));
+
+		OnDissolveTimelineFinished();
+		return;
+	}
+
+	FOnTimelineFloat DissolveTimelineUpdateDelegate;
+	DissolveTimelineUpdateDelegate.BindDynamic(this, &APGCharacterEnemy::OnDissolveTimelineUpdate);
+	DissolveTimeline->AddInterpFloat(DissolveCurve, DissolveTimelineUpdateDelegate);
+
+	FOnTimelineEvent DissolveTimelineFinishedDelegate;
+	DissolveTimelineFinishedDelegate.BindDynamic(this, &APGCharacterEnemy::OnDissolveTimelineFinished);
+	DissolveTimeline->SetTimelineFinishedFunc(DissolveTimelineFinishedDelegate);
+	
+	// Timeline 재생 시작
+	DissolveTimeline->SetPlayRate(1.0f / TotalDissolveTime);
+	DissolveTimeline->PlayFromStart();
+}
+
+void APGCharacterEnemy::OnDissolveTimelineUpdate(float Value)
+{
+	// 캐릭터 메쉬에 DissolveAmount 파라미터 설정
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetScalarParameterValueOnMaterials(FName("DissolveAmount"), Value);
+	}
+
+	// 현재 장착된 무기가 있다면 해당 무기 메쉬에도 적용
+	if (CombatComponent)
+	{
+		if (APGWeaponBase* CurrentWeapon = CombatComponent->GetCharacterCurrentEquippedWeapon())
+		{
+			if (UMeshComponent* WeaponMesh = CurrentWeapon->GetMeshComponent())
+			{
+				WeaponMesh->SetScalarParameterValueOnMaterials(FName("DissolveAmount"), Value);
+			}
+		}
+	}
+}
+
+void APGCharacterEnemy::OnDissolveTimelineFinished()
+{
+	// 무기가 있다면 먼저 파괴
+	if (CombatComponent)
+	{
+		if (APGWeaponBase* CurrentWeapon = CombatComponent->GetCharacterCurrentEquippedWeapon())
+		{
+			CurrentWeapon->Destroy();
+		}
+	}
+
+	// 캐릭터 액터 파괴
+	Destroy();
 }

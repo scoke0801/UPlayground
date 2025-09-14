@@ -45,7 +45,7 @@ APGWeaponBase* UPGPawnCombatComponent::GetCharacterCurrentEquippedWeapon() const
 	return GetCharacterCarriedWeaponByTag(CurrentEquippedWeaponTag);
 }
 
-void UPGPawnCombatComponent::SetCurrentEquippWeaponTag(FGameplayTag WeaponTag)
+void UPGPawnCombatComponent::SetCurrentEquippedWeaponTag(FGameplayTag WeaponTag)
 {
 	CurrentEquippedWeaponTag = WeaponTag;
 }

@@ -34,13 +34,19 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	// TODO: 단순히 NormalAttack이 아니라, 스킬을 사용할거라면 스킬 ID를 가져와야 한다
 	FPGEnemySkillHandler* SkillHandler = static_cast<FPGEnemySkillHandler*>(Character->GetSkillHandler());
-	if (nullptr == SkillHandler || false == SkillHandler->IsCanUseSkill(EPGSkillSlot::NormalAttack))
+	if (nullptr == SkillHandler)
 	{
 		EndAbilitySelf();
 		return;
 	}
-	
-	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(EPGSkillSlot::NormalAttack));
+
+	EPGSkillSlot RandomSkillSlot = SkillHandler->GetRandomSkillSlot();
+	if (false == SkillHandler->IsCanUseSkill(RandomSkillSlot))
+	{
+		EndAbilitySelf();
+		return;
+	}
+	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(RandomSkillSlot));
 	if(nullptr == Row)
 	{
 		EndAbilitySelf();
@@ -62,18 +68,7 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		MontageTask->ReadyForActivation();
 	}
 	
-	SkillHandler->UseSkill(EPGSkillSlot::NormalAttack);
-	
-	// TODO: Wait 대신 메시지 기반 구조로 변경가능할 지 + 중복 코드 제거( PGAbilityPlayerSkill )
-	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-		this,
-		PGGamePlayTags::Shared_Event_Hit);
-	if (nullptr != WaitEventTask)
-	{
-		WaitEventTask->EventReceived.AddDynamic(this, &ThisClass::OnGameplayEventReceived);
-
-		WaitEventTask->ReadyForActivation();
-	}
+	SkillHandler->UseSkill(RandomSkillSlot);
 }
 
 void UPGEnemyAbilityAttack::OnGameplayEventReceived(FGameplayEventData Payload)
