@@ -73,7 +73,7 @@ void UPGAbilityUnEquipWeapon::OnEventReceived(FGameplayEventData Payload)
 	{
 		HandleUnEquipWeapon(Weapon);
 		
-		CombatComponent->SetCurrentEquippWeaponTag(FGameplayTag::EmptyTag);
+		CombatComponent->SetCurrentEquippedWeaponTag(FGameplayTag::EmptyTag);
 	}
 }
 

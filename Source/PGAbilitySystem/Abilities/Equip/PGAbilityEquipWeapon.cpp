@@ -113,6 +113,6 @@ void UPGAbilityEquipWeapon::OnEventReceived(FGameplayEventData Payload)
 	if (Weapon->AttachToComponent(Mesh, Rule, AttachSocketName))
 	{
 		HandleEquipWeapon(Weapon);
-		CombatComponent->SetCurrentEquippWeaponTag(WeaponTag);
+		CombatComponent->SetCurrentEquippedWeaponTag(WeaponTag);
 	}
 }
