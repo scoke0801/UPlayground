@@ -120,7 +120,7 @@ bool UPGGameplayAbility::CheckMontageIsPlaying(APGCharacterBase* Character, floa
 					float TotalTime = MontageLength / PlayRate;
 					float RemainingRatio = RemainingTime / TotalTime;
 					
-					// 남은 재생시간이 20% 이상이면 스킬 사용 제한
+					// 남은 재생시간이 {}% 이상이면 스킬 사용 제한
 					return RemainingRatio < CheckRatio;
 				}
 			}
