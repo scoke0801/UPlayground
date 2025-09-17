@@ -25,7 +25,8 @@ void UPGAnimNotify_LandingFromJump::Notify(USkeletalMeshComponent* MeshComp, UAn
 			PGGamePlayTags::Player_Event_JumpLanded,
 			Data
 		);
-		
-//		Player->SetIsJump(false);
+
+		// Ability 에 의한 활성화가 아니라, 단순 Falling 처리에 의한 것일수도 있으니 false!
+		Player->SetIsJump(false);
 	}
 }
