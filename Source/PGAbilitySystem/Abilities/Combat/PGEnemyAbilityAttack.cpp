@@ -11,6 +11,7 @@
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                             const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
@@ -25,13 +26,23 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		EndAbilitySelf();
 		return;
 	}
-
 	if (false == CheckMontageIsPlaying(Character, 0.2f))
 	{
 		EndAbilitySelf();
 		return;
 	}
-
+	
+	// Spec에서 태그 확인
+	if (FGameplayAbilitySpec* Spec = GetAbilitySystemComponentFromActorInfo()->FindAbilitySpecFromHandle(Handle))
+	{
+		// DynamicAbilityTags에서 활성화 태그 찾기
+		for (const FGameplayTag& Tag : Spec->DynamicAbilityTags)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Activation tag found: %s"), *Tag.ToString());
+			// 원하는 로직 수행
+		}
+	}
+	
 	// TODO: 단순히 NormalAttack이 아니라, 스킬을 사용할거라면 스킬 ID를 가져와야 한다
 	FPGEnemySkillHandler* SkillHandler = static_cast<FPGEnemySkillHandler*>(Character->GetSkillHandler());
 	if (nullptr == SkillHandler)
