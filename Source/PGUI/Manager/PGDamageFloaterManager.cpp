@@ -105,9 +105,8 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 			if (PC->ProjectWorldLocationToScreen(Location, ScreenPosition))
 			{
 				Floater->SetDamage(DamageAmount, DamageType, FVector2D(ScreenPosition));
-				// 강제로 레이아웃 업데이트
-				Floater->ForceLayoutPrepass(); 
-				FVector2D WidgetSize = Floater->GetDesiredSize();
+
+				FVector2D WidgetSize = Floater->GetWidgetSize();
 				ScreenPosition.X -= WidgetSize.X * 0.5f;
 				Floater->SetPositionInViewport(ScreenPosition);
 			}
