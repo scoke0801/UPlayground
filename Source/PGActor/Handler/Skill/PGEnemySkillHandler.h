@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayAbilitySpec.h"
 #include "PGSkillHandler.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 
@@ -24,6 +25,8 @@ public:
 public:
 	virtual void UseSkill(const EPGSkillSlot InSlotId) override;
 	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId) override;
+	
+	EPGSkillSlot GetSkillSlotByTag(const FGameplayTagContainer& GameplayTags);
 
 private:
 	PGSkillId GetNextChainSkillid(const EPGSkillSlot InSlotId) const;

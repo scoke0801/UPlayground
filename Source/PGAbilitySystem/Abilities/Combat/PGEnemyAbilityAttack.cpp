@@ -32,18 +32,7 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		return;
 	}
 	
-	// Spec에서 태그 확인
-	if (FGameplayAbilitySpec* Spec = GetAbilitySystemComponentFromActorInfo()->FindAbilitySpecFromHandle(Handle))
-	{
-		// DynamicAbilityTags에서 활성화 태그 찾기
-		for (const FGameplayTag& Tag : Spec->DynamicAbilityTags)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Activation tag found: %s"), *Tag.ToString());
-			// 원하는 로직 수행
-		}
-	}
 	
-	// TODO: 단순히 NormalAttack이 아니라, 스킬을 사용할거라면 스킬 ID를 가져와야 한다
 	FPGEnemySkillHandler* SkillHandler = static_cast<FPGEnemySkillHandler*>(Character->GetSkillHandler());
 	if (nullptr == SkillHandler)
 	{
@@ -51,13 +40,25 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		return;
 	}
 
-	EPGSkillSlot RandomSkillSlot = SkillHandler->GetRandomSkillSlot();
-	if (false == SkillHandler->IsCanUseSkill(RandomSkillSlot))
+	// Spec에서 태그 확인
+	// 태그 기반 스킬 선택
+	EPGSkillSlot SelectedSkillSlot = EPGSkillSlot::NormalAttack;
+	if (FGameplayAbilitySpec* Spec = GetAbilitySystemComponentFromActorInfo()->FindAbilitySpecFromHandle(Handle))
 	{
-		EndAbilitySelf();
-		return;
+		SelectedSkillSlot = SkillHandler->GetSkillSlotByTag( Spec->DynamicAbilityTags);
 	}
-	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(RandomSkillSlot));
+	// 태그로 스킬을 찾지 못했거나 사용할 수 없으면 랜덤 선택
+	if (SelectedSkillSlot == EPGSkillSlot::NormalAttack || !SkillHandler->IsCanUseSkill(SelectedSkillSlot))
+	{
+		SelectedSkillSlot = SkillHandler->GetRandomSkillSlot();
+		if (!SkillHandler->IsCanUseSkill(SelectedSkillSlot))
+		{
+			EndAbilitySelf();
+			return;
+		}
+	}
+
+	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(SelectedSkillSlot));
 	if(nullptr == Row)
 	{
 		EndAbilitySelf();
@@ -79,7 +80,7 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		MontageTask->ReadyForActivation();
 	}
 	
-	SkillHandler->UseSkill(RandomSkillSlot);
+	SkillHandler->UseSkill(SelectedSkillSlot);
 }
 
 void UPGEnemyAbilityAttack::OnGameplayEventReceived(FGameplayEventData Payload)
