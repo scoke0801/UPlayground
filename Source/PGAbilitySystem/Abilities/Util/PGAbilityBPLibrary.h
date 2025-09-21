@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayEffectTypes.h"
+#include "GenericTeamAgentInterface.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PGAbilityBPLibrary.generated.h"
@@ -32,11 +34,17 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "PG|FunctionLibaray")
 	static bool IsTargetPawnHostile(APawn* QueryPawn, APawn* TargetPawn);
-
+	
+	UFUNCTION(BlueprintPure, Category = "PG|FunctionLibaray")
+	static bool IsTargetActorHostile(AActor* QueryPawn, AActor* TargetPawn);
+	
 	UFUNCTION(BlueprintPure, Category = "PG|FunctionLibaray", meta =(CompactNodeTitle = "Get Value At Level"))
 	static float GetScalableFloatValueAtLevel(const FScalableFloat& InScalableFloat, float InLevel = 1.f);
 	
 	UFUNCTION(BlueprintPure, Category = "PG|FunctionLibaray")
 	static bool IsValidBlock(AActor* InAttacker, AActor* InDefender);
 	
+	UFUNCTION(BlueprintCallable, Category = "PG|FunctionLibaray")
+	static bool ApplyGameplayEfefctSpecHandleToTargetActor(AActor* InInstigator, AActor* InTargetActor,
+		const FGameplayEffectSpecHandle& InSpecHandle);
 };

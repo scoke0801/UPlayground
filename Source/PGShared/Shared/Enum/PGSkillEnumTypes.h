@@ -36,3 +36,16 @@ enum class EPGSkillNotifyType : uint8
 
 	GuideDecal,
 };
+
+
+UENUM(BlueprintType)
+enum class EPGSkillType : uint8
+{
+	Melee = 0,
+	
+	Ranged,
+
+	Heal,
+
+	SpawnEnemy,
+};

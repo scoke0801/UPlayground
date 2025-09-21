@@ -115,7 +115,15 @@ bool UPGAbilitySystemComponent::TryActivateAbilityByTag(FGameplayTag AbilityTagT
 
 		if (false == SpecToActivate->IsActive())
 		{
-			return TryActivateAbility(SpecToActivate->Handle);
+			// Ability 에서 Tag정보 사용할 수 있도록 임시 설정
+			SpecToActivate->DynamicAbilityTags.AddTag(AbilityTagToActivate);
+			
+			bool bResult = TryActivateAbility(SpecToActivate->Handle);
+
+			// 활성화 후 태그 제거
+			SpecToActivate->DynamicAbilityTags.RemoveTag(AbilityTagToActivate);
+
+			return bResult;
 		}
 	}
 

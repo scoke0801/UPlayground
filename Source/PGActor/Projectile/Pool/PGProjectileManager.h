@@ -35,10 +35,11 @@ public:
 public:
 	// 투사체 발사 (메인 인터페이스)
 	UFUNCTION(BlueprintCallable, Category = "Projectile Manager")
-	APGPooledProjectile* FireProjectile(int32 ProjectileId, 
-										const FVector& Origin, 
-										const FVector& Direction,
-										float Speed = -1.0f);
+	APGPooledProjectile* FireProjectile(int32 ProjectileId,
+		AActor* Shooter, 
+		const FVector& Origin, 
+		const FVector& Direction,
+		float Speed = -1.0f);
 
 	// 풀 관리
 	UFUNCTION(BlueprintCallable, Category = "Pool Management")

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "UObject/SoftObjectPath.h"
+#include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGSkillDataRow.generated.h"
 
 USTRUCT(BlueprintType)
@@ -16,6 +17,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString Desc;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	EPGSkillType SkillType;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FSoftObjectPath MontagePath;

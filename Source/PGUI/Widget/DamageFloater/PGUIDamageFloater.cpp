@@ -92,6 +92,18 @@ void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVe
 	}
 }
 
+FVector2D UPGUIDamageFloater::GetWidgetSize()
+{
+	if (false == bSizeCached)
+	{
+		// 최초 한 번만 계산
+		ForceLayoutPrepass();
+		CachedSize = GetDesiredSize();
+		bSizeCached = true;
+	}
+	return CachedSize;
+}
+
 bool UPGUIDamageFloater::PlayTranslationAnimation(UCurveVector* Curve, float DeltaTime)
 {
 	float MinTime, MaxTime;

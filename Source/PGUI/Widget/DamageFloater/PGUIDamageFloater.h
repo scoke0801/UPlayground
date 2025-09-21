@@ -29,6 +29,10 @@ protected:
 	float LifeTime = 1.5f;
 
 private:
+	FVector2D CachedSize = FVector2D::ZeroVector;
+	bool bSizeCached = false;
+	
+private:
 	float ElapsedTime = 0.0f;
 	FVector2D BasePosition;
 	EPGDamageType DamageType;
@@ -38,6 +42,8 @@ protected:
 	
 public:
 	void SetDamage(float Damage, EPGDamageType DamageType, FVector2D InBasePosition);
+
+	FVector2D GetWidgetSize();
 	
 private:
 	bool PlayTranslationAnimation(UCurveVector* Curve,float DeltaTime);

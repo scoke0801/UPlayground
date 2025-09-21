@@ -50,3 +50,11 @@ PGSkillId FPGEnemySkillHandler::GetSkillID(const EPGSkillSlot InSlotId)
 
 	return SkillId;
 }
+
+EPGSkillSlot FPGEnemySkillHandler::GetSkillSlotByTag(const FGameplayTagContainer& GameplayTags)
+{
+	for (const FGameplayTag& Tag : GameplayTags)
+	{
+	}
+	return GetRandomSkillSlot();
+}

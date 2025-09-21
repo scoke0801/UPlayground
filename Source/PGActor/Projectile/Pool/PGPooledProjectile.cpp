@@ -1,11 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PGPooledProjectile.h"
+
+#include "AbilitySystemBlueprintLibrary.h"
 #include "PGProjectilePool.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGShared/Shared/Debug/PGDebugHelper.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
-void APGPooledProjectile::Fire(const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
+void APGPooledProjectile::Fire(AActor* InShooterActor, const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
 {
 	// MovementComponent 재활성화
 	if (MovementComponent)
@@ -14,7 +18,7 @@ void APGPooledProjectile::Fire(const FVector& StartLocation, const FVector& Dire
 		MovementComponent->SetUpdatedComponent(RootComponent);
 	}
 
-	Super::Fire(StartLocation, Direction, Speed, InDamage);
+	Super::Fire(InShooterActor, StartLocation, Direction, Speed, InDamage);
 	
 	bInUse = true;
 }
@@ -23,9 +27,47 @@ void APGPooledProjectile::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* 
 	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::OnProjectileHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
-	
+
+	PG_Debug::Print(TEXT("Projectile Hit"));
 	// 히트 후 풀로 반환
-	//ReturnToPool();
+	ReturnToPool();
+}
+
+void APGPooledProjectile::OnProjectileOverlapped(UPrimitiveComponent* HitComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
+{
+	if (APawn* CastedPawn = Cast<APawn>(OtherActor))
+	{
+		if (UPGAbilityBPLibrary::IsTargetActorHostile(Shooter ,OtherActor))
+		{
+			FGameplayEventData Data;
+			Data.Instigator = Shooter;
+			Data.Target = CastedPawn;
+				
+            UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+            	CastedPawn,
+            	PGGamePlayTags::Shared_Event_HitReact,
+            	Data);
+
+			// 히트 후 풀로 반환
+			ReturnToPool();
+			return;
+		}
+	}
+	
+	// StaticObject 확인
+	if (Hit.Component.IsValid())
+	{
+		ECollisionChannel ObjectType = Hit.Component->GetCollisionObjectType();
+
+		FString ObjectTypeName = UEnum::GetValueAsString(ObjectType);
+		PG_Debug::Print(ObjectTypeName);
+		if (ObjectType == ECC_WorldStatic)
+		{
+			ReturnToPool();
+			return;
+		}
+	}
 }
 
 void APGPooledProjectile::OnLifeTimeExpired()
@@ -44,7 +86,7 @@ void APGPooledProjectile::ReturnToPool()
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->Deactivate();
 	}
-	
+
 	// 투사체 비활성화
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
@@ -58,19 +100,10 @@ void APGPooledProjectile::ReturnToPool()
 	{
 		OwnerPool->ReturnProjectile(this);
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ReturnToPool - OwnerPool is invalid"));
-	}
 }
 
 void APGPooledProjectile::BeginDestroy()
 {
-	// 디버그 로그
-	UE_LOG(LogTemp, Log, TEXT("PooledProjectile BeginDestroy - InUse: %s, Pool: %s"), 
-		bInUse ? TEXT("True") : TEXT("False"),
-		OwnerPool ? *OwnerPool->GetName() : TEXT("NULL"));
-	
 	// Pool 참조 해제
 	OwnerPool = nullptr;
 	
