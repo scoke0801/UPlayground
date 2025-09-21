@@ -43,7 +43,7 @@ void UPGProjectileManager::Deinitialize()
 	UE_LOG(LogTemp, Log, TEXT("ProjectileManager Deinitialized"));
 }
 
-APGPooledProjectile* UPGProjectileManager::FireProjectile(int32 ProjectileId, const FGenericTeamId OwnerTeamId,  const FVector& Origin,
+APGPooledProjectile* UPGProjectileManager::FireProjectile(int32 ProjectileId, AActor* Shooter,  const FVector& Origin,
 	const FVector& Direction, float Speed)
 {
 	UPGDataTableManager* DataTableManager = UPGDataTableManager::Get();
@@ -74,7 +74,7 @@ APGPooledProjectile* UPGProjectileManager::FireProjectile(int32 ProjectileId, co
 	float FinalDamage = ProjectileData ? ProjectileData->DefaultDamage : 10.0f;
 
 	// 발사
-	Projectile->Fire(OwnerTeamId, Origin, Direction, FinalSpeed, FinalDamage);
+	Projectile->Fire(Shooter, Origin, Direction, FinalSpeed, FinalDamage);
 	
 	return Projectile;
 }

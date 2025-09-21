@@ -49,18 +49,19 @@ APGProjectileBase::APGProjectileBase()
 	ProjectileCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnProjectileOverlapped);
 }
 
-void APGProjectileBase::Fire(const FGenericTeamId OwnerTeamId, const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
+void APGProjectileBase::Fire(AActor* InShooterActor, const FVector& StartLocation, const FVector& Direction, float Speed,
+	float InDamage)
 {
 	SetActorLocation(StartLocation);
 	SetActorRotation(Direction.Rotation());
 
-	TeamId = OwnerTeamId;
+	Shooter = InShooterActor;
 	
 	MovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * Speed);
 	Damage = InDamage;
 	
 	SetActorHiddenInGame(false);
-	//SetActorEnableCollision(true);
+	SetActorEnableCollision(true);
 	
 	// 수명 타이머
 	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, 
@@ -70,21 +71,13 @@ void APGProjectileBase::Fire(const FGenericTeamId OwnerTeamId, const FVector& St
 void APGProjectileBase::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	OnHit.Broadcast(OtherActor, Hit);
-    
-	// [TODO]데미지 적용 로직
-	if (OtherActor && OtherActor->CanBeDamaged())
-	{
-		// UGameplayStatics::ApplyPointDamage(...);
-	}
 }
 
 void APGProjectileBase::OnProjectileOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
 {
-	if (UPGAbilityBPLibrary::IsTargetPawnHostile(TeamId ,Cast<APawn>(OtherActor)))
+	if (UPGAbilityBPLibrary::IsTargetActorHostile(Shooter ,OtherActor))
 	{
-		OnHit.Broadcast(OtherActor, Hit);
 		return;
 	}
 	

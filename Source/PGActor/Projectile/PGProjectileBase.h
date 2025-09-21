@@ -37,22 +37,20 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Projectile")
 	float LifeTime = 5.0f;
 
-	UPROPERTY(Transient)
-	FGenericTeamId TeamId;
 protected:
+	UPROPERTY(Transient)
 	FTimerHandle LifeTimeHandle;
-	
-	// 충돌 이벤트
-	UPROPERTY(BlueprintAssignable)
-	FPGOnProjectileHit OnHit;
 
+	UPROPERTY(Transient)
+	AActor* Shooter;
+	
 public:
 	APGProjectileBase();
 	
 public:
 	// 투사체 발사
 	UFUNCTION(BlueprintCallable)
-	virtual void Fire(const FGenericTeamId OwnerTeamId, const FVector& StartLocation, const FVector& Direction, float Speed = 1000.0f, float InDamage = 10.0f);
+	virtual void Fire(AActor* InShooterActor, const FVector& StartLocation, const FVector& Direction, float Speed = 1000.0f, float InDamage = 10.0f);
 
 protected:
 	UFUNCTION()

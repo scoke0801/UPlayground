@@ -1,12 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PGPooledProjectile.h"
+
+#include "AbilitySystemBlueprintLibrary.h"
 #include "PGProjectilePool.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGShared/Shared/Debug/PGDebugHelper.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
-void APGPooledProjectile::Fire(const FGenericTeamId OwnerTeamId, const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
+void APGPooledProjectile::Fire(AActor* InShooterActor, const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
 {
 	// MovementComponent 재활성화
 	if (MovementComponent)
@@ -15,7 +18,7 @@ void APGPooledProjectile::Fire(const FGenericTeamId OwnerTeamId, const FVector& 
 		MovementComponent->SetUpdatedComponent(RootComponent);
 	}
 
-	Super::Fire(OwnerTeamId, StartLocation, Direction, Speed, InDamage);
+	Super::Fire(InShooterActor, StartLocation, Direction, Speed, InDamage);
 	
 	bInUse = true;
 }
@@ -35,10 +38,16 @@ void APGPooledProjectile::OnProjectileOverlapped(UPrimitiveComponent* HitComp, A
 {
 	if (APawn* CastedPawn = Cast<APawn>(OtherActor))
 	{
-		if (UPGAbilityBPLibrary::IsTargetPawnHostile(TeamId ,CastedPawn))
+		if (UPGAbilityBPLibrary::IsTargetActorHostile(Shooter ,OtherActor))
 		{
-			PG_Debug::Print(TEXT("Projectile Overlapped"));
-			OnHit.Broadcast(OtherActor, Hit);
+			FGameplayEventData Data;
+			Data.Instigator = Shooter;
+			Data.Target = CastedPawn;
+				
+            UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+            	CastedPawn,
+            	PGGamePlayTags::Shared_Event_HitReact,
+            	Data);
 
 			// 히트 후 풀로 반환
 			ReturnToPool();
@@ -77,10 +86,10 @@ void APGPooledProjectile::ReturnToPool()
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->Deactivate();
 	}
-	
+
 	// 투사체 비활성화
 	SetActorHiddenInGame(true);
-	//SetActorEnableCollision(false);
+	SetActorEnableCollision(false);
 	bInUse = false;
 
 	// 타이머 정리
@@ -91,19 +100,10 @@ void APGPooledProjectile::ReturnToPool()
 	{
 		OwnerPool->ReturnProjectile(this);
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ReturnToPool - OwnerPool is invalid"));
-	}
 }
 
 void APGPooledProjectile::BeginDestroy()
 {
-	// 디버그 로그
-	UE_LOG(LogTemp, Log, TEXT("PooledProjectile BeginDestroy - InUse: %s, Pool: %s"), 
-		bInUse ? TEXT("True") : TEXT("False"),
-		OwnerPool ? *OwnerPool->GetName() : TEXT("NULL"));
-	
 	// Pool 참조 해제
 	OwnerPool = nullptr;
 	

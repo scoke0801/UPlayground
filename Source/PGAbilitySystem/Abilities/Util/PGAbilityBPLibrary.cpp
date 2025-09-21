@@ -56,11 +56,26 @@ bool UPGAbilityBPLibrary::IsTargetPawnHostile(APawn* QueryPawn, APawn* TargetPaw
 	return false;
 }
 
-bool UPGAbilityBPLibrary::IsTargetPawnHostile(const FGenericTeamId InTeamId, APawn* TargetPawn)
+bool UPGAbilityBPLibrary::IsTargetActorHostile(AActor* QueryActor, AActor* TargetActor)
 {
-	if (IGenericTeamAgentInterface* TargetTeamAgent = Cast<IGenericTeamAgentInterface>(TargetPawn->GetController()))
+	APawn* QueryPawn = Cast<APawn>(QueryActor);
+	if (nullptr == QueryPawn)
 	{
-		return InTeamId!= TargetTeamAgent->GetGenericTeamId();
+		return false;
+	}
+
+	APawn* TargetPawn = Cast<APawn>(TargetActor);
+	if (nullptr == TargetPawn)
+	{
+		return false;
+	}
+	
+	IGenericTeamAgentInterface* QueryTeamAgent = Cast<IGenericTeamAgentInterface>(QueryPawn->GetController());
+	IGenericTeamAgentInterface* TargetTeamAgent = Cast<IGenericTeamAgentInterface>(TargetPawn->GetController());
+
+	if (QueryTeamAgent && TargetTeamAgent)
+	{
+		return QueryTeamAgent->GetGenericTeamId() != TargetTeamAgent->GetGenericTeamId();
 	}
 	return false;
 }
@@ -76,5 +91,18 @@ bool UPGAbilityBPLibrary::IsValidBlock(AActor* InAttacker, AActor* InDefender)
 		InDefender->GetActorForwardVector());
 
 	return DotResult < -0.1f;
+}
+
+bool UPGAbilityBPLibrary::ApplyGameplayEfefctSpecHandleToTargetActor(AActor* InInstigator, AActor* InTargetActor,
+	const FGameplayEffectSpecHandle& InSpecHandle)
+{
+	if (UPGAbilitySystemComponent* SourceASC = NativeGetPGASCFromActor(InInstigator))
+	{
+		UPGAbilitySystemComponent* TargetASC = NativeGetPGASCFromActor(InTargetActor);
+
+		FActiveGameplayEffectHandle Handle = SourceASC->ApplyGameplayEffectSpecToTarget(*InSpecHandle.Data, TargetASC);
+		return Handle.WasSuccessfullyApplied();
+	}
+	return false;
 }
 

@@ -11,23 +11,17 @@ void UPGAnimNotify_SpawnProjectile::Notify(USkeletalMeshComponent* MeshComp, UAn
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	APawn* OwnerPawn = Cast<APawn>(MeshComp->GetOwner());
-	if (nullptr == OwnerPawn)
+	AActor* Owner =MeshComp->GetOwner();
+	if (nullptr == Owner)
 	{
 		return;
 	}
 	
-	IGenericTeamAgentInterface* QueryTeamAgent = Cast<IGenericTeamAgentInterface>(OwnerPawn->GetController());
-	if (nullptr == QueryTeamAgent)
-	{
-		return;
-	}
-
 	if (UPGProjectileManager* Manager = PGProjectile())
 	{
 		Manager->FireProjectile(ProjectileId,
-			QueryTeamAgent->GetGenericTeamId(),
-		OwnerPawn->GetActorLocation(),
-		OwnerPawn->GetActorForwardVector());
+		Owner,
+		Owner->GetActorLocation(),
+		Owner->GetActorForwardVector());
 	}
 }
