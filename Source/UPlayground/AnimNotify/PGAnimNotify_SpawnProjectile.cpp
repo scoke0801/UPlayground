@@ -3,6 +3,7 @@
 
 #include "PGAnimNotify_SpawnProjectile.h"
 
+#include "GenericTeamAgentInterface.h"
 #include "PGActor/Projectile/Pool/PGProjectileManager.h"
 
 void UPGAnimNotify_SpawnProjectile::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -10,8 +11,14 @@ void UPGAnimNotify_SpawnProjectile::Notify(USkeletalMeshComponent* MeshComp, UAn
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	AActor* OwnerActor = MeshComp->GetOwner();
-	if (nullptr == OwnerActor)
+	APawn* OwnerPawn = Cast<APawn>(MeshComp->GetOwner());
+	if (nullptr == OwnerPawn)
+	{
+		return;
+	}
+	
+	IGenericTeamAgentInterface* QueryTeamAgent = Cast<IGenericTeamAgentInterface>(OwnerPawn->GetController());
+	if (nullptr == QueryTeamAgent)
 	{
 		return;
 	}
@@ -19,7 +26,8 @@ void UPGAnimNotify_SpawnProjectile::Notify(USkeletalMeshComponent* MeshComp, UAn
 	if (UPGProjectileManager* Manager = PGProjectile())
 	{
 		Manager->FireProjectile(ProjectileId,
-		OwnerActor->GetActorLocation(),
-		OwnerActor->GetActorForwardVector());
+			QueryTeamAgent->GetGenericTeamId(),
+		OwnerPawn->GetActorLocation(),
+		OwnerPawn->GetActorForwardVector());
 	}
 }

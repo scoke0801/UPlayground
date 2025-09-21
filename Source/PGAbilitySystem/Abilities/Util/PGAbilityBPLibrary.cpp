@@ -56,6 +56,15 @@ bool UPGAbilityBPLibrary::IsTargetPawnHostile(APawn* QueryPawn, APawn* TargetPaw
 	return false;
 }
 
+bool UPGAbilityBPLibrary::IsTargetPawnHostile(const FGenericTeamId InTeamId, APawn* TargetPawn)
+{
+	if (IGenericTeamAgentInterface* TargetTeamAgent = Cast<IGenericTeamAgentInterface>(TargetPawn->GetController()))
+	{
+		return InTeamId!= TargetTeamAgent->GetGenericTeamId();
+	}
+	return false;
+}
+
 float UPGAbilityBPLibrary::GetScalableFloatValueAtLevel(const FScalableFloat& InScalableFloat, float InLevel)
 {
 	return InScalableFloat.GetValueAtLevel(InLevel);

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GenericTeamAgentInterface.h"
 #include "GameFramework/Actor.h"
 #include "PGShared/Shared/Enum/PGProjectileEnumType.h"
 #include "PGProjectileBase.generated.h"
@@ -14,6 +15,9 @@ class PGACTOR_API APGProjectileBase : public AActor
 	GENERATED_BODY()
 	
 protected:
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG")
+	USceneComponent* Root;
+	
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "PG|Projectile")
 	class UBoxComponent* ProjectileCollisionBox;
 
@@ -33,6 +37,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Projectile")
 	float LifeTime = 5.0f;
 
+	UPROPERTY(Transient)
+	FGenericTeamId TeamId;
 protected:
 	FTimerHandle LifeTimeHandle;
 	
@@ -46,13 +52,18 @@ public:
 public:
 	// 투사체 발사
 	UFUNCTION(BlueprintCallable)
-	virtual void Fire(const FVector& StartLocation, const FVector& Direction, float Speed = 1000.0f, float InDamage = 10.0f);
+	virtual void Fire(const FGenericTeamId OwnerTeamId, const FVector& StartLocation, const FVector& Direction, float Speed = 1000.0f, float InDamage = 10.0f);
 
 protected:
 	UFUNCTION()
 	virtual void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 						UPrimitiveComponent* OtherComp, FVector NormalImpulse, 
 						const FHitResult& Hit);
-
+	
+	UFUNCTION()
+	virtual void OnProjectileOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep,
+		const FHitResult& Hit);
+	
 	virtual void OnLifeTimeExpired();
 };

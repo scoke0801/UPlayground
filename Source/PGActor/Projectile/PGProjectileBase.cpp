@@ -7,51 +7,60 @@
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
+#include "PGShared/Shared/Debug/PGDebugHelper.h"
 
 // Sets default values
 APGProjectileBase::APGProjectileBase()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
+	
+	Root = CreateDefaultSubobject<USceneComponent>("Root");
+	SetRootComponent(Root);
 
 	// 충돌 컴포넌트
 	ProjectileCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("ProjectileCollisionBox"));
-	SetRootComponent(ProjectileCollisionBox);
 	
 	ProjectileCollisionBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	ProjectileCollisionBox->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
-	ProjectileCollisionBox->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
-	ProjectileCollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-
+	ProjectileCollisionBox->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	ProjectileCollisionBox->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	ProjectileCollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ProjectileCollisionBox->SetupAttachment(GetRootComponent());
+	
 	// 메시 컴포넌트
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	MeshComponent->SetupAttachment(GetRootComponent());
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
+	MeshComponent->SetupAttachment(GetRootComponent());
+
+	// VFX 컴포넌트
 	ProjectileNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ProjectileNiagaraComponent"));
 	ProjectileNiagaraComponent->SetupAttachment(GetRootComponent());
 	
 	// 움직임 컴포넌트
 	MovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("MovementComponent"));
 	MovementComponent->bRotationFollowsVelocity = true;
-	MovementComponent->InitialSpeed = 1000.0f;
-	MovementComponent->MaxSpeed = 1000.0f;
+	MovementComponent->InitialSpeed = 2000.0f;
+	MovementComponent->MaxSpeed = 100000.0f;
 	MovementComponent->ProjectileGravityScale = 0.f;
 
 	// 충돌 이벤트 바인딩
 	ProjectileCollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnProjectileHit);
+	ProjectileCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnProjectileOverlapped);
 }
 
-void APGProjectileBase::Fire(const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
+void APGProjectileBase::Fire(const FGenericTeamId OwnerTeamId, const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
 {
 	SetActorLocation(StartLocation);
 	SetActorRotation(Direction.Rotation());
-    
+
+	TeamId = OwnerTeamId;
+	
 	MovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * Speed);
 	Damage = InDamage;
 	
 	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
+	//SetActorEnableCollision(true);
 	
 	// 수명 타이머
 	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, 
@@ -67,6 +76,27 @@ void APGProjectileBase::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* Ot
 	if (OtherActor && OtherActor->CanBeDamaged())
 	{
 		// UGameplayStatics::ApplyPointDamage(...);
+	}
+}
+
+void APGProjectileBase::OnProjectileOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
+{
+	if (UPGAbilityBPLibrary::IsTargetPawnHostile(TeamId ,Cast<APawn>(OtherActor)))
+	{
+		OnHit.Broadcast(OtherActor, Hit);
+		return;
+	}
+	
+	// StaticObject 확인
+	if (Hit.Component.IsValid())
+	{
+		ECollisionChannel ObjectType = Hit.Component->GetCollisionObjectType();
+		if (ObjectType == ECC_WorldStatic || ObjectType == ECC_WorldDynamic)
+		{
+			Destroy();
+			return;
+		}
 	}
 }
 

@@ -3,9 +3,10 @@
 #include "PGPooledProjectile.h"
 #include "PGProjectilePool.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGShared/Shared/Debug/PGDebugHelper.h"
 
-void APGPooledProjectile::Fire(const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
+void APGPooledProjectile::Fire(const FGenericTeamId OwnerTeamId, const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
 {
 	// MovementComponent 재활성화
 	if (MovementComponent)
@@ -14,7 +15,7 @@ void APGPooledProjectile::Fire(const FVector& StartLocation, const FVector& Dire
 		MovementComponent->SetUpdatedComponent(RootComponent);
 	}
 
-	Super::Fire(StartLocation, Direction, Speed, InDamage);
+	Super::Fire(OwnerTeamId, StartLocation, Direction, Speed, InDamage);
 	
 	bInUse = true;
 }
@@ -23,9 +24,41 @@ void APGPooledProjectile::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* 
 	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::OnProjectileHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
-	
+
+	PG_Debug::Print(TEXT("Projectile Hit"));
 	// 히트 후 풀로 반환
-	//ReturnToPool();
+	ReturnToPool();
+}
+
+void APGPooledProjectile::OnProjectileOverlapped(UPrimitiveComponent* HitComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
+{
+	if (APawn* CastedPawn = Cast<APawn>(OtherActor))
+	{
+		if (UPGAbilityBPLibrary::IsTargetPawnHostile(TeamId ,CastedPawn))
+		{
+			PG_Debug::Print(TEXT("Projectile Overlapped"));
+			OnHit.Broadcast(OtherActor, Hit);
+
+			// 히트 후 풀로 반환
+			ReturnToPool();
+			return;
+		}
+	}
+	
+	// StaticObject 확인
+	if (Hit.Component.IsValid())
+	{
+		ECollisionChannel ObjectType = Hit.Component->GetCollisionObjectType();
+
+		FString ObjectTypeName = UEnum::GetValueAsString(ObjectType);
+		PG_Debug::Print(ObjectTypeName);
+		if (ObjectType == ECC_WorldStatic)
+		{
+			ReturnToPool();
+			return;
+		}
+	}
 }
 
 void APGPooledProjectile::OnLifeTimeExpired()
@@ -47,7 +80,7 @@ void APGPooledProjectile::ReturnToPool()
 	
 	// 투사체 비활성화
 	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
+	//SetActorEnableCollision(false);
 	bInUse = false;
 
 	// 타이머 정리
