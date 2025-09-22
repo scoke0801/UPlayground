@@ -7,6 +7,7 @@
 #include "PGShared/Shared/Define/PGSkillDefine.h"
 #include "PGSkillHandler.generated.h"
 
+enum class EPGSkillType : uint8;
 enum class EPGSkillSlot : uint8;
 
 USTRUCT(BlueprintType)
@@ -19,6 +20,8 @@ public:
 	
 	float LastSkillUsedTime = 0.0f;	// 마지막 스킬 사용 시간, 쿨타임 계산 용
 	float CoolTime = 0.0f;
+
+	EPGSkillType SkillType;
 	
 public:
 	FPGSkillData() = default;

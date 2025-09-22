@@ -47,8 +47,8 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	{
 		SelectedSkillSlot = SkillHandler->GetSkillSlotByTag( Spec->DynamicAbilityTags);
 	}
-	// 태그로 스킬을 찾지 못했거나 사용할 수 없으면 랜덤 선택
-	if (SelectedSkillSlot == EPGSkillSlot::NormalAttack || !SkillHandler->IsCanUseSkill(SelectedSkillSlot))
+	// 스킬을 사용할 수 없으면 랜덤 선택
+	if (!SkillHandler->IsCanUseSkill(SelectedSkillSlot))
 	{
 		SelectedSkillSlot = SkillHandler->GetRandomSkillSlot();
 		if (!SkillHandler->IsCanUseSkill(SelectedSkillSlot))

@@ -24,6 +24,4 @@ public:
 	virtual void UseSkill(const EPGSkillSlot InSlotId) override;
 	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId) override;
 
-private:
-	PGSkillId GetNextChainSkillid(const EPGSkillSlot InSlotId) const;
 };

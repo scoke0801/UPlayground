@@ -29,5 +29,5 @@ public:
 	EPGSkillSlot GetSkillSlotByTag(const FGameplayTagContainer& GameplayTags);
 
 private:
-	PGSkillId GetNextChainSkillid(const EPGSkillSlot InSlotId) const;
+	EPGSkillSlot GetRandomSkillSlotBySkillType(const EPGSkillType InSkillType) const;
 };

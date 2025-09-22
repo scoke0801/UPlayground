@@ -43,7 +43,7 @@ enum class EPGSkillType : uint8
 {
 	Melee = 0,
 	
-	Ranged,
+	Range,
 
 	Heal,
 
