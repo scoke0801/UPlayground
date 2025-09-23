@@ -33,5 +33,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int32 SkillCoolTime;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 InitialPriority = 1;
 	
 };

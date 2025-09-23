@@ -22,6 +22,7 @@ void FPGSkillData::Init(const PGSkillId InSkillId)
 			//LastSkillUsedTime = FPlatformTime::Seconds();
 
 			SkillType = SkillData->SkillType;
+			Priority = SkillData->InitialPriority;
 		}
 	}
 }
@@ -63,6 +64,16 @@ int32 FPGSkillHandler::GetSkillID(const EPGSkillSlot InSlotId)
 	}
 
 	return INVALID_SKILL_ID;
+}
+
+FPGSkillData* FPGSkillHandler::GetSkillData(const EPGSkillSlot InSlotId)
+{
+	if (false == SkillDataMap.Contains(InSlotId))
+	{
+		return nullptr;
+	}
+
+	return &SkillDataMap[InSlotId];
 }
 
 EPGSkillSlot FPGSkillHandler::GetRandomSkillSlot() const

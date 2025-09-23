@@ -22,6 +22,8 @@ public:
 	float CoolTime = 0.0f;
 
 	EPGSkillType SkillType;
+
+	int32 Priority = 1;		// 우선순위, 한 번 사용한 이후 다른 스킬이 먼저 사용되도록 하던가 하는 용도로 사용
 	
 public:
 	FPGSkillData() = default;
@@ -55,6 +57,8 @@ public:
 	virtual void UseSkill(const EPGSkillSlot InSlotId) {}
 	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId);
 
+	FPGSkillData* GetSkillData(const EPGSkillSlot InSlotId);
+	
 public:
 	virtual EPGSkillSlot GetRandomSkillSlot() const;
 };
