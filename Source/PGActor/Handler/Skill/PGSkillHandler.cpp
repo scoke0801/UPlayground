@@ -27,6 +27,11 @@ void FPGSkillData::Init(const PGSkillId InSkillId)
 	}
 }
 
+bool FPGSkillData::IsOnCooldown() const
+{
+	return CoolTime + LastSkillUsedTime > FPlatformTime::Seconds();
+}
+
 FPGSkillHandler::~FPGSkillHandler()
 {
 }

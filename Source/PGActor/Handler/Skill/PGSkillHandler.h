@@ -29,6 +29,10 @@ public:
 	FPGSkillData() = default;
 	FPGSkillData(const PGSkillId InSkillId);
 	void Init(const PGSkillId InSkillId);
+
+public:
+	// 쿨다운 체크
+	bool IsOnCooldown() const;
 };
 /**
  * 
