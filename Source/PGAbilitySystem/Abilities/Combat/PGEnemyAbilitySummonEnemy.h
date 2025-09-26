@@ -17,7 +17,7 @@ class PGABILITYSYSTEM_API UPGEnemyAbilitySummonEnemy : public UPGEnemyGameplayAb
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "PG|Ability")
-	PGSkillId SkillId;
+	int32 SkillId;
 	
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
