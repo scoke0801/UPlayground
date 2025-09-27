@@ -22,24 +22,14 @@ public class PGAI : ModuleRules
 				"GameplayAbilities",
 				"GameplayTasks",
 				"EnhancedInput",
+				"NavigationSystem",
 			}
 		);
-		CircularlyReferencedDependentModules.AddRange(
-			new string[]
-			{
-			});
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"AIModule"
 			});
 		
-		PrivateIncludePathModuleNames.AddRange(
-			new string[]
-			{
-				
-			});
-		
-
 	}
 }

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "PGAbilitySystem/Abilities/PGEnemyGameplayAbility.h"
-#include "PGShared/Shared/Define/PGSkillDefine.h"
 #include "PGEnemyAbilitySummonEnemy.generated.h"
 
 /**
@@ -19,6 +18,29 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "PG|Ability")
 	int32 SkillId;
 	
+	// 소환할 적 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Settings")
+	TSoftClassPtr<APGCharacterEnemy> SoftClassToSpawn;
+
+	// 소환할 적의 수
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Settings")
+	int32 NumToSpawn = 1;
+
+	// 랜덤 소환 반경
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Settings")
+	float RandomSpawnRadius = 200.0f;
+
+	// 이벤트 태그
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay Tags")
+	FGameplayTag EventTag;
+	
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+
+private:
+	UFUNCTION()
+	void OnSpawnFinished(const TArray<AActor*>& Actors);
+	
+	UFUNCTION()
+	void OnSpawnFailed();
 };
