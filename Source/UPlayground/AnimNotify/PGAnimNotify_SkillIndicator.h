@@ -6,6 +6,8 @@
 #include "Animation/AnimNotifies/AnimNotify.h"
 #include "PGAnimNotify_SkillIndicator.generated.h"
 
+class UPGSkillMontageController;
+
 /**
  * 
  */
@@ -18,12 +20,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|AnimNotify")
 	int32 SkillIndicatorId;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|AnimNotify")
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
 	float SpawnDistance = 200.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Settings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
 	FVector SpawnOffset = FVector::ZeroVector;
-    
+
 private:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 };

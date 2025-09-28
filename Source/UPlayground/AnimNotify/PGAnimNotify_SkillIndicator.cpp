@@ -6,6 +6,8 @@
 #include "PGDataTableManager.h"
 #include "DataTable/Skill/PGSkillIndicatorDataRow.h"
 #include "PGActor/Effects/Decal/PGSkillIndicator.h"
+#include "Animation/AnimInstance.h"
+#include "PGActor/Components/Combat/PGSkillMontageController.h"
 
 void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                                           const FAnimNotifyEventReference& EventReference)
@@ -44,8 +46,25 @@ void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAni
 			if (APGSkillIndicator* SpawnedActor = World->SpawnActor<APGSkillIndicator>(LoadedClass,
 				SpawnLocation, OwnerActor->GetActorRightVector().Rotation()))
 			{
+				UPGSkillMontageController* MontageController = OwnerActor->FindComponentByClass<UPGSkillMontageController>();
+				if (MontageController)
+				{
+					// 현재 재생 중인 몽타쥬 가져오기
+					if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+					{
+						UAnimMontage* CurrentMontage = AnimInstance->GetCurrentActiveMontage();
+						if (CurrentMontage)
+						{
+							// 몽타쥬 컨트롤러에 인디케이터 등록
+							MontageController->RegisterSkillIndicator(SpawnedActor, CurrentMontage);
+							UE_LOG(LogTemp, Log, TEXT("스킬 인디케이터가 몽타쥬 컨트롤러에 등록됨"));
+						}
+					}
+				}
+				
 				SpawnedActor->StartAnimation();
 			}
 		}
 	}
 }
+

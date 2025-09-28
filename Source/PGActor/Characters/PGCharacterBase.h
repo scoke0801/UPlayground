@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "PGCharacterBase.generated.h"
 
+class UPGSkillMontageController;
 class UNiagaraSystem;
 class FPGSkillHandler;
 class UPGDataAsset_StartUpDataBase;
@@ -38,6 +39,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|MotionWarping")
 	UMotionWarpingComponent* MotionWarpingComponent;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|Component")
+	UPGSkillMontageController* SkillMontageController;
 	
 protected:
 	TObjectPtr<FPGSkillHandler> SkillHandler;
