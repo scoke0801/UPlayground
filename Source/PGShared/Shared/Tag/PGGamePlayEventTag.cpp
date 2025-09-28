@@ -10,6 +10,9 @@ namespace PGGamePlayTags
 	UE_DEFINE_GAMEPLAY_TAG(Player_Event_JumpLanded, "Player.Event.JumpLanded");
 		
 	UE_DEFINE_GAMEPLAY_TAG(Player_Event_HitPause, "Player.Event.HitPause");
+	
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_SummonEnemy, "Enemy.Event.SummonEnemy");
+
 
 	// Shared Tags
 	UE_DEFINE_GAMEPLAY_TAG(Shared_Event_Hit, "Shared.Event.MeleeHit");

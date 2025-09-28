@@ -13,6 +13,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
+#include "PGActor/Components/Combat/PGSkillMontageController.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
@@ -75,6 +76,8 @@ APGCharacterEnemy::APGCharacterEnemy()
 
 		EnemyNamePlate = Cast<UPGUIEnemyNamePlate>(EnemyNameplateWidgetComponent->GetWidget());
 	}
+	
+	SkillMontageController = CreateDefaultSubobject<UPGSkillMontageController>(TEXT("SkillMontageController"));
 }
 
 void APGCharacterEnemy::BeginPlay()

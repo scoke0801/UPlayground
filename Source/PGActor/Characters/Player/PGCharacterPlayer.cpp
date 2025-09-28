@@ -13,6 +13,7 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
+#include "PGActor/Components/Combat/PGSkillMontageController.h"
 #include "PGActor/Components/Input/PGInputComponent.h"
 #include "PGActor/Components/Stat/PGPlayerStatComponent.h"
 #include "PGActor/Handler/Skill/PGPlayerSkillHandler.h"
@@ -76,6 +77,8 @@ APGCharacterPlayer::APGCharacterPlayer()
 
 		PlayerHpWidget = Cast<UPGUIPlayerHpBar>(PlayerHpWidgetComponent->GetWidget());
 	}
+	
+	SkillMontageController = CreateDefaultSubobject<UPGSkillMontageController>(TEXT("SkillMontageController"));
 }
 
 void APGCharacterPlayer::BeginPlay()

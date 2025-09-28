@@ -6,6 +6,9 @@
 #include "PGDecalActor.h"
 #include "PGSkillIndicator.generated.h"
 
+// 스킬 인디케이터 완료 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillIndicatorCompleted, APGSkillIndicator*, SkillIndicator);
+
 /**
  * 
  */
@@ -55,6 +58,10 @@ private:
 	
 public:
 	APGSkillIndicator();
+
+	// 애니메이션 완료 델리게이트
+	UPROPERTY(BlueprintAssignable, Category = "PG|Animation")
+	FOnSkillIndicatorCompleted OnAnimationCompleted;
 	
 protected:
 	virtual void BeginPlay() override;

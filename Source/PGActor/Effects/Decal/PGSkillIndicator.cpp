@@ -141,6 +141,11 @@ void APGSkillIndicator::OnAnimationComplete()
 	GetWorldTimerManager().ClearTimer(FillTimerHandle);
 	bIsAnimating = false;
 
+	if (OnAnimationCompleted.IsBound())
+	{
+		OnAnimationCompleted.Broadcast(this);
+	}
+
 	// 자동 제거 설정이 되어있다면
 	if (bAutoDestroy)
 	{

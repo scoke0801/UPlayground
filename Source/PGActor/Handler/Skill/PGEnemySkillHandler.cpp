@@ -3,58 +3,59 @@
 
 #include "PGEnemySkillHandler.h"
 
-#include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void FPGEnemySkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 {
-	PGSkillId SkillId = Super::GetSkillID(InSlotId);
-	
-	if (FPGSkillDataRow* SkillData = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillId))
+	FPGSkillData* SkillData = GetSkillData(InSlotId);
+	if (nullptr == SkillData)
 	{
-		if ( 0 < SkillData->ChainSkillIdList.Num() &&
-			ComboCount < SkillData->ChainSkillIdList.Num())
-		{
-			++ComboCount;
-		}
-		else
-		{
-			ComboCount = 0;
-		}
-	}
-	else
-	{
-		ComboCount = 0;
+		return;
 	}
 
-	LastUsedSlot = InSlotId;
-	LastUsedTime = FPlatformTime::Seconds();
-}
-
-PGSkillId FPGEnemySkillHandler::GetSkillID(const EPGSkillSlot InSlotId)
-{
-	if (false == SkillDataMap.Contains(InSlotId))
-	{
-		return INVALID_SKILL_ID;
-	}
-	
-	PGSkillId SkillId = Super::GetSkillID(InSlotId);
-	
-	if (FPGSkillDataRow* SkillData = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillId))
-	{
-		if (0 < ComboCount && SkillData->ChainSkillIdList.IsValidIndex(ComboCount - 1))
-		{
-			return SkillData->ChainSkillIdList[ComboCount - 1];
-		}
-	}
-
-	return SkillId;
+	SkillData->Priority += 1;
 }
 
 EPGSkillSlot FPGEnemySkillHandler::GetSkillSlotByTag(const FGameplayTagContainer& GameplayTags)
 {
 	for (const FGameplayTag& Tag : GameplayTags)
 	{
+		if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_MeleeSkill))
+		{
+			return GetRandomSkillSlotBySkillType(EPGSkillType::Melee);
+		}
+		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_RangeSkill))
+		{
+			return GetRandomSkillSlotBySkillType(EPGSkillType::Range);
+		}
+		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_SummonSkill))
+		{
+			return GetRandomSkillSlotBySkillType(EPGSkillType::SummonEnemy);
+		}
+		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_HealSkill))
+		{
+			return GetRandomSkillSlotBySkillType(EPGSkillType::Heal);
+		}
 	}
 	return GetRandomSkillSlot();
+}
+
+EPGSkillSlot FPGEnemySkillHandler::GetRandomSkillSlotBySkillType(const EPGSkillType InSkillType) const
+{
+	TArray<EPGSkillSlot> FilteredKeyList;
+
+	for (const auto& Pair : SkillDataMap)
+	{
+		if (InSkillType == Pair.Value.SkillType)
+		{
+			FilteredKeyList.Add(Pair.Key);
+		}
+	}
+
+	if (0 == FilteredKeyList.Num())
+	{
+		return EPGSkillSlot::NormalAttack;
+	}
+	return FilteredKeyList[FMath::RandRange(0, FilteredKeyList.Num() - 1)];
 }

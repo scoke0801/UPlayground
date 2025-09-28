@@ -13,21 +13,17 @@
 class PGACTOR_API FPGEnemySkillHandler : public FPGSkillHandler
 {
 	using Super = FPGSkillHandler;
-	
-private:
-	int32 ComboCount = 0;
-	EPGSkillSlot LastUsedSlot = EPGSkillSlot::NormalAttack;
-	float LastUsedTime = 0;
-	
+
 public:
 	virtual ~FPGEnemySkillHandler() = default;
 
 public:
 	virtual void UseSkill(const EPGSkillSlot InSlotId) override;
-	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId) override;
+
 	
 	EPGSkillSlot GetSkillSlotByTag(const FGameplayTagContainer& GameplayTags);
 
 private:
-	PGSkillId GetNextChainSkillid(const EPGSkillSlot InSlotId) const;
+	EPGSkillSlot GetRandomSkillSlotBySkillType(const EPGSkillType InSkillType) const;
+	
 };

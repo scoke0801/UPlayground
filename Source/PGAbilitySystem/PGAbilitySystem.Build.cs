@@ -29,7 +29,7 @@ public class PGAbilitySystem : ModuleRules
 			new string[]
 			{
 				"PGActor",
-				"PGShared", "PGData", "PGData", "PGMessage", "MotionWarping", "AIModule"
+				"PGShared", "PGData", "PGData", "PGMessage", "MotionWarping", "AIModule", "PGAI"
 			}
 		);
 	}
