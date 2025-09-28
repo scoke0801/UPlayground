@@ -111,6 +111,11 @@ float APGSkillIndicator::GetAnimationProgress() const
 	return FMath::Clamp(CurrentTime / AnimationDuration, 0.0f, 1.0f);
 }
 
+void APGSkillIndicator::SetAnimationDuration(float InAnimationDuration)
+{
+	AnimationDuration = InAnimationDuration;
+}
+
 void APGSkillIndicator::UpdateFillProgress()
 {
 	if (!bIsAnimating || !DynamicMaterialInstance)

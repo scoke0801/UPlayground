@@ -62,6 +62,7 @@ void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAni
 					}
 				}
 				
+				SpawnedActor->SetAnimationDuration(IndicatorDuration);
 				SpawnedActor->StartAnimation();
 			}
 		}

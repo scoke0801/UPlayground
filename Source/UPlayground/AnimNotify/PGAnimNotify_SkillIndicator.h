@@ -20,6 +20,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|AnimNotify")
 	int32 SkillIndicatorId;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|AnimNotify")
+	float IndicatorDuration = 1.0f;
+	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
 	float SpawnDistance = 200.0f;
