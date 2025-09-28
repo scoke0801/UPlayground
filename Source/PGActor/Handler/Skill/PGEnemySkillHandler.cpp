@@ -29,13 +29,13 @@ EPGSkillSlot FPGEnemySkillHandler::GetSkillSlotByTag(const FGameplayTagContainer
 		{
 			return GetRandomSkillSlotBySkillType(EPGSkillType::Range);
 		}
-		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_SpawnSkill))
+		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_SummonSkill))
 		{
-			return GetRandomSkillSlotBySkillType(EPGSkillType::Heal);
+			return GetRandomSkillSlotBySkillType(EPGSkillType::SummonEnemy);
 		}
 		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_HealSkill))
 		{
-			return GetRandomSkillSlotBySkillType(EPGSkillType::SpawnEnemy);
+			return GetRandomSkillSlotBySkillType(EPGSkillType::Heal);
 		}
 	}
 	return GetRandomSkillSlot();

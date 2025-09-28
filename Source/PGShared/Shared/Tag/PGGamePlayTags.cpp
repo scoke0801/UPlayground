@@ -15,7 +15,7 @@ namespace PGGamePlayTags
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_MeleeSkill, "Enemy.Ability.MeleeSkill");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_RangeSkill, "Enemy.Ability.RangeSkill");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_HealSkill, "Enemy.Ability.HealSkill");
-	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_SpawnSkill, "Enemy.Ability.SpawnSkill");
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_SummonSkill, "Enemy.Ability.SummonSkill");
 	
 	// Shared Ability
 	UE_DEFINE_GAMEPLAY_TAG(Shared_Ability_HitReact, "Shared.Ability.HitReact");

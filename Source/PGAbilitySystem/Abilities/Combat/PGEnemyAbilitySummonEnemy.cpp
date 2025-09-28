@@ -3,6 +3,7 @@
 
 #include "PGEnemyAbilitySummonEnemy.h"
 
+#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
@@ -41,7 +42,11 @@ void UPGEnemyAbilitySummonEnemy::ActivateAbility(const FGameplayAbilitySpecHandl
 	{
 		EndAbilitySelf();
 	}
-
+	if (UAbilityTask_PlayMontageAndWait* Task = PlayMontageWait(MontageToPlay))
+	{
+		Task->ReadyForActivation();
+	}
+	
 	// 현재 적 캐릭터 가져오기
 	APGCharacterEnemy* EnemyCharacter = GetEnemyCharacterFromActorInfo();
 	if (!EnemyCharacter)

@@ -19,19 +19,19 @@ protected:
 	int32 SkillId;
 	
 	// 소환할 적 클래스
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Settings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
 	TSoftClassPtr<APGCharacterEnemy> SoftClassToSpawn;
 
 	// 소환할 적의 수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Settings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
 	int32 NumToSpawn = 1;
 
 	// 랜덤 소환 반경
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Settings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
 	float RandomSpawnRadius = 200.0f;
 
 	// 이벤트 태그
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay Tags")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Gameplay Tags")
 	FGameplayTag EventTag;
 	
 protected:

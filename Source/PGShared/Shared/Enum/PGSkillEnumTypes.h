@@ -47,5 +47,5 @@ enum class EPGSkillType : uint8
 
 	Heal,
 
-	SpawnEnemy,
+	SummonEnemy,
 };
