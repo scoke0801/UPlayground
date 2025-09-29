@@ -6,7 +6,7 @@
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "PGAnimNotifyState_ToggleWeaponCollision.generated.h"
 
-enum class EToggleDamageType : uint8;
+enum class EPGToggleDamageType : uint8;
 /**
  * 
  */
@@ -17,7 +17,7 @@ class UPLAYGROUND_API UPGAnimNotifyState_ToggleWeaponCollision : public UAnimNot
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Anim Notify")
-	EToggleDamageType DamageType;
+	EPGToggleDamageType DamageType;
 	
 private:
 	virtual void NotifyBegin(USkeletalMeshComponent * MeshComp, UAnimSequenceBase * Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference) override;

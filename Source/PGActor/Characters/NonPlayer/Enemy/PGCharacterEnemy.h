@@ -12,6 +12,7 @@ class UPGWidgetComponentBase;
 class UUserWidget;
 class UTimelineComponent;
 class APGWeaponBase;
+class UBoxComponent;
 /**
  * 
  */
@@ -31,10 +32,31 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|UI", meta = (AllowPrivateAccess = true))
 	UPGWidgetComponentBase* EnemyNameplateWidgetComponent;
 
-	/** Dissolve 효과용 타임라인 컴포넌트 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Death", meta = (AllowPrivateAccess = true))
-	UTimelineComponent* DissolveTimeline;
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "PG|Combat")
+	FName LeftHandCollisionBoxAttachBoneName;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "PG|Combat")
+	UBoxComponent* LeftHandCollisionBox;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "PG|Combat")
+	FName RightHandCollisionBoxAttachBoneName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "PG|Combat")
+	UBoxComponent* RightHandCollisionBox;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "PG|Combat")
+	FName RightFootCollisionBoxAttachBoneName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "PG|Combat")
+	UBoxComponent* RightFootCollisionBox;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "PG|Combat")
+	FName LeftFootCollisionBoxAttachBoneName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "PG|Combat")
+	UBoxComponent* LeftFootCollisionBox;
+	
 private:
 	UPROPERTY(Transient)
 	UPGUIEnemyNamePlate* EnemyNamePlate;
@@ -47,6 +69,10 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Death", meta = (AllowPrivateAccess = true))
 	UCurveFloat* DissolveCurve;
 	
+	/** Dissolve 효과용 타임라인 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Death", meta = (AllowPrivateAccess = true))
+	UTimelineComponent* DissolveTimeline;
+
 public:
 	APGCharacterEnemy();
 	
@@ -67,6 +93,13 @@ public:
 
 	virtual UPGStatComponent* GetStatComponent() const override;
 	UPGEnemyStatComponent* GetEnemyStatComponent() const;
+
+	
+	FORCEINLINE UBoxComponent* GetLeftHandCollisionBox() const { return LeftHandCollisionBox; }
+	FORCEINLINE UBoxComponent* GetRightHandCollisionBox() const { return RightHandCollisionBox; }
+	
+	FORCEINLINE UBoxComponent* GetLeftFootCollisionBox() const { return LeftFootCollisionBox; }
+	FORCEINLINE UBoxComponent* GetRightFootCollisionBox() const { return RightFootCollisionBox; }
 	
 private:
 	void InitEnemyStartUpData();
@@ -83,4 +116,7 @@ private:
 	UFUNCTION()
 	void OnDissolveTimelineFinished();
 	
+	UFUNCTION()
+	void OnBodyCollisionBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };
