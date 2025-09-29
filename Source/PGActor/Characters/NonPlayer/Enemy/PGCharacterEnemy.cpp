@@ -120,6 +120,11 @@ void APGCharacterEnemy::BeginPlay()
 		}
 	}
 
+	LeftHandCollisionBox->IgnoreActorWhenMoving(this, true);
+	RightHandCollisionBox->IgnoreActorWhenMoving(this, true);
+	LeftFootCollisionBox->IgnoreActorWhenMoving(this, true);
+	RightFootCollisionBox->IgnoreActorWhenMoving(this, true);
+	
 	InitEnemyStartUpData();
 	InitUIComponents();
 	

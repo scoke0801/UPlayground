@@ -20,10 +20,10 @@ void UPGEnemyCombatComponent::OnHitTargetActor(AActor* HitActor)
 	FGameplayEventData EventData;
 	EventData.Instigator = GetOwningPawn();
 	EventData.Target = HitActor;
-
+	
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-		GetOwningPawn(),
-		PGGamePlayTags::Shared_Event_Hit,
+		HitActor,
+		PGGamePlayTags::Shared_Event_HitReact,
 		EventData);
 }
 
