@@ -61,7 +61,11 @@ void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAni
 						}
 					}
 				}
-				
+
+				if (false == DecalSize.IsNearlyZero())
+				{
+					SpawnedActor->SetDecalSize(DecalSize);
+				}
 				SpawnedActor->SetAnimationDuration(IndicatorDuration);
 				SpawnedActor->StartAnimation();
 			}

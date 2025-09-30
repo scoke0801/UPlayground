@@ -4,6 +4,7 @@
 #include "PGSkillIndicator.h"
 
 #include "Components/DecalComponent.h"
+#include "DynamicMesh/MeshTransforms.h"
 
 APGSkillIndicator::APGSkillIndicator()
 {
@@ -114,6 +115,11 @@ float APGSkillIndicator::GetAnimationProgress() const
 void APGSkillIndicator::SetAnimationDuration(float InAnimationDuration)
 {
 	AnimationDuration = InAnimationDuration;
+}
+
+void APGSkillIndicator::SetDecalSize(FVector InScaleVector)
+{
+	GetDecal()->DecalSize = InScaleVector;
 }
 
 void APGSkillIndicator::UpdateFillProgress()
