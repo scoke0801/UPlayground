@@ -83,6 +83,10 @@ protected:
 
 	virtual void OnHit(UPGStatComponent* StatComponent) override;
 	virtual void OnDied() override;
+
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 	
 public:
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")
