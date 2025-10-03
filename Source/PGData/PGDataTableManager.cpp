@@ -1,6 +1,8 @@
 #include "PGDataTableManager.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "DataTable/Skill/PGSkillDataRow.h"
+#include "DataTable/Skill/PGEnemyDataRow.h"
 
 TWeakObjectPtr<UPGDataTableManager> UPGDataTableManager::WeakThis = nullptr;
 
@@ -425,4 +427,14 @@ bool UPGDataTableManager::IsIntegerProperty(const FProperty* Property)
     }
     
     return false;
+}
+
+FPGSkillDataRow* UPGDataTableManager::GetSkillDataRowByKey(int32 SkillID)
+{
+    return GetRowData<FPGSkillDataRow>(SkillID);
+}
+
+FPGEnemyDataRow* UPGDataTableManager::GetEnemyDataRowByKey(int32 EnemyID)
+{
+    return GetRowData<FPGEnemyDataRow>(EnemyID);
 }
