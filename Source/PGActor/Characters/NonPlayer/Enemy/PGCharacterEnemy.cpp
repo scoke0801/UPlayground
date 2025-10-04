@@ -57,7 +57,8 @@ APGCharacterEnemy::APGCharacterEnemy()
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 180.f, 0.f);
 
 	GetCharacterMovement()->MaxWalkSpeed = 300.0f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
+	GetCharacterMovement()->BrakingDecelerationWalking = 600.f;  // 1000 → 600 (자연스러운 감속)
+	GetCharacterMovement()->MaxAcceleration = 1024.f;  // 부드러운 가속
 
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimeline"));

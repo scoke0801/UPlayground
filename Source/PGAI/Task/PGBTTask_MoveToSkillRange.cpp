@@ -84,6 +84,7 @@ EBTNodeResult::Type UPGBTTask_MoveToSkillRange::ExecuteTask(UBehaviorTreeCompone
 	MoveRequest.SetAcceptanceRadius(TargetDistance);
 	MoveRequest.SetUsePathfinding(true);
 	MoveRequest.SetAllowPartialPath(true);
+	MoveRequest.SetCanStrafe(false);  // 타겟을 바라보며 이동
 
 	FPathFollowingRequestResult Result = AIController->MoveTo(MoveRequest);
 	
@@ -228,19 +229,23 @@ void UPGBTTask_MoveToSkillRange::CheckDistanceToTarget()
 		TargetActor->GetActorLocation()
 	);
 
-	// 스킬 범위 내로 들어왔으면 이동 중단하고 성공 처리
+	// 스킬 범위 내로 들어왔으면 이동 완료 처리
 	if (CurrentDistance <= (CachedSkillRange + AcceptableRadiusMargin))
 	{
 		// 타이머 정리
 		ClearDistanceCheckTimer();
 
-		// 이동 중단
-		AIController->StopMovement();
-
 		// PathFollowing 콜백 제거
 		if (UPathFollowingComponent* PathFollowingComp = AIController->GetPathFollowingComponent())
 		{
 			PathFollowingComp->OnRequestFinished.RemoveAll(this);
+		}
+
+		// 이동을 즉시 중단하지 않고 PathFollowing이 자연스럽게 완료되도록 요청
+		// AcceptanceRadius 이내이므로 PathFollowing이 알아서 감속하여 멈춤
+		if (UPathFollowingComponent* PathFollowingComp = AIController->GetPathFollowingComponent())
+		{
+			PathFollowingComp->AbortMove(*this, FPathFollowingResultFlags::Success);
 		}
 		
 		// 성공 처리
