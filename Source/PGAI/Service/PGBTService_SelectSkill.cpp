@@ -3,6 +3,7 @@
 #include "PGBTService_SelectSkill.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGData/PGDataTableManager.h"
@@ -17,6 +18,7 @@ UPGBTService_SelectSkill::UPGBTService_SelectSkill()
 	
 	SelectedSkillIDKey.SelectedKeyName = FName("SelectedSkillID");
 	TargetActorKey.SelectedKeyName = FName("TargetActor");
+	SummonCountKey.SelectedKeyName = FName("SummonCount");
 }
 
 void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
@@ -24,13 +26,22 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
 	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (!AIController) return;
-
+	if (!AIController)
+	{
+		return;
+	}
+	
 	APGCharacterEnemy* Enemy = Cast<APGCharacterEnemy>(AIController->GetPawn());
-	if (!Enemy) return;
-
+	if (!Enemy)
+	{
+		return;
+	}
+	
 	UPGDataTableManager* DTManager = UPGDataTableManager::Get();
-	if (!DTManager) return;
+	if (!DTManager)
+	{
+		return;
+	}
 	
 	const FPGEnemyDataRow* EnemyData = DTManager->GetEnemyDataRowByKey(Enemy->GetCharacterTID());
 	if (!EnemyData || EnemyData->SkillIdList.Num() == 0)
@@ -53,7 +64,7 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	const float CurrentHPRatio = StatComp ? (StatComp->CurrentHP / StatComp->MaxHP) : 1.f;
 	
 	// 스킬 선택
-	const int32 SelectedSkillID = SelectBestSkill(EnemyData->SkillIdList, DistanceToTarget, CurrentHPRatio);
+	const int32 SelectedSkillID = SelectBestSkill(EnemyData->SkillIdList, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp);
 	
 	if (SelectedSkillID > 0)
 	{
@@ -61,7 +72,7 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	}
 }
 
-int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList, float DistanceToTarget, float CurrentHPRatio) const
+int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList, float DistanceToTarget, float CurrentHPRatio, APGCharacterEnemy* Enemy, UBlackboardComponent* BlackboardComp) const
 {
 	UPGDataTableManager* DTManager = UPGDataTableManager::Get();
 	if (!DTManager || SkillIDList.Num() == 0)
@@ -73,12 +84,23 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 	TArray<int32> ValidSkills;
 	TArray<float> Weights;
 
+	// 스킬 타입별 존재 여부 사전 체크 (최적화)
+	TSet<EPGSkillType> AvailableSkillTypes;
+	for (const int32 SkillID : SkillIDList)
+	{
+		const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
+		if (SkillData)
+		{
+			AvailableSkillTypes.Add(SkillData->SkillType);
+		}
+	}
+
 	for (const int32 SkillID : SkillIDList)
 	{
 		const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
 		if (!SkillData) continue;
 	
-		const float Priority = CalculateSkillPriority(SkillData->SkillType, DistanceToTarget, CurrentHPRatio);
+		const float Priority = CalculateSkillPriority(SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes);
 		if (Priority > 0.f)
 		{
 			ValidSkills.Add(SkillID);
@@ -120,7 +142,13 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 	return ValidSkills[0];
 }
 
-float UPGBTService_SelectSkill::CalculateSkillPriority(EPGSkillType SkillType, float DistanceToTarget, float CurrentHPRatio) const
+float UPGBTService_SelectSkill::CalculateSkillPriority(
+	EPGSkillType SkillType, 
+	float DistanceToTarget, 
+	float CurrentHPRatio, 
+	APGCharacterEnemy* Enemy, 
+	UBlackboardComponent* BlackboardComp,
+	const TSet<EPGSkillType>& AvailableSkillTypes) const
 {
 	switch (SkillType)
 	{
@@ -140,21 +168,117 @@ float UPGBTService_SelectSkill::CalculateSkillPriority(EPGSkillType SkillType, f
 		
 	case EPGSkillType::Heal:
 		{
-			// 힐: HP가 낮을수록 우선순위 높음
+			// 힐 스킬이 없으면 체크 생략
+			if (!AvailableSkillTypes.Contains(EPGSkillType::Heal))
+			{
+				return 0.f;
+			}
+			
+			// 1. 아군 중 회복 필요한 대상 체크
+			if (Enemy && CheckNeedHealAlly(Enemy))
+			{
+				return 5.f; // 최우선
+			}
+			
+			// 2. 자신의 HP 체크 (백업)
 			if (CurrentHPRatio <= HealSkillHPThreshold)
 			{
-				return 5.f; // 매우 높은 우선순위
+				return 3.f;
 			}
+			
 			return 0.1f; // HP가 충분하면 낮은 우선순위
 		}
 		
 	case EPGSkillType::SummonEnemy:
 		{
-			// 소환: 기본 우선순위
-			return 1.5f;
+			// 소환 스킬이 없으면 체크 생략
+			if (!AvailableSkillTypes.Contains(EPGSkillType::SummonEnemy))
+			{
+				return 0.f;
+			}
+			
+			// 소환 횟수 제한 체크
+			if (BlackboardComp)
+			{
+				const int32 CurrentSummonCount = BlackboardComp->GetValueAsInt(SummonCountKey.SelectedKeyName);
+				
+				if (CurrentSummonCount >= MaxSummonCountPerBattle)
+				{
+					return 0.f; // 사용 불가
+				}
+			}
+			
+			return 1.5f; // 소환: 기본 우선순위
 		}
 		
 	default:
 		return 1.f;
 	}
+}
+
+bool UPGBTService_SelectSkill::CheckNeedHealAlly(APGCharacterEnemy* Enemy) const
+{
+	if (!Enemy || !Enemy->GetWorld())
+	{
+		return false;
+	}
+	
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(
+		Enemy->GetWorld(), 
+		APGCharacterEnemy::StaticClass(), 
+		FoundActors
+	);
+	
+	for (AActor* Actor : FoundActors)
+	{
+		APGCharacterEnemy* Ally = Cast<APGCharacterEnemy>(Actor);
+		if (!Ally || Ally == Enemy) continue;
+		
+		// 거리 체크
+		const float Distance = FVector::Dist(Enemy->GetActorLocation(), Ally->GetActorLocation());
+		if (Distance > AllySearchRadius) continue;
+		
+		// HP 체크
+		const UPGEnemyStatComponent* StatComp = Ally->GetEnemyStatComponent();
+		if (StatComp)
+		{
+			const float HPRatio = StatComp->CurrentHP / StatComp->MaxHP;
+			if (HPRatio <= AllyHealThreshold)
+			{
+				return true; // 회복이 필요한 아군 발견
+			}
+		}
+	}
+	
+	return false;
+}
+
+bool UPGBTService_SelectSkill::HasSkillType(int32 EnemyTID, EPGSkillType SkillType) const
+{
+	// 캐시 확인
+	if (CachedEnemySkillTypes.Contains(EnemyTID))
+	{
+		return CachedEnemySkillTypes[EnemyTID].Contains(SkillType);
+	}
+	
+	// 캐시 생성
+	UPGDataTableManager* DTManager = UPGDataTableManager::Get();
+	if (!DTManager) return false;
+	
+	const FPGEnemyDataRow* EnemyData = DTManager->GetEnemyDataRowByKey(EnemyTID);
+	if (!EnemyData) return false;
+	
+	TSet<EPGSkillType> SkillTypes;
+	for (int32 SkillID : EnemyData->SkillIdList)
+	{
+		const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
+		if (SkillData)
+		{
+			SkillTypes.Add(SkillData->SkillType);
+		}
+	}
+	
+	CachedEnemySkillTypes.Add(EnemyTID, SkillTypes);
+	return SkillTypes.Contains(SkillType);
 }

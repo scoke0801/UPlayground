@@ -3,8 +3,10 @@
 #include "PGBTTask_ExecuteSkill.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
+#include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 
@@ -15,6 +17,9 @@ UPGBTTask_ExecuteSkill::UPGBTTask_ExecuteSkill()
 	
 	SelectedSkillIDKey.SelectedKeyName = FName("SelectedSkillID");
 	TargetActorKey.SelectedKeyName = FName("TargetActor");
+	SummonCountKey.SelectedKeyName = FName("SummonCount");
+	
+	CachedSkillType = EPGSkillType::None;
 }
 
 EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -52,6 +57,19 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::Failed;
 	}
 
+	// 스킬 타입 캐싱 (완료 시 카운트 증가용)
+	CachedSkillType = SkillData->SkillType;
+
+	// 힐 스킬인 경우 최적의 타겟 선택
+	if (SkillData->SkillType == EPGSkillType::Heal)
+	{
+		AActor* BestHealTarget = SelectBestHealTarget(Enemy, BlackboardComp);
+		if (BestHealTarget)
+		{
+			BlackboardComp->SetValueAsObject(TargetActorKey.SelectedKeyName, BestHealTarget);
+		}
+	}
+
 	UAnimMontage* SkillMontage = Cast<UAnimMontage>(SkillData->MontagePath.TryLoad());
 	if (!SkillMontage)
 	{
@@ -67,17 +85,42 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 	// 몽타주 재생
 	CachedOwnerComp = &OwnerComp;
 	
-	FOnMontageEnded MontageEndedDelegate;
-	MontageEndedDelegate.BindUObject(this, &UPGBTTask_ExecuteSkill::OnMontageEnded);
-	AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, SkillMontage);
-	
 	const float PlayRate = AnimInstance->Montage_Play(SkillMontage);
 	if (PlayRate > 0.f)
 	{
+		// 재생 후 델리게이트 바인딩
+		FOnMontageEnded EndDelegate;
+		EndDelegate.BindUObject(this, &UPGBTTask_ExecuteSkill::OnMontageEnded);
+		AnimInstance->Montage_SetEndDelegate(EndDelegate, SkillMontage);
+		
 		return EBTNodeResult::InProgress;
 	}
 
 	return EBTNodeResult::Failed;
+}
+
+EBTNodeResult::Type UPGBTTask_ExecuteSkill::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	if (AIController)
+	{
+		APGCharacterEnemy* Enemy = Cast<APGCharacterEnemy>(AIController->GetPawn());
+		if (Enemy)
+		{
+			UAnimInstance* AnimInstance = Enemy->GetMesh()->GetAnimInstance();
+			if (AnimInstance && AnimInstance->IsAnyMontagePlaying())
+			{
+				// 몽타주 중단
+				AnimInstance->Montage_Stop(0.2f);
+			}
+		}
+	}
+	
+	// 캐시 정리
+	CachedOwnerComp.Reset();
+	CachedSkillType = EPGSkillType::None;
+	
+	return EBTNodeResult::Aborted;
 }
 
 void UPGBTTask_ExecuteSkill::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -92,7 +135,75 @@ void UPGBTTask_ExecuteSkill::FinishTask(UBehaviorTreeComponent* OwnerComp, EBTNo
 {
 	if (OwnerComp)
 	{
+		UBlackboardComponent* BB = OwnerComp->GetBlackboardComponent();
+
+		if (BB)
+		{
+			// 스킬 실행 성공 시 소환 카운트 증가
+			if (Result == EBTNodeResult::Succeeded && CachedSkillType == EPGSkillType::SummonEnemy)
+			{
+				const int32 CurrentCount = BB->GetValueAsInt(SummonCountKey.SelectedKeyName);
+				BB->SetValueAsInt(SummonCountKey.SelectedKeyName, CurrentCount + 1);
+			}
+
+			// 선택된 스킬 정보 초기화
+			BB->SetValueAsInt(SelectedSkillIDKey.SelectedKeyName, 0);
+		}
 		FinishLatentTask(*OwnerComp, Result);
 	}
+	
 	CachedOwnerComp.Reset();
+	CachedSkillType = EPGSkillType::None;
 }
+
+AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UBlackboardComponent* BlackboardComp) const
+{
+	// TODO: 주변 아군이 notify를 보내고 처리하도록 하는 것이 어떨까?
+	
+	if (!Self || !Self->GetWorld())
+	{
+		return nullptr;
+	}
+	
+	// 현재 타겟 (플레이어)
+	AActor* CurrentTarget = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
+	
+	// 자신의 HP 비율
+	const UPGEnemyStatComponent* SelfStatComp = Self->GetEnemyStatComponent();
+	const float SelfHPRatio = SelfStatComp ? (SelfStatComp->CurrentHP / SelfStatComp->MaxHP) : 1.f;
+	
+	// 최적의 힐 타겟 찾기
+	AActor* BestTarget = Self; // 기본값: 자신
+	float LowestHPRatio = SelfHPRatio;
+	
+	// 주변 아군 탐색
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(Self->GetWorld(), APGCharacterEnemy::StaticClass(), FoundActors);
+	
+	for (AActor* Actor : FoundActors)
+	{
+		APGCharacterEnemy* Ally = Cast<APGCharacterEnemy>(Actor);
+		if (!Ally || Ally == Self) continue;
+		
+		// 거리 체크
+		const float Distance = FVector::Dist(Self->GetActorLocation(), Ally->GetActorLocation());
+		if (Distance > AllySearchRadius) continue;
+		
+		// HP 체크
+		const UPGEnemyStatComponent* AllyStatComp = Ally->GetEnemyStatComponent();
+		if (AllyStatComp)
+		{
+			const float AllyHPRatio = AllyStatComp->CurrentHP / AllyStatComp->MaxHP;
+			
+			// 가장 HP가 낮은 아군 선택
+			if (AllyHPRatio < LowestHPRatio)
+			{
+				LowestHPRatio = AllyHPRatio;
+				BestTarget = Ally;
+			}
+		}
+	}
+	
+	return BestTarget;
+}
+

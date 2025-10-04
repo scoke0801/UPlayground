@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
+#include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGBTTask_ExecuteSkill.generated.h"
 
 /**
@@ -16,28 +17,44 @@ class PGAI_API UPGBTTask_ExecuteSkill : public UBTTaskNode
 	GENERATED_BODY()
 
 protected:
-	/** Blackboard에서 읽을 타겟 키*/
-	UPROPERTY(EditAnywhere, Category = "AI")
+	/** Blackboard - 타겟 키*/
+	UPROPERTY(EditAnywhere, Category = "PG|AI")
 	FBlackboardKeySelector TargetActorKey;
 
-	/** Blackboard에서 읽을 스킬 ID 키 */
-	UPROPERTY(EditAnywhere, Category = "AI")
+	/** Blackboard - 스킬 ID 키 */
+	UPROPERTY(EditAnywhere, Category = "PG|AI")
 	FBlackboardKeySelector SelectedSkillIDKey;
 
+	/** Blackboard - 소환 카운트 키 */
+	UPROPERTY(EditAnywhere, Category = "PG|AI")
+	FBlackboardKeySelector SummonCountKey;
+
+	/** 힐 아군 탐색 반경 */
+	UPROPERTY(EditAnywhere, Category = "PG|AI|Heal")
+	float AllySearchRadius = 1500.f;
+
 private:
-	/** 현재 실행 중인 BT 컴포넌트 */
 	TWeakObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+
+	/** 현재 실행 중인 스킬 타입 (카운트 증가용) */
+	EPGSkillType CachedSkillType;
 	
 public:
 	UPGBTTask_ExecuteSkill();
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	
+	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
 private:
 	/** 몽타주 재생 완료 콜백 */
 	UFUNCTION()
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
+	
+private:
 	/** Task 완료 처리 */
 	void FinishTask(UBehaviorTreeComponent* OwnerComp, EBTNodeResult::Type Result);
+
+	/** 힐 스킬을 위한 최적의 아군 타겟 선택 */
+	AActor* SelectBestHealTarget(class APGCharacterEnemy* Self, UBlackboardComponent* BlackboardComp) const;
 };

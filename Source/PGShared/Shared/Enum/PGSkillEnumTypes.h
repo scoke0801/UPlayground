@@ -41,7 +41,9 @@ enum class EPGSkillNotifyType : uint8
 UENUM(BlueprintType)
 enum class EPGSkillType : uint8
 {
-	Melee = 0,
+	None = 0,
+
+	Melee,
 	
 	Range,
 
