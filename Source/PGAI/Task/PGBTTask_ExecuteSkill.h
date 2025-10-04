@@ -9,7 +9,7 @@
 
 /**
  * BT Task: 선택된 스킬을 실행하는 Task
- * Blackboard에 저장된 스킬 ID를 읽어서 몽타주를 재생
+ * Blackboard에 저장된 스킬 ID를 읽어서 GAS를 통해 어빌리티 실행
  */
 UCLASS()
 class PGAI_API UPGBTTask_ExecuteSkill : public UBTTaskNode
@@ -47,14 +47,12 @@ public:
 	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
 private:
-	/** 몽타주 재생 완료 콜백 */
-	UFUNCTION()
-	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-	
-private:
 	/** Task 완료 처리 */
 	void FinishTask(UBehaviorTreeComponent* OwnerComp, EBTNodeResult::Type Result);
 
 	/** 힐 스킬을 위한 최적의 아군 타겟 선택 */
 	AActor* SelectBestHealTarget(class APGCharacterEnemy* Self, UBlackboardComponent* BlackboardComp) const;
+
+	/** 스킬 타입을 GameplayTag로 변환 */
+	FGameplayTag GetAbilityTagFromSkillType(EPGSkillType SkillType) const;
 };

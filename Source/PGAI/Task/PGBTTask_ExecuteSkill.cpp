@@ -7,8 +7,10 @@
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 UPGBTTask_ExecuteSkill::UPGBTTask_ExecuteSkill()
 {
@@ -36,6 +38,12 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::Failed;
 	}
 
+	UPGAbilitySystemComponent* ASC = Enemy->GetPGAbilitySystemComponent();
+	if (!ASC)
+	{
+		return EBTNodeResult::Failed;
+	}
+
 	// Blackboard에서 스킬 ID 가져오기
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	const int32 SkillID = BlackboardComp->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName);
@@ -52,7 +60,7 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 	}
 
 	const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
-	if (!SkillData || SkillData->MontagePath.IsNull())
+	if (!SkillData)
 	{
 		return EBTNodeResult::Failed;
 	}
@@ -70,30 +78,23 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 		}
 	}
 
-	UAnimMontage* SkillMontage = Cast<UAnimMontage>(SkillData->MontagePath.TryLoad());
-	if (!SkillMontage)
+	// 스킬 타입을 GameplayTag로 변환
+	FGameplayTag AbilityTag = GetAbilityTagFromSkillType(SkillData->SkillType);
+	if (!AbilityTag.IsValid())
 	{
 		return EBTNodeResult::Failed;
 	}
 
-	UAnimInstance* AnimInstance = Enemy->GetMesh()->GetAnimInstance();
-	if (!AnimInstance)
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	// 몽타주 재생
+	// AbilitySystemComponent를 통해 어빌리티 실행
 	CachedOwnerComp = &OwnerComp;
 	
-	const float PlayRate = AnimInstance->Montage_Play(SkillMontage);
-	if (PlayRate > 0.f)
+	const bool bActivated = ASC->TryActivateAbilityByTag(AbilityTag);
+	if (bActivated)
 	{
-		// 재생 후 델리게이트 바인딩
-		FOnMontageEnded EndDelegate;
-		EndDelegate.BindUObject(this, &UPGBTTask_ExecuteSkill::OnMontageEnded);
-		AnimInstance->Montage_SetEndDelegate(EndDelegate, SkillMontage);
-		
-		return EBTNodeResult::InProgress;
+		// 어빌리티 활성화 성공 - 즉시 완료 처리
+		// (어빌리티 자체에서 몽타주를 관리함)
+		FinishTask(CachedOwnerComp.Get(), EBTNodeResult::Succeeded);
+		return EBTNodeResult::Succeeded;
 	}
 
 	return EBTNodeResult::Failed;
@@ -107,11 +108,16 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::AbortTask(UBehaviorTreeComponent& Ow
 		APGCharacterEnemy* Enemy = Cast<APGCharacterEnemy>(AIController->GetPawn());
 		if (Enemy)
 		{
-			UAnimInstance* AnimInstance = Enemy->GetMesh()->GetAnimInstance();
-			if (AnimInstance && AnimInstance->IsAnyMontagePlaying())
+			UPGAbilitySystemComponent* ASC = Enemy->GetPGAbilitySystemComponent();
+			if (ASC)
 			{
-				// 몽타주 중단
-				AnimInstance->Montage_Stop(0.2f);
+				// 현재 활성화된 어빌리티 취소
+				FGameplayTag AbilityTag = GetAbilityTagFromSkillType(CachedSkillType);
+				if (AbilityTag.IsValid())
+				{
+					FGameplayTagContainer TagContainer = AbilityTag.GetSingleTagContainer();
+					ASC->CancelAbilities(&TagContainer);
+				}
 			}
 		}
 	}
@@ -121,14 +127,6 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::AbortTask(UBehaviorTreeComponent& Ow
 	CachedSkillType = EPGSkillType::None;
 	
 	return EBTNodeResult::Aborted;
-}
-
-void UPGBTTask_ExecuteSkill::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	if (CachedOwnerComp.IsValid())
-	{
-		FinishTask(CachedOwnerComp.Get(), bInterrupted ? EBTNodeResult::Failed : EBTNodeResult::Succeeded);
-	}
 }
 
 void UPGBTTask_ExecuteSkill::FinishTask(UBehaviorTreeComponent* OwnerComp, EBTNodeResult::Type Result)
@@ -149,7 +147,6 @@ void UPGBTTask_ExecuteSkill::FinishTask(UBehaviorTreeComponent* OwnerComp, EBTNo
 			// 선택된 스킬 정보 초기화
 			BB->SetValueAsInt(SelectedSkillIDKey.SelectedKeyName, 0);
 		}
-		FinishLatentTask(*OwnerComp, Result);
 	}
 	
 	CachedOwnerComp.Reset();
@@ -159,7 +156,6 @@ void UPGBTTask_ExecuteSkill::FinishTask(UBehaviorTreeComponent* OwnerComp, EBTNo
 AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UBlackboardComponent* BlackboardComp) const
 {
 	// TODO: 주변 아군이 notify를 보내고 처리하도록 하는 것이 어떨까?
-	
 	if (!Self || !Self->GetWorld())
 	{
 		return nullptr;
@@ -207,3 +203,23 @@ AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UB
 	return BestTarget;
 }
 
+FGameplayTag UPGBTTask_ExecuteSkill::GetAbilityTagFromSkillType(EPGSkillType SkillType) const
+{
+	switch (SkillType)
+	{
+	case EPGSkillType::Melee:
+		return PGGamePlayTags::Enemy_Ability_MeleeSkill;
+		
+	case EPGSkillType::Range:
+		return PGGamePlayTags::Enemy_Ability_RangeSkill;
+		
+	case EPGSkillType::Heal:
+		return PGGamePlayTags::Enemy_Ability_HealSkill;
+		
+	case EPGSkillType::SummonEnemy:
+		return PGGamePlayTags::Enemy_Ability_SummonSkill;
+		
+	default:
+		return FGameplayTag::EmptyTag;
+	}
+}
