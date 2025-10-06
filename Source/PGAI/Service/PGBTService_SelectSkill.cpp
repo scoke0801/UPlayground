@@ -24,7 +24,14 @@ UPGBTService_SelectSkill::UPGBTService_SelectSkill()
 void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
-
+	
+	// 이미 유효한 값이 설정되어 있는 동안에는 별도 처리를 하지 않습니다.
+	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
+	if (0 != BlackboardComp->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName))
+	{
+		return;
+	}
+	
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 	{
@@ -50,9 +57,7 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	}
 	
 	// 타겟과의 거리 계산
-	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
-	
 	float DistanceToTarget = -1.f;
 	if (TargetActor)
 	{
