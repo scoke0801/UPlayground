@@ -20,7 +20,7 @@ protected:
 	
 	// 소환할 적 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
-	TSoftClassPtr<APGCharacterEnemy> SoftClassToSpawn;
+	TArray<TSoftClassPtr<APGCharacterEnemy>> SoftClassToSpawn;
 
 	// 소환할 적의 수
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
