@@ -7,7 +7,11 @@ UENUM(BlueprintType)
 enum class EPGProjectileType : uint8
 { 
 	Arrow       UMETA(DisplayName = "Arrow"),
+	
 	Slash       UMETA(DisplayName = "Slash"),
+
+	LichSpell		UMETA(DisplayName = "Lich Spell"),
+	
 	Custom      UMETA(DisplayName = "Custom")
 };
 
