@@ -45,8 +45,9 @@ enum class EPGSkillType : uint8
 
 	Melee,
 	
-	Range,
-
+	Projectile,
+	AreaOfEffect,
+	
 	Heal,
 
 	SummonEnemy,

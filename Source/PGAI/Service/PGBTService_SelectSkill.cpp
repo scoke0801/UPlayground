@@ -164,7 +164,8 @@ float UPGBTService_SelectSkill::CalculateSkillPriority(
 			return DistanceToTarget <= MeleeSkillMaxRange ? 3.f : 0.5f;
 		}
 		
-	case EPGSkillType::Range:
+	case EPGSkillType::Projectile:
+	case EPGSkillType::AreaOfEffect:
 		{
 			// 원거리: 멀수록 우선순위 높음
 			if (DistanceToTarget < 0.f) return 1.f;

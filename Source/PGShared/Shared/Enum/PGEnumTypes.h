@@ -22,3 +22,11 @@ enum class EPGSuccessType : uint8
 	Successful,
 	Failed
 };
+
+UENUM(BlueprintType)
+enum class EPGEffectType : uint8
+{
+	Niagara,
+
+	Legacy
+};

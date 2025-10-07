@@ -27,7 +27,7 @@ EPGSkillSlot FPGEnemySkillHandler::GetSkillSlotByTag(const FGameplayTagContainer
 		}
 		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_RangeSkill))
 		{
-			return GetRandomSkillSlotBySkillType(EPGSkillType::Range);
+			return GetRandomSkillSlotBySkillType(EPGSkillType::Projectile);
 		}
 		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_SummonSkill))
 		{

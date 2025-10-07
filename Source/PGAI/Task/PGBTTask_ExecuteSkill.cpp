@@ -210,7 +210,7 @@ FGameplayTag UPGBTTask_ExecuteSkill::GetAbilityTagFromSkillType(EPGSkillType Ski
 	case EPGSkillType::Melee:
 		return PGGamePlayTags::Enemy_Ability_MeleeSkill;
 		
-	case EPGSkillType::Range:
+	case EPGSkillType::Projectile:
 		return PGGamePlayTags::Enemy_Ability_RangeSkill;
 		
 	case EPGSkillType::Heal:
