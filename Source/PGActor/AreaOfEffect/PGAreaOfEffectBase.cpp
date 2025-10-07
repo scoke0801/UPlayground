@@ -41,11 +41,15 @@ APGAreaOfEffectBase::APGAreaOfEffectBase()
 	CollisionBox->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEffectEndOverlap);
 }
 
-APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVector& StartLocation,
-	int32 EffectId,
-	float InDamage)
+APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVector& StartLocation, int32 EffectId)
 {
-	FPGAreaOfEffectDataRow* Data = PGData()->GetRowData<FPGAreaOfEffectDataRow>(EffectId);
+	UPGDataTableManager* DataManager = PGData();
+	if (nullptr == DataManager)
+	{
+		return nullptr;
+	}
+	
+	FPGAreaOfEffectDataRow* Data = DataManager->GetRowData<FPGAreaOfEffectDataRow>(EffectId);
 	if (nullptr == Data || nullptr == InShooterActor)
 	{
 		return nullptr;
@@ -114,7 +118,7 @@ APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVe
 		}
 	}
 		
-	AOEActor->Fire(InShooterActor, StartLocation, InDamage);
+	AOEActor->Fire(InShooterActor, StartLocation);
 
 	return AOEActor;
 }
@@ -149,13 +153,11 @@ void APGAreaOfEffectBase::OnLifeTimeExpired()
 	Destroy();
 }
 
-void APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVector& StartLocation, float InDamage)
+void APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVector& StartLocation)
 {
 	SetActorLocation(StartLocation);
 
 	Shooter = InShooterActor;
-	
-	Damage = InDamage;
 	
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);

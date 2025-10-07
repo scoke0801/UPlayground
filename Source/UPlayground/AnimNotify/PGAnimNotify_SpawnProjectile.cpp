@@ -3,8 +3,6 @@
 
 #include "PGAnimNotify_SpawnProjectile.h"
 
-#include "GenericTeamAgentInterface.h"
-#include "PGActor/AreaOfEffect/PGAreaOfEffectBase.h"
 #include "PGActor/Projectile/Pool/PGProjectileManager.h"
 
 void UPGAnimNotify_SpawnProjectile::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -25,7 +23,4 @@ void UPGAnimNotify_SpawnProjectile::Notify(USkeletalMeshComponent* MeshComp, UAn
 		Owner->GetActorLocation(),
 		Owner->GetActorForwardVector());
 	}
-
-	// Test Code
-	APGAreaOfEffectBase::Fire(Owner, Owner->GetActorLocation(), 1, 0.0f);
 }

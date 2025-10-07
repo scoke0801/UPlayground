@@ -13,7 +13,8 @@ namespace PGGamePlayTags
 
 	// Enemy Ability
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_MeleeSkill, "Enemy.Ability.MeleeSkill");
-	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_RangeSkill, "Enemy.Ability.RangeSkill");
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_ProjectileSkill, "Enemy.Ability.ProjectileSkill");
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_AOESkill, "Enemy.Ability.AreaOfEffectSkill");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_HealSkill, "Enemy.Ability.HealSkill");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Ability_SummonSkill, "Enemy.Ability.SummonSkill");
 	

@@ -45,8 +45,7 @@ private:
 public:	APGAreaOfEffectBase();
 	
 public:
-	static APGAreaOfEffectBase* Fire(AActor* InShooterActor, const FVector& StartLocation,
-		int32 EffectId, float InDamage);
+	static APGAreaOfEffectBase* Fire(AActor* InShooterActor, const FVector& StartLocation, int32 EffectId);
 
 protected:
 	UFUNCTION()
@@ -61,5 +60,5 @@ protected:
 	virtual void OnLifeTimeExpired();
 
 private:
-	void Fire(AActor* InShooterActor, const FVector& StartLocation, float InDamage);
+	void Fire(AActor* InShooterActor, const FVector& StartLocation);
 };

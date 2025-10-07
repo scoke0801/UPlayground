@@ -211,8 +211,11 @@ FGameplayTag UPGBTTask_ExecuteSkill::GetAbilityTagFromSkillType(EPGSkillType Ski
 		return PGGamePlayTags::Enemy_Ability_MeleeSkill;
 		
 	case EPGSkillType::Projectile:
-		return PGGamePlayTags::Enemy_Ability_RangeSkill;
+		return PGGamePlayTags::Enemy_Ability_ProjectileSkill;
 		
+	case EPGSkillType::AreaOfEffect:
+		return PGGamePlayTags::Enemy_Ability_AOESkill;
+
 	case EPGSkillType::Heal:
 		return PGGamePlayTags::Enemy_Ability_HealSkill;
 		
