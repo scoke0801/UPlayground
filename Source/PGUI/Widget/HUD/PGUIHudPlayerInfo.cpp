@@ -57,30 +57,39 @@ void UPGUIHudPlayerInfo::CapturePlayerImage()
 		return;
 	}
 
-	// Scene Capture Actor 스폰
+	// Scene Capture Actor를 화면 밖 위치에 스폰 (메인 씬에 영향 없도록)
+	FVector HiddenLocation = FVector(0.0f, 0.0f, -100000.0f);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	
-	APGSceneCapture* SceneCapture = World->SpawnActor<APGSceneCapture>(APGSceneCapture::StaticClass(), SpawnParams);
+	APGSceneCapture* SceneCapture = World->SpawnActor<APGSceneCapture>(
+		APGSceneCapture::StaticClass(),
+		HiddenLocation,
+		FRotator::ZeroRotator,
+		SpawnParams
+	);
+	
 	if (!SceneCapture)
 	{
 		return;
 	}
 
-	// Render Target 생성 및 초기화
+	// Render Target 생성 및 초기화 (해상도 높임)
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>(SceneCapture);
 	if (RenderTarget)
 	{
-		RenderTarget->InitAutoFormat(256, 256);
+		// 512x512로 품질 향상 (필요시 256으로 낮출 수 있음)
+		RenderTarget->InitAutoFormat(512, 512);
 		RenderTarget->ClearColor = FLinearColor::Transparent;
 		RenderTarget->bAutoGenerateMips = false;
+		RenderTarget->UpdateResourceImmediate(true);
 		
 		SceneCapture->SetRenderTarget(RenderTarget);
 
 		// 캡처 실행
 		SceneCapture->CaptureCurrentScene(PlayerCharacter);
 
-		// UI에 텍스처 설정 (RenderTarget은 UTexture를 상속받으므로 SetBrushResourceObject 사용)
+		// UI에 텍스처 설정
 		PlayerImage->SetBrushResourceObject(RenderTarget);
 	}
 
