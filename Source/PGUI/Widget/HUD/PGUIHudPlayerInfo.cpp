@@ -5,6 +5,7 @@
 
 #include "Components/Image.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Util/PGSceneCapture.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
@@ -24,7 +25,7 @@ void UPGUIHudPlayerInfo::NativeOnInitialized()
 void UPGUIHudPlayerInfo::NativeConstruct()
 {
 	Super::NativeConstruct();
-
+	
 	CapturePlayerImage();
 }
 
@@ -89,8 +90,23 @@ void UPGUIHudPlayerInfo::CapturePlayerImage()
 		// 캡처 실행
 		SceneCapture->CaptureCurrentScene(PlayerCharacter);
 
-		// UI에 텍스처 설정
-		PlayerImage->SetBrushResourceObject(RenderTarget);
+		// Material Instance Dynamic 생성 및 텍스처 설정
+		if (!PlayerImageMaterial)
+		{
+			// Image 브러시에서 Material 가져오기
+			UMaterialInterface* BaseMaterial = Cast<UMaterialInterface>(PlayerImage->GetBrush().GetResourceObject());
+			if (BaseMaterial)
+			{
+				PlayerImageMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+			}
+		}
+
+		if (PlayerImageMaterial)
+		{
+			// 원형 마스크 머티리얼의 텍스처 파라미터에 RenderTarget 설정
+			PlayerImageMaterial->SetTextureParameterValue(TEXT("MainTexture"), RenderTarget);
+			PlayerImage->SetBrushFromMaterial(PlayerImageMaterial);
+		}
 	}
 
 	// 캡처 완료 후 Actor 제거 (다음 프레임에)

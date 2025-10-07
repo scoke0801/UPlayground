@@ -17,6 +17,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG")
 	UTextureRenderTarget2D* RenderTarget;
+	
+	// 조명 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Lighting")
+	class UDirectionalLightComponent* KeyLight;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PG|Lighting")
+	class USkyLightComponent* SkyLight;
 
 public:	
 	// Sets default values for this actor's properties
