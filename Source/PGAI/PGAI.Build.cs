@@ -28,7 +28,12 @@ public class PGAI : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"AIModule"
+				"AIModule",
+				
+				"PGShared",
+				"PGData",
+				"PGActor",
+				"PGAbilitySystem"
 			});
 		
 	}

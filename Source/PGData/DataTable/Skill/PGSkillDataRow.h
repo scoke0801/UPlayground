@@ -35,5 +35,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int32 InitialPriority = 1;
+
+	/** 스킬 사용 가능 범위 (0이면 범위 제한 없음) */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	float SkillRange = 0.f;
 	
 };

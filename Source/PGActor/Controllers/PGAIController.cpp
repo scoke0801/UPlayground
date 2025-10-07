@@ -86,6 +86,12 @@ ETeamAttitude::Type APGAIController::GetTeamAttitudeTowards(const AActor& Other)
 
 void APGAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	if (nullptr != Actor && Actor == GetPawn())
+	{
+		// 같은 대상을 지정하지 않도록 예외처리.
+		return;
+	}
+	
 	if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponent())
 	{
 		if (!BlackboardComponent->GetValueAsObject((FName("TargetActor"))))

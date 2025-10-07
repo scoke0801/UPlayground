@@ -79,6 +79,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PG|Animation")
 	float GetAnimationProgress() const;
 
+	UFUNCTION(BlueprintCallable, Category = "PG|Animation")
+	void SetAnimationDuration(float InAnimationDuration);
+
+	UFUNCTION(BlueprintCallable, Category = "PG|Animation")
+	void SetDecalSize(FVector InScaleVector);
+
 private:
 	// 애니메이션 함수들
 	UFUNCTION()

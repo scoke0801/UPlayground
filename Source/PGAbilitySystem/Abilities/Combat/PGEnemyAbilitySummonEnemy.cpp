@@ -58,28 +58,36 @@ void UPGEnemyAbilitySummonEnemy::ActivateAbility(const FGameplayAbilitySpecHandl
 	// 소환 원점(현재 적의 위치) 가져오기
 	FVector SpawnOrigin = EnemyCharacter->GetActorLocation();
 
-	// WaitSpawnEnemy 태스크 생성 및 실행
-	UPGAbilityTask_WaitSpawnEnemy* SpawnTask = UPGAbilityTask_WaitSpawnEnemy::WaitSpawnEnemy(
-		this,
-		EventTag,
-		SoftClassToSpawn,
-		NumToSpawn,
-		SpawnOrigin,
-		RandomSpawnRadius
-	);
-
-	if (!SpawnTask)
+	for (int32 index = 0; index <= NumToSpawn; ++index)
 	{
-		K2_EndAbility();
-		return;
+		int32 randomIndex = FMath::RandRange(0,SoftClassToSpawn.Num() - 1);
+		if (false == SoftClassToSpawn.IsValidIndex(randomIndex))
+		{
+			EndAbilitySelf();
+			return;
+		}
+		// WaitSpawnEnemy 태스크 생성 및 실행
+		UPGAbilityTask_WaitSpawnEnemy* SpawnTask = UPGAbilityTask_WaitSpawnEnemy::WaitSpawnEnemy(
+			this,
+			EventTag,
+			SoftClassToSpawn[randomIndex],
+			NumToSpawn,
+			SpawnOrigin,
+			RandomSpawnRadius
+		);
+
+		if (!SpawnTask)
+		{
+			continue;
+		}
+
+		// 델리게이트 바인딩
+		SpawnTask->OnSpawnFinished.AddDynamic(this, &ThisClass::OnSpawnFinished);
+		SpawnTask->DidNotSpawn.AddDynamic(this, &ThisClass::OnSpawnFailed);
+
+		// 태스크 활성화
+		SpawnTask->ReadyForActivation();
 	}
-
-	// 델리게이트 바인딩
-	SpawnTask->OnSpawnFinished.AddDynamic(this, &ThisClass::OnSpawnFinished);
-	SpawnTask->DidNotSpawn.AddDynamic(this, &ThisClass::OnSpawnFailed);
-
-	// 태스크 활성화
-	SpawnTask->ReadyForActivation();
 }
 
 void UPGEnemyAbilitySummonEnemy::OnSpawnFinished(const TArray<AActor*>& Actors)

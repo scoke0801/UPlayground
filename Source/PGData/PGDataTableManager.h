@@ -183,6 +183,11 @@ public:
     // 캐시 상태 정보
     void GetCacheInfo(int32& LoadedCount, int32& TotalMemoryUsage) const;
 
+public:
+    // 편의용 함수 추가
+    struct FPGSkillDataRow* GetSkillDataRowByKey(int32 SkillID);
+    struct FPGEnemyDataRow* GetEnemyDataRowByKey(int32 EnemyID);
+
 private:
     // 타이머 관련
     // 자동 정리 시작( LRU - 타이머구조 )

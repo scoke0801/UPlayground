@@ -6,6 +6,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Engine/AssetManager.h"
@@ -56,7 +57,8 @@ APGCharacterEnemy::APGCharacterEnemy()
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 180.f, 0.f);
 
 	GetCharacterMovement()->MaxWalkSpeed = 300.0f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
+	GetCharacterMovement()->BrakingDecelerationWalking = 600.f;  // 1000 → 600 (자연스러운 감속)
+	GetCharacterMovement()->MaxAcceleration = 1024.f;  // 부드러운 가속
 
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimeline"));
@@ -78,6 +80,28 @@ APGCharacterEnemy::APGCharacterEnemy()
 	}
 	
 	SkillMontageController = CreateDefaultSubobject<UPGSkillMontageController>(TEXT("SkillMontageController"));
+
+	
+	LeftHandCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("LeftHandCollisionBox"));
+	LeftHandCollisionBox->SetupAttachment(GetMesh());
+	LeftHandCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftHandCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
+	
+	RightHandCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("RightHandCollisionBox"));
+	RightHandCollisionBox->SetupAttachment(GetMesh());
+	RightHandCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightHandCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
+
+	LeftFootCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("LeftFootCollisionBox"));
+	LeftFootCollisionBox->SetupAttachment(GetMesh());
+	LeftFootCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftFootCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
+	
+	RightFootCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("RightFootCollisionBox"));
+	RightFootCollisionBox->SetupAttachment(GetMesh());
+	RightFootCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightFootCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
+
 }
 
 void APGCharacterEnemy::BeginPlay()
@@ -97,6 +121,11 @@ void APGCharacterEnemy::BeginPlay()
 		}
 	}
 
+	LeftHandCollisionBox->IgnoreActorWhenMoving(this, true);
+	RightHandCollisionBox->IgnoreActorWhenMoving(this, true);
+	LeftFootCollisionBox->IgnoreActorWhenMoving(this, true);
+	RightFootCollisionBox->IgnoreActorWhenMoving(this, true);
+	
 	InitEnemyStartUpData();
 	InitUIComponents();
 	
@@ -177,6 +206,49 @@ void APGCharacterEnemy::OnDied()
 		StartDissolveEffect();
 	}
 }
+
+#if WITH_EDITOR
+void APGCharacterEnemy::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(
+		ThisClass, LeftHandCollisionBoxAttachBoneName))
+	{
+		LeftHandCollisionBox->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetIncludingScale,
+			LeftHandCollisionBoxAttachBoneName);
+	}
+
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(
+		ThisClass, RightHandCollisionBoxAttachBoneName))
+	{
+		RightHandCollisionBox->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetIncludingScale,
+			RightHandCollisionBoxAttachBoneName);
+	}
+
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(
+		ThisClass, LeftFootCollisionBoxAttachBoneName))
+	{
+		LeftFootCollisionBox->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetIncludingScale,
+			LeftFootCollisionBoxAttachBoneName);
+	}
+
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(
+		ThisClass, RightFootCollisionBoxAttachBoneName))
+	{
+		RightFootCollisionBox->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetIncludingScale,
+			RightFootCollisionBoxAttachBoneName);
+	}
+}
+#endif
 
 void APGCharacterEnemy::InitEnemyStartUpData()
 {
@@ -279,4 +351,16 @@ void APGCharacterEnemy::OnDissolveTimelineFinished()
 
 	// 캐릭터 액터 파괴
 	Destroy();
+}
+
+void APGCharacterEnemy::OnBodyCollisionBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (APawn* HitPawn = Cast<APawn>(OtherActor))
+	{
+		if (UPGAbilityBPLibrary::IsTargetPawnHostile(this,HitPawn))
+		{
+			CombatComponent->OnHitTargetActor(HitPawn);
+		}
+	}
 }

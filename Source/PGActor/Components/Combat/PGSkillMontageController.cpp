@@ -21,12 +21,6 @@ void UPGSkillMontageController::RegisterSkillIndicator(APGSkillIndicator* Indica
 
 	// 인디케이터 완료 이벤트 바인딩
 	Indicator->OnAnimationCompleted.AddDynamic(this, &UPGSkillMontageController::OnSkillIndicatorCompleted);
-
-	UE_LOG(LogTemp, Log, TEXT("스킬 인디케이터 등록됨: %s (총 %d개)"), 
-		*Indicator->GetName(), PendingIndicators.Num());
-
-	// 루프 섹션으로 이동
-	StartMontageLoop();
 }
 
 void UPGSkillMontageController::OnSkillIndicatorCompleted(APGSkillIndicator* CompletedIndicator)
@@ -40,13 +34,9 @@ void UPGSkillMontageController::OnSkillIndicatorCompleted(APGSkillIndicator* Com
 		return !WeakPtr.IsValid() || WeakPtr.Get() == CompletedIndicator;
 	});
 
-	UE_LOG(LogTemp, Log, TEXT("스킬 인디케이터 완료: %s (남은 개수: %d)"), 
-		*CompletedIndicator->GetName(), PendingIndicators.Num());
-
 	// 모든 인디케이터가 완료되었으면 몽타쥬 종료 섹션으로 이동
 	if (AreAllIndicatorsCompleted())
 	{
-		UE_LOG(LogTemp, Log, TEXT("모든 스킬 인디케이터 완료 - 몽타쥬 종료 섹션 재생"));
 		FinishMontage();
 	}
 }
@@ -91,8 +81,6 @@ void UPGSkillMontageController::StartMontageLoop()
 		
 		// 루프 섹션이 무한 반복되도록 설정
 		AnimInstance->Montage_SetNextSection(LoopSectionName, LoopSectionName, CurrentMontage.Get());
-		
-		UE_LOG(LogTemp, Log, TEXT("몽타쥬 루프 섹션 시작: %s"), *LoopSectionName.ToString());
 	}
 }
 
@@ -109,8 +97,6 @@ void UPGSkillMontageController::FinishMontage()
 		
 		// 루프 해제 (End 섹션은 자연스럽게 종료되도록)
 		AnimInstance->Montage_SetNextSection(LoopSectionName, EndSectionName, CurrentMontage.Get());
-		
-		UE_LOG(LogTemp, Log, TEXT("몽타쥬 종료 섹션 시작: %s"), *EndSectionName.ToString());
 	}
 
 	// 인디케이터 목록 정리

@@ -28,7 +28,6 @@ void APGPooledProjectile::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* 
 {
 	Super::OnProjectileHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
-	PG_Debug::Print(TEXT("Projectile Hit"));
 	// 히트 후 풀로 반환
 	ReturnToPool();
 }
@@ -60,8 +59,6 @@ void APGPooledProjectile::OnProjectileOverlapped(UPrimitiveComponent* HitComp, A
 	{
 		ECollisionChannel ObjectType = Hit.Component->GetCollisionObjectType();
 
-		FString ObjectTypeName = UEnum::GetValueAsString(ObjectType);
-		PG_Debug::Print(ObjectTypeName);
 		if (ObjectType == ECC_WorldStatic)
 		{
 			ReturnToPool();

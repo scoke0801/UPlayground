@@ -17,4 +17,7 @@ class PGACTOR_API UPGEnemyCombatComponent : public UPGPawnCombatComponent
 
 public:
 	virtual void OnHitTargetActor(AActor* HitActor) override;
+
+protected:
+	virtual void ToggleBodyCollisionBoxCollision(bool bShouldEnable, EPGToggleDamageType ToggleDamage) override;
 };

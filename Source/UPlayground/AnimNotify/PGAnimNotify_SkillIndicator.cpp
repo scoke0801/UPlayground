@@ -3,11 +3,16 @@
 
 #include "AnimNotify/PGAnimNotify_SkillIndicator.h"
 
+#include "AIController.h"
 #include "PGDataTableManager.h"
 #include "DataTable/Skill/PGSkillIndicatorDataRow.h"
 #include "PGActor/Effects/Decal/PGSkillIndicator.h"
 #include "Animation/AnimInstance.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/Character.h"
 #include "PGActor/Components/Combat/PGSkillMontageController.h"
+#include "PGActor/Projectile/Pool/PGProjectileManager.h"
 
 void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                                           const FAnimNotifyEventReference& EventReference)
@@ -21,12 +26,12 @@ void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAni
 		return;
 	}
 	
-	AActor* OwnerActor = MeshComp->GetOwner();
-	if (nullptr == OwnerActor)
+	CachedOwner = MeshComp->GetOwner();
+	if (nullptr == CachedOwner)
 	{
 		return;
 	}
-	
+
 	if (FPGSkillIndicatorDataRow* Data = DataTableManager->GetRowData<FPGSkillIndicatorDataRow>(SkillIndicatorId))
 	{
 		// 클래스 로드
@@ -38,15 +43,19 @@ void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAni
 				return;
 			}
 			// 스폰 위치 계산 (소유자 앞쪽)
-			FVector OwnerLocation = OwnerActor->GetActorLocation();
-			FVector OwnerForward = OwnerActor->GetActorForwardVector();
+			FVector OwnerLocation = CachedOwner->GetActorLocation();
+			CachedDirection = CachedOwner->GetActorForwardVector();
+			CachedLocation = OwnerLocation;
 			
-			FVector SpawnLocation = OwnerLocation + (OwnerForward * SpawnDistance) + SpawnOffset;
-   
+			FVector GroundLocation = GetGroundLocation(CachedOwner);
+			FVector SpawnLocation = OwnerLocation + (CachedDirection * SpawnDistance) + SpawnOffset;
+			
+			SpawnLocation.Z = GroundLocation.Z;
+			
 			if (APGSkillIndicator* SpawnedActor = World->SpawnActor<APGSkillIndicator>(LoadedClass,
-				SpawnLocation, OwnerActor->GetActorRightVector().Rotation()))
+				SpawnLocation, CachedOwner->GetActorRightVector().Rotation()))
 			{
-				UPGSkillMontageController* MontageController = OwnerActor->FindComponentByClass<UPGSkillMontageController>();
+				UPGSkillMontageController* MontageController = CachedOwner->FindComponentByClass<UPGSkillMontageController>();
 				if (MontageController)
 				{
 					// 현재 재생 중인 몽타쥬 가져오기
@@ -61,10 +70,78 @@ void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAni
 						}
 					}
 				}
-				
+
+				if (false == DecalSize.IsNearlyZero())
+				{
+					SpawnedActor->SetDecalSize(DecalSize);
+				}
+				SpawnedActor->SetAnimationDuration(IndicatorDuration);
 				SpawnedActor->StartAnimation();
+
+				// 인디케이터 완료 시 AOE 스폰 설정
+				if (ProjectileId > 0)
+				{
+					SpawnedActor->OnAnimationCompleted.AddDynamic(this, &ThisClass::OnIndicatorCompleted);
+				}
 			}
 		}
 	}
 }
 
+AActor* UPGAnimNotify_SkillIndicator::GetTargetActor(AActor* OwnerActor) const
+{
+	if (nullptr == OwnerActor)
+	{
+		return nullptr;
+	}
+
+	// AI Controller에서 블랙보드 가져오기
+	AAIController* AIController = Cast<AAIController>(OwnerActor->GetInstigatorController());
+	if (nullptr == AIController)
+	{
+		return nullptr;
+	}
+
+	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
+	if (nullptr == Blackboard)
+	{
+		return nullptr;
+	}
+
+	// 블랙보드에서 타겟 액터 가져오기
+	return Cast<AActor>(Blackboard->GetValueAsObject(TargetActorKeyName));
+}
+
+FVector UPGAnimNotify_SkillIndicator::GetGroundLocation(AActor* TargetActor) const
+{
+	if (nullptr == TargetActor)
+	{
+		return FVector::ZeroVector;
+	}
+
+	FVector GroundLocation = TargetActor->GetActorLocation();
+
+	// Character인 경우 CapsuleComponent의 반 높이를 고려
+	if (ACharacter* Character = Cast<ACharacter>(TargetActor))
+	{
+		if (UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
+		{
+			GroundLocation.Z -= Capsule->GetScaledCapsuleHalfHeight();
+		}
+	}
+
+	return GroundLocation;
+}
+
+void UPGAnimNotify_SkillIndicator::OnIndicatorCompleted(APGSkillIndicator* Indicator)
+{
+	if (nullptr == CachedOwner || 0 == ProjectileId)
+	{
+		return;
+	}
+	
+	if (UPGProjectileManager* Manager = PGProjectile())
+	{
+		Manager->FireProjectile(ProjectileId, CachedOwner, CachedLocation, CachedDirection);
+	}
+}

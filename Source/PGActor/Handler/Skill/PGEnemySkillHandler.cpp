@@ -25,9 +25,13 @@ EPGSkillSlot FPGEnemySkillHandler::GetSkillSlotByTag(const FGameplayTagContainer
 		{
 			return GetRandomSkillSlotBySkillType(EPGSkillType::Melee);
 		}
-		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_RangeSkill))
+		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_ProjectileSkill))
 		{
-			return GetRandomSkillSlotBySkillType(EPGSkillType::Range);
+			return GetRandomSkillSlotBySkillType(EPGSkillType::Projectile);
+		}
+		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_AOESkill))
+		{
+			return GetRandomSkillSlotBySkillType(EPGSkillType::AreaOfEffect);
 		}
 		else if (Tag.MatchesTagExact(PGGamePlayTags::Enemy_Ability_SummonSkill))
 		{

@@ -92,9 +92,9 @@ EBTNodeResult::Type UPGBTTask_RotateToFaceTarget::ExecuteTask(UBehaviorTreeCompo
 	Memory->TargetActor = TargetActor;
 
 	// 폰과 타겟 액터가 모두 유효한지 확인
-	if (false == Memory->IsValid())
+	if (false == Memory->IsValid() || (OwningPawn == TargetActor))
 	{
-		return EBTNodeResult::Failed;
+		return EBTNodeResult::Succeeded;
 	}
 	
 	// 이미 목표 각도에 도달했는지 확인
