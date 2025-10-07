@@ -4,6 +4,7 @@
 #include "PGAreaOfEffectBase.h"
 
 #include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Components/BoxComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGData/PGDataTableManager.h"
@@ -29,10 +30,15 @@ APGAreaOfEffectBase::APGAreaOfEffectBase()
 	// VFX 컴포넌트
 	NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
 	NiagaraComponent->SetupAttachment(GetRootComponent());
+
+	// Legacy Particle VFX 컴포넌트
+	ParticleComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleComponent"));
+	ParticleComponent->SetupAttachment(GetRootComponent());
+	ParticleComponent->bAutoActivate = false;
 	
 	// 충돌 이벤트 바인딩
-	CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnEffectHit);
 	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnEffectOverlapped);
+	CollisionBox->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEffectEndOverlap);
 }
 
 APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVector& StartLocation,
@@ -40,33 +46,77 @@ APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVe
 	float InDamage)
 {
 	FPGAreaOfEffectDataRow* Data = PGData()->GetRowData<FPGAreaOfEffectDataRow>(EffectId);
-	if (nullptr != Data)
+	if (nullptr == Data || nullptr == InShooterActor)
 	{
 		return nullptr;
 	}
 
-	if (APGAreaOfEffectBase* AOEActor = NewObject<APGAreaOfEffectBase>())
+	UWorld* World =  InShooterActor->GetWorld();
+	if (nullptr == World)
 	{
-		if (EPGEffectType::Niagara == Data->EffectType)
-		{
-			// TODO: NiagaraSystem, 방식 사용하여 이펙트 처리
-		}
-		else if (EPGEffectType::Legacy == Data->EffectType)
-		{
-			// TODO: UParticleSystem 방식 사용하여 이펙트 처리
-		}
-		
-		AOEActor->Fire(InShooterActor, StartLocation, InDamage);
-
-		return AOEActor;
+		return nullptr;
 	}
 
-	return nullptr;
-}
+	// Actor 생성
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = InShooterActor;
+	SpawnParams.Instigator = Cast<APawn>(InShooterActor);
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-void APGAreaOfEffectBase::OnEffectHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-{
+	APGAreaOfEffectBase* AOEActor = World->SpawnActor<APGAreaOfEffectBase>(
+		APGAreaOfEffectBase::StaticClass(),
+		StartLocation,
+		FRotator::ZeroRotator,
+		SpawnParams
+	);
+	
+	if (!AOEActor)
+	{
+		return nullptr;
+	}
+	
+	// 데이터 적용
+	AOEActor->LifeTime = Data->LifeTime;
+	AOEActor->DamageTickInterval = Data->TickInterval;
+	
+	
+	if (EPGEffectType::Niagara == Data->EffectType)
+	{
+		UNiagaraSystem* NiagaraSystem = Cast<UNiagaraSystem>(Data->NiagaraSystem.LoadSynchronous());
+		if (NiagaraSystem && AOEActor->NiagaraComponent)
+		{
+			AOEActor->NiagaraComponent->SetAsset(NiagaraSystem);
+			AOEActor->NiagaraComponent->SetVisibility(true);
+			AOEActor->NiagaraComponent->Activate(true);
+		}
+			
+		// ParticleComponent 비활성화
+		if (AOEActor->ParticleComponent)
+		{
+			AOEActor->ParticleComponent->SetVisibility(false);
+		}
+	}
+	else if (EPGEffectType::Legacy == Data->EffectType)
+	{
+		UParticleSystem* ParticleSystem = Cast<UParticleSystem>(Data->ParticleSystem.LoadSynchronous());
+
+		if (ParticleSystem && AOEActor->ParticleComponent)
+		{
+			AOEActor->ParticleComponent->SetTemplate(ParticleSystem);
+			AOEActor->ParticleComponent->SetVisibility(true);
+			AOEActor->ParticleComponent->Activate(true);
+		}
+		
+		// NiagaraComponent 비활성화
+		if (AOEActor->NiagaraComponent)
+		{
+			AOEActor->NiagaraComponent->SetVisibility(false);
+		}
+	}
+		
+	AOEActor->Fire(InShooterActor, StartLocation, InDamage);
+
+	return AOEActor;
 }
 
 void APGAreaOfEffectBase::OnEffectOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -87,6 +137,11 @@ void APGAreaOfEffectBase::OnEffectOverlapped(UPrimitiveComponent* OverlappedComp
 			return;
 		}
 	}
+}
+
+void APGAreaOfEffectBase::OnEffectEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int OtherBodyIndex)
+{
 }
 
 void APGAreaOfEffectBase::OnLifeTimeExpired()

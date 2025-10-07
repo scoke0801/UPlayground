@@ -26,12 +26,9 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "PG|Projectile")
 	class UNiagaraComponent* NiagaraComponent;
 	
-	// 설정값
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Projectile")
-	float Damage = 10.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Projectile")
-	float LifeTime = 5.0f;
+	// Legacy Particle System (UE4.27 Cascade... 구형 이펙트를 사용하게 될 경우도 있을 것 같아서)
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "PG|AOE")
+	class UParticleSystemComponent* ParticleComponent;
 
 protected:
 	UPROPERTY(Transient)
@@ -39,9 +36,13 @@ protected:
 
 	UPROPERTY(Transient)
 	AActor* Shooter;
+
+private:
+	float LifeTime = 5.0f;
+	float DamageTickInterval = 5.0f;
+	float Damage = 10.0f;
 	
-public:
-	APGAreaOfEffectBase();
+public:	APGAreaOfEffectBase();
 	
 public:
 	static APGAreaOfEffectBase* Fire(AActor* InShooterActor, const FVector& StartLocation,
@@ -49,15 +50,14 @@ public:
 
 protected:
 	UFUNCTION()
-	virtual void OnEffectHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
-						UPrimitiveComponent* OtherComp, FVector NormalImpulse, 
-						const FHitResult& Hit);
-	
-	UFUNCTION()
 	virtual void OnEffectOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, 
 		UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep,
 		const FHitResult& Hit);
 	
+	UFUNCTION()
+	void OnEffectEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int OtherBodyIndex);
+
 	virtual void OnLifeTimeExpired();
 
 private:

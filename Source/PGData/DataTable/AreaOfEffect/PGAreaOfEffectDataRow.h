@@ -4,6 +4,7 @@
 #include "Engine/DataTable.h"
 #include "PGShared/Shared/Enum/PGEnumTypes.h"
 #include "UObject/SoftObjectPath.h"
+#include "NiagaraSystem.h"
 #include "PGAreaOfEffectDataRow.generated.h"
 
 USTRUCT(BlueprintType)
@@ -18,9 +19,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EPGEffectType EffectType;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FSoftClassPath EffectPath;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, 
+		meta=(EditCondition="EffectType==EPGEffectType::Niagara", EditConditionHides))
+	TSoftObjectPtr<UNiagaraSystem> NiagaraSystem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, 
+		meta=(EditCondition="EffectType==EPGEffectType::Legacy", EditConditionHides))
+	TSoftObjectPtr<UParticleSystem> ParticleSystem;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float LifeTime = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TickInterval = 0.5f;
 };
