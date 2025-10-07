@@ -32,4 +32,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float TickInterval = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector BoxExtent = FVector(100.0f, 100.0f, 100.0f);
 };

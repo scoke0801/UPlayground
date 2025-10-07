@@ -33,16 +33,23 @@ protected:
 protected:
 	UPROPERTY(Transient)
 	FTimerHandle LifeTimeHandle;
+	
+	UPROPERTY(Transient)
+	FTimerHandle DamageTickTimerHandle;
 
 	UPROPERTY(Transient)
 	AActor* Shooter;
+
+	UPROPERTY(Transient)
+	APawn* OverlappedPawn = nullptr;
 
 private:
 	float LifeTime = 5.0f;
 	float DamageTickInterval = 5.0f;
 	float Damage = 10.0f;
 	
-public:	APGAreaOfEffectBase();
+public:
+	APGAreaOfEffectBase();
 	
 public:
 	static APGAreaOfEffectBase* Fire(AActor* InShooterActor, const FVector& StartLocation, int32 EffectId);
@@ -61,4 +68,6 @@ protected:
 
 private:
 	void Fire(AActor* InShooterActor, const FVector& StartLocation);
+	
+	void OnDamageTicked();
 };

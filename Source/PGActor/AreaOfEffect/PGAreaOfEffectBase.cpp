@@ -3,12 +3,15 @@
 
 #include "PGAreaOfEffectBase.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "Components/BoxComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/AreaOfEffect/PGAreaOfEffectDataRow.h"
+#include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
 // Sets default values
 APGAreaOfEffectBase::APGAreaOfEffectBase()
@@ -24,7 +27,7 @@ APGAreaOfEffectBase::APGAreaOfEffectBase()
 	CollisionBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	CollisionBox->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 	CollisionBox->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-	CollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CollisionBox->SetupAttachment(GetRootComponent());
 	
 	// VFX 컴포넌트
@@ -83,6 +86,12 @@ APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVe
 	AOEActor->LifeTime = Data->LifeTime;
 	AOEActor->DamageTickInterval = Data->TickInterval;
 	
+	// CollisionBox 크기 설정
+	if (AOEActor->CollisionBox)
+	{
+		AOEActor->CollisionBox->SetBoxExtent(Data->BoxExtent);
+	}
+	
 	
 	if (EPGEffectType::Niagara == Data->EffectType)
 	{
@@ -126,26 +135,37 @@ APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVe
 void APGAreaOfEffectBase::OnEffectOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
 {
-	if (UPGAbilityBPLibrary::IsTargetActorHostile(Shooter ,OtherActor))
+	if (nullptr == Shooter || nullptr == OtherActor)
 	{
 		return;
 	}
 	
-	// StaticObject 확인
-	if (Hit.Component.IsValid())
+	if (false == UPGAbilityBPLibrary::IsTargetActorHostile(Shooter ,OtherActor))
 	{
-		ECollisionChannel ObjectType = Hit.Component->GetCollisionObjectType();
-		if (ObjectType == ECC_WorldStatic || ObjectType == ECC_WorldDynamic)
-		{
-			Destroy();
-			return;
-		}
+		return;
+	}
+	
+	if (APawn* CastedPawn = Cast<APawn>(OtherActor))
+	{
+		FGameplayEventData Data;
+		Data.Instigator = Shooter;
+		Data.Target = CastedPawn;
+				
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+			CastedPawn,
+			PGGamePlayTags::Shared_Event_HitReact,
+			Data);
+		
+		OverlappedPawn = CastedPawn;
+		GetWorldTimerManager().SetTimer(DamageTickTimerHandle, this, 
+			&ThisClass::OnDamageTicked, DamageTickInterval, true);
 	}
 }
 
 void APGAreaOfEffectBase::OnEffectEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int OtherBodyIndex)
 {
+	GetWorldTimerManager().ClearTimer(DamageTickTimerHandle);
 }
 
 void APGAreaOfEffectBase::OnLifeTimeExpired()
@@ -161,8 +181,22 @@ void APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVector& StartLocat
 	
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
+
+	CollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 	// 수명 타이머
 	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, 
-		&ThisClass::OnLifeTimeExpired, LifeTime, false);
+		&ThisClass::OnLifeTimeExpired, LifeTime, true);
+}
+
+void APGAreaOfEffectBase::OnDamageTicked()
+{
+	FGameplayEventData Data;
+	Data.Instigator = Shooter;
+	Data.Target = OverlappedPawn;
+				
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+		OverlappedPawn,
+		PGGamePlayTags::Shared_Event_HitReact,
+		Data);
 }
