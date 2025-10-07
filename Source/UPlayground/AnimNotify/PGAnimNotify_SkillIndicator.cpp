@@ -45,10 +45,10 @@ void UPGAnimNotify_SkillIndicator::Notify(USkeletalMeshComponent* MeshComp, UAni
 			// 스폰 위치 계산 (소유자 앞쪽)
 			FVector OwnerLocation = CachedOwner->GetActorLocation();
 			CachedDirection = CachedOwner->GetActorForwardVector();
-
+			CachedLocation = OwnerLocation;
+			
 			FVector GroundLocation = GetGroundLocation(CachedOwner);
 			FVector SpawnLocation = OwnerLocation + (CachedDirection * SpawnDistance) + SpawnOffset;
-			CachedLocation = SpawnLocation;
 			
 			SpawnLocation.Z = GroundLocation.Z;
 			
