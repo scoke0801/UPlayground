@@ -27,7 +27,10 @@ protected:
 
 protected:
 	virtual void NativeOnInitialized() override;
-
+	virtual void NativeConstruct() override;
+	
 private:
 	void OnStatUpdate(const IPGEventData* InEventData);
+
+	void CapturePlayerImage();
 };
