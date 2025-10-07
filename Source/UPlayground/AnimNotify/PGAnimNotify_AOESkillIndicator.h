@@ -49,7 +49,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Spawn Settings")
 	FVector DecalSize = FVector::ZeroVector;
 
-	// 인디케이터 완료 후 스폰할 AOE 이펙트 ID
+	// 인디케이터 완료 후 스폰할 AOE 이펙트 ID( 사용 안하고 직접 AnimNotify_AOE도 가능 )
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|AOE Settings")
 	int32 AreaOfEffectId = 0;
 
