@@ -132,6 +132,17 @@ public:
             MessageDelegates[Key]->Remove(Handle);
         }
     }
+
+    template<typename EnumType>
+    void UnregisterDelegateAll(EnumType Enum)
+    {
+        FPGEnumKey Key(Enum);
+        
+        if (MessageDelegates.Contains(Key))
+        {
+            MessageDelegates[Key]->Clear();
+        }
+    }
     
     /**
      * 메시지 전송

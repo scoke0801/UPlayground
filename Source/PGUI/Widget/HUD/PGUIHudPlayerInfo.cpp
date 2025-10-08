@@ -16,17 +16,31 @@
 void UPGUIHudPlayerInfo::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-
-	// Player 정보 가져와야 한다...
-	PGMessage()->RegisterDelegate(EPGPlayerMessageType::StatUpdate,
-		this, &ThisClass::OnStatUpdate);
 }
 
 void UPGUIHudPlayerInfo::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	CapturePlayerImage();
+	// Player 정보 가져와야 한다...
+	StatUpdateHandle = PGMessage()->RegisterDelegate(EPGPlayerMessageType::StatUpdate,
+		this, &ThisClass::OnStatUpdate);
+	
+	SpawnedHandle = PGMessage()->RegisterDelegate(EPGPlayerMessageType::Spawned,
+		this, &ThisClass::OnPlayerSpawned);
+
+//	CapturePlayerImage();
+}
+
+void UPGUIHudPlayerInfo::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	if (UPGMessageManager* MessageManager = PGMessage())
+	{
+		MessageManager->UnregisterDelegate(EPGPlayerMessageType::StatUpdate, StatUpdateHandle);
+		MessageManager->UnregisterDelegate(EPGPlayerMessageType::Spawned, SpawnedHandle);
+	}
 }
 
 void UPGUIHudPlayerInfo::OnStatUpdate(const IPGEventData* InEventData)
@@ -41,6 +55,11 @@ void UPGUIHudPlayerInfo::OnStatUpdate(const IPGEventData* InEventData)
 	{
 		
 	}
+}
+
+void UPGUIHudPlayerInfo::OnPlayerSpawned(const IPGEventData* InEventData)
+{
+	CapturePlayerImage();
 }
 
 void UPGUIHudPlayerInfo::CapturePlayerImage()
@@ -79,8 +98,7 @@ void UPGUIHudPlayerInfo::CapturePlayerImage()
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>(SceneCapture);
 	if (RenderTarget)
 	{
-		// 512x512로 품질 향상 (필요시 256으로 낮출 수 있음)
-		RenderTarget->InitAutoFormat(512, 512);
+		RenderTarget->InitAutoFormat(128, 128);
 		RenderTarget->ClearColor = FLinearColor::Transparent;
 		RenderTarget->bAutoGenerateMips = false;
 		RenderTarget->UpdateResourceImmediate(true);
@@ -110,11 +128,11 @@ void UPGUIHudPlayerInfo::CapturePlayerImage()
 	}
 
 	// 캡처 완료 후 Actor 제거 (다음 프레임에)
-	World->GetTimerManager().SetTimerForNextTick([SceneCapture]()
-	{
-		if (SceneCapture && IsValid(SceneCapture))
-		{
-			SceneCapture->Destroy();
-		}
-	});
+	// World->GetTimerManager().SetTimerForNextTick([SceneCapture]()
+	// {
+	// 	if (SceneCapture && IsValid(SceneCapture))
+	// 	{
+	// 		SceneCapture->Destroy();
+	// 	}
+	// });
 }

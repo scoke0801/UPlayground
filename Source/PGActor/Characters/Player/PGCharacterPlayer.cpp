@@ -86,6 +86,15 @@ void APGCharacterPlayer::BeginPlay()
 	Super::BeginPlay();
 
 	InitUIComponents();
+
+	bIsAllMeshLoaded = false;
+	CheckAllMeshesLoaded();
+	
+	if (false == bIsAllMeshLoaded)
+	{
+		GetWorldTimerManager().SetTimer(MeshCheckTimerHandle, this, &ThisClass::CheckAllMeshesLoaded, 0.1f, true);
+	}
+	//PGMessage()->SendMessage(EPGPlayerMessageType::Spawned, nullptr);
 }
 
 void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -191,6 +200,59 @@ bool APGCharacterPlayer::IsCanJump() const
 	}
 	
 	return false;
+}
+
+void APGCharacterPlayer::CheckAllMeshesLoaded()
+{
+	if (true == bIsAllMeshLoaded)
+	{
+		return;
+	}
+	
+	// 모든 스켈레탈 메시 컴포넌트 수집
+	TArray<USkeletalMeshComponent*> MeshComponents;
+	GetComponents<USkeletalMeshComponent>(MeshComponents);
+    
+	if (MeshComponents.Num() == 0)
+	{
+		return;
+	}
+    
+	// 각 컴포넌트의 메시 로딩 상태 확인
+	int32 LoadedCount = 0;
+	int32 TotalCount = MeshComponents.Num();
+    
+	for (USkeletalMeshComponent* MeshComp : MeshComponents)
+	{
+		if (MeshComp && MeshComp->GetSkeletalMeshAsset())
+		{
+			LoadedCount++;
+		}
+		else if (MeshComp)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Mesh not loaded yet: %s"), *MeshComp->GetName());
+		}
+	}
+	bIsAllMeshLoaded = LoadedCount == TotalCount;
+	// 모든 메시 로딩 완료 확인
+	if (true == bIsAllMeshLoaded)
+	{
+		UE_LOG(LogTemp, Log, TEXT("All %d meshes loaded successfully!"), TotalCount);
+		// 타이머 정리
+		if (MeshCheckTimerHandle.IsValid())
+		{
+			GetWorldTimerManager().ClearTimer(MeshCheckTimerHandle);
+		}
+        
+		UE_LOG(LogTemp, Log, TEXT("All %d meshes loaded successfully!"), TotalCount);
+        
+		// 델리게이트 브로드캐스트
+		PGMessage()->SendMessage(EPGPlayerMessageType::Spawned, nullptr);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Meshes loading... %d/%d"), LoadedCount, TotalCount);
+	}
 }
 
 void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)

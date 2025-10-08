@@ -27,13 +27,20 @@ protected:
 
 	UPROPERTY()
 	class UMaterialInstanceDynamic* PlayerImageMaterial;
-
+	
 protected:
 	virtual void NativeOnInitialized() override;
+
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+
+private:
+	FDelegateHandle StatUpdateHandle;
+	FDelegateHandle SpawnedHandle;
 	
 private:
 	void OnStatUpdate(const IPGEventData* InEventData);
+	void OnPlayerSpawned(const IPGEventData* InEventData);
 
 	void CapturePlayerImage();
 };

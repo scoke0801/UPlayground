@@ -30,6 +30,8 @@ enum class EPGPlayerMessageType : uint8
     ExpUpdate,
     
     StatUpdate,
+
+    Spawned,
     
     Max UMETA(Hidden)
 };

@@ -56,7 +56,7 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings")
 	float CameraMaxPitch = 30.0f;
-	
+
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Camera", meta = (AllowPrivateAccess = true))
 	USpringArmComponent* CameraBoom;
@@ -86,7 +86,11 @@ private:
 	
 	UPROPERTY(Transient)
 	bool bIsCanControl = true;
-
+	
+	FTimerHandle MeshCheckTimerHandle;
+	
+	bool bIsAllMeshLoaded = false;
+	
 public:
 	APGCharacterPlayer();
 	
@@ -120,6 +124,9 @@ public:
 	void SetIsCanControl(bool IsCanControl) {bIsCanControl = IsCanControl;}
 	void SetIsJump(bool IsJump);
 	bool IsCanJump() const;
+
+public:
+	void CheckAllMeshesLoaded();
 
 private:
 	void Input_Move(const FInputActionValue& InputActionValue);
