@@ -83,6 +83,7 @@ Content/*
 **/.idea
 **/.sentry-native
 /Content
+/DerivedDataCache
 
 # Script folders and Korean filenames
 Script/
