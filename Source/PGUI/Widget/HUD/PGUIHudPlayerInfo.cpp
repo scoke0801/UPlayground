@@ -125,14 +125,15 @@ void UPGUIHudPlayerInfo::CapturePlayerImage()
 			PlayerImageMaterial->SetTextureParameterValue(TEXT("MainTexture"), RenderTarget);
 			PlayerImage->SetBrushFromMaterial(PlayerImageMaterial);
 		}
-	}
 
-	// 캡처 완료 후 Actor 제거 (다음 프레임에)
-	// World->GetTimerManager().SetTimerForNextTick([SceneCapture]()
-	// {
-	// 	if (SceneCapture && IsValid(SceneCapture))
-	// 	{
-	// 		SceneCapture->Destroy();
-	// 	}
-	// });
+		// 캡처 완료 후 Actor 제거
+		FTimerHandle TimerHandle;
+		World->GetTimerManager().SetTimer(TimerHandle,[SceneCapture]()
+		{
+			if (SceneCapture && IsValid(SceneCapture))
+			{
+				SceneCapture->Destroy();
+			}
+		}, 0.1f, false);
+	}
 }
