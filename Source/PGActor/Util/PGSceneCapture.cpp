@@ -30,7 +30,7 @@ APGSceneCapture::APGSceneCapture()
 	KeyLight->SetupAttachment(RootComponent);
 	KeyLight->SetIntensity(3.0f);
 	KeyLight->SetLightColor(FLinearColor(1.0f, 0.95f, 0.9f)); // 약간 따뜻한 색
-	KeyLight->SetRelativeRotation(FRotator(-30.0f, 45.0f, 0.0f)); // 위에서 비추는 각도
+	KeyLight->SetRelativeRotation(FRotator(-20.0f, -45.0f, 0.0f)); // 위에서 비추는 각도
 	KeyLight->SetCastShadows(false); // 성능 최적화
 	
 	// 환경광 추가 - Sky Light
@@ -78,23 +78,21 @@ void APGSceneCapture::CaptureCurrentScene(AActor* TargetCharacter)
 		HeadLocation.Z += 150.0f;
 	}
 
-	// 카메라 위치: 얼굴 정면에서 적당한 거리
-	FVector CaptureLocation = HeadLocation + FVector(70.0f, -20.0f, 5.0f);
+	// 캐릭터의 현재 Forward 벡터 가져오기
+	FVector CharacterForward = TargetCharacter->GetActorForwardVector();
+	FVector CharacterRight = TargetCharacter->GetActorRightVector();
+	
+	// 캐릭터 정면 기준으로 카메라 위치 계산
+	FVector CaptureLocation = HeadLocation 
+		+ CharacterForward * 80.0f 
+		+ CharacterRight * 20.0f 
+		+ FVector(0.0f, 0.0f, 5.0f);
     
-	// 카메라 회전: 캐릭터 얼굴을 바라봄
+	// 카메라가 캐릭터 머리를 바라보도록 회전
 	FRotator CaptureRotation = (HeadLocation - CaptureLocation).Rotation();
 	
 	SetActorLocation(CaptureLocation);
 	SetActorRotation(CaptureRotation);
-
-	// 캐릭터를 카메라 방향으로 회전
-	FVector DirectionToCamera = CaptureLocation - TargetCharacter->GetActorLocation();
-	DirectionToCamera.Z = 0.0f; // 수평 방향만 사용
-	
-	FRotator OriginalRotation = TargetCharacter->GetActorRotation();
-	FRotator LookAtRotation = DirectionToCamera.Rotation();
-	LookAtRotation.Yaw -= 20.0f;
-	TargetCharacter->SetActorRotation(LookAtRotation);
 
 	// 특정 캐릭터만 렌더링
 	SceneCaptureComponent->ShowOnlyActors.Empty();
@@ -103,14 +101,14 @@ void APGSceneCapture::CaptureCurrentScene(AActor* TargetCharacter)
 	
 	// ShowFlags 설정 - 조명 활성화
 	SceneCaptureComponent->ShowFlags.SetLighting(true);
-	SceneCaptureComponent->ShowFlags.SetDynamicShadows(false); // 성능 최적화
+	SceneCaptureComponent->ShowFlags.SetDynamicShadows(true); // 성능 최적화
 	SceneCaptureComponent->ShowFlags.SetAtmosphere(false);
 	SceneCaptureComponent->ShowFlags.SetShadowFrustums(false);
 	SceneCaptureComponent->ShowFlags.SetVirtualShadowMapPersistentData(false);
 	SceneCaptureComponent->ShowFlags.SetFog(false);
 	SceneCaptureComponent->ShowFlags.SetVolumetricFog(false);
-	SceneCaptureComponent->ShowFlags.SetSkyLighting(true);
-	SceneCaptureComponent->ShowFlags.SetGlobalIllumination(true);
+	SceneCaptureComponent->ShowFlags.SetSkyLighting(false);
+	SceneCaptureComponent->ShowFlags.SetGlobalIllumination(false);
 	
 	// Post Process 설정으로 밝기 조정
 	SceneCaptureComponent->PostProcessSettings.bOverride_AutoExposureBias = true;
@@ -121,9 +119,6 @@ void APGSceneCapture::CaptureCurrentScene(AActor* TargetCharacter)
 	SceneCaptureComponent->PostProcessSettings.AmbientOcclusionIntensity = 0.0f;
         
 	SceneCaptureComponent->CaptureScene();
-
-	// 원복해둔다.
-	TargetCharacter->SetActorRotation(OriginalRotation);
 }
 
 UTextureRenderTarget2D* APGSceneCapture::GetRenderTarget() const

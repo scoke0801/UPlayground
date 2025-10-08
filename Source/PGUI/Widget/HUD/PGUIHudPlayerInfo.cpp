@@ -98,7 +98,7 @@ void UPGUIHudPlayerInfo::CapturePlayerImage()
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>(SceneCapture);
 	if (RenderTarget)
 	{
-		RenderTarget->InitAutoFormat(128, 128);
+		RenderTarget->InitAutoFormat(256, 256);
 		RenderTarget->ClearColor = FLinearColor::Transparent;
 		RenderTarget->bAutoGenerateMips = false;
 		RenderTarget->UpdateResourceImmediate(true);
