@@ -59,10 +59,26 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	
 	// 타겟과의 거리 계산
 	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
+	if (nullptr == TargetActor)
+	{
+		// 로컬 플레이어 캐릭터 가져오기
+		if (APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+		{
+			if (APawn* PlayerPawn = PlayerController->GetPawn())
+			{
+				TargetActor = PlayerPawn;
+				BlackboardComp->SetValueAsObject(FName("TargetActor"), TargetActor);
+			}
+		}
+	}
 	float DistanceToTarget = -1.f;
 	if (TargetActor)
 	{
 		DistanceToTarget = FVector::Dist(Enemy->GetActorLocation(), TargetActor->GetActorLocation());
+	}
+	else
+	{
+		return;
 	}
 	
 	// 현재 HP 비율 계산
