@@ -111,21 +111,7 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 		return;
 	}
 	
-	// DPI 스케일 가져오기
-	float DPIScale = 1.0f;
-	if (UWorld* World = GetWorld())
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			if (PC->GetLocalPlayer() && PC->GetLocalPlayer()->ViewportClient)
-			{
-				DPIScale = PC->GetLocalPlayer()->ViewportClient->GetDPIScale();
-			}
-		}
-	}
-	
-	// 동일한 액터의 기존 플로터들을 위로 이동 (DPI 스케일 적용)
-	float ScaledOffset = FloaterVerticalOffset / DPIScale;
+	// 동일한 액터의 기존 플로터들을 위로 이동
 	if (FPGDamageFloaterPool* ExistingFloaters = ActiveFloatersByActor.Find(TargetActor))
 	{
 		int32 StackIndex = 0;
@@ -133,7 +119,7 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 		{
 			if (IsValid(ExistingFloater))
 			{
-				ExistingFloater->AddVerticalOffset(ScaledOffset);
+				ExistingFloater->AddVerticalOffset(FloaterVerticalOffset);
 				
 				// 스택 인덱스 업데이트 (위로 갈수록 증가)
 				ExistingFloater->SetStackIndex(StackIndex + 1, FadeOutStrength, MinOpacity);
@@ -150,28 +136,14 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 	}
 	
 	// 액터의 콜리전 높이 계산
-	FVector LocalOffset = FVector::ZeroVector;
+	FVector LocalOffset = FVector(0.f,0.f, 70.0f);
 	if (UCapsuleComponent* CapsuleComp = TargetActor->FindComponentByClass<UCapsuleComponent>())
 	{
 		LocalOffset.Z = CapsuleComp->GetScaledCapsuleHalfHeight();
 	}
-	else
-	{
-		// 기본값: 70cm
-		LocalOffset.Z = 70.0f;
-	}
 	
 	// 뷰포트에 추가
 	Floater->AddToViewport();
-	
-	// DPI 스케일 적용 (해상도 독립적인 크기 유지)
-	if (UWorld* World = GetWorld())
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			Floater->SetRenderScale(FVector2D(1.0f / DPIScale, 1.0f / DPIScale));
-		}
-	}
 	
 	// 액터와 오프셋 설정
 	FVector WorldLocation = TargetActor->GetActorLocation() + LocalOffset;

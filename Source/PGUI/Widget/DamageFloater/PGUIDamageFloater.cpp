@@ -37,14 +37,7 @@ void UPGUIDamageFloater::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	
 	for (FPGDamageFloaterCurveData& CurveData : CurveDataList)
 	{
-		if (EPGDamageFloaterCurveType::Translation ==  CurveData.CurveType)
-		{
-			IsDone |= PlayTranslationAnimation(
-				Cast<UCurveVector>(CurveData.Curve),
-				InDeltaTime
-			);
-		}
-		else if (EPGDamageFloaterCurveType::Scale ==  CurveData.CurveType)
+		if (EPGDamageFloaterCurveType::Scale ==  CurveData.CurveType)
 		{
 			IsDone |= PlayScaleAnimation(
 			Cast<UCurveVector>(CurveData.Curve),
@@ -102,7 +95,7 @@ void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVe
 		
 		DamageText->SetText(DamageDisplayText);
 		
-		// 데미지 타입에 따른 색상 설정
+		// 데미지 타입에 따른 색상 설정 (알파값은 1.0으로 초기화)
 		FLinearColor TextColor = FLinearColor::White;
 		
 		switch (DamageType)
@@ -121,6 +114,8 @@ void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVe
 			break;
 		}
 		
+		// 알파값 명시적으로 1.0 설정 (새 플로터는 완전 불투명)
+		TextColor.A = 1.0f;
 		DamageText->SetColorAndOpacity(TextColor);
 	}
 }
@@ -196,25 +191,6 @@ void UPGUIDamageFloater::UpdateScreenPosition()
 		// 화면 밖인 경우 숨김
 		SetVisibility(ESlateVisibility::Hidden);
 	}
-}
-
-bool UPGUIDamageFloater::PlayTranslationAnimation(UCurveVector* Curve, float DeltaTime)
-{
-	if (!Curve)
-	{
-		return false;
-	}
-	
-	float MinTime, MaxTime;
-	Curve->GetTimeRange(MinTime, MaxTime);
-
-	if (MaxTime > ElapsedTime)
-	{
-		FVector Result = Curve->GetVectorValue(ElapsedTime);
-		SetRenderTranslation(FVector2D(Result));
-		return true;
-	}
-	return false;
 }
 
 bool UPGUIDamageFloater::PlayScaleAnimation(UCurveVector* Curve, float DeltaTime)

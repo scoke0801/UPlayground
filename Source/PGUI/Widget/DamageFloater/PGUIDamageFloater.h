@@ -67,7 +67,6 @@ public:
 	
 private:
 	void UpdateScreenPosition();
-	bool PlayTranslationAnimation(UCurveVector* Curve,float DeltaTime);
 	bool PlayScaleAnimation(UCurveVector* Curve,float DeltaTime);
 	bool PlayOpacityAnimation(UCurveFloat* Curve,float DeltaTime);
 };
