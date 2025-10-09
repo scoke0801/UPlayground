@@ -38,6 +38,22 @@ void UPGDamageFloaterManager::ReturnFloaterToPool(EPGDamageType DamageType, UPGU
 {
 	if (Floater)
 	{
+		// 액터별 목록에서 제거
+		AActor* TargetActor = Floater->GetTargetActor();
+		if (TargetActor)
+		{
+			if (FPGDamageFloaterPool* FloaterPool = ActiveFloatersByActor.Find(TargetActor))
+			{
+				FloaterPool->Widgets.Remove(Floater);
+				
+				// 목록이 비었으면 맵에서 제거
+				if (FloaterPool->Widgets.Num() == 0)
+				{
+					ActiveFloatersByActor.Remove(TargetActor);
+				}
+			}
+		}
+		
 		Floater->SetVisibility(ESlateVisibility::Collapsed);
 		Floater->RemoveFromParent();
 		
@@ -95,6 +111,38 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 		return;
 	}
 	
+	// DPI 스케일 가져오기
+	float DPIScale = 1.0f;
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (PC->GetLocalPlayer() && PC->GetLocalPlayer()->ViewportClient)
+			{
+				DPIScale = PC->GetLocalPlayer()->ViewportClient->GetDPIScale();
+			}
+		}
+	}
+	
+	// 동일한 액터의 기존 플로터들을 위로 이동 (DPI 스케일 적용)
+	float ScaledOffset = FloaterVerticalOffset / DPIScale;
+	if (FPGDamageFloaterPool* ExistingFloaters = ActiveFloatersByActor.Find(TargetActor))
+	{
+		int32 StackIndex = 0;
+		for (UPGUIDamageFloater* ExistingFloater : ExistingFloaters->Widgets)
+		{
+			if (IsValid(ExistingFloater))
+			{
+				ExistingFloater->AddVerticalOffset(ScaledOffset);
+				
+				// 스택 인덱스 업데이트 (위로 갈수록 증가)
+				ExistingFloater->SetStackIndex(StackIndex + 1, FadeOutStrength, MinOpacity);
+				
+				StackIndex++;
+			}
+		}
+	}
+	
 	UPGUIDamageFloater* Floater = GetPooledFloater(DamageType);
 	if (!Floater)
 	{
@@ -116,6 +164,15 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 	// 뷰포트에 추가
 	Floater->AddToViewport();
 	
+	// DPI 스케일 적용 (해상도 독립적인 크기 유지)
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			Floater->SetRenderScale(FVector2D(1.0f / DPIScale, 1.0f / DPIScale));
+		}
+	}
+	
 	// 액터와 오프셋 설정
 	FVector WorldLocation = TargetActor->GetActorLocation() + LocalOffset;
 	Floater->SetTargetActor(TargetActor, LocalOffset);
@@ -133,6 +190,13 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 			}
 		}
 	}
+	
+	// 액터별 활성 플로터 목록에 추가
+	if (!ActiveFloatersByActor.Contains(TargetActor))
+	{
+		ActiveFloatersByActor.Add(TargetActor, FPGDamageFloaterPool());
+	}
+	ActiveFloatersByActor[TargetActor].Widgets.Add(Floater);
 }
 
 void UPGDamageFloaterManager::CleanupExpiredFloaters()
@@ -170,6 +234,9 @@ void UPGDamageFloaterManager::ClearPool()
 		}
 	}
 	ActiveFloaters.Empty();
+
+	// 액터별 활성 플로터 목록 정리
+	ActiveFloatersByActor.Empty();
 
 	// 풀링된 플로터들 정리
 	for (auto& Pair : Pools)

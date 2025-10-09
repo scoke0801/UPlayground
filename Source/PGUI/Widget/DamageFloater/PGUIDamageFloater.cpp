@@ -15,6 +15,17 @@ void UPGUIDamageFloater::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
+	// 수직 오프셋 부드럽게 보간
+	if (!FMath::IsNearlyEqual(AdditionalVerticalOffset, TargetVerticalOffset, 0.1f))
+	{
+		AdditionalVerticalOffset = FMath::FInterpTo(
+			AdditionalVerticalOffset,
+			TargetVerticalOffset,
+			InDeltaTime,
+			OffsetInterpSpeed
+		);
+	}
+
 	// 액터 추적 (액터가 설정되어 있고 유효한 경우)
 	if (TargetActor.IsValid())
 	{
@@ -62,6 +73,19 @@ void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVe
 	ElapsedTime = 0.0f;
 	BasePosition = InBasePosition;
 	
+	// 크기 캐시 리셋 (텍스트가 변경되므로)
+	bSizeCached = false;
+	
+	// 추가 오프셋 초기화
+	AdditionalVerticalOffset = 0.0f;
+	TargetVerticalOffset = 0.0f;
+	
+	// 스택 인덱스 초기화 (최신 플로터)
+	StackIndex = 0;
+	
+	// 투명도 초기화 (재사용 시 페이드아웃된 상태 초기화)
+	SetRenderOpacity(1.0f);
+	
 	if (DamageText)
 	{
 		// 데미지 값을 텍스트로 설정
@@ -107,6 +131,18 @@ void UPGUIDamageFloater::SetTargetActor(AActor* InTargetActor, FVector InLocalOf
 	LocalOffset = InLocalOffset;
 }
 
+void UPGUIDamageFloater::AddVerticalOffset(float Offset)
+{
+	TargetVerticalOffset += Offset;
+}
+
+void UPGUIDamageFloater::SetStackIndex(int32 InStackIndex, float InFadeOutStrength, float InMinOpacity)
+{
+	StackIndex = InStackIndex;
+	FadeOutStrength = InFadeOutStrength;
+	MinOpacity = InMinOpacity;
+}
+
 FVector2D UPGUIDamageFloater::GetWidgetSize()
 {
 	if (false == bSizeCached)
@@ -148,6 +184,9 @@ void UPGUIDamageFloater::UpdateScreenPosition()
 		// 위젯 중앙 정렬
 		FVector2D WidgetSize = GetWidgetSize();
 		ScreenPosition.X -= WidgetSize.X * 0.5f;
+		
+		// 추가 수직 오프셋 적용 (다른 플로터와 겹치지 않도록)
+		ScreenPosition.Y -= AdditionalVerticalOffset;
 		
 		// 화면에 표시
 		SetPositionInViewport(ScreenPosition);
@@ -210,8 +249,17 @@ bool UPGUIDamageFloater::PlayOpacityAnimation(UCurveFloat* Curve, float DeltaTim
 
 	if (MaxTime > ElapsedTime)
 	{
-		float Result = Curve->GetFloatValue(ElapsedTime);
-		SetRenderOpacity(Result);
+		float CurveOpacity = Curve->GetFloatValue(ElapsedTime);
+		
+		// 스택 인덱스에 따른 투명도 계산
+		float StackOpacity = FMath::Clamp(
+			1.0f - (StackIndex * FadeOutStrength),
+			MinOpacity,
+			1.0f
+		);
+		
+		// 커브 투명도와 스택 투명도를 곱해서 적용
+		SetRenderOpacity(CurveOpacity * StackOpacity);
 		return true;
 	}
 	return false;

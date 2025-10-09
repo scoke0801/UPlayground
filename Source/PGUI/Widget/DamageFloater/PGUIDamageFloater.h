@@ -40,13 +40,29 @@ private:
 	TWeakObjectPtr<AActor> TargetActor;
 	FVector LocalOffset;
 	
+	// 추가 수직 오프셋 (다른 플로터와 겹치지 않도록)
+	float AdditionalVerticalOffset = 0.0f;
+	float TargetVerticalOffset = 0.0f;
+	
+	// 스택에서의 위치 (0 = 최신, 1, 2, 3... = 오래된 순서)
+	int32 StackIndex = 0;
+	float FadeOutStrength = 0.15f;
+	float MinOpacity = 0.3f;
+	
+	// 오프셋 보간 속도
+	UPROPERTY(EditDefaultsOnly, Category = "PG|Animation")
+	float OffsetInterpSpeed = 10.0f;
+	
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	
 public:
 	void SetDamage(float Damage, EPGDamageType DamageType, FVector2D InBasePosition);
 	void SetTargetActor(AActor* InTargetActor, FVector InLocalOffset);
-
+	void AddVerticalOffset(float Offset);
+	void SetStackIndex(int32 InStackIndex, float InFadeOutStrength, float InMinOpacity);
+	
+	AActor* GetTargetActor() const { return TargetActor.Get(); }
 	FVector2D GetWidgetSize();
 	
 private:
