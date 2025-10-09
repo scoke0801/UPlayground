@@ -66,6 +66,7 @@ public:
 	virtual FPGSkillHandler* GetSkillHandler() const {return SkillHandler;}
 	virtual UPGStatComponent* GetStatComponent() const { return nullptr; }
 
+	virtual ECollisionChannel GetCollisionChannel() const { return ECC_Pawn; }
 public:
 	virtual void OnHit(UPGStatComponent* StatComponent) {}
 

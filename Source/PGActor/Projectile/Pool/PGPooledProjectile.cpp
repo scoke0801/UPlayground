@@ -4,8 +4,10 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "PGProjectilePool.h"
+#include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
+#include "PGActor/Characters/PGCharacterBase.h"
 #include "PGShared/Shared/Debug/PGDebugHelper.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
@@ -84,6 +86,11 @@ void APGPooledProjectile::ReturnToPool()
 		MovementComponent->Deactivate();
 	}
 
+	if (APGCharacterBase* Character = Cast<APGCharacterBase>(Shooter))
+	{
+		ProjectileCollisionBox->SetCollisionResponseToChannel(Character->GetCollisionChannel(), ECR_Overlap);
+	}
+	
 	// 투사체 비활성화
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);

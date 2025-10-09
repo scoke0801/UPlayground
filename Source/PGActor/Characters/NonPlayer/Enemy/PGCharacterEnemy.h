@@ -105,8 +105,10 @@ public:
 
 	virtual UPGStatComponent* GetStatComponent() const override;
 	UPGEnemyStatComponent* GetEnemyStatComponent() const;
-
 	
+	virtual ECollisionChannel GetCollisionChannel() const { return ECC_GameTraceChannel1; }
+
+public:
 	FORCEINLINE UBoxComponent* GetLeftHandCollisionBox() const { return LeftHandCollisionBox; }
 	FORCEINLINE UBoxComponent* GetRightHandCollisionBox() const { return RightHandCollisionBox; }
 	

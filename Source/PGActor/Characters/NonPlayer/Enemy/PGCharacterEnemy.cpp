@@ -60,6 +60,13 @@ APGCharacterEnemy::APGCharacterEnemy()
 	GetCharacterMovement()->BrakingDecelerationWalking = 600.f;  // 1000 → 600 (자연스러운 감속)
 	GetCharacterMovement()->MaxAcceleration = 1024.f;  // 부드러운 가속
 
+	// 적 캐릭터끼리 충돌하지 않도록 설정
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("EnemyCharacter"));
+	
+	// 메시도 Enemy 채널 무시 설정
+	GetMesh()->SetCollisionObjectType(ECC_GameTraceChannel1);
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
+
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimeline"));
 
@@ -85,26 +92,31 @@ APGCharacterEnemy::APGCharacterEnemy()
 	LeftHandCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("LeftHandCollisionBox"));
 	LeftHandCollisionBox->SetupAttachment(GetMesh());
 	LeftHandCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftHandCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	LeftHandCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 	
 	RightHandCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("RightHandCollisionBox"));
 	RightHandCollisionBox->SetupAttachment(GetMesh());
 	RightHandCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightHandCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	RightHandCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 
 	LeftFootCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("LeftFootCollisionBox"));
 	LeftFootCollisionBox->SetupAttachment(GetMesh());
 	LeftFootCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftFootCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	LeftFootCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 	
 	RightFootCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("RightFootCollisionBox"));
 	RightFootCollisionBox->SetupAttachment(GetMesh());
 	RightFootCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightFootCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	RightFootCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 
 	TailCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TailCollisionBox"));
 	TailCollisionBox->SetupAttachment(GetMesh());
 	TailCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TailCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	TailCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 
 }

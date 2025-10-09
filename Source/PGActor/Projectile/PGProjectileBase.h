@@ -13,6 +13,10 @@ UCLASS()
 class PGACTOR_API APGProjectileBase : public AActor
 {
 	GENERATED_BODY()
+
+private:
+	/** Enemy 충돌 채널 */
+	static constexpr ECollisionChannel EnemyCollisionChannel = ECC_GameTraceChannel1;
 	
 protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "PG")

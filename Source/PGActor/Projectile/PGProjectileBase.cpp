@@ -8,6 +8,7 @@
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
+#include "PGActor/Characters/PGCharacterBase.h"
 #include "PGShared/Shared/Debug/PGDebugHelper.h"
 
 // Sets default values
@@ -62,6 +63,11 @@ void APGProjectileBase::Fire(AActor* InShooterActor, const FVector& StartLocatio
 	
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
+
+	if (APGCharacterBase* Character = Cast<APGCharacterBase>(Shooter))
+	{
+		ProjectileCollisionBox->SetCollisionResponseToChannel(Character->GetCollisionChannel(), ECR_Ignore);
+	}
 	
 	// 수명 타이머
 	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, 
@@ -76,19 +82,25 @@ void APGProjectileBase::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* Ot
 void APGProjectileBase::OnProjectileOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
 {
-	if (UPGAbilityBPLibrary::IsTargetActorHostile(Shooter ,OtherActor))
+	// 자기 자신이거나 발사자는 무시
+	if (OtherActor == this || OtherActor == Shooter)
 	{
 		return;
 	}
 	
-	// StaticObject 확인
+	// 적대적인 대상에게만 피해
+	if (false == UPGAbilityBPLibrary::IsTargetActorHostile(Shooter, OtherActor))
+	{
+		return;
+	}
+	
+	// 벽이나 바닥에 충돌 시
 	if (Hit.Component.IsValid())
 	{
 		ECollisionChannel ObjectType = Hit.Component->GetCollisionObjectType();
 		if (ObjectType == ECC_WorldStatic || ObjectType == ECC_WorldDynamic)
 		{
 			Destroy();
-			return;
 		}
 	}
 }
