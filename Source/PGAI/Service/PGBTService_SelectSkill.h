@@ -65,7 +65,7 @@ private:
 	int32 SelectBestSkill(const TArray<int32>& SkillIDList, float DistanceToTarget, float CurrentHPRatio, class APGCharacterEnemy* Enemy, class UBlackboardComponent* BlackboardComp) const;
 
 	/** 스킬 타입별 우선순위 계산 */
-	float CalculateSkillPriority(EPGSkillType SkillType, float DistanceToTarget, float CurrentHPRatio, class APGCharacterEnemy* Enemy, class UBlackboardComponent* BlackboardComp, const TSet<EPGSkillType>& AvailableSkillTypes) const;
+	float CalculateSkillPriority(int32 SkillID, EPGSkillType SkillType, float DistanceToTarget, float CurrentHPRatio, class APGCharacterEnemy* Enemy, class UBlackboardComponent* BlackboardComp, const TSet<EPGSkillType>& AvailableSkillTypes) const;
 
 	/** 회복이 필요한 아군이 있는지 체크 */
 	bool CheckNeedHealAlly(class APGCharacterEnemy* Enemy) const;

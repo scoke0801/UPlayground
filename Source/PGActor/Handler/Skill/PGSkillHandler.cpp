@@ -130,6 +130,18 @@ float FPGSkillHandler::GetRemainingCooldownByID(int32 SkillID) const
 	return 0.0f;
 }
 
+int32 FPGSkillHandler::GetPriorityByID(int32 SkillID) const
+{
+	for (const auto& Pair : SkillDataMap)
+	{
+		if (Pair.Value.SkillId == SkillID)
+		{
+			return Pair.Value.Priority;
+		}
+	}
+	return 1; // 기본값
+}
+
 EPGSkillSlot FPGSkillHandler::FindSlotBySkillID(int32 SkillID) const
 {
 	for (const auto& Pair : SkillDataMap)

@@ -66,6 +66,9 @@ public:
 	// 스킬 ID로 남은 쿨타임 조회
 	float GetRemainingCooldownByID(int32 SkillID) const;
 
+	// 스킬 ID로 Priority 조회
+	int32 GetPriorityByID(int32 SkillID) const;
+
 public:
 	virtual void UseSkill(const EPGSkillSlot InSlotId);
 	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId);

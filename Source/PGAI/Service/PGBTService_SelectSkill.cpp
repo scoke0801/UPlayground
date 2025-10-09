@@ -120,7 +120,7 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 		const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
 		if (!SkillData) continue;
 	
-		const float Priority = CalculateSkillPriority(SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes);
+		const float Priority = CalculateSkillPriority(SkillID, SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes);
 		if (Priority > 0.f)
 		{
 			ReadySkills.Add(SkillID);
@@ -179,6 +179,7 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 }
 
 float UPGBTService_SelectSkill::CalculateSkillPriority(
+	int32 SkillID,
 	EPGSkillType SkillType, 
 	float DistanceToTarget, 
 	float CurrentHPRatio, 
@@ -186,6 +187,22 @@ float UPGBTService_SelectSkill::CalculateSkillPriority(
 	UBlackboardComponent* BlackboardComp,
 	const TSet<EPGSkillType>& AvailableSkillTypes) const
 {
+	// SkillHandler에서 Priority 확인
+	if (Enemy)
+	{
+		if (FPGSkillHandler* SkillHandler = Enemy->GetSkillHandler())
+		{
+			const int32 CurrentPriority = SkillHandler->GetPriorityByID(SkillID);
+			
+			// Priority가 1이 아니면(설정된 경우), 해당 값을 우선적으로 사용
+			if (CurrentPriority != 1)
+			{
+				return static_cast<float>(CurrentPriority);
+			}
+		}
+	}
+
+	// Priority가 1인 경우(기본값), 거리/HP/타입별 동적 계산 수행
 	switch (SkillType)
 	{
 	case EPGSkillType::Melee:
