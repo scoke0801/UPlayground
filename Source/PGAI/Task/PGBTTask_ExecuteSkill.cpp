@@ -91,6 +91,9 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 	const bool bActivated = ASC->TryActivateAbilityByTag(AbilityTag);
 	if (bActivated)
 	{
+		// Strafe 이어서 진행할 지 랜덤하게 결정
+		BlackboardComp->SetValueAsBool(StrafeKey.SelectedKeyName, CheckExecuteStrafe(SkillData->SkillType));
+		
 		// 어빌리티 활성화 성공 - 즉시 완료 처리
 		// (어빌리티 자체에서 몽타주를 관리함)
 		FinishTask(CachedOwnerComp.Get(), EBTNodeResult::Succeeded);
@@ -225,4 +228,29 @@ FGameplayTag UPGBTTask_ExecuteSkill::GetAbilityTagFromSkillType(EPGSkillType Ski
 	default:
 		return FGameplayTag::EmptyTag;
 	}
+}
+
+bool UPGBTTask_ExecuteSkill::CheckExecuteStrafe(EPGSkillType SkillType)
+{
+	switch (SkillType)
+	{
+	case EPGSkillType::Melee:
+		return FMath::FRand() <= 0.3f;
+		
+	case EPGSkillType::Projectile:
+	case EPGSkillType::AreaOfEffect:
+		return FMath::FRand() <= 0.75f;
+	
+	case EPGSkillType::Heal:
+		return FMath::FRand() <= 0.7f;
+		
+	case EPGSkillType::SummonEnemy:
+		return FMath::FRand() <= 0.5f;
+		
+	default:
+		break;
+	}
+	
+	return false;
+	
 }

@@ -29,6 +29,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "PG|AI")
 	FBlackboardKeySelector SummonCountKey;
 
+	/** Blackboard - StrafeState */
+	UPROPERTY(EditAnywhere, Category = "PG|AI")
+	FBlackboardKeySelector StrafeKey;
+
 	/** 힐 아군 탐색 반경 */
 	UPROPERTY(EditAnywhere, Category = "PG|AI|Heal")
 	float AllySearchRadius = 1500.f;
@@ -55,4 +59,6 @@ private:
 
 	/** 스킬 타입을 GameplayTag로 변환 */
 	FGameplayTag GetAbilityTagFromSkillType(EPGSkillType SkillType) const;
+	
+	bool CheckExecuteStrafe(EPGSkillType SkillType);
 };
