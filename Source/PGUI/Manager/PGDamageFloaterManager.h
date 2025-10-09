@@ -29,6 +29,10 @@ struct FDamageFloaterData
     
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsCritical;
+	
+	// 추적할 대상 액터
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TWeakObjectPtr<AActor> TargetActor;
 };
 
 USTRUCT(BlueprintType)
@@ -85,8 +89,8 @@ protected:
 public:
 	void AddFloater(float DamageAmount,
 		EPGDamageType DamageType,
-		FVector Location,
-		bool IsPlayer);
+		AActor* TargetActor,
+		bool IsPlayer = false);
 
 protected:
 	// 플로터 정리 타이머

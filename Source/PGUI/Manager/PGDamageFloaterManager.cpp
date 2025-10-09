@@ -3,6 +3,9 @@
 
 #include "PGDamageFloaterManager.h"
 
+#include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/AssetPath/PGUIWidgetPathRow.h"
 #include "PGUI/Widget/DamageFloater/PGUIDamageFloater.h"
@@ -84,30 +87,48 @@ void UPGDamageFloaterManager::Deinitialize()
 
 void UPGDamageFloaterManager::AddFloater(float DamageAmount,
                                          EPGDamageType DamageType,
-                                         FVector Location,
+                                         AActor* TargetActor,
                                          bool IsPlayer)
 {
-	UPGUIDamageFloater* Floater = GetPooledFloater(DamageType);
-	if (nullptr == Floater)
+	if (!TargetActor)
 	{
 		return;
+	}
+	
+	UPGUIDamageFloater* Floater = GetPooledFloater(DamageType);
+	if (!Floater)
+	{
+		return;
+	}
+	
+	// 액터의 콜리전 높이 계산
+	FVector LocalOffset = FVector::ZeroVector;
+	if (UCapsuleComponent* CapsuleComp = TargetActor->FindComponentByClass<UCapsuleComponent>())
+	{
+		LocalOffset.Z = CapsuleComp->GetScaledCapsuleHalfHeight();
+	}
+	else
+	{
+		// 기본값: 70cm
+		LocalOffset.Z = 70.0f;
 	}
 	
 	// 뷰포트에 추가
 	Floater->AddToViewport();
 	
-	// 3D 월드 좌표를 2D 스크린 좌표로 변환하여 위치 설정
+	// 액터와 오프셋 설정
+	FVector WorldLocation = TargetActor->GetActorLocation() + LocalOffset;
+	Floater->SetTargetActor(TargetActor, LocalOffset);
+	
+	// 초기 위치 계산
 	if (UWorld* World = GetWorld())
 	{
 		if (APlayerController* PC = World->GetFirstPlayerController())
 		{
 			FVector2D ScreenPosition;
-			if (PC->ProjectWorldLocationToScreen(Location, ScreenPosition))
+			if (PC->ProjectWorldLocationToScreen(WorldLocation, ScreenPosition))
 			{
-				Floater->SetDamage(DamageAmount, DamageType, FVector2D(ScreenPosition));
-
-				FVector2D WidgetSize = Floater->GetWidgetSize();
-				ScreenPosition.X -= WidgetSize.X * 0.5f;
+				Floater->SetDamage(DamageAmount, DamageType, ScreenPosition);
 				Floater->SetPositionInViewport(ScreenPosition);
 			}
 		}
@@ -151,12 +172,15 @@ void UPGDamageFloaterManager::ClearPool()
 	ActiveFloaters.Empty();
 
 	// 풀링된 플로터들 정리
-	//for (UPGUIDamageFloater* Floater : FloaterPool)
+	for (auto& Pair : Pools)
 	{
-	//	if (IsValid(Floater))
-	//	{
-	//		Floater->RemoveFromParent();
-	//	}
+		for (UPGUIDamageFloater* Floater : Pair.Value.Widgets)
+		{
+			if (IsValid(Floater))
+			{
+				Floater->RemoveFromParent();
+			}
+		}
+		Pair.Value.Widgets.Empty();
 	}
-	//FloaterPool.Empty();
 }

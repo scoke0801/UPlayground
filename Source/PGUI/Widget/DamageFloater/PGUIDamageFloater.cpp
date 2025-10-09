@@ -15,6 +15,12 @@ void UPGUIDamageFloater::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
+	// 액터 추적 (액터가 설정되어 있고 유효한 경우)
+	if (TargetActor.IsValid())
+	{
+		UpdateScreenPosition();
+	}
+
 	ElapsedTime += InDeltaTime;
 	bool IsDone = false;
 	
@@ -41,7 +47,10 @@ void UPGUIDamageFloater::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 		}
 	}
 
-	if (false == IsDone || ElapsedTime >= LifeTime)
+	// 액터가 제거되었거나 수명이 다한 경우
+	if ((TargetActor.IsValid() == false && !TargetActor.IsExplicitlyNull()) || 
+		false == IsDone || 
+		ElapsedTime >= LifeTime)
 	{
 		PGDamageFloater()->ReturnFloaterToPool(DamageType, this);
 	}
@@ -69,7 +78,7 @@ void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVe
 		
 		DamageText->SetText(DamageDisplayText);
 		
-		// 데미지 타입에 따른 색상 설정[ 임시... ]
+		// 데미지 타입에 따른 색상 설정
 		FLinearColor TextColor = FLinearColor::White;
 		
 		switch (DamageType)
@@ -92,6 +101,12 @@ void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVe
 	}
 }
 
+void UPGUIDamageFloater::SetTargetActor(AActor* InTargetActor, FVector InLocalOffset)
+{
+	TargetActor = InTargetActor;
+	LocalOffset = InLocalOffset;
+}
+
 FVector2D UPGUIDamageFloater::GetWidgetSize()
 {
 	if (false == bSizeCached)
@@ -104,17 +119,60 @@ FVector2D UPGUIDamageFloater::GetWidgetSize()
 	return CachedSize;
 }
 
+void UPGUIDamageFloater::UpdateScreenPosition()
+{
+	if (!TargetActor.IsValid())
+	{
+		return;
+	}
+	
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	
+	APlayerController* PC = World->GetFirstPlayerController();
+	if (!PC)
+	{
+		return;
+	}
+	
+	// 액터의 현재 월드 위치 + 오프셋 계산
+	FVector WorldLocation = TargetActor->GetActorLocation() + LocalOffset;
+	
+	// 월드 좌표 → 스크린 좌표 변환
+	FVector2D ScreenPosition;
+	if (PC->ProjectWorldLocationToScreen(WorldLocation, ScreenPosition))
+	{
+		// 위젯 중앙 정렬
+		FVector2D WidgetSize = GetWidgetSize();
+		ScreenPosition.X -= WidgetSize.X * 0.5f;
+		
+		// 화면에 표시
+		SetPositionInViewport(ScreenPosition);
+	}
+	else
+	{
+		// 화면 밖인 경우 숨김
+		SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
 bool UPGUIDamageFloater::PlayTranslationAnimation(UCurveVector* Curve, float DeltaTime)
 {
+	if (!Curve)
+	{
+		return false;
+	}
+	
 	float MinTime, MaxTime;
 	Curve->GetTimeRange(MinTime, MaxTime);
 
 	if (MaxTime > ElapsedTime)
 	{
 		FVector Result = Curve->GetVectorValue(ElapsedTime);
-
 		SetRenderTranslation(FVector2D(Result));
-
 		return true;
 	}
 	return false;
@@ -122,13 +180,17 @@ bool UPGUIDamageFloater::PlayTranslationAnimation(UCurveVector* Curve, float Del
 
 bool UPGUIDamageFloater::PlayScaleAnimation(UCurveVector* Curve, float DeltaTime)
 {
+	if (!Curve)
+	{
+		return false;
+	}
+	
 	float MinTime, MaxTime;
 	Curve->GetTimeRange(MinTime, MaxTime);
 
 	if (MaxTime > ElapsedTime)
 	{
 		FVector Result = Curve->GetVectorValue(ElapsedTime);
-
 		SetRenderScale(FVector2D(Result));
 		return true;
 	}
@@ -138,17 +200,19 @@ bool UPGUIDamageFloater::PlayScaleAnimation(UCurveVector* Curve, float DeltaTime
 
 bool UPGUIDamageFloater::PlayOpacityAnimation(UCurveFloat* Curve, float DeltaTime)
 {
+	if (!Curve)
+	{
+		return false;
+	}
+	
 	float MinTime, MaxTime;
 	Curve->GetTimeRange(MinTime, MaxTime);
 
 	if (MaxTime > ElapsedTime)
 	{
 		float Result = Curve->GetFloatValue(ElapsedTime);
-
 		SetRenderOpacity(Result);
-		
 		return true;
 	}
 	return false;
 }
-

@@ -32,20 +32,25 @@ private:
 	FVector2D CachedSize = FVector2D::ZeroVector;
 	bool bSizeCached = false;
 	
-private:
 	float ElapsedTime = 0.0f;
 	FVector2D BasePosition;
 	EPGDamageType DamageType;
+	
+	// 액터 추적용
+	TWeakObjectPtr<AActor> TargetActor;
+	FVector LocalOffset;
 	
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	
 public:
 	void SetDamage(float Damage, EPGDamageType DamageType, FVector2D InBasePosition);
+	void SetTargetActor(AActor* InTargetActor, FVector InLocalOffset);
 
 	FVector2D GetWidgetSize();
 	
 private:
+	void UpdateScreenPosition();
 	bool PlayTranslationAnimation(UCurveVector* Curve,float DeltaTime);
 	bool PlayScaleAnimation(UCurveVector* Curve,float DeltaTime);
 	bool PlayOpacityAnimation(UCurveFloat* Curve,float DeltaTime);

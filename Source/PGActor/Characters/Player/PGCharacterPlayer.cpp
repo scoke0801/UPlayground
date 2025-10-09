@@ -161,8 +161,8 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 
 	if (UPGDamageFloaterManager* Manager = UPGDamageFloaterManager::Get())
 	{
-		Manager->AddFloater(DamageAmount,
-		EPGDamageType::Normal, GetActorLocation(), true);
+		PGDamageFloater()->AddFloater(
+			DamageAmount, EPGDamageType::Normal, this);
 	}
 
 	UpdateHpComponent();

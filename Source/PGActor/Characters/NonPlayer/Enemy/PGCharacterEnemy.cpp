@@ -170,7 +170,7 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	}
 
 	PGDamageFloater()->AddFloater(DamageAmount,
-		EPGDamageType::Normal, GetActorLocation(), true);
+		EPGDamageType::Normal, this, true);
 	
 	UpdateHpBar();
 
