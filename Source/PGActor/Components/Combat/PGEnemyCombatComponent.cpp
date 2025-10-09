@@ -69,6 +69,14 @@ void UPGEnemyCombatComponent::ToggleBodyCollisionBoxCollision(bool bShouldEnable
 				: ECollisionEnabled::NoCollision);
 		}
 		break;
+	case EPGToggleDamageType::Tail:
+		if (UBoxComponent* TailCollisionBox = OwningEnemyCharacter->GetTailCollisionBox())
+		{
+			TailCollisionBox->SetCollisionEnabled(bShouldEnable
+				? ECollisionEnabled::QueryOnly
+				: ECollisionEnabled::NoCollision);
+		}
+		break;
 	default:
 		break;
 	}

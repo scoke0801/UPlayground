@@ -33,6 +33,7 @@ protected:
 	UPGWidgetComponentBase* EnemyNameplateWidgetComponent;
 
 protected:
+	// 공격 충돌 영역
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "PG|Combat")
 	FName LeftHandCollisionBoxAttachBoneName;
 
@@ -56,6 +57,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "PG|Combat")
 	UBoxComponent* LeftFootCollisionBox;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "PG|Combat")
+	UBoxComponent* TailCollisionBox;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "PG|Combat")
+	FName TailCollisionBoxAttachBoneName;
+
 	
 private:
 	UPROPERTY(Transient)
@@ -104,6 +112,8 @@ public:
 	
 	FORCEINLINE UBoxComponent* GetLeftFootCollisionBox() const { return LeftFootCollisionBox; }
 	FORCEINLINE UBoxComponent* GetRightFootCollisionBox() const { return RightFootCollisionBox; }
+	
+	FORCEINLINE UBoxComponent* GetTailCollisionBox() const { return TailCollisionBox; }
 	
 private:
 	void InitEnemyStartUpData();

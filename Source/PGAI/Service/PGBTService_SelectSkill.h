@@ -24,7 +24,7 @@ protected:
 	/** Blackboard - 대상 액터 키 */
 	UPROPERTY(EditAnywhere, Category = "PG|AI")
 	FBlackboardKeySelector TargetActorKey;
-
+	
 	/** 스킬 선택 가중치 설정 */
 	UPROPERTY(EditAnywhere, Category = "PG|AI|Skill Selection")
 	bool bUseWeightedSelection = true;

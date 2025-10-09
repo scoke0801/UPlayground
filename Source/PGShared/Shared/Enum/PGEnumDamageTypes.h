@@ -14,6 +14,8 @@ enum class EPGToggleDamageType : uint8
 
 	LeftFoot,				// 왼발
 	RightFoot,				// 오른발
+
+	Tail,					// 꼬리
 };
 
 UENUM(BlueprintType)

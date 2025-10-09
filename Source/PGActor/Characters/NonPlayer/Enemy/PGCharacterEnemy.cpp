@@ -102,6 +102,11 @@ APGCharacterEnemy::APGCharacterEnemy()
 	RightFootCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	RightFootCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 
+	TailCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TailCollisionBox"));
+	TailCollisionBox->SetupAttachment(GetMesh());
+	TailCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TailCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
+
 }
 
 void APGCharacterEnemy::BeginPlay()
@@ -246,6 +251,15 @@ void APGCharacterEnemy::PostEditChangeProperty(struct FPropertyChangedEvent& Pro
 			GetMesh(),
 			FAttachmentTransformRules::SnapToTargetIncludingScale,
 			RightFootCollisionBoxAttachBoneName);
+	}
+
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(
+		ThisClass, TailCollisionBoxAttachBoneName))
+	{
+		TailCollisionBox->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetIncludingScale,
+			TailCollisionBoxAttachBoneName);
 	}
 }
 #endif
