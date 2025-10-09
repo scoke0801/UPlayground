@@ -17,7 +17,7 @@ class PGAI_API UPGBTService_OrientToTargetActor : public UBTService
 
 private:
 	UPROPERTY(EditAnywhere, Category="PG|Target")
-	FBlackboardKeySelector InTargetActorKey;
+	FBlackboardKeySelector TargetActorKey;
 
 	UPROPERTY(EditAnywhere, Category="PG|Rotate")
 	float RotationInterpSpeed;
