@@ -56,7 +56,7 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		if(APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetOwningActorFromActorInfo()))
 		{
 			// TODO 여기 수정하자
-			Player->SetIsCanControl(false);
+			//Player->SetIsCanControl(false);
 		}
 	}
 	else
