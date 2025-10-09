@@ -32,6 +32,13 @@ bool FPGSkillData::IsOnCooldown() const
 	return CoolTime + LastSkillUsedTime > FPlatformTime::Seconds();
 }
 
+float FPGSkillData::GetRemainingCooldown() const
+{
+	const double CurrentTime = FPlatformTime::Seconds();
+	const double EndTime = LastSkillUsedTime + CoolTime;
+	return FMath::Max(0.0f, static_cast<float>(EndTime - CurrentTime));
+}
+
 FPGSkillHandler::~FPGSkillHandler()
 {
 }
@@ -97,4 +104,49 @@ bool FPGSkillHandler::IsCanUseSkill(const EPGSkillSlot InSlotId)
 	}
 
 	return false;
+}
+
+bool FPGSkillHandler::IsSkillReadyByID(int32 SkillID) const
+{
+	for (const auto& Pair : SkillDataMap)
+	{
+		if (Pair.Value.SkillId == SkillID)
+		{
+			return !Pair.Value.IsOnCooldown();
+		}
+	}
+	return true; // 스킬이 없으면 사용 가능으로 간주
+}
+
+float FPGSkillHandler::GetRemainingCooldownByID(int32 SkillID) const
+{
+	for (const auto& Pair : SkillDataMap)
+	{
+		if (Pair.Value.SkillId == SkillID)
+		{
+			return Pair.Value.GetRemainingCooldown();
+		}
+	}
+	return 0.0f;
+}
+
+EPGSkillSlot FPGSkillHandler::FindSlotBySkillID(int32 SkillID) const
+{
+	for (const auto& Pair : SkillDataMap)
+	{
+		if (Pair.Value.SkillId == SkillID)
+		{
+			return Pair.Key;
+		}
+	}
+	return EPGSkillSlot::NormalAttack;
+}
+
+void FPGSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
+{
+	if (FPGSkillData* Data = SkillDataMap.Find(InSlotId))
+	{
+		// 쿨타임 업데이트
+		Data->LastSkillUsedTime = FPlatformTime::Seconds();
+	}
 }

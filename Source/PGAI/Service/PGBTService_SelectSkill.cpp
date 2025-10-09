@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
@@ -80,14 +81,18 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList, float DistanceToTarget, float CurrentHPRatio, APGCharacterEnemy* Enemy, UBlackboardComponent* BlackboardComp) const
 {
 	UPGDataTableManager* DTManager = UPGDataTableManager::Get();
-	if (!DTManager || SkillIDList.Num() == 0)
+	if (!DTManager || SkillIDList.Num() == 0 || !Enemy)
 	{
 		return -1;
 	}
 
-	// 가중치 기반 선택
-	TArray<int32> ValidSkills;
-	TArray<float> Weights;
+	// SkillHandler를 통해 쿨타임 체크
+	FPGSkillHandler* SkillHandler = Enemy->GetSkillHandler();
+	if (!SkillHandler)
+	{
+		// SkillHandler가 없으면 첫 번째 스킬 반환
+		return SkillIDList[0];
+	}
 
 	// 스킬 타입별 존재 여부 사전 체크 (최적화)
 	TSet<EPGSkillType> AvailableSkillTypes;
@@ -100,51 +105,77 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 		}
 	}
 
+	// 1단계: 쿨타임이 준비된 스킬 중에서 가중치 기반 선택
+	TArray<int32> ReadySkills;
+	TArray<float> ReadyWeights;
+
 	for (const int32 SkillID : SkillIDList)
 	{
+		// SkillHandler를 통해 쿨타임 체크
+		if (!SkillHandler->IsSkillReadyByID(SkillID))
+		{
+			continue;
+		}
+
 		const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
 		if (!SkillData) continue;
 	
 		const float Priority = CalculateSkillPriority(SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes);
 		if (Priority > 0.f)
 		{
-			ValidSkills.Add(SkillID);
-			Weights.Add(Priority);
+			ReadySkills.Add(SkillID);
+			ReadyWeights.Add(Priority);
 		}
 	}
 	
-	if (ValidSkills.Num() == 0)
+	// 쿨타임이 준비된 유효한 스킬이 있으면 가중치 기반 선택
+	if (ReadySkills.Num() > 0)
 	{
-		// 조건에 맞는 스킬이 없으면 첫 번째 스킬 반환
-		return SkillIDList[0];
-	}
-	
-	if (!bUseWeightedSelection || Weights.Num() == 0)
-	{
-		// 랜덤 선택
-		return ValidSkills[FMath::RandRange(0, ValidSkills.Num() - 1)];
-	}
-	
-	// 가중치 기반 랜덤 선택
-	float TotalWeight = 0.f;
-	for (float Weight : Weights)
-	{
-		TotalWeight += Weight;
-	}
-	
-	const float RandomValue = FMath::FRandRange(0.f, TotalWeight);
-	float AccumulatedWeight = 0.f;
-	
-	for (int32 i = 0; i < ValidSkills.Num(); ++i)
-	{
-		AccumulatedWeight += Weights[i];
-		if (RandomValue <= AccumulatedWeight)
+		if (ReadyWeights.Num() == 0)
 		{
-			return ValidSkills[i];
+			// 가중치 미사용 시 랜덤 선택
+			return ReadySkills[FMath::RandRange(0, ReadySkills.Num() - 1)];
+		}
+		
+		// 가중치 기반 랜덤 선택
+		float TotalWeight = 0.f;
+		for (float Weight : ReadyWeights)
+		{
+			TotalWeight += Weight;
+		}
+		
+		const float RandomValue = FMath::FRandRange(0.f, TotalWeight);
+		float AccumulatedWeight = 0.f;
+		
+		for (int32 i = 0; i < ReadySkills.Num(); ++i)
+		{
+			AccumulatedWeight += ReadyWeights[i];
+			if (RandomValue <= AccumulatedWeight)
+			{
+				return ReadySkills[i];
+			}
+		}
+
+		return ReadySkills[0];
+	}
+
+	// 2단계: 모든 스킬이 쿨타임 중이면, 쿨타임이 가장 짧게 남은 스킬 선택 (무조건 1개 보장)
+	int32 BestSkillID = SkillIDList[0];
+	float MinCooldown = SkillHandler->GetRemainingCooldownByID(BestSkillID);
+
+	for (int32 i = 1; i < SkillIDList.Num(); ++i)
+	{
+		const int32 SkillID = SkillIDList[i];
+		const float RemainingCooldown = SkillHandler->GetRemainingCooldownByID(SkillID);
+		
+		if (RemainingCooldown < MinCooldown)
+		{
+			MinCooldown = RemainingCooldown;
+			BestSkillID = SkillID;
 		}
 	}
 
-	return ValidSkills[0];
+	return BestSkillID;
 }
 
 float UPGBTService_SelectSkill::CalculateSkillPriority(

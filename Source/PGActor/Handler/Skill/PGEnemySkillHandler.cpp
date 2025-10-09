@@ -8,12 +8,16 @@
 
 void FPGEnemySkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 {
+	// 부모 클래스의 UseSkill 호출 (쿨타임 업데이트)
+	Super::UseSkill(InSlotId);
+
 	FPGSkillData* SkillData = GetSkillData(InSlotId);
 	if (nullptr == SkillData)
 	{
 		return;
 	}
 
+	// Priority 업데이트
 	SkillData->Priority += 1;
 }
 

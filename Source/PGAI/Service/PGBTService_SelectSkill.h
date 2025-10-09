@@ -10,6 +10,7 @@
 /**
  * BT Service: 사용 가능한 스킬 중에서 하나를 선택
  * Enemy 데이터에 설정된 스킬 리스트에서 조건에 맞는 스킬을 선택
+ * 스킬 쿨타임을 SkillHandler를 통해 체크하며, 모든 스킬이 쿨타임 중이어도 최소 1개는 선택
  */
 UCLASS()
 class PGAI_API UPGBTService_SelectSkill : public UBTService
@@ -25,10 +26,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "PG|AI")
 	FBlackboardKeySelector TargetActorKey;
 	
-	/** 스킬 선택 가중치 설정 */
-	UPROPERTY(EditAnywhere, Category = "PG|AI|Skill Selection")
-	bool bUseWeightedSelection = true;
-
 	/** Melee 스킬 최대 거리 */
 	UPROPERTY(EditAnywhere, Category = "PG|AI|Skill Selection")
 	float MeleeSkillMaxRange = 300.f;
@@ -64,7 +61,7 @@ protected:
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
 private:
-	/** 스킬 선택 로직 */
+	/** 스킬 선택 로직 (쿨타임 고려) */
 	int32 SelectBestSkill(const TArray<int32>& SkillIDList, float DistanceToTarget, float CurrentHPRatio, class APGCharacterEnemy* Enemy, class UBlackboardComponent* BlackboardComp) const;
 
 	/** 스킬 타입별 우선순위 계산 */
