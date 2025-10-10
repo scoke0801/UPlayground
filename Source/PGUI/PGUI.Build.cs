@@ -22,7 +22,8 @@ public class PGUI : ModuleRules
 				"GameplayTags",
 				"UMG",          // UI 위젯 시스템 (UUserWidget 등)
 				"Slate",        // 기본 Slate UI 시스템
-				"SlateCore"     // Slate의 핵심 기능
+				"SlateCore",    // Slate의 핵심 기능
+				"Niagara"
 			}
 		);
 	}
