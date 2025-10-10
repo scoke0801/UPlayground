@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "PGShared/Shared/Define/PGSkillDefine.h"
 #include "PGUI/Widget/Base/PGWidgetBase.h"
 #include "PGUISkillSlot.generated.h"
 
+class UPGButton;
 struct FPGSkillDataRow;
 enum class EPGSkillSlot : uint8;
 class UImage;
@@ -30,12 +32,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|UI", meta = (BindWidget))
 	TObjectPtr<UWidgetSwitcher> FrameImageSwitcher;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|UI", meta = (BindWidget))
+	TObjectPtr<UPGButton> SkillButton;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI")
 	float CoolTimeTick = 0.5f;
 	
 protected:
 	PGSkillId SkillId;
 	EPGSkillSlot SkillSlot;
+	FGameplayTag SkillTag;
 
 	FPGSkillDataRow* CachedSkillData = nullptr;
 	
@@ -51,9 +57,15 @@ protected:
 public:
 	void SetData(const EPGSkillSlot InSkillSlot, const PGSkillId InSkillId);
 
+protected:
+	UFUNCTION()
+	void OnButtonClicked();
+
 private:
 	void SetCoolTime();
 	void OnPlayerUseSkill(const class IPGEventData* InData);
 
 	void UpdateCoolTime();
+
+	void CacheSkillTag(const EPGSkillSlot InSkillSlot);
 };

@@ -30,13 +30,7 @@ void UPGButton::SynchronizeProperties()
 	}
 }
 
-void UPGButton::OnButtonClicked()
-{
-	// VFX 재생 (Blueprint에서 오버라이드 가능)
-	PlayClickEffect();
-}
-
-void UPGButton::PlayClickEffect_Implementation()
+void UPGButton::PlayClickEffect()
 {
 	if (!ClickEffectSystem)
 	{
@@ -52,6 +46,11 @@ void UPGButton::PlayClickEffect_Implementation()
 	{
 		SpawnWorldSpaceEffect();
 	}
+}
+
+void UPGButton::OnButtonClicked()
+{
+	PlayClickEffect();
 }
 
 // ========================================
@@ -198,6 +197,36 @@ bool UPGButton::GetButtonWorldLocation(FVector& OutWorldLocation, FVector& OutWo
 	if (!PC)
 	{
 		return false;
+	}
+	
+	// 1) 화면(뷰포트)상의 마우스 / 터치 위치 얻기
+	float ScreenX = 0.f, ScreenY = 0.f;
+	// GetMousePosition returns false if not available (e.g. gamepad)
+	const bool bGotMouse = UWidgetLayoutLibrary::GetMousePositionScaledByDPI(PC,ScreenX, ScreenY);
+	if (!bGotMouse)
+	{
+		// 대안: 마우스가 없으면 위젯의 중앙을 사용할 수도 있음
+		FVector2D ViewportSize;
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+		ScreenX = ViewportSize.X * 0.5f;
+		ScreenY = ViewportSize.Y * 0.5f;
+	}
+
+	// 2) 스크린 좌표 -> 월드 오리진 및 방향으로 변환
+	FVector WorldOrigin;
+	FVector WorldDirection;
+	if (!PC->DeprojectScreenPositionToWorld(ScreenX, ScreenY, WorldOrigin, WorldDirection))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Deproject failed."));
+		return false;
+	}
+	else
+	{
+		// 3) 카메라 앞 적절한 거리(예: 500 단위)로 위치 결정
+		const float SpawnDistance = 500.0f; // 필요에 따라 조정
+		OutWorldLocation = WorldOrigin + WorldDirection * SpawnDistance;
+		OutWorldDirection = WorldDirection;
+		return true;
 	}
 	
 	// 버튼의 Geometry 정보 가져오기

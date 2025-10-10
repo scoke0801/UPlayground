@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Message/Base/PGMessageEventDataBase.h"
 #include "PGShared/Shared/Structure/PlayerStructTypes.h"
 #include "PGAbilitySystemComponent.generated.h"
 
@@ -16,7 +18,13 @@ class PGABILITYSYSTEM_API UPGAbilitySystemComponent : public UAbilitySystemCompo
 {
 	GENERATED_BODY()
 
+private:
+	FDelegateHandle DelegateHandle;
 
+protected:
+	virtual void BeginPlay() override;
+	virtual void BeginDestroy() override;
+	
 public:
 	/**
 	 * 어빌리티 입력이 눌렸을 때 호출되는 함수
@@ -48,5 +56,8 @@ public:
 	void RemoveGrantedPlayerAbilities(UPARAM(ref) TArray<FGameplayAbilitySpecHandle>& InSpecHandlesToRemove);
 
 	UFUNCTION(BlueprintCallable, Category = "PG|Ability")
-	bool TryActivateAbilityByTag(FGameplayTag AbilityTagToActivate);	
+	bool TryActivateAbilityByTag(FGameplayTag AbilityTagToActivate);
+
+private:
+	void OnClickedSkillButton(const IPGEventData* InData);
 };

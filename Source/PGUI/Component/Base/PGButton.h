@@ -59,14 +59,13 @@ public:
 	// UWidget 인터페이스
 	virtual void SynchronizeProperties() override;
 
+public:
+	void PlayClickEffect();
+	
 protected:
 	UFUNCTION()
 	void OnButtonClicked();
 	
-	// VFX 재생 (Blueprint에서 오버라이드 가능)
-	UFUNCTION(BlueprintNativeEvent, Category = "Button|VFX")
-	void PlayClickEffect();
-	virtual void PlayClickEffect_Implementation();
 	
 private:
 	// === 스크린 스페이스 방식 ===

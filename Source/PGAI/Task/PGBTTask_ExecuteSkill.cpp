@@ -74,7 +74,7 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 		AActor* BestHealTarget = SelectBestHealTarget(Enemy, BlackboardComp);
 		if (BestHealTarget)
 		{
-			BlackboardComp->SetValueAsObject(TargetActorKey.SelectedKeyName, BestHealTarget);
+			// BlackboardComp->SetValueAsObject(TargetActorKey.SelectedKeyName, BestHealTarget);
 		}
 	}
 
