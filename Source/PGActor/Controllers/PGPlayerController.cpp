@@ -26,4 +26,12 @@ void APGPlayerController::BeginPlay()
 			Widget->AddToViewport();
 		}	
 	}
+
+	// 마우스 커서 표시
+	bShowMouseCursor = true;
+    
+	// 입력 모드 설정 (게임과 UI 동시 입력)
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
 }
