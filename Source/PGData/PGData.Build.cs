@@ -36,6 +36,7 @@ public class PGData : ModuleRules
 				"PGShared",
 				"PGAbilitySystem", 
 				"Niagara",
+				"PGMessage"
 			});
 		
 		PrivateIncludePathModuleNames.AddRange(
