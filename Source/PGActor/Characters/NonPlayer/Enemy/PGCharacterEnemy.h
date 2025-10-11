@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Interface/PGClickableInterface.h"
 #include "PGCharacterEnemy.generated.h"
 class UPGUIEnemyNamePlate;
 class UPGEnemyStatComponent;
@@ -17,7 +18,7 @@ class UBoxComponent;
  * 
  */
 UCLASS()
-class PGACTOR_API APGCharacterEnemy : public APGCharacterBase
+class PGACTOR_API APGCharacterEnemy : public APGCharacterBase, public IPGClickableInterface
 {
 	GENERATED_BODY()
 
@@ -106,7 +107,7 @@ public:
 	virtual UPGStatComponent* GetStatComponent() const override;
 	UPGEnemyStatComponent* GetEnemyStatComponent() const;
 	
-	virtual ECollisionChannel GetCollisionChannel() const { return ECC_GameTraceChannel1; }
+	virtual ECollisionChannel GetCollisionChannel() const override { return ECC_GameTraceChannel1; }
 
 public:
 	FORCEINLINE UBoxComponent* GetLeftHandCollisionBox() const { return LeftHandCollisionBox; }
@@ -116,6 +117,11 @@ public:
 	FORCEINLINE UBoxComponent* GetRightFootCollisionBox() const { return RightFootCollisionBox; }
 	
 	FORCEINLINE UBoxComponent* GetTailCollisionBox() const { return TailCollisionBox; }
+
+public:
+	// IPGClickableInterface 구현
+	virtual void OnClicked_Implementation(AActor* ClickedActor, const FVector& ClickLocation) override;
+	virtual bool IsClickable_Implementation() const override;
 	
 private:
 	void InitEnemyStartUpData();

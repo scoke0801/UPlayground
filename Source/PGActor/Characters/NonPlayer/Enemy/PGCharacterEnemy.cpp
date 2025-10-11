@@ -12,6 +12,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
 #include "PGActor/Components/Combat/PGSkillMontageController.h"
@@ -389,4 +390,21 @@ void APGCharacterEnemy::OnBodyCollisionBoxBeginOverlap(UPrimitiveComponent* Over
 			CombatComponent->OnHitTargetActor(HitPawn);
 		}
 	}
+}
+
+void APGCharacterEnemy::OnClicked_Implementation(AActor* ClickedActor, const FVector& ClickLocation)
+{
+	UE_LOG(LogTemp, Log, TEXT("적 캐릭터 클릭: %s"), *GetName());
+	
+	// 클릭 시 네임플레이트 표시
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->ShowWidget(10.0f);
+	}
+}
+
+bool APGCharacterEnemy::IsClickable_Implementation() const
+{
+	// 죽은 상태가 아닐 때만 클릭 가능
+	return !AbilitySystemComponent->HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead);
 }
