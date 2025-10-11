@@ -25,6 +25,7 @@ private:
 	TWeakObjectPtr<AActor> LastHoveredActor;
 
 	// 마지막으로 클릭된 액터
+	UPROPERTY()
 	TWeakObjectPtr<AActor> LastClickedActor;
 
 protected:

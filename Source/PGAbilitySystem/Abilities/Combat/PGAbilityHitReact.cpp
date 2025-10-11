@@ -19,8 +19,6 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	{
 		if (APGCharacterBase* Owner = GetCharacter())
 		{
-			Owner->OnHit(Instigator->GetStatComponent());
-
 			// 사망한 대상에게는 추가 처리 진행하지 않는다.
 			if (UPGStatComponent* StatComponent = Owner->GetStatComponent())
 			{
@@ -28,6 +26,20 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 				{
 					EndAbilitySelf();
 					return;
+				}
+			}
+			Owner->OnHit(Instigator->GetStatComponent());
+
+			if (USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>())
+			{
+				if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+				{
+					// 다른 몽타쥬가 재생중이었다면, 추가처리하지않도록 한다.
+					if (AnimInstance->IsAnyMontagePlaying())
+					{
+						EndAbilitySelf();
+						return;
+					}
 				}
 			}
 		}
