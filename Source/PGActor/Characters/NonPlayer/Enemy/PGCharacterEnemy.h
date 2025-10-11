@@ -121,6 +121,7 @@ public:
 public:
 	// IPGClickableInterface 구현
 	virtual void OnClicked_Implementation(AActor* ClickedActor, const FVector& ClickLocation) override;
+	virtual void OnClickCancelled_Implementation() override;
 	virtual bool IsClickable_Implementation() const override;
 	
 private:

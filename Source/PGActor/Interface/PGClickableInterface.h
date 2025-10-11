@@ -29,8 +29,14 @@ public:
 	void OnClicked(AActor* ClickedActor, const FVector& ClickLocation);
 
 	/**
+	 * 다른 액터가 클릭되어 이전 클릭이 취소되었을 때 호출
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PG|Click")
+	void OnClickCancelled();
+
+	/**
 	 * 마우스가 액터 위에 올라갔을 때 호출
-	 * 마우스 커서 변경 용으로 사용
+	 * TODO 마우스 커서 변경 용으로 사용예정..
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PG|Click")
 	void OnMouseOver();

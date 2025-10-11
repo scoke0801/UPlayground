@@ -24,6 +24,9 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<AActor> LastHoveredActor;
 
+	// 마지막으로 클릭된 액터
+	TWeakObjectPtr<AActor> LastClickedActor;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI")
 	TSubclassOf<UUserWidget> HUDWidgetClass;
@@ -40,9 +43,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "PG|Click")
 	bool bEnableMouseOverCheck = true;
 
-	// 마우스 오버 체크 주기 (초)
+	// 마우스 이동 감지 임계값 (픽셀)
 	UPROPERTY(EditDefaultsOnly, Category = "PG|Click")
-	float MouseOverCheckInterval = 0.1f;
+	float MouseMovementThreshold = 0.1f;
 
 public:
 	APGPlayerController(const FObjectInitializer& ObjectInitializer);
@@ -66,7 +69,4 @@ private:
 
 	// 마우스 오버 체크
 	void CheckMouseOver();
-
-	// 타이머 핸들
-	FTimerHandle MouseOverTimerHandle;
 };

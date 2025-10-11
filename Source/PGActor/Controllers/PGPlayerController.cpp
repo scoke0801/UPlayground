@@ -3,7 +3,6 @@
 #include "PGPlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
-#include "DrawDebugHelpers.h"
 #include "PGActor/Interface/PGClickableInterface.h"
 
 APGPlayerController::APGPlayerController(const FObjectInitializer& ObjectInitializer)
@@ -37,18 +36,6 @@ void APGPlayerController::BeginPlay()
 	FInputModeGameAndUI InputMode;
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	SetInputMode(InputMode);
-
-	// 마우스 오버 체크 타이머 시작
-	if (bEnableMouseOverCheck)
-	{
-		GetWorldTimerManager().SetTimer(
-			MouseOverTimerHandle,
-			this,
-			&APGPlayerController::CheckMouseOver,
-			MouseOverCheckInterval,
-			true
-		);
-	}
 }
 
 void APGPlayerController::SetupInputComponent()
@@ -65,6 +52,20 @@ void APGPlayerController::SetupInputComponent()
 void APGPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// 마우스 오버 체크 활성화 시
+	if (bEnableMouseOverCheck)
+	{
+		// 마우스 이동량 확인
+		FVector2D MouseDelta;
+		GetInputMouseDelta(MouseDelta.X, MouseDelta.Y);
+		
+		// 마우스가 실제로 움직였을 때만 체크
+		if (MouseDelta.SizeSquared() > MouseMovementThreshold)
+		{
+			CheckMouseOver();
+		}
+	}
 }
 
 void APGPlayerController::HandleMouseClick()
@@ -72,12 +73,43 @@ void APGPlayerController::HandleMouseClick()
 	FVector HitLocation;
 	AActor* ClickedActor = GetActorUnderCursor(HitLocation);
 
+	// 이전 클릭 대상과 다른 경우 이전 대상의 클릭 취소
+	if (LastClickedActor.IsValid() && LastClickedActor.Get() != ClickedActor)
+	{
+		if (LastClickedActor->Implements<UPGClickableInterface>())
+		{
+			IPGClickableInterface* ClickableInterface = Cast<IPGClickableInterface>(LastClickedActor.Get());
+			if (ClickableInterface)
+			{
+				ClickableInterface->Execute_OnClickCancelled(LastClickedActor.Get());
+			}
+		}
+	}
+
+	// 새로운 액터 클릭 처리
 	if (ClickedActor && ClickedActor->Implements<UPGClickableInterface>())
 	{
 		IPGClickableInterface* ClickableInterface = Cast<IPGClickableInterface>(ClickedActor);
 		if (ClickableInterface && ClickableInterface->Execute_IsClickable(ClickedActor))
 		{
 			ClickableInterface->Execute_OnClicked(ClickedActor, ClickedActor, HitLocation);
+			LastClickedActor = ClickedActor;
+		}
+	}
+	else
+	{
+		// 빈 공간 클릭 시 이전 클릭 취소
+		if (LastClickedActor.IsValid())
+		{
+			if (LastClickedActor->Implements<UPGClickableInterface>())
+			{
+				IPGClickableInterface* ClickableInterface = Cast<IPGClickableInterface>(LastClickedActor.Get());
+				if (ClickableInterface)
+				{
+					ClickableInterface->Execute_OnClickCancelled(LastClickedActor.Get());
+				}
+			}
+			LastClickedActor = nullptr;
 		}
 	}
 }

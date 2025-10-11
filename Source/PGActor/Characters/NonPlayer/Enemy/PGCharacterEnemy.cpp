@@ -403,6 +403,18 @@ void APGCharacterEnemy::OnClicked_Implementation(AActor* ClickedActor, const FVe
 	}
 }
 
+void APGCharacterEnemy::OnClickCancelled_Implementation()
+{
+	UE_LOG(LogTemp, Log, TEXT("적 캐릭터 클릭 취소: %s"), *GetName());
+	
+	// 클릭 취소 시 네임플레이트 숨김
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+}
+
 bool APGCharacterEnemy::IsClickable_Implementation() const
 {
 	// 죽은 상태가 아닐 때만 클릭 가능
