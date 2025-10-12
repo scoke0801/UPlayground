@@ -157,7 +157,7 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 			FVector2D ScreenPosition;
 			if (PC->ProjectWorldLocationToScreen(WorldLocation, ScreenPosition))
 			{
-				Floater->SetDamage(DamageAmount, DamageType, ScreenPosition);
+				Floater->SetDamage(DamageAmount, DamageType, ScreenPosition, IsPlayer);
 				Floater->SetPositionInViewport(ScreenPosition);
 			}
 		}

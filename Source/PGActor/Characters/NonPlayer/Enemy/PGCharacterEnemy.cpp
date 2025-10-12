@@ -161,8 +161,14 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	
 	int32 CurrentHp = EnemyStatComponent->CurrentHP;
 
+	// TODO 데미지 타입 직접 계산하도록 수정필요
+	EPGDamageType DamageType = (FMath::FRand() <= 0.3f) ? EPGDamageType::Critical : EPGDamageType::Normal;
 	// TODO 데미지 계산하도록 수정 필요
 	int32 DamageAmount = FMath::RandRange(20,50);
+	if (EPGDamageType::Critical == DamageType)
+	{
+		DamageAmount *= 1.3f;
+	}
 	EnemyStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
 
 	if (EnemyNamePlate)
@@ -171,7 +177,7 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	}
 
 	PGDamageFloater()->AddFloater(DamageAmount,
-		EPGDamageType::Normal, this, true);
+		DamageType, this, false);
 	
 	UpdateHpBar();
 

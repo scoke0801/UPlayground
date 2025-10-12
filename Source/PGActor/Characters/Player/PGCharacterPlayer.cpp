@@ -151,8 +151,14 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 {
 	int32 CurrentHp = PlayerStatComponent->CurrentHP;
 
+	// TODO 데미지 타입 직접 계산하도록 수정필요
+	EPGDamageType DamageType = (FMath::FRand() <= 0.3f) ? EPGDamageType::Critical : EPGDamageType::Normal;
 	// TODO 데미지 계산하도록 수정 필요
 	int32 DamageAmount = FMath::RandRange(1,20);
+	if (EPGDamageType::Critical == DamageType)
+	{
+		DamageAmount *= 1.3f;
+	}
 	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
 
 	FPGStatUpdateEventData EventData(EPGStatType::Hp,
@@ -162,7 +168,7 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 	if (UPGDamageFloaterManager* Manager = UPGDamageFloaterManager::Get())
 	{
 		PGDamageFloater()->AddFloater(
-			DamageAmount, EPGDamageType::Normal, this);
+			DamageAmount, DamageType, this, true);
 	}
 
 	UpdateHpComponent();

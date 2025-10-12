@@ -6,6 +6,7 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
+#include "Components/WidgetSwitcher.h"
 #include "Curves/CurveVector.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "Engine/World.h"
@@ -60,7 +61,7 @@ void UPGUIDamageFloater::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	}
 }
 
-void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVector2D InBasePosition)
+void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVector2D InBasePosition, bool InIsPlayer)
 {
 	DamageType = InDamageType;
 	ElapsedTime = 0.0f;
@@ -78,7 +79,18 @@ void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVe
 	
 	// 투명도 초기화 (재사용 시 페이드아웃된 상태 초기화)
 	SetRenderOpacity(1.0f);
-	
+	UTextBlock* DamageText = nullptr;
+	if (InIsPlayer)
+	{
+		DamageTextSwitcher->SetActiveWidgetIndex(StaticCast<int32>(EPGSwitcherIndexType::Player));
+		DamageText = PlayerDamageText;
+	}
+	else
+	{
+		DamageTextSwitcher->SetActiveWidgetIndex(StaticCast<int32>(EPGSwitcherIndexType::Enemy));
+		DamageText = EnemyDamageText;
+	}
+
 	if (DamageText)
 	{
 		// 데미지 값을 텍스트로 설정

@@ -8,6 +8,7 @@
 #include "PGUI/Widget/Base/PGWidgetBase.h"
 #include "PGUIDamageFloater.generated.h"
 
+class UWidgetSwitcher;
 enum class EPGDamageType : uint8;
 class UTextBlock;
 /**
@@ -18,12 +19,24 @@ class PGUI_API UPGUIDamageFloater : public UPGWidgetBase
 {
 	GENERATED_BODY()
 
+private:
+	enum class EPGSwitcherIndexType : uint8
+	{
+		Enemy = 0,
+		Player= 1,
+	};
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI")
 	TArray<FPGDamageFloaterCurveData> CurveDataList;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UTextBlock* DamageText;
+	UWidgetSwitcher* DamageTextSwitcher;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
+	UTextBlock* PlayerDamageText;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
+	UTextBlock* EnemyDamageText;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI")
 	float LifeTime = 1.5f;
@@ -57,7 +70,7 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	
 public:
-	void SetDamage(float Damage, EPGDamageType DamageType, FVector2D InBasePosition);
+	void SetDamage(float Damage, EPGDamageType DamageType, FVector2D InBasePosition, bool InIsPlayer);
 	void SetTargetActor(AActor* InTargetActor, FVector InLocalOffset);
 	void AddVerticalOffset(float Offset);
 	void SetStackIndex(int32 InStackIndex, float InFadeOutStrength, float InMinOpacity);
