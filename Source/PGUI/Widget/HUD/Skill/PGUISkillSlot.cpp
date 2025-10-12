@@ -96,10 +96,10 @@ void UPGUISkillSlot::SetCoolTime()
 
 void UPGUISkillSlot::OnPlayerUseSkill(const class IPGEventData* InData)
 {
-	const FPGEventDataOneParam<EPGSkillSlot>* CastedParam =
-		static_cast<const FPGEventDataOneParam<EPGSkillSlot>*>(InData);
+	const FPGEventDataTwoParam<PGSkillId, EPGSkillSlot>* CastedParam =
+		static_cast<const FPGEventDataTwoParam<PGSkillId, EPGSkillSlot>*>(InData);
 
-	if (nullptr == CastedParam || CastedParam->Value != SkillSlot)
+	if (nullptr == CastedParam || CastedParam->ValueB != SkillSlot)
 	{
 		return;
 	}

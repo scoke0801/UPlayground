@@ -3,6 +3,8 @@
 #include "PGPlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "PGActor/Interface/PGClickableInterface.h"
 
 APGPlayerController::APGPlayerController(const FObjectInitializer& ObjectInitializer)
@@ -29,12 +31,22 @@ void APGPlayerController::BeginPlay()
 		}	
 	}
 
-	// 마우스 커서 표시
+	// Enhanced Input 서브시스템 설정
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = 
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	{
+		if (ClickMappingContext)
+		{
+			Subsystem->AddMappingContext(ClickMappingContext, 1);
+		}
+	}
+
+	// 마우스 커서 표시 및 입력 모드 설정
 	bShowMouseCursor = true;
-    
-	// 입력 모드 설정 (게임과 UI 동시 입력)
+	
 	FInputModeGameAndUI InputMode;
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false); // 커서 숨김 방지
 	SetInputMode(InputMode);
 }
 
@@ -42,10 +54,14 @@ void APGPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
-	if (InputComponent)
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
-		// 마우스 왼쪽 버튼 클릭 바인딩
-		InputComponent->BindAction("Click", IE_Pressed, this, &APGPlayerController::HandleMouseClick);
+		if (ClickAction)
+		{
+			// Enhanced Input 방식으로 바인딩
+			EnhancedInputComponent->BindAction(ClickAction, ETriggerEvent::Started, 
+				this, &APGPlayerController::HandleMouseClick);
+		}
 	}
 }
 
@@ -70,10 +86,12 @@ void APGPlayerController::Tick(float DeltaTime)
 
 void APGPlayerController::HandleMouseClick()
 {
+	bLastClickConsumed = false;
+	
 	FVector HitLocation;
 	AActor* ClickedActor = GetActorUnderCursor(HitLocation);
 
-	// 이전 클릭 대상과 다른 경우 이전 대상의 클릭 취소
+	// 이전 클릭 대상과 다른 경우, 이전 대상의 클릭 취소
 	if (LastClickedActor.IsValid() && LastClickedActor.Get() != ClickedActor)
 	{
 		if (LastClickedActor->Implements<UPGClickableInterface>())
@@ -94,11 +112,14 @@ void APGPlayerController::HandleMouseClick()
 		{
 			ClickableInterface->Execute_OnClicked(ClickedActor, ClickedActor, HitLocation);
 			LastClickedActor = ClickedActor;
+			
+			// 클릭 가능한 액터를 실제로 클릭했으므로 입력 소비
+			bLastClickConsumed = true;
 		}
 	}
 	else
 	{
-		// 빈 공간 클릭 시 이전 클릭 취소
+		// 빈 공간 클릭 시, 이전 클릭 취소
 		if (LastClickedActor.IsValid())
 		{
 			if (LastClickedActor->Implements<UPGClickableInterface>())

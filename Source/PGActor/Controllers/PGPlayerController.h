@@ -8,6 +8,8 @@
 #include "PGPlayerController.generated.h"
 
 class IPGClickableInterface;
+class UInputMappingContext;
+class UInputAction;
 
 /**
  *
@@ -28,9 +30,20 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<AActor> LastClickedActor;
 
+	// 마지막 클릭이 처리되었는지 여부 (현재 프레임)
+	bool bLastClickConsumed = false;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI")
 	TSubclassOf<UUserWidget> HUDWidgetClass;
+
+	// Enhanced Input - 클릭용 매핑 컨텍스트
+	UPROPERTY(EditDefaultsOnly, Category = "PG|Input")
+	UInputMappingContext* ClickMappingContext;
+	
+	// Enhanced Input - 클릭 액션
+	UPROPERTY(EditDefaultsOnly, Category = "PG|Input")
+	UInputAction* ClickAction;
 
 	// 클릭 감지를 위한 트레이스 채널
 	UPROPERTY(EditDefaultsOnly, Category = "PG|Click")
@@ -50,6 +63,9 @@ protected:
 
 public:
 	APGPlayerController(const FObjectInitializer& ObjectInitializer);
+	
+	// 마지막 클릭이 Consume되었는지 확인 (다른 입력 핸들러에서 사용)
+	bool WasLastClickConsumed() const { return bLastClickConsumed; }
 	
 public:
 	// IGenericTeamAgentInterface
