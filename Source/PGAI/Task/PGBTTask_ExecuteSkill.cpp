@@ -19,6 +19,7 @@ UPGBTTask_ExecuteSkill::UPGBTTask_ExecuteSkill()
 	
 	SelectedSkillIDKey.SelectedKeyName = FName("SelectedSkillID");
 	TargetActorKey.SelectedKeyName = FName("TargetActor");
+	SkillTargetActorKey.SelectedKeyName = FName("SkillTargetActor");
 	SummonCountKey.SelectedKeyName = FName("SummonCount");
 	
 	CachedSkillType = EPGSkillType::None;
@@ -74,7 +75,7 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 		AActor* BestHealTarget = SelectBestHealTarget(Enemy, BlackboardComp);
 		if (BestHealTarget)
 		{
-			// BlackboardComp->SetValueAsObject(TargetActorKey.SelectedKeyName, BestHealTarget);
+			BlackboardComp->SetValueAsObject(SkillTargetActorKey.SelectedKeyName, BestHealTarget);
 		}
 	}
 

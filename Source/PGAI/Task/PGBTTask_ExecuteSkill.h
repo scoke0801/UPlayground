@@ -20,6 +20,10 @@ protected:
 	/** Blackboard - 타겟 키*/
 	UPROPERTY(EditAnywhere, Category = "PG|AI")
 	FBlackboardKeySelector TargetActorKey;
+	
+	/** Blackboard - Heal 타겟 키*/
+	UPROPERTY(EditAnywhere, Category = "PG|AI")
+	FBlackboardKeySelector SkillTargetActorKey;
 
 	/** Blackboard - 스킬 ID 키 */
 	UPROPERTY(EditAnywhere, Category = "PG|AI")
