@@ -187,6 +187,29 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	}
 }
 
+void APGCharacterEnemy::OnHeal(UPGStatComponent* StatComponent, int32 HealAmount)
+{
+	Super::OnHeal(StatComponent, HealAmount);
+	
+	int32 CurrentHp = EnemyStatComponent->CurrentHP;
+	int32 MaxHp = EnemyStatComponent->MaxHP;
+	
+	// HP 회복 (MaxHP를 초과하지 않도록)
+	EnemyStatComponent->CurrentHP = FMath::Min(MaxHp, CurrentHp + HealAmount);
+	
+	// 네임플레이트 표시
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->ShowWidget(5.0f);
+	}
+	
+	// 힐 플로터 표시
+	PGDamageFloater()->AddFloater(HealAmount, EPGDamageType::Heal, this, false);
+	
+	// HP바 업데이트
+	UpdateHpBar();
+}
+
 void APGCharacterEnemy::OnDied()
 {
 	// 충돌 비활성화
