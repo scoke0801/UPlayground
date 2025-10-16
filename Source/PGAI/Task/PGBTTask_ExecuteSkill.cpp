@@ -170,7 +170,7 @@ AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UB
 	
 	// 자신의 HP 비율
 	const UPGEnemyStatComponent* SelfStatComp = Self->GetEnemyStatComponent();
-	const float SelfHPRatio = SelfStatComp ? (SelfStatComp->CurrentHP / SelfStatComp->MaxHP) : 1.f;
+	const float SelfHPRatio = SelfStatComp ? (SelfStatComp->CurrentHealth / SelfStatComp->GetStat(EPGStatType::Health)) : 1.f;
 	
 	// 최적의 힐 타겟 찾기
 	AActor* BestTarget = Self; // 기본값: 자신
@@ -193,7 +193,7 @@ AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UB
 		const UPGEnemyStatComponent* AllyStatComp = Ally->GetEnemyStatComponent();
 		if (AllyStatComp)
 		{
-			const float AllyHPRatio = AllyStatComp->CurrentHP / AllyStatComp->MaxHP;
+			const float AllyHPRatio = AllyStatComp->CurrentHealth / AllyStatComp->GetStat(EPGStatType::Health);
 			
 			// 가장 HP가 낮은 아군 선택
 			if (AllyHPRatio < LowestHPRatio)

@@ -51,7 +51,7 @@ void UPGUIHudPlayerInfo::OnStatUpdate(const IPGEventData* InEventData)
 		return;
 	}
 
-	if (EPGStatType::Hp == EventData->StatType)
+	if (EPGStatType::Health == EventData->StatType)
 	{
 		
 	}

@@ -83,7 +83,7 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	
 	// 현재 HP 비율 계산
 	const UPGEnemyStatComponent* StatComp = Enemy->GetEnemyStatComponent();
-	const float CurrentHPRatio = StatComp ? (StatComp->CurrentHP / StatComp->MaxHP) : 1.f;
+	const float CurrentHPRatio = StatComp ? (StatComp->CurrentHealth / StatComp->GetStat(EPGStatType::Health)) : 1.f;
 	
 	// 스킬 선택
 	const int32 SelectedSkillID = SelectBestSkill(EnemyData->SkillIdList, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp);
@@ -313,7 +313,7 @@ bool UPGBTService_SelectSkill::CheckNeedHealAlly(APGCharacterEnemy* Enemy) const
 		const UPGEnemyStatComponent* StatComp = Ally->GetEnemyStatComponent();
 		if (StatComp)
 		{
-			const float HPRatio = StatComp->CurrentHP / StatComp->MaxHP;
+			const float HPRatio = StatComp->CurrentHealth / StatComp->GetStat(EPGStatType::Health);
 			if (HPRatio <= AllyHealThreshold)
 			{
 				return true; // 회복이 필요한 아군 발견

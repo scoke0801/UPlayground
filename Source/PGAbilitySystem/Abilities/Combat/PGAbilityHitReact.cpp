@@ -22,7 +22,7 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 			// 사망한 대상에게는 추가 처리 진행하지 않는다.
 			if (UPGStatComponent* StatComponent = Owner->GetStatComponent())
 			{
-				if (FMath::IsNearlyZero(StatComponent->CurrentHP, 0.01f))
+				if (FMath::IsNearlyZero(StatComponent->CurrentHealth, 0.01f))
 				{
 					EndAbilitySelf();
 					return;

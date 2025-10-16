@@ -149,7 +149,7 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 
 void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 {
-	int32 CurrentHp = PlayerStatComponent->CurrentHP;
+	int32 CurrentHp = PlayerStatComponent->CurrentHealth;
 
 	// TODO 데미지 타입 직접 계산하도록 수정필요
 	EPGDamageType DamageType = (FMath::FRand() <= 0.3f) ? EPGDamageType::Critical : EPGDamageType::Normal;
@@ -159,10 +159,10 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 	{
 		DamageAmount *= 1.3f;
 	}
-	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
+	PlayerStatComponent->CurrentHealth = FMath::Max(0, CurrentHp - DamageAmount);
 
-	FPGStatUpdateEventData EventData(EPGStatType::Hp,
-		PlayerStatComponent->CurrentHP, PlayerStatComponent->MaxHP);
+	FPGStatUpdateEventData EventData(EPGStatType::Health,
+		PlayerStatComponent->CurrentHealth, PlayerStatComponent->GetStat(EPGStatType::Health));
 	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
 
 	if (UPGDamageFloaterManager* Manager = UPGDamageFloaterManager::Get())
@@ -173,7 +173,7 @@ void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
 
 	UpdateHpComponent();
 	
-	if (PlayerStatComponent->CurrentHP == 0.f)
+	if (PlayerStatComponent->CurrentHealth == 0.f)
 	{
 		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
 	}
@@ -372,5 +372,5 @@ void APGCharacterPlayer::UpdateHpComponent()
 	{
 		return;
 	}
-	PlayerHpWidget->SetHpPercent(static_cast<float>(PlayerStatComponent->CurrentHP) / PlayerStatComponent->MaxHP);
+	PlayerHpWidget->SetHpPercent(static_cast<float>(PlayerStatComponent->CurrentHealth) / PlayerStatComponent->GetStat(EPGStatType::Health));
 }

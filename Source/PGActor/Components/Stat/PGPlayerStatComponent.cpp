@@ -12,7 +12,7 @@ void UPGPlayerStatComponent::InitData(int32 CharacterTID)
 {
 	Super::InitData(CharacterTID);
 
-	CurrentHP = MaxHP = 1000;
-	FPGStatUpdateEventData EventData(EPGStatType::Hp, CurrentHP, MaxHP);
+	int32 MaxHP = GetStat(EPGStatType::Health);
+	FPGStatUpdateEventData EventData(EPGStatType::Health, CurrentHealth, MaxHP);
 	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
 }

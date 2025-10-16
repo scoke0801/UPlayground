@@ -159,7 +159,7 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 {
 	Super::OnHit(StatComponent);
 	
-	int32 CurrentHp = EnemyStatComponent->CurrentHP;
+	int32 CurrentHp = EnemyStatComponent->CurrentHealth;
 
 	// TODO 데미지 타입 직접 계산하도록 수정필요
 	EPGDamageType DamageType = (FMath::FRand() <= 0.3f) ? EPGDamageType::Critical : EPGDamageType::Normal;
@@ -169,7 +169,7 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	{
 		DamageAmount *= 1.3f;
 	}
-	EnemyStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
+	EnemyStatComponent->CurrentHealth = FMath::Max(0, CurrentHp - DamageAmount);
 
 	if (EnemyNamePlate)
 	{
@@ -181,7 +181,7 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	
 	UpdateHpBar();
 
-	if (EnemyStatComponent->CurrentHP == 0.f)
+	if (EnemyStatComponent->CurrentHealth == 0.f)
 	{
 		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
 	}
@@ -191,11 +191,11 @@ void APGCharacterEnemy::OnHeal(UPGStatComponent* StatComponent, int32 HealAmount
 {
 	Super::OnHeal(StatComponent, HealAmount);
 	
-	int32 CurrentHp = EnemyStatComponent->CurrentHP;
-	int32 MaxHp = EnemyStatComponent->MaxHP;
+	int32 CurrentHp = EnemyStatComponent->CurrentHealth;
+	int32 MaxHp = EnemyStatComponent->GetStat(EPGStatType::Health);
 	
 	// HP 회복 (MaxHP를 초과하지 않도록)
-	EnemyStatComponent->CurrentHP = FMath::Min(MaxHp, CurrentHp + HealAmount);
+	EnemyStatComponent->CurrentHealth = FMath::Min(MaxHp, CurrentHp + HealAmount);
 	
 	// 네임플레이트 표시
 	if (EnemyNamePlate)
@@ -347,7 +347,7 @@ void APGCharacterEnemy::UpdateHpBar()
 	{
 		return;
 	}
-	EnemyNamePlate->SetHpPercent(static_cast<float>(EnemyStatComponent->CurrentHP) / EnemyStatComponent->MaxHP);
+	EnemyNamePlate->SetHpPercent(static_cast<float>(EnemyStatComponent->CurrentHealth) / EnemyStatComponent->GetStat(EPGStatType::Health));
 }
 
 void APGCharacterEnemy::StartDissolveEffect()
