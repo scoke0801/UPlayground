@@ -7,6 +7,7 @@
 #include "PGShared/Shared/Enum/PGStatEnumTypes.h"
 #include "PGStatComponent.generated.h"
 
+enum class EPGDamageType : uint8;
 /**
  * 
  */
@@ -24,4 +25,8 @@ public:
 	virtual void InitData(int32 CharacterTID);
 
 	int32 GetStat(EPGStatType StatType) const;
+
+public:
+	int32 CalculateDamage(const UPGStatComponent* const OtherStatComponent, OUT EPGDamageType OutDamageType) const;
+	int32 CalculateHealAmount() const;
 };

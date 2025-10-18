@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Components/Stat/PGStatComponent.h"
 
 UPGAnimNotify_Heal::UPGAnimNotify_Heal()
 {
@@ -48,9 +49,6 @@ void UPGAnimNotify_Heal::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 		return;
 	}
 
-	// 힐량 계산 (TODO: 스킬 데이터 테이블에서 가져오도록 수정)
-	int32 HealAmount = 50;
-	
 	// 힐 적용
-	TargetActor->OnHeal(TargetStatComponent, HealAmount);
+	TargetActor->OnHeal(TargetStatComponent, TargetStatComponent->CalculateHealAmount());
 }
