@@ -43,12 +43,12 @@ void UPGAnimNotify_Heal::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 	}
 
 	// 타겟의 StatComponent 가져오기
-	UPGStatComponent* TargetStatComponent = TargetActor->GetStatComponent();
-	if (nullptr == TargetStatComponent)
+	UPGStatComponent* StatComponent = Character->GetStatComponent();
+	if (nullptr == StatComponent)
 	{
 		return;
 	}
 
 	// 힐 적용
-	TargetActor->OnHeal(TargetStatComponent, TargetStatComponent->CalculateHealAmount());
+	TargetActor->OnHeal(StatComponent, StatComponent->CalculateHealAmount());
 }
