@@ -11,6 +11,7 @@ enum class EPGStatType : uint8
 	Defense UMETA(DisplayName = "Defense", ToolTip = "방어력"),
 	Attack	UMETA(DisplayName = "Attack", ToolTip = "공격력"),
 	CriticalRate	UMETA(DisplayName = "CriticalRate", ToolTip = "치명타 발동 확률"),
+	CriticalDamage	UMETA(DisplayName = "CriticalDamage", ToolTip = "치명타 데미지 배율(%)"),
 	HealAmount	UMETA(DisplayName = "HealAmount", ToolTip = "회복량"),
 	MovementSpeed   UMETA(DisplayName = "MovementSpeed", ToolTip = "이동 속도(CM/S)"),
 	

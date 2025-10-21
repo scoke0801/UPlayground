@@ -6,6 +6,7 @@
 #include "GameplayAbilitySpecHandle.h"
 #include "GameFramework/Actor.h"
 #include "PGShared/Shared/Structure/PlayerStructTypes.h"
+#include "PGShared/Shared/Enum/PGStatEnumTypes.h"
 #include "PGWeaponBase.generated.h"
 
 class UBoxComponent;
@@ -42,6 +43,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|Weapons")
 	EPGWeaponMeshType WeaponMeshType = EPGWeaponMeshType::StaticMesh;
+
+	// 무기 스탯
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|Weapon Stats")
+	TMap<EPGStatType, int32> WeaponStats;
 	
 private:
 	TArray<FGameplayAbilitySpecHandle> AbilitySpecHandles;
@@ -69,6 +74,13 @@ public:
 public:
 	FORCEINLINE UBoxComponent* GetWeaponCollisionBox() const { return WeaponCollisionBox;}
 	UMeshComponent* GetMeshComponent() const;
+	
+	// 무기 스탯 관련 함수
+	UFUNCTION(BlueprintCallable, Category = "PG|Weapon Stats")
+	int32 GetWeaponStat(EPGStatType StatType) const;
+	
+	UFUNCTION(BlueprintCallable, Category = "PG|Weapon Stats")
+	const TMap<EPGStatType, int32>& GetWeaponStats() const;
 	
 #if WITH_EDITOR
 public:

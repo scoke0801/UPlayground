@@ -84,6 +84,20 @@ UMeshComponent* APGWeaponBase::GetMeshComponent() const
 	return StaticWeaponMesh;
 }
 
+int32 APGWeaponBase::GetWeaponStat(EPGStatType StatType) const
+{
+	if (WeaponStats.Contains(StatType))
+	{
+		return WeaponStats[StatType];
+	}
+	return 0;
+}
+
+const TMap<EPGStatType, int32>& APGWeaponBase::GetWeaponStats() const
+{
+	return WeaponStats;
+}
+
 #if WITH_EDITOR
 void APGWeaponBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
