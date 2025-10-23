@@ -43,10 +43,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|Weapons")
 	EPGWeaponMeshType WeaponMeshType = EPGWeaponMeshType::StaticMesh;
-
-	// 무기 스탯
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= "PG|Weapon Stats")
-	TMap<EPGStatType, int32> WeaponStats;
+	int32 WeaponId;
 	
 private:
 	TArray<FGameplayAbilitySpecHandle> AbilitySpecHandles;
@@ -78,9 +77,6 @@ public:
 	// 무기 스탯 관련 함수
 	UFUNCTION(BlueprintCallable, Category = "PG|Weapon Stats")
 	int32 GetWeaponStat(EPGStatType StatType) const;
-	
-	UFUNCTION(BlueprintCallable, Category = "PG|Weapon Stats")
-	const TMap<EPGStatType, int32>& GetWeaponStats() const;
 	
 #if WITH_EDITOR
 public:

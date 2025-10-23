@@ -2,18 +2,18 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "UObject/SoftObjectPath.h"
 #include "PGShared/Shared/Enum/PGStatEnumTypes.h"
-#include "PGCharacterStatDataRow.generated.h"
+#include "UObject/SoftObjectPath.h"
+#include "PGWeaponDataRow.generated.h"
 
 USTRUCT(BlueprintType)
-struct PGDATA_API FPGCharacterStatDataRow : public FTableRowBase
+struct PGDATA_API FPGWeaponDataRow : public FTableRowBase
 {
 	GENERATED_BODY()
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	int32 CharacterID;
+	int32 WeaponID;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TMap<EPGStatType, int32> Stats;
