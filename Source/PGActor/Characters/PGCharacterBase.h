@@ -68,7 +68,7 @@ public:
 
 	virtual ECollisionChannel GetCollisionChannel() const { return ECC_Pawn; }
 public:
-	virtual void OnHit(UPGStatComponent* StatComponent) {}
+	virtual void OnHit(UPGStatComponent* StatComponent, const UPGPawnCombatComponent* const OtherCombatComponent) {}
 	virtual void OnHeal(UPGStatComponent* StatComponent, int32 HealAmount) {}
 
 	virtual void OnDied();

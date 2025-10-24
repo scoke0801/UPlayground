@@ -155,14 +155,14 @@ void APGCharacterEnemy::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 }
 
-void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
+void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent, const UPGPawnCombatComponent* const InCombatComponent)
 {
-	Super::OnHit(StatComponent);
+	Super::OnHit(StatComponent, InCombatComponent);
 	
 	int32 CurrentHp = EnemyStatComponent->CurrentHealth;
 
 	EPGDamageType DamageType = EPGDamageType::Normal;
-	int32 DamageAmount = EnemyStatComponent->CalculateDamage(StatComponent, DamageType);
+	int32 DamageAmount = EnemyStatComponent->CalculateDamageWithWeapon(StatComponent, InCombatComponent, DamageType);
 	EnemyStatComponent->CurrentHealth = FMath::Max(0, CurrentHp - DamageAmount);
 
 	if (EnemyNamePlate)
@@ -222,29 +222,32 @@ void APGCharacterEnemy::OnDied()
 	}
 
 	// Dissolve VFX 재생
-	if (FPGDeathDataRow* Data = PGData()->GetRowData<FPGDeathDataRow>(CharacterTID))
+	if (UPGDataTableManager* DataManager = PGData())
 	{
-		if (false == Data->DissolveVFXPath.IsNull())
+		if (FPGDeathDataRow* Data = DataManager->GetRowData<FPGDeathDataRow>(CharacterTID))
 		{
-			UAssetManager::GetStreamableManager().RequestAsyncLoad(
-				Data->DissolveVFXPath.ToSoftObjectPath(), 
-				FStreamableDelegate::CreateLambda([this, VFXPath = Data->DissolveVFXPath]()
-				{
-					if (UNiagaraSystem* Template = VFXPath.Get())
+			if (false == Data->DissolveVFXPath.IsNull())
+			{
+				UAssetManager::GetStreamableManager().RequestAsyncLoad(
+					Data->DissolveVFXPath.ToSoftObjectPath(), 
+					FStreamableDelegate::CreateLambda([this, VFXPath = Data->DissolveVFXPath]()
 					{
-						PlayDeathDissolveVFX(Template);
-						StartDissolveEffect();
-					}
-				}));
+						if (UNiagaraSystem* Template = VFXPath.Get())
+						{
+							PlayDeathDissolveVFX(Template);
+							StartDissolveEffect();
+						}
+					}));
+			}
+			else
+			{
+				StartDissolveEffect();
+			}
 		}
 		else
 		{
 			StartDissolveEffect();
 		}
-	}
-	else
-	{
-		StartDissolveEffect();
 	}
 }
 

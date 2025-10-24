@@ -29,11 +29,11 @@ public:
 public:
 	int32 CalculateDamage(const UPGStatComponent* const OtherStatComponent, OUT EPGDamageType OutDamageType) const;
 	
-	// 무기를 포함한 데미지 계산 (새로운 함수)
+	// 무기를 포함한 데미지 계산
 	int32 CalculateDamageWithWeapon(const UPGStatComponent* const OtherStatComponent, 
 		const class UPGPawnCombatComponent* const OtherCombatComponent, OUT EPGDamageType OutDamageType) const;
 	
-	// 무기 유무를 자동 판별하여 데미지 계산 (권장)
+	// 무기 유무를 자동 판별하여 데미지 계산
 	int32 CalculateDamageAuto(const UPGStatComponent* const OtherStatComponent, 
 		const class UPGPawnCombatComponent* const OtherCombatComponent, OUT EPGDamageType OutDamageType) const;
 		

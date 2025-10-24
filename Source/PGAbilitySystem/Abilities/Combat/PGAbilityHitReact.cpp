@@ -28,7 +28,7 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 					return;
 				}
 			}
-			Owner->OnHit(Instigator->GetStatComponent());
+			Owner->OnHit(Instigator->GetStatComponent(), Instigator->GetCombatComponent());
 
 			if (USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>())
 			{

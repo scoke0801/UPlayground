@@ -90,7 +90,7 @@ protected:
 
 	virtual void PossessedBy(AController* NewController) override;
 
-	virtual void OnHit(UPGStatComponent* StatComponent) override;
+	virtual void OnHit(UPGStatComponent* StatComponent,const UPGPawnCombatComponent* const OtherCombatComponent) override;
 	virtual void OnHeal(UPGStatComponent* StatComponent, int32 HealAmount) override;
 	virtual void OnDied() override;
 

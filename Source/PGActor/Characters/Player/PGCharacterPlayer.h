@@ -100,7 +100,7 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 
 public:
-	virtual void OnHit(UPGStatComponent* StatComponent) override;
+	virtual void OnHit(UPGStatComponent* StatComponent, const UPGPawnCombatComponent* const OtherCombatComponent) override;
 	
 public:
 	void StartSkillWindow();

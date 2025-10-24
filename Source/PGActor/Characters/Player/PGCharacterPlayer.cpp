@@ -147,12 +147,12 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Jump, 20000);
 }
 
-void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
+void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent, const UPGPawnCombatComponent* const InCombatComponent)
 {
 	int32 CurrentHp = PlayerStatComponent->CurrentHealth;
 
 	EPGDamageType DamageType = EPGDamageType::Normal;
-	int32 DamageAmount = PlayerStatComponent->CalculateDamage(InStatComponent, DamageType);
+	int32 DamageAmount = PlayerStatComponent->CalculateDamageAuto(InStatComponent, InCombatComponent, DamageType);
 	PlayerStatComponent->CurrentHealth = FMath::Max(0, CurrentHp - DamageAmount);
 
 	FPGStatUpdateEventData EventData(EPGStatType::Health,
