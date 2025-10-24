@@ -3,6 +3,9 @@
 
 #include "PGDamageFloaterManager.h"
 
+#include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/AssetPath/PGUIWidgetPathRow.h"
 #include "PGUI/Widget/DamageFloater/PGUIDamageFloater.h"
@@ -35,6 +38,22 @@ void UPGDamageFloaterManager::ReturnFloaterToPool(EPGDamageType DamageType, UPGU
 {
 	if (Floater)
 	{
+		// 액터별 목록에서 제거
+		AActor* TargetActor = Floater->GetTargetActor();
+		if (TargetActor)
+		{
+			if (FPGDamageFloaterPool* FloaterPool = ActiveFloatersByActor.Find(TargetActor))
+			{
+				FloaterPool->Widgets.Remove(Floater);
+				
+				// 목록이 비었으면 맵에서 제거
+				if (FloaterPool->Widgets.Num() == 0)
+				{
+					ActiveFloatersByActor.Remove(TargetActor);
+				}
+			}
+		}
+		
 		Floater->SetVisibility(ESlateVisibility::Collapsed);
 		Floater->RemoveFromParent();
 		
@@ -84,34 +103,72 @@ void UPGDamageFloaterManager::Deinitialize()
 
 void UPGDamageFloaterManager::AddFloater(float DamageAmount,
                                          EPGDamageType DamageType,
-                                         FVector Location,
+                                         AActor* TargetActor,
                                          bool IsPlayer)
 {
-	UPGUIDamageFloater* Floater = GetPooledFloater(DamageType);
-	if (nullptr == Floater)
+	if (!TargetActor)
 	{
 		return;
+	}
+	
+	// 동일한 액터의 기존 플로터들을 위로 이동
+	if (FPGDamageFloaterPool* ExistingFloaters = ActiveFloatersByActor.Find(TargetActor))
+	{
+		int32 StackIndex = 0;
+		for (UPGUIDamageFloater* ExistingFloater : ExistingFloaters->Widgets)
+		{
+			if (IsValid(ExistingFloater))
+			{
+				ExistingFloater->AddVerticalOffset(FloaterVerticalOffset);
+				
+				// 스택 인덱스 업데이트 (위로 갈수록 증가)
+				ExistingFloater->SetStackIndex(StackIndex + 1, FadeOutStrength, MinOpacity);
+				
+				StackIndex++;
+			}
+		}
+	}
+	
+	UPGUIDamageFloater* Floater = GetPooledFloater(DamageType);
+	if (!Floater)
+	{
+		return;
+	}
+	
+	// 액터의 콜리전 높이 계산
+	FVector LocalOffset = FVector(0.f,0.f, 70.0f);
+	if (UCapsuleComponent* CapsuleComp = TargetActor->FindComponentByClass<UCapsuleComponent>())
+	{
+		LocalOffset.Z = CapsuleComp->GetScaledCapsuleHalfHeight();
 	}
 	
 	// 뷰포트에 추가
 	Floater->AddToViewport();
 	
-	// 3D 월드 좌표를 2D 스크린 좌표로 변환하여 위치 설정
+	// 액터와 오프셋 설정
+	FVector WorldLocation = TargetActor->GetActorLocation() + LocalOffset;
+	Floater->SetTargetActor(TargetActor, LocalOffset);
+	
+	// 초기 위치 계산
 	if (UWorld* World = GetWorld())
 	{
 		if (APlayerController* PC = World->GetFirstPlayerController())
 		{
 			FVector2D ScreenPosition;
-			if (PC->ProjectWorldLocationToScreen(Location, ScreenPosition))
+			if (PC->ProjectWorldLocationToScreen(WorldLocation, ScreenPosition))
 			{
-				Floater->SetDamage(DamageAmount, DamageType, FVector2D(ScreenPosition));
-
-				FVector2D WidgetSize = Floater->GetWidgetSize();
-				ScreenPosition.X -= WidgetSize.X * 0.5f;
+				Floater->SetDamage(DamageAmount, DamageType, ScreenPosition, IsPlayer);
 				Floater->SetPositionInViewport(ScreenPosition);
 			}
 		}
 	}
+	
+	// 액터별 활성 플로터 목록에 추가
+	if (!ActiveFloatersByActor.Contains(TargetActor))
+	{
+		ActiveFloatersByActor.Add(TargetActor, FPGDamageFloaterPool());
+	}
+	ActiveFloatersByActor[TargetActor].Widgets.Add(Floater);
 }
 
 void UPGDamageFloaterManager::CleanupExpiredFloaters()
@@ -150,13 +207,19 @@ void UPGDamageFloaterManager::ClearPool()
 	}
 	ActiveFloaters.Empty();
 
+	// 액터별 활성 플로터 목록 정리
+	ActiveFloatersByActor.Empty();
+
 	// 풀링된 플로터들 정리
-	//for (UPGUIDamageFloater* Floater : FloaterPool)
+	for (auto& Pair : Pools)
 	{
-	//	if (IsValid(Floater))
-	//	{
-	//		Floater->RemoveFromParent();
-	//	}
+		for (UPGUIDamageFloater* Floater : Pair.Value.Widgets)
+		{
+			if (IsValid(Floater))
+			{
+				Floater->RemoveFromParent();
+			}
+		}
+		Pair.Value.Widgets.Empty();
 	}
-	//FloaterPool.Empty();
 }

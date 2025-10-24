@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Interface/PGClickableInterface.h"
 #include "PGCharacterEnemy.generated.h"
 class UPGUIEnemyNamePlate;
 class UPGEnemyStatComponent;
@@ -17,7 +18,7 @@ class UBoxComponent;
  * 
  */
 UCLASS()
-class PGACTOR_API APGCharacterEnemy : public APGCharacterBase
+class PGACTOR_API APGCharacterEnemy : public APGCharacterBase, public IPGClickableInterface
 {
 	GENERATED_BODY()
 
@@ -33,6 +34,7 @@ protected:
 	UPGWidgetComponentBase* EnemyNameplateWidgetComponent;
 
 protected:
+	// 공격 충돌 영역
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "PG|Combat")
 	FName LeftHandCollisionBoxAttachBoneName;
 
@@ -56,6 +58,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "PG|Combat")
 	UBoxComponent* LeftFootCollisionBox;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "PG|Combat")
+	UBoxComponent* TailCollisionBox;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "PG|Combat")
+	FName TailCollisionBoxAttachBoneName;
+
 	
 private:
 	UPROPERTY(Transient)
@@ -81,7 +90,8 @@ protected:
 
 	virtual void PossessedBy(AController* NewController) override;
 
-	virtual void OnHit(UPGStatComponent* StatComponent) override;
+	virtual void OnHit(UPGStatComponent* StatComponent,const UPGPawnCombatComponent* const OtherCombatComponent) override;
+	virtual void OnHeal(UPGStatComponent* StatComponent, int32 HealAmount) override;
 	virtual void OnDied() override;
 
 #if WITH_EDITOR
@@ -97,13 +107,23 @@ public:
 
 	virtual UPGStatComponent* GetStatComponent() const override;
 	UPGEnemyStatComponent* GetEnemyStatComponent() const;
-
 	
+	virtual ECollisionChannel GetCollisionChannel() const override { return ECC_GameTraceChannel1; }
+
+public:
 	FORCEINLINE UBoxComponent* GetLeftHandCollisionBox() const { return LeftHandCollisionBox; }
 	FORCEINLINE UBoxComponent* GetRightHandCollisionBox() const { return RightHandCollisionBox; }
 	
 	FORCEINLINE UBoxComponent* GetLeftFootCollisionBox() const { return LeftFootCollisionBox; }
 	FORCEINLINE UBoxComponent* GetRightFootCollisionBox() const { return RightFootCollisionBox; }
+	
+	FORCEINLINE UBoxComponent* GetTailCollisionBox() const { return TailCollisionBox; }
+
+public:
+	// IPGClickableInterface 구현
+	virtual void OnClicked_Implementation(AActor* ClickedActor, const FVector& ClickLocation) override;
+	virtual void OnClickCancelled_Implementation() override;
+	virtual bool IsClickable_Implementation() const override;
 	
 private:
 	void InitEnemyStartUpData();

@@ -33,6 +33,9 @@ public:
 public:
 	// 쿨다운 체크
 	bool IsOnCooldown() const;
+
+	// 남은 쿨타임 반환
+	float GetRemainingCooldown() const;
 };
 /**
  * 
@@ -57,12 +60,27 @@ public:
 	
 	bool IsCanUseSkill(const EPGSkillSlot InSlotId);
 
+	// 스킬 ID로 쿨타임 체크
+	bool IsSkillReadyByID(int32 SkillID) const;
+
+	// 스킬 ID로 남은 쿨타임 조회
+	float GetRemainingCooldownByID(int32 SkillID) const;
+
+	// 스킬 ID로 Priority 조회
+	int32 GetPriorityByID(int32 SkillID) const;
+
 public:
-	virtual void UseSkill(const EPGSkillSlot InSlotId) {}
+	virtual void UseSkill(const EPGSkillSlot InSlotId);
 	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId);
 
 	FPGSkillData* GetSkillData(const EPGSkillSlot InSlotId);
+
+	// 스킬 ID로 슬롯 찾기
+	EPGSkillSlot FindSlotBySkillID(int32 SkillID) const;
 	
 public:
 	virtual EPGSkillSlot GetRandomSkillSlot() const;
+
+	// 모든 스킬 데이터 맵 접근 (읽기 전용)
+	const TMap<EPGSkillSlot, FPGSkillData>& GetAllSkillData() const { return SkillDataMap; }
 };

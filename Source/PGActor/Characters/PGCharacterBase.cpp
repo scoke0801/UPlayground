@@ -9,6 +9,7 @@
 #include "MotionWarpingComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
 
 const FName DissolveEdgeColorName = FName("DissolveEdgeColor");
@@ -35,6 +36,8 @@ void APGCharacterBase::BeginPlay()
 	if (nullptr != GetStatComponent())
 	{
 		GetStatComponent()->InitData(CharacterTID);
+
+		UpdateMovementSpeed();
 	}
 	// SkillHandler = FPGHandler::Create<FPGSkillHandler>();
 }
@@ -97,5 +100,23 @@ void APGCharacterBase::PlayDeathDissolveVFX(UNiagaraSystem* ToPlayTemplate)
 	}
 	
 	NiagaraComp->SetCustomTimeDilation(3.0f);
+}
+
+void APGCharacterBase::UpdateMovementSpeed()
+{
+	UPGStatComponent* StatComp = GetStatComponent();
+	if (nullptr == StatComp)
+	{
+		return;
+	}
+
+	int32 MoveSpeed= StatComp->GetStat(EPGStatType::MovementSpeed);
+	if (0 < MoveSpeed)
+	{
+		if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+		{
+			MovementComp->MaxWalkSpeed = MoveSpeed;
+		}
+	}
 }
 

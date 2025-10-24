@@ -9,6 +9,7 @@
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Components/BoxComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
+#include "PGActor/Characters/PGCharacterBase.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/AreaOfEffect/PGAreaOfEffectDataRow.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
@@ -63,7 +64,7 @@ APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVe
 	{
 		return nullptr;
 	}
-
+	
 	// Actor 생성
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = InShooterActor;
@@ -90,6 +91,11 @@ APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVe
 	if (AOEActor->CollisionBox)
 	{
 		AOEActor->CollisionBox->SetBoxExtent(Data->BoxExtent);
+
+		if (APGCharacterBase* Character = Cast<APGCharacterBase>(InShooterActor))
+		{
+			AOEActor->CollisionBox->SetCollisionResponseToChannel(Character->GetCollisionChannel(), ECR_Ignore);
+		}
 	}
 	
 	

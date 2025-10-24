@@ -4,8 +4,32 @@
 #include "PGAbilitySystemComponent.h"
 
 #include "Abilities/PGPlayerGameplayAbility.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
+
+void UPGAbilitySystemComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	DelegateHandle = UPGMessageManager::Get()->RegisterDelegate(EPGUIMessageType::ClickSkillButton, this,
+		&ThisClass::OnClickedSkillButton);
+}
+
+void UPGAbilitySystemComponent::BeginDestroy()
+{
+	if (DelegateHandle.IsValid())
+	{
+		if (auto Manager = UPGMessageManager::Get())
+		{
+			Manager->UnregisterDelegate(EPGUIMessageType::ClickSkillButton, DelegateHandle);
+		}
+	}
+	
+	Super::BeginDestroy();
+}
 
 void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInputTag)
 {
@@ -128,4 +152,16 @@ bool UPGAbilitySystemComponent::TryActivateAbilityByTag(FGameplayTag AbilityTagT
 	}
 
 	return false;
+}
+
+void UPGAbilitySystemComponent::OnClickedSkillButton(const IPGEventData* InData)
+{
+	const FPGEventDataOneParam<FGameplayTag>* CastedParam =
+		static_cast<const FPGEventDataOneParam<FGameplayTag>*>(InData);
+
+	if (nullptr == CastedParam)
+	{
+		return;
+	}
+	OnAbilityInputPressed(CastedParam->Value);
 }

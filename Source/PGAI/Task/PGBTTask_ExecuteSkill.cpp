@@ -19,6 +19,7 @@ UPGBTTask_ExecuteSkill::UPGBTTask_ExecuteSkill()
 	
 	SelectedSkillIDKey.SelectedKeyName = FName("SelectedSkillID");
 	TargetActorKey.SelectedKeyName = FName("TargetActor");
+	SkillTargetActorKey.SelectedKeyName = FName("SkillTargetActor");
 	SummonCountKey.SelectedKeyName = FName("SummonCount");
 	
 	CachedSkillType = EPGSkillType::None;
@@ -74,7 +75,7 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 		AActor* BestHealTarget = SelectBestHealTarget(Enemy, BlackboardComp);
 		if (BestHealTarget)
 		{
-			BlackboardComp->SetValueAsObject(TargetActorKey.SelectedKeyName, BestHealTarget);
+			BlackboardComp->SetValueAsObject(SkillTargetActorKey.SelectedKeyName, BestHealTarget);
 		}
 	}
 
@@ -91,6 +92,9 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 	const bool bActivated = ASC->TryActivateAbilityByTag(AbilityTag);
 	if (bActivated)
 	{
+		// Strafe 이어서 진행할 지 랜덤하게 결정
+		BlackboardComp->SetValueAsBool(StrafeKey.SelectedKeyName, CheckExecuteStrafe(SkillData->SkillType));
+		
 		// 어빌리티 활성화 성공 - 즉시 완료 처리
 		// (어빌리티 자체에서 몽타주를 관리함)
 		FinishTask(CachedOwnerComp.Get(), EBTNodeResult::Succeeded);
@@ -166,7 +170,7 @@ AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UB
 	
 	// 자신의 HP 비율
 	const UPGEnemyStatComponent* SelfStatComp = Self->GetEnemyStatComponent();
-	const float SelfHPRatio = SelfStatComp ? (SelfStatComp->CurrentHP / SelfStatComp->MaxHP) : 1.f;
+	const float SelfHPRatio = SelfStatComp ? (SelfStatComp->CurrentHealth / SelfStatComp->GetStat(EPGStatType::Health)) : 1.f;
 	
 	// 최적의 힐 타겟 찾기
 	AActor* BestTarget = Self; // 기본값: 자신
@@ -189,7 +193,7 @@ AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UB
 		const UPGEnemyStatComponent* AllyStatComp = Ally->GetEnemyStatComponent();
 		if (AllyStatComp)
 		{
-			const float AllyHPRatio = AllyStatComp->CurrentHP / AllyStatComp->MaxHP;
+			const float AllyHPRatio = AllyStatComp->CurrentHealth / AllyStatComp->GetStat(EPGStatType::Health);
 			
 			// 가장 HP가 낮은 아군 선택
 			if (AllyHPRatio < LowestHPRatio)
@@ -225,4 +229,29 @@ FGameplayTag UPGBTTask_ExecuteSkill::GetAbilityTagFromSkillType(EPGSkillType Ski
 	default:
 		return FGameplayTag::EmptyTag;
 	}
+}
+
+bool UPGBTTask_ExecuteSkill::CheckExecuteStrafe(EPGSkillType SkillType)
+{
+	switch (SkillType)
+	{
+	case EPGSkillType::Melee:
+		return FMath::FRand() <= 0.3f;
+		
+	case EPGSkillType::Projectile:
+	case EPGSkillType::AreaOfEffect:
+		return FMath::FRand() <= 0.75f;
+	
+	case EPGSkillType::Heal:
+		return FMath::FRand() <= 0.7f;
+		
+	case EPGSkillType::SummonEnemy:
+		return FMath::FRand() <= 0.5f;
+		
+	default:
+		break;
+	}
+	
+	return false;
+	
 }

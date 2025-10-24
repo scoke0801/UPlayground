@@ -17,7 +17,6 @@ void UPGAbilityDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	if (UAbilityTask_PlayMontageAndWait* Task = PlayMontageWait(GetMontageToPlay()))
 	{
 		Task->ReadyForActivation();
-		
 		// TODO - SoundQueue
 	}
 }
@@ -46,7 +45,6 @@ UAnimMontage* UPGAbilityDeath::GetMontageToPlay() const
 	{
 		return nullptr;
 	}
-
 
 	int32 Index = FMath::RandRange(0, Data->DeathMontagePath.Num() - 1);
 	if (Data->DeathMontagePath.IsValidIndex(Index))

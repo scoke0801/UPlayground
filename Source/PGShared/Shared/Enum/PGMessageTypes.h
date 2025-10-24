@@ -30,6 +30,8 @@ enum class EPGPlayerMessageType : uint8
     ExpUpdate,
     
     StatUpdate,
+
+    Spawned,
     
     Max UMETA(Hidden)
 };
@@ -49,5 +51,7 @@ enum class EPGUIMessageType : uint8
 {
     None = 0,
 
+    ClickSkillButton,
+    
     Max UMETA(Hidden)
 };

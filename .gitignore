@@ -83,6 +83,7 @@ Content/*
 **/.idea
 **/.sentry-native
 /Content
+/DerivedDataCache
 
 # Script folders and Korean filenames
 Script/
@@ -99,3 +100,6 @@ Script/**/*.png
 
 # Temporary workaround for Unicode filename issues
 **/[!A-Za-z0-9_./-]*
+
+
+**/*.md

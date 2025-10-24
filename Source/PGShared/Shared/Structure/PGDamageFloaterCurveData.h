@@ -4,7 +4,7 @@
 UENUM(BlueprintType)
 enum class EPGDamageFloaterCurveType : uint8
 {
-	Translation = 0,
+	Translation = 0,	// 사용하지 않도록 구조 변경..
 	Scale,
 	Opacity,
 };

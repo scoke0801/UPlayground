@@ -19,9 +19,7 @@ UPGBTService_OrientToTargetActor::UPGBTService_OrientToTargetActor()
 
 	RandomDeviation = 0.f;
 
-	InTargetActorKey.AddObjectFilter(this,
-		GET_MEMBER_NAME_CHECKED(ThisClass, InTargetActorKey),
-		AActor::StaticClass());
+	TargetActorKey.SelectedKeyName = "TargetActor";
 }
 
 void UPGBTService_OrientToTargetActor::InitializeFromAsset(UBehaviorTree& Asset)
@@ -30,13 +28,13 @@ void UPGBTService_OrientToTargetActor::InitializeFromAsset(UBehaviorTree& Asset)
 
 	if (UBlackboardData* BBAsset = GetBlackboardAsset())
 	{
-		InTargetActorKey.ResolveSelectedKey(*BBAsset);
+		TargetActorKey.ResolveSelectedKey(*BBAsset);
 	}
 }
 
 FString UPGBTService_OrientToTargetActor::GetStaticDescription() const
 {
-	const FString KeyDescString = InTargetActorKey.SelectedKeyName.ToString();
+	const FString KeyDescString = TargetActorKey.SelectedKeyName.ToString();
 
 	return FString::Printf(TEXT("Orient rotation to %s Key %s"), *KeyDescString, *GetStaticServiceDescription());
 }
@@ -46,7 +44,7 @@ void UPGBTService_OrientToTargetActor::TickNode(UBehaviorTreeComponent& OwnerCom
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	UObject* ActorObject =OwnerComp.GetBlackboardComponent()->GetValueAsObject(InTargetActorKey.SelectedKeyName);
+	UObject* ActorObject =OwnerComp.GetBlackboardComponent()->GetValueAsObject(TargetActorKey.SelectedKeyName);
 
 	AActor* TargetActor = Cast<AActor>(ActorObject);
 

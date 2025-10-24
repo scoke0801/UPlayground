@@ -6,6 +6,7 @@
 #include "Components/BoxComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGData/PGDataTableManager.h"
+#include "PGData/DataTable/Stat/PGWeaponDataRow.h"
 
 // Sets default values
 APGWeaponBase::APGWeaponBase()
@@ -82,6 +83,18 @@ UMeshComponent* APGWeaponBase::GetMeshComponent() const
 		return SkeletalWeaponMesh;
 	}
 	return StaticWeaponMesh;
+}
+
+int32 APGWeaponBase::GetWeaponStat(EPGStatType StatType) const
+{
+	if (FPGWeaponDataRow* Data = PGData()->GetRowData<FPGWeaponDataRow>(WeaponId))
+	{
+		if (Data->Stats.Contains(StatType))
+		{
+			return Data->Stats[StatType];
+		}	
+	}
+	return 0;
 }
 
 #if WITH_EDITOR

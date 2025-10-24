@@ -26,7 +26,7 @@ void UPGUIPlayerHpBar::SetHpPercent(const float Percent)
 void UPGUIPlayerHpBar::OnStatUpdate(const IPGEventData* InEventData)
 {
 	const FPGStatUpdateEventData* EventData = static_cast<const FPGStatUpdateEventData*>(InEventData);
-	if (nullptr == EventData || EPGStatType::Hp != EventData->StatType)
+	if (nullptr == EventData || EPGStatType::Health != EventData->StatType)
 	{
 		return;
 	}

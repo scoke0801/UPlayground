@@ -41,7 +41,7 @@ public class UPlayground : ModuleRules
             "PGData",
             "PGAbilitySystem",
             "PGActor",
-            "PGShared"
+            "PGShared", "PGAI"
 		});
 
 		// UI 시스템을 위한 Slate 및 SlateCore 의존성 추가

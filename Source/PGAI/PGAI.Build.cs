@@ -33,7 +33,8 @@ public class PGAI : ModuleRules
 				"PGShared",
 				"PGData",
 				"PGActor",
-				"PGAbilitySystem"
+				"PGAbilitySystem",
+				"PGMessage"
 			});
 		
 	}

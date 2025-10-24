@@ -12,6 +12,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
 #include "PGActor/Components/Combat/PGSkillMontageController.h"
@@ -60,6 +61,13 @@ APGCharacterEnemy::APGCharacterEnemy()
 	GetCharacterMovement()->BrakingDecelerationWalking = 600.f;  // 1000 → 600 (자연스러운 감속)
 	GetCharacterMovement()->MaxAcceleration = 1024.f;  // 부드러운 가속
 
+	// 적 캐릭터끼리 충돌하지 않도록 설정
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("EnemyCharacter"));
+	
+	// 메시도 Enemy 채널 무시 설정
+	GetMesh()->SetCollisionObjectType(ECC_GameTraceChannel1);
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
+
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimeline"));
 
@@ -85,22 +93,32 @@ APGCharacterEnemy::APGCharacterEnemy()
 	LeftHandCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("LeftHandCollisionBox"));
 	LeftHandCollisionBox->SetupAttachment(GetMesh());
 	LeftHandCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftHandCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	LeftHandCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 	
 	RightHandCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("RightHandCollisionBox"));
 	RightHandCollisionBox->SetupAttachment(GetMesh());
 	RightHandCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightHandCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	RightHandCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 
 	LeftFootCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("LeftFootCollisionBox"));
 	LeftFootCollisionBox->SetupAttachment(GetMesh());
 	LeftFootCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftFootCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	LeftFootCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 	
 	RightFootCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("RightFootCollisionBox"));
 	RightFootCollisionBox->SetupAttachment(GetMesh());
 	RightFootCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightFootCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 	RightFootCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
+
+	TailCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TailCollisionBox"));
+	TailCollisionBox->SetupAttachment(GetMesh());
+	TailCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TailCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
+	TailCollisionBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBodyCollisionBoxBeginOverlap);
 
 }
 
@@ -137,15 +155,15 @@ void APGCharacterEnemy::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 }
 
-void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
+void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent, const UPGPawnCombatComponent* const InCombatComponent)
 {
-	Super::OnHit(StatComponent);
+	Super::OnHit(StatComponent, InCombatComponent);
 	
-	int32 CurrentHp = EnemyStatComponent->CurrentHP;
+	int32 CurrentHp = EnemyStatComponent->CurrentHealth;
 
-	// TODO 데미지 계산하도록 수정 필요
-	int32 DamageAmount = FMath::RandRange(20,50);
-	EnemyStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
+	EPGDamageType DamageType = EPGDamageType::Normal;
+	int32 DamageAmount = EnemyStatComponent->CalculateDamageWithWeapon(StatComponent, InCombatComponent, DamageType);
+	EnemyStatComponent->CurrentHealth = FMath::Max(0, CurrentHp - DamageAmount);
 
 	if (EnemyNamePlate)
 	{
@@ -153,14 +171,37 @@ void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent)
 	}
 
 	PGDamageFloater()->AddFloater(DamageAmount,
-		EPGDamageType::Normal, GetActorLocation(), true);
+		DamageType, this, false);
 	
 	UpdateHpBar();
 
-	if (EnemyStatComponent->CurrentHP == 0.f)
+	if (EnemyStatComponent->CurrentHealth == 0.f)
 	{
 		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
 	}
+}
+
+void APGCharacterEnemy::OnHeal(UPGStatComponent* StatComponent, int32 HealAmount)
+{
+	Super::OnHeal(StatComponent, HealAmount);
+	
+	int32 CurrentHp = EnemyStatComponent->CurrentHealth;
+	int32 MaxHp = EnemyStatComponent->GetStat(EPGStatType::Health);
+	
+	// HP 회복 (MaxHP를 초과하지 않도록)
+	EnemyStatComponent->CurrentHealth = FMath::Min(MaxHp, CurrentHp + HealAmount);
+	
+	// 네임플레이트 표시
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->ShowWidget(5.0f);
+	}
+	
+	// 힐 플로터 표시
+	PGDamageFloater()->AddFloater(HealAmount, EPGDamageType::Heal, this, false);
+	
+	// HP바 업데이트
+	UpdateHpBar();
 }
 
 void APGCharacterEnemy::OnDied()
@@ -181,29 +222,32 @@ void APGCharacterEnemy::OnDied()
 	}
 
 	// Dissolve VFX 재생
-	if (FPGDeathDataRow* Data = PGData()->GetRowData<FPGDeathDataRow>(CharacterTID))
+	if (UPGDataTableManager* DataManager = PGData())
 	{
-		if (false == Data->DissolveVFXPath.IsNull())
+		if (FPGDeathDataRow* Data = DataManager->GetRowData<FPGDeathDataRow>(CharacterTID))
 		{
-			UAssetManager::GetStreamableManager().RequestAsyncLoad(
-				Data->DissolveVFXPath.ToSoftObjectPath(), 
-				FStreamableDelegate::CreateLambda([this, VFXPath = Data->DissolveVFXPath]()
-				{
-					if (UNiagaraSystem* Template = VFXPath.Get())
+			if (false == Data->DissolveVFXPath.IsNull())
+			{
+				UAssetManager::GetStreamableManager().RequestAsyncLoad(
+					Data->DissolveVFXPath.ToSoftObjectPath(), 
+					FStreamableDelegate::CreateLambda([this, VFXPath = Data->DissolveVFXPath]()
 					{
-						PlayDeathDissolveVFX(Template);
-						StartDissolveEffect();
-					}
-				}));
+						if (UNiagaraSystem* Template = VFXPath.Get())
+						{
+							PlayDeathDissolveVFX(Template);
+							StartDissolveEffect();
+						}
+					}));
+			}
+			else
+			{
+				StartDissolveEffect();
+			}
 		}
 		else
 		{
 			StartDissolveEffect();
 		}
-	}
-	else
-	{
-		StartDissolveEffect();
 	}
 }
 
@@ -246,6 +290,15 @@ void APGCharacterEnemy::PostEditChangeProperty(struct FPropertyChangedEvent& Pro
 			GetMesh(),
 			FAttachmentTransformRules::SnapToTargetIncludingScale,
 			RightFootCollisionBoxAttachBoneName);
+	}
+
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(
+		ThisClass, TailCollisionBoxAttachBoneName))
+	{
+		TailCollisionBox->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetIncludingScale,
+			TailCollisionBoxAttachBoneName);
 	}
 }
 #endif
@@ -291,7 +344,7 @@ void APGCharacterEnemy::UpdateHpBar()
 	{
 		return;
 	}
-	EnemyNamePlate->SetHpPercent(static_cast<float>(EnemyStatComponent->CurrentHP) / EnemyStatComponent->MaxHP);
+	EnemyNamePlate->SetHpPercent(static_cast<float>(EnemyStatComponent->CurrentHealth) / EnemyStatComponent->GetStat(EPGStatType::Health));
 }
 
 void APGCharacterEnemy::StartDissolveEffect()
@@ -363,4 +416,33 @@ void APGCharacterEnemy::OnBodyCollisionBoxBeginOverlap(UPrimitiveComponent* Over
 			CombatComponent->OnHitTargetActor(HitPawn);
 		}
 	}
+}
+
+void APGCharacterEnemy::OnClicked_Implementation(AActor* ClickedActor, const FVector& ClickLocation)
+{
+	UE_LOG(LogTemp, Log, TEXT("적 캐릭터 클릭: %s"), *GetName());
+	
+	// 클릭 시 네임플레이트 표시
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->ShowWidget(10.0f);
+	}
+}
+
+void APGCharacterEnemy::OnClickCancelled_Implementation()
+{
+	UE_LOG(LogTemp, Log, TEXT("적 캐릭터 클릭 취소: %s"), *GetName());
+	
+	// 클릭 취소 시 네임플레이트 숨김
+	if (EnemyNamePlate)
+	{
+		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+}
+
+bool APGCharacterEnemy::IsClickable_Implementation() const
+{
+	// 죽은 상태가 아닐 때만 클릭 가능
+	return !AbilitySystemComponent->HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead);
 }

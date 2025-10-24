@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
@@ -58,15 +59,31 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	
 	// 타겟과의 거리 계산
 	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
+	if (nullptr == TargetActor)
+	{
+		// 로컬 플레이어 캐릭터 가져오기
+		if (APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+		{
+			if (APawn* PlayerPawn = PlayerController->GetPawn())
+			{
+				TargetActor = PlayerPawn;
+				BlackboardComp->SetValueAsObject(FName("TargetActor"), TargetActor);
+			}
+		}
+	}
 	float DistanceToTarget = -1.f;
 	if (TargetActor)
 	{
 		DistanceToTarget = FVector::Dist(Enemy->GetActorLocation(), TargetActor->GetActorLocation());
 	}
+	else
+	{
+		return;
+	}
 	
 	// 현재 HP 비율 계산
 	const UPGEnemyStatComponent* StatComp = Enemy->GetEnemyStatComponent();
-	const float CurrentHPRatio = StatComp ? (StatComp->CurrentHP / StatComp->MaxHP) : 1.f;
+	const float CurrentHPRatio = StatComp ? (StatComp->CurrentHealth / StatComp->GetStat(EPGStatType::Health)) : 1.f;
 	
 	// 스킬 선택
 	const int32 SelectedSkillID = SelectBestSkill(EnemyData->SkillIdList, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp);
@@ -80,14 +97,18 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList, float DistanceToTarget, float CurrentHPRatio, APGCharacterEnemy* Enemy, UBlackboardComponent* BlackboardComp) const
 {
 	UPGDataTableManager* DTManager = UPGDataTableManager::Get();
-	if (!DTManager || SkillIDList.Num() == 0)
+	if (!DTManager || SkillIDList.Num() == 0 || !Enemy)
 	{
 		return -1;
 	}
 
-	// 가중치 기반 선택
-	TArray<int32> ValidSkills;
-	TArray<float> Weights;
+	// SkillHandler를 통해 쿨타임 체크
+	FPGSkillHandler* SkillHandler = Enemy->GetSkillHandler();
+	if (!SkillHandler)
+	{
+		// SkillHandler가 없으면 첫 번째 스킬 반환
+		return SkillIDList[0];
+	}
 
 	// 스킬 타입별 존재 여부 사전 체크 (최적화)
 	TSet<EPGSkillType> AvailableSkillTypes;
@@ -100,54 +121,81 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 		}
 	}
 
+	// 1단계: 쿨타임이 준비된 스킬 중에서 가중치 기반 선택
+	TArray<int32> ReadySkills;
+	TArray<float> ReadyWeights;
+
 	for (const int32 SkillID : SkillIDList)
 	{
+		// SkillHandler를 통해 쿨타임 체크
+		if (!SkillHandler->IsSkillReadyByID(SkillID))
+		{
+			continue;
+		}
+
 		const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
 		if (!SkillData) continue;
 	
-		const float Priority = CalculateSkillPriority(SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes);
+		const float Priority = CalculateSkillPriority(SkillID, SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes);
 		if (Priority > 0.f)
 		{
-			ValidSkills.Add(SkillID);
-			Weights.Add(Priority);
+			ReadySkills.Add(SkillID);
+			ReadyWeights.Add(Priority);
 		}
 	}
 	
-	if (ValidSkills.Num() == 0)
+	// 쿨타임이 준비된 유효한 스킬이 있으면 가중치 기반 선택
+	if (ReadySkills.Num() > 0)
 	{
-		// 조건에 맞는 스킬이 없으면 첫 번째 스킬 반환
-		return SkillIDList[0];
-	}
-	
-	if (!bUseWeightedSelection || Weights.Num() == 0)
-	{
-		// 랜덤 선택
-		return ValidSkills[FMath::RandRange(0, ValidSkills.Num() - 1)];
-	}
-	
-	// 가중치 기반 랜덤 선택
-	float TotalWeight = 0.f;
-	for (float Weight : Weights)
-	{
-		TotalWeight += Weight;
-	}
-	
-	const float RandomValue = FMath::FRandRange(0.f, TotalWeight);
-	float AccumulatedWeight = 0.f;
-	
-	for (int32 i = 0; i < ValidSkills.Num(); ++i)
-	{
-		AccumulatedWeight += Weights[i];
-		if (RandomValue <= AccumulatedWeight)
+		if (ReadyWeights.Num() == 0)
 		{
-			return ValidSkills[i];
+			// 가중치 미사용 시 랜덤 선택
+			return ReadySkills[FMath::RandRange(0, ReadySkills.Num() - 1)];
+		}
+		
+		// 가중치 기반 랜덤 선택
+		float TotalWeight = 0.f;
+		for (float Weight : ReadyWeights)
+		{
+			TotalWeight += Weight;
+		}
+		
+		const float RandomValue = FMath::FRandRange(0.f, TotalWeight);
+		float AccumulatedWeight = 0.f;
+		
+		for (int32 i = 0; i < ReadySkills.Num(); ++i)
+		{
+			AccumulatedWeight += ReadyWeights[i];
+			if (RandomValue <= AccumulatedWeight)
+			{
+				return ReadySkills[i];
+			}
+		}
+
+		return ReadySkills[0];
+	}
+
+	// 2단계: 모든 스킬이 쿨타임 중이면, 쿨타임이 가장 짧게 남은 스킬 선택 (무조건 1개 보장)
+	int32 BestSkillID = SkillIDList[0];
+	float MinCooldown = SkillHandler->GetRemainingCooldownByID(BestSkillID);
+
+	for (int32 i = 1; i < SkillIDList.Num(); ++i)
+	{
+		const int32 SkillID = SkillIDList[i];
+		const float RemainingCooldown = SkillHandler->GetRemainingCooldownByID(SkillID);
+		
+		if (RemainingCooldown < MinCooldown)
+		{
+			MinCooldown = RemainingCooldown;
+			BestSkillID = SkillID;
 		}
 	}
 
-	return ValidSkills[0];
+	return BestSkillID;
 }
 
 float UPGBTService_SelectSkill::CalculateSkillPriority(
+	int32 SkillID,
 	EPGSkillType SkillType, 
 	float DistanceToTarget, 
 	float CurrentHPRatio, 
@@ -155,6 +203,22 @@ float UPGBTService_SelectSkill::CalculateSkillPriority(
 	UBlackboardComponent* BlackboardComp,
 	const TSet<EPGSkillType>& AvailableSkillTypes) const
 {
+	// SkillHandler에서 Priority 확인
+	if (Enemy)
+	{
+		if (FPGSkillHandler* SkillHandler = Enemy->GetSkillHandler())
+		{
+			const int32 CurrentPriority = SkillHandler->GetPriorityByID(SkillID);
+			
+			// Priority가 1이 아니면(설정된 경우), 해당 값을 우선적으로 사용
+			if (CurrentPriority != 1)
+			{
+				return static_cast<float>(CurrentPriority);
+			}
+		}
+	}
+
+	// Priority가 1인 경우(기본값), 거리/HP/타입별 동적 계산 수행
 	switch (SkillType)
 	{
 	case EPGSkillType::Melee:
@@ -249,7 +313,7 @@ bool UPGBTService_SelectSkill::CheckNeedHealAlly(APGCharacterEnemy* Enemy) const
 		const UPGEnemyStatComponent* StatComp = Ally->GetEnemyStatComponent();
 		if (StatComp)
 		{
-			const float HPRatio = StatComp->CurrentHP / StatComp->MaxHP;
+			const float HPRatio = StatComp->CurrentHealth / StatComp->GetStat(EPGStatType::Health);
 			if (HPRatio <= AllyHealThreshold)
 			{
 				return true; // 회복이 필요한 아군 발견

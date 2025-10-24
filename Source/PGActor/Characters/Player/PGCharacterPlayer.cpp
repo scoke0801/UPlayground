@@ -86,6 +86,15 @@ void APGCharacterPlayer::BeginPlay()
 	Super::BeginPlay();
 
 	InitUIComponents();
+
+	bIsAllMeshLoaded = false;
+	CheckAllMeshesLoaded();
+	
+	if (false == bIsAllMeshLoaded)
+	{
+		GetWorldTimerManager().SetTimer(MeshCheckTimerHandle, this, &ThisClass::CheckAllMeshesLoaded, 0.1f, true);
+	}
+	//PGMessage()->SendMessage(EPGPlayerMessageType::Spawned, nullptr);
 }
 
 void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -138,27 +147,27 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Jump, 20000);
 }
 
-void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent)
+void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent, const UPGPawnCombatComponent* const InCombatComponent)
 {
-	int32 CurrentHp = PlayerStatComponent->CurrentHP;
+	int32 CurrentHp = PlayerStatComponent->CurrentHealth;
 
-	// TODO 데미지 계산하도록 수정 필요
-	int32 DamageAmount = FMath::RandRange(1,20);
-	PlayerStatComponent->CurrentHP = FMath::Max(0, CurrentHp - DamageAmount);
+	EPGDamageType DamageType = EPGDamageType::Normal;
+	int32 DamageAmount = PlayerStatComponent->CalculateDamageAuto(InStatComponent, InCombatComponent, DamageType);
+	PlayerStatComponent->CurrentHealth = FMath::Max(0, CurrentHp - DamageAmount);
 
-	FPGStatUpdateEventData EventData(EPGStatType::Hp,
-		PlayerStatComponent->CurrentHP, PlayerStatComponent->MaxHP);
+	FPGStatUpdateEventData EventData(EPGStatType::Health,
+		PlayerStatComponent->CurrentHealth, PlayerStatComponent->GetStat(EPGStatType::Health));
 	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
 
 	if (UPGDamageFloaterManager* Manager = UPGDamageFloaterManager::Get())
 	{
-		Manager->AddFloater(DamageAmount,
-		EPGDamageType::Normal, GetActorLocation(), true);
+		PGDamageFloater()->AddFloater(
+			DamageAmount, DamageType, this, true);
 	}
 
 	UpdateHpComponent();
 	
-	if (PlayerStatComponent->CurrentHP == 0.f)
+	if (PlayerStatComponent->CurrentHealth == 0.f)
 	{
 		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
 	}
@@ -191,6 +200,59 @@ bool APGCharacterPlayer::IsCanJump() const
 	}
 	
 	return false;
+}
+
+void APGCharacterPlayer::CheckAllMeshesLoaded()
+{
+	if (true == bIsAllMeshLoaded)
+	{
+		return;
+	}
+	
+	// 모든 스켈레탈 메시 컴포넌트 수집
+	TArray<USkeletalMeshComponent*> MeshComponents;
+	GetComponents<USkeletalMeshComponent>(MeshComponents);
+    
+	if (MeshComponents.Num() == 0)
+	{
+		return;
+	}
+    
+	// 각 컴포넌트의 메시 로딩 상태 확인
+	int32 LoadedCount = 0;
+	int32 TotalCount = MeshComponents.Num();
+    
+	for (USkeletalMeshComponent* MeshComp : MeshComponents)
+	{
+		if (MeshComp && MeshComp->GetSkeletalMeshAsset())
+		{
+			LoadedCount++;
+		}
+		else if (MeshComp)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Mesh not loaded yet: %s"), *MeshComp->GetName());
+		}
+	}
+	bIsAllMeshLoaded = LoadedCount == TotalCount;
+	// 모든 메시 로딩 완료 확인
+	if (true == bIsAllMeshLoaded)
+	{
+		UE_LOG(LogTemp, Log, TEXT("All %d meshes loaded successfully!"), TotalCount);
+		// 타이머 정리
+		if (MeshCheckTimerHandle.IsValid())
+		{
+			GetWorldTimerManager().ClearTimer(MeshCheckTimerHandle);
+		}
+        
+		UE_LOG(LogTemp, Log, TEXT("All %d meshes loaded successfully!"), TotalCount);
+        
+		// 델리게이트 브로드캐스트
+		PGMessage()->SendMessage(EPGPlayerMessageType::Spawned, nullptr);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Meshes loading... %d/%d"), LoadedCount, TotalCount);
+	}
 }
 
 void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
@@ -304,5 +366,5 @@ void APGCharacterPlayer::UpdateHpComponent()
 	{
 		return;
 	}
-	PlayerHpWidget->SetHpPercent(static_cast<float>(PlayerStatComponent->CurrentHP) / PlayerStatComponent->MaxHP);
+	PlayerHpWidget->SetHpPercent(static_cast<float>(PlayerStatComponent->CurrentHealth) / PlayerStatComponent->GetStat(EPGStatType::Health));
 }

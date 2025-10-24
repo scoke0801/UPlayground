@@ -20,6 +20,10 @@ protected:
 	/** Blackboard - 타겟 키*/
 	UPROPERTY(EditAnywhere, Category = "PG|AI")
 	FBlackboardKeySelector TargetActorKey;
+	
+	/** Blackboard - Heal 타겟 키*/
+	UPROPERTY(EditAnywhere, Category = "PG|AI")
+	FBlackboardKeySelector SkillTargetActorKey;
 
 	/** Blackboard - 스킬 ID 키 */
 	UPROPERTY(EditAnywhere, Category = "PG|AI")
@@ -28,6 +32,10 @@ protected:
 	/** Blackboard - 소환 카운트 키 */
 	UPROPERTY(EditAnywhere, Category = "PG|AI")
 	FBlackboardKeySelector SummonCountKey;
+
+	/** Blackboard - StrafeState */
+	UPROPERTY(EditAnywhere, Category = "PG|AI")
+	FBlackboardKeySelector StrafeKey;
 
 	/** 힐 아군 탐색 반경 */
 	UPROPERTY(EditAnywhere, Category = "PG|AI|Heal")
@@ -55,4 +63,6 @@ private:
 
 	/** 스킬 타입을 GameplayTag로 변환 */
 	FGameplayTag GetAbilityTagFromSkillType(EPGSkillType SkillType) const;
+	
+	bool CheckExecuteStrafe(EPGSkillType SkillType);
 };

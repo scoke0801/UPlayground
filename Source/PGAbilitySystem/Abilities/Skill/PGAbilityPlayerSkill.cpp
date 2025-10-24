@@ -34,12 +34,6 @@ void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		return;
 	}
 
-	if (false == CheckMontageIsPlaying(Character, 0.2f))
-	{
-		EndAbilitySelf();
-		return;
-	}
-	
 	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(SlotIndex));
 	if(nullptr == Row)
 	{
