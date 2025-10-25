@@ -121,6 +121,15 @@ private:
 	// 스폰 위치 계산
 	FVector GetRandomSpawnLocation() const;
 	
+	// 지형을 고려한 안전한 스폰 위치 찾기
+	FVector GetSafeSpawnLocation() const;
+	
+	// 스폰 위치 유효성 검증
+	bool IsValidSpawnLocation(const FVector& Location) const;
+	
+	// 경사면 각도 검증
+	bool IsValidSlope(const FVector& Location) const;
+	
 	// 보상 UI 표시
 	void ShowRewardSelection();
 	

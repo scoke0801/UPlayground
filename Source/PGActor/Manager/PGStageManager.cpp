@@ -4,6 +4,9 @@
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "NavigationSystem.h"
+#include "NavMesh/RecastNavMesh.h"
+#include "AI/NavigationSystemBase.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
@@ -171,9 +174,26 @@ APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
 		return nullptr;
 	}
 
+	// 안전한 스폰 위치 찾기 (최대 5회 시도)
+	FVector SpawnLocation = FVector::ZeroVector;
+	bool bFoundValidLocation = false;
 	
-	// 스폰 위치 계산
-	FVector SpawnLocation = GetRandomSpawnLocation();
+	for (int32 Attempt = 0; Attempt < 5; ++Attempt)
+	{
+		SpawnLocation = GetSafeSpawnLocation();
+		if (IsValidSpawnLocation(SpawnLocation))
+		{
+			bFoundValidLocation = true;
+			break;
+		}
+	}
+	
+	// 유효한 위치를 찾지 못한 경우 기본 위치 사용
+	if (!bFoundValidLocation)
+	{
+		SpawnLocation = GetRandomSpawnLocation();
+	}
+	
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 	
 	// 적 스폰
@@ -224,6 +244,139 @@ FVector APGStageManager::GetRandomSpawnLocation() const
 	}
 	
 	return SpawnLocation;
+}
+
+FVector APGStageManager::GetSafeSpawnLocation() const
+{
+	// 플레이어 위치 기준
+	FVector PlayerLocation = GetActorLocation();
+	if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+	{
+		PlayerLocation = PlayerPawn->GetActorLocation();
+	}
+	
+	// 랜덤 원형 위치 생성
+	float RandomAngle = FMath::RandRange(0.0f, 360.0f);
+	float RandomRadius = FMath::RandRange(CurrentStageDataCache.SpawnRadius * 0.7f, CurrentStageDataCache.SpawnRadius);
+	
+	FVector RandomOffset = FVector(
+		FMath::Cos(FMath::DegreesToRadians(RandomAngle)) * RandomRadius,
+		FMath::Sin(FMath::DegreesToRadians(RandomAngle)) * RandomRadius,
+		0.0f
+	);
+	
+	FVector TargetLocation = PlayerLocation + RandomOffset;
+	
+	// 내비게이션 시스템을 통한 안전한 위치 찾기
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (NavSys)
+	{
+		FNavLocation NavLocation;
+		// 반경 500 유닛 내에서 네비게이션 가능한 위치 찾기
+		if (NavSys->ProjectPointToNavigation(TargetLocation, NavLocation, FVector(500.0f, 500.0f, 1000.0f)))
+		{
+			return NavLocation.Location;
+		}
+	}
+	
+	// 내비게이션 실패 시 일반적인 지면 체크
+	FHitResult HitResult;
+	FVector StartTrace = TargetLocation + FVector(0, 0, 1000.0f);
+	FVector EndTrace = TargetLocation - FVector(0, 0, 1000.0f);
+	
+	// 지면 체크를 위해 Static / Dynamic 모두 검사
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	
+	if (UKismetSystemLibrary::LineTraceSingleForObjects(
+		GetWorld(), StartTrace, EndTrace, ObjectTypes, false, TArray<AActor*>(), 
+		EDrawDebugTrace::None, HitResult, true))
+	{
+		return HitResult.Location + FVector(0, 0, 5.0f); // 지면에서 살짝 위로
+	}
+	
+	return TargetLocation;
+}
+
+bool APGStageManager::IsValidSpawnLocation(const FVector& Location) const
+{
+	// 1. 경사면 각도 체크
+	if (!IsValidSlope(Location))
+	{
+		return false;
+	}
+	
+	// 2. 내비게이션 메시 체크
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (NavSys)
+	{
+		FNavLocation NavLocation;
+		if (!NavSys->ProjectPointToNavigation(Location, NavLocation, FVector(100.0f, 100.0f, 200.0f)))
+		{
+			return false;
+		}
+	}
+	
+	// 3. 충돌 체크 (캐릭터 크기의 캡슐로 체크)
+	FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(50.0f, 100.0f);
+	FCollisionQueryParams QueryParams;
+	QueryParams.bTraceComplex = false;
+	
+	if (GetWorld()->OverlapBlockingTestByChannel(
+		Location, FQuat::Identity, ECC_Pawn, CapsuleShape, QueryParams))
+	{
+		return false;
+	}
+	
+	// 4. 플레이어와 최소 거리 체크
+	if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+	{
+		float DistanceToPlayer = FVector::Dist(Location, PlayerPawn->GetActorLocation());
+		const float MinDistanceFromPlayer = 200.0f; // 최소 거리
+		
+		if (DistanceToPlayer < MinDistanceFromPlayer)
+		{
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+bool APGStageManager::IsValidSlope(const FVector& Location) const
+{
+	// 여러 방향으로 레이캐스트하여 경사면 체크
+	TArray<FVector> CheckDirections = {
+		FVector(1, 0, 0),   // 동쪽
+		FVector(-1, 0, 0),  // 서쪽  
+		FVector(0, 1, 0),   // 북쪽
+		FVector(0, -1, 0)   // 남쪽
+	};
+	
+	const float CheckDistance = 100.0f;
+	const float MaxSlopeAngle = 45.0f; // 최대 경사각 (도)
+	
+	for (const FVector& Direction : CheckDirections)
+	{
+		FVector StartPos = Location + FVector(0, 0, 50.0f);
+		FVector EndPos = StartPos + (Direction * CheckDistance);
+		EndPos.Z -= 200.0f; // 아래쪽으로 체크
+		
+		FHitResult HitResult;
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, StartPos, EndPos, ECC_WorldStatic))
+		{
+			FVector SurfaceNormal = HitResult.Normal;
+			float SlopeAngle = FMath::RadiansToDegrees(FMath::Acos(SurfaceNormal.Z));
+			
+			if (SlopeAngle > MaxSlopeAngle)
+			{
+				return false; // 너무 가파른 경사
+			}
+		}
+	}
+	
+	return true;
 }
 
 void APGStageManager::OnEnemyKilled(APGCharacterEnemy* KilledEnemy)

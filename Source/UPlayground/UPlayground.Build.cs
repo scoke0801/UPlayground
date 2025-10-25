@@ -28,6 +28,7 @@ public class UPlayground : ModuleRules
 			"UMG",
 			"Niagara",
 			"CommonUI",
+			"NavigationSystem"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 
