@@ -131,6 +131,9 @@ private:
 	
 	void UpdateHpBar();
 	
+	/** 스테이지 매니저에 처치 알림 */
+	void NotifyStageManagerOnDeath();
+	
 	/** Dissolve 효과 관련 함수들 */
 	void StartDissolveEffect();
 	
