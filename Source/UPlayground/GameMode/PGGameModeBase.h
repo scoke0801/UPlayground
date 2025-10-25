@@ -16,4 +16,5 @@ class UPLAYGROUND_API APGGameModeBase : public AGameModeBase
 
 public:
 	APGGameModeBase();
+
 };

@@ -11,6 +11,8 @@
 #include "Components/TimelineComponent.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
@@ -18,6 +20,7 @@
 #include "PGActor/Components/Combat/PGSkillMontageController.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
+#include "PGActor/Manager/PGStageManager.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataAsset/StartUpData/PGDataAsset_StartUpDataBase.h"
@@ -25,6 +28,8 @@
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 #include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 #include "PGUI/Component/Base/PGWidgetComponentBase.h"
 #include "PGUI/Manager/PGDamageFloaterManager.h"
@@ -221,6 +226,9 @@ void APGCharacterEnemy::OnDied()
 		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	// 스테이지 매니저에 처치 알림
+	NotifyStageManagerOnDeath();
+
 	// Dissolve VFX 재생
 	if (UPGDataTableManager* DataManager = PGData())
 	{
@@ -345,6 +353,15 @@ void APGCharacterEnemy::UpdateHpBar()
 		return;
 	}
 	EnemyNamePlate->SetHpPercent(static_cast<float>(EnemyStatComponent->CurrentHealth) / EnemyStatComponent->GetStat(EPGStatType::Health));
+}
+
+void APGCharacterEnemy::NotifyStageManagerOnDeath()
+{
+	if (UPGMessageManager* Manager = PGMessage())
+	{
+		FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>> EventData(this);
+		Manager->SendMessage(EPGSharedMessageType::OnDied, &EventData);
+	}
 }
 
 void APGCharacterEnemy::StartDissolveEffect()

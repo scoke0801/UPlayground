@@ -4,6 +4,9 @@
 #include "GameMode/PGGameModeBase.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Controllers/PGPlayerController.h"
+#include "PGActor/Manager/PGStageManager.h"
+#include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
+#include "Engine/World.h"
 
 APGGameModeBase::APGGameModeBase()
 {
@@ -13,4 +16,3 @@ APGGameModeBase::APGGameModeBase()
 	// 기본 PlayerController 클래스 설정
 	PlayerControllerClass = APGPlayerController::StaticClass();
 }
-

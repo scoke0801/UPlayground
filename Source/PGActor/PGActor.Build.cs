@@ -35,7 +35,9 @@ public class PGActor : ModuleRules
 				"MotionWarping",
 				"AIModule", 
 				"PGMessage",
-				"PGUI", "Niagara"
+				"PGUI", 
+				"Niagara",
+				"NavigationSystem"
 			});
 	}
 }
