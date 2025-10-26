@@ -1,5 +1,7 @@
 https://www.notion.so/2465e2a36249804aaf1ec0551054cbdd
 
+## 리소스는 유료 에셋이 포함되어 있기에 별도 Private 저장소로 관리됩니다.
+
 ## 1. 게임 개요
 
 **장르**: 3D 탑 등반 로그라이크 액션 RPG
@@ -14,106 +16,85 @@ https://www.notion.so/2465e2a36249804aaf1ec0551054cbdd
 
 플레이어는 무한히 높아지는 신비한 탑을 등반하며, 각 층마다 다른 적과 도전 과제를 마주합니다. 죽으면 처음부터 시작하지만, 영구 업그레이드와 새로운 능력을 획득하여 점진적으로 발전합니다.
 
-## 2. 핵심 시스템 설계
 
-### 2.1 플레이어 캐릭터 시스템
+## AI 기반 프로젝트 코드 분석
+# UPlayground
 
-- **3인칭 컨트롤러**: 부드러운 이동, 점프, 회피, 공격
-- **장비 교체**: 구매한 캐릭터 에셋 기반, 원거리 & 근거리 기능 구현
-    - https://www.fab.com/ko/listings/fb5bc083-114e-4e30-a9d5-2828bafb2701
+**언리얼 엔진 5.4 기반 C++ 게임 개발 프로젝트**
 
-![image.png](attachment:31721c0d-02da-4c89-aff0-e4e795977c6d:image.png)
+## 🎮 프로젝트 개요
 
-### 2.2 어빌리티 시스템 (UE5 GAS 활용)
+UPlayground는 언리얼 엔진 5.4를 사용하여 개발된 액션 게임 프로젝트입니다. 모듈화된 구조와 최신 언리얼 기능들을 활용하여 확장 가능하고 유지보수가 용이한 게임 시스템을 구축했습니다.
 
-```
-GameplayAbilitySystem 기반 구조:
-├── Abilities (스킬)
-│   ├── Active Skills (액티브 스킬)
-│   ├── Passive Skills (패시브 능력)
-│   └── Ultimate Skills (궁극기)
-├── Attributes (능력치)
-│   ├── Health/Mana
-│   ├── Damage/Defense
-│   └── Speed/CooldownReduction
-└── Effects (상태효과)
-    ├── Buffs/Debuffs
-    ├── DoT Effects
-    └── Crowd Control
+## 🏗️ 아키텍처
 
-```
+### 모듈 구조
+- **UPlayground** - 메인 게임 모듈
+- **PGData** - 데이터 테이블 및 에셋 관리
+- **PGAbilitySystem** - Gameplay Ability System 구현
+- **PGActor** - 캐릭터, AI, 컴포넌트 시스템
+- **PGShared** - 공통 유틸리티 및 열거형
+- **PGUI** - UI 위젯 및 관리 시스템
+- **PGMessage** - 메시지 기반 이벤트 시스템
+- **PGAI** - AI 행동 및 제어 시스템
 
-### 2.3 데이터 기반 시스템
+## ⚡ 주요 기능
 
-**Excel → DataTable 워크플로우:**
+### 핵심 시스템
+- **Enhanced Input System** - 현대적인 입력 처리
+- **Gameplay Ability System** - 확장 가능한 스킬/어빌리티 시스템
+- **모듈화된 컴포넌트** - 재사용 가능한 게임플레이 요소
+- **메시지 기반 통신** - 느슨한 결합을 통한 시스템 간 통신
 
-- 캐릭터 스탯 (CharacterStatsDataTable)
-- 스킬 데이터 (SkillDataTable)
-- 아이템 데이터 (ItemDataTable)
-- 층별 정보 (FloorDataTable)
-- 적 정보 (EnemyDataTable)
+### 게임플레이
+- **플레이어 캐릭터** - 3인칭 카메라, 부드러운 이동 및 회전
+- **전투 시스템** - 데미지 계산, HP 관리, 시각적 피드백
+- **UI 시스템** - HP 바, 데미지 플로터 등 게임 UI
+- **스킬 시스템** - 다양한 스킬 슬롯과 몽타주 제어
 
-## 3. 게임플레이 루프
+### 스킬 시스템
+**다양한 스킬 타입을 지원하는 확장 가능한 전투 시스템**
 
-### 3.1 탑 등반 구조
+#### 구현된 스킬 타입
+- **근접 공격 (Melee)** - 직접적인 근거리 전투
+- **투사체 공격 (Projectile)** - 풀링 시스템을 활용한 원거리 공격
+- **AOE 공격 (Area of Effect)** - 범위 피해 및 지속 효과
+- **힐링 (Heal)** - 아군 대상 체력 회복
+- **인디케이터 표시** - 데칼 기반 공격 범위 사전 표시
 
-- **층 구성**: 5개 구역당 1개 보스층 (1-4층: 일반, 5층: 보스)
-- **층별 목표**: 모든 적 처치, 퍼즐 해결, 보스 격파
-- **진행 방식**: 층별 클리어 → 다음 층 해금
+#### 시스템 특징
+- **풀링 시스템** - 투사체 및 이펙트 최적화
+- **데이터 테이블 기반** - 스킬 데이터 관리
+- **애니메이션 통합** - AnimNotify를 통한 정확한 타이밍 제어
+- **AI 통합** - 적 AI의 스킬 선택 및 실행
 
-### 3.2 로그라이크 요소
+## 🛠️ 기술 스택
 
-- **사망 시**: 탑 1층으로 리스폰
-- **영구 진행**: 메타 화폐로 영구 업그레이드 구매
-- **랜덤 요소**: 층 레이아웃, 적 배치, 아이템 드랍
+### 엔진 & 언어
+- **언리얼 엔진 5.4**
+- **C++** (게임 로직)
+- **Blueprint** (프로토타이핑 및 UI)
 
-### 3.3 진행 시스템
+### 주요 플러그인
+- **GameplayAbilities** - 스킬 시스템
+- **CommonUI** - 통합 UI 프레임워크
+- **EnhancedInput** - 입력 시스템
+- **AnimationLocomotionLibrary** - 애니메이션 시스템
+- **MotionWarping** - 고급 애니메이션 기능
 
-- **경험치 & 레벨**: 런 동안만 유지되는 임시 성장
-- **스킬 트리**: 레벨업 시 선택하는 임시 능력
-- **영구 업그레이드**: 메타 화폐로 구매하는 영구 능력
-
-## 4. 기술 아키텍처
-
-### 4.1 모듈 구조
-
-```
-Core Systems:
-├── PlayerController (입력 처리)
-├── GameplayAbilitySystem (스킬/능력)
-├── DataManager (데이터테이블 관리)
-├── MessageManager (이벤트 관리)
-├── FloorManager (층 생성/관리)
-└── SaveManager (진행상황 저장)
+## 📁 프로젝트 구조
 
 ```
-
-### 4.2 데이터 플로우
-
+UPlayground/
+├── Source/
+│   ├── UPlayground/           # 메인 게임 모듈
+│   ├── PGData/                # 데이터 시스템
+│   ├── PGAbilitySystem/       # 어빌리티 시스템
+│   ├── PGActor/               # 액터 및 컴포넌트
+│   ├── PGShared/              # 공통 요소
+│   ├── PGUI/                  # UI 시스템
+│   ├── PGMessage/             # 메시지 시스템
+│   └── PGAI/                  # AI 시스템
+├── Content/                   # 게임 에셋
+└── UPlayground.uproject       # 프로젝트 파일
 ```
-Excel Files → Import → DataTables → Runtime Access
-                                 ↓
-MessageManager ← GameSystems → DataManager
-
-```
-
-### 4.3 핵심 컴포넌트
-
-- **AbilitySystemComponent**: GAS 기반 능력 관리
-- **InventoryComponent**: 아이템 관리
-- **StatsComponent**: 능력치 관리
-- **~~FloorProgressComponent**: 층별 진행상황~~
-
-## 5. 아트 & 에셋
-
-### 5.1 캐릭터
-
-- **플레이어**: 구매한 Stylized 캐릭터 사용
-- **적**: 비슷한 스타일의 Stylized 에셋 확보
-- **애니메이션**: 전투, 이동, 스킬 사용 애니메이션
-
-### 5.2 환경
-
-- **탑 구조**: 모듈식 환경 에셋으로 층별 다양성
-- **조명**: 층별 분위기에 맞는 라이팅
-- **파티클**: 스킬 이펙트, 환경 효과
