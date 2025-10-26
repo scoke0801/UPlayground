@@ -1,4 +1,5 @@
 https://www.notion.so/2465e2a36249804aaf1ec0551054cbdd
+https://drive.google.com/drive/folders/1fGY9DwrEaDVveVuxoxRhlmtZSPXKDiId?usp=sharing
 
 ## 리소스는 유료 에셋이 포함되어 있기에 별도 Private 저장소로 관리됩니다.
 
