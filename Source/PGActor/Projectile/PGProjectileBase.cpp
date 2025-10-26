@@ -15,7 +15,7 @@
 APGProjectileBase::APGProjectileBase()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true; // 거리 체크를 위해 Tick 활성화
 	
 	Root = CreateDefaultSubobject<USceneComponent>("Root");
 	SetRootComponent(Root);
@@ -48,15 +48,34 @@ APGProjectileBase::APGProjectileBase()
 	// 충돌 이벤트 바인딩
 	ProjectileCollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnProjectileHit);
 	ProjectileCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnProjectileOverlapped);
+
+	// 거리 추적 변수 초기화
+	StartLocation = FVector::ZeroVector;
+	TraveledDistance = 0.0f;
 }
 
-void APGProjectileBase::Fire(AActor* InShooterActor, const FVector& StartLocation, const FVector& Direction, float Speed,
+void APGProjectileBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// 거리 체크 (최대 거리가 설정되어 있는 경우에만)
+	if (MaxTravelDistance > 0.0f)
+	{
+		CheckTravelDistance();
+	}
+}
+
+void APGProjectileBase::Fire(AActor* InShooterActor, const FVector& InStartLocation, const FVector& Direction, float Speed,
 	float InDamage)
 {
-	SetActorLocation(StartLocation);
+	SetActorLocation(InStartLocation);
 	SetActorRotation(Direction.Rotation());
 
 	Shooter = InShooterActor;
+	
+	// 거리 추적을 위한 시작 위치 저장
+	this->StartLocation = InStartLocation;
+	TraveledDistance = 0.0f;
 	
 	MovementComponent->SetVelocityInLocalSpace(FVector::ForwardVector * Speed);
 	Damage = InDamage;
@@ -69,9 +88,12 @@ void APGProjectileBase::Fire(AActor* InShooterActor, const FVector& StartLocatio
 		ProjectileCollisionBox->SetCollisionResponseToChannel(Character->GetCollisionChannel(), ECR_Ignore);
 	}
 	
-	// 수명 타이머
-	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, 
-		&ThisClass::OnLifeTimeExpired, LifeTime, false);
+	// 수명 타이머 (시간 제한이 설정되어 있는 경우에만)
+	if (LifeTime > 0.0f)
+	{
+		GetWorldTimerManager().SetTimer(LifeTimeHandle, this, 
+			&ThisClass::OnLifeTimeExpired, LifeTime, false);
+	}
 }
 
 void APGProjectileBase::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
@@ -107,5 +129,23 @@ void APGProjectileBase::OnProjectileOverlapped(UPrimitiveComponent* OverlappedCo
 
 void APGProjectileBase::OnLifeTimeExpired()
 {
+	Destroy();
+}
+
+void APGProjectileBase::CheckTravelDistance()
+{
+	// 현재 위치에서 시작 위치까지의 거리 계산
+	TraveledDistance = FVector::Dist(GetActorLocation(), StartLocation);
+	
+	// 최대 거리 초과 시 삭제
+	if (TraveledDistance >= MaxTravelDistance)
+	{
+		OnMaxDistanceReached();
+	}
+}
+
+void APGProjectileBase::OnMaxDistanceReached()
+{
+	UE_LOG(LogTemp, Log, TEXT("APGProjectileBase: 최대 이동거리 %.2f 도달, 투사체 삭제"), MaxTravelDistance);
 	Destroy();
 }

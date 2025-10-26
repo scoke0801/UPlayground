@@ -34,13 +34,15 @@ public:
 
 public:
 	// 투사체 발사
-	virtual void Fire(AActor* InShooterActor, const FVector& StartLocation, const FVector& Direction, float Speed = 1000.0f, float InDamage = 10.0f) override;
+	virtual void Fire(AActor* InShooterActor, const FVector& InStartLocation, const FVector& Direction, float Speed = 1000.0f, float InDamage = 10.0f) override;
 
 	virtual void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
 
 	virtual void OnProjectileOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit) override;
 
 	virtual void OnLifeTimeExpired() override;
+
+	virtual void OnMaxDistanceReached() override;
 	
 protected:
 	// Actor 생명주기

@@ -35,7 +35,7 @@ int32 UPGStatComponent::GetStat(EPGStatType StatType) const
 	return 0;
 }
 
-int32 UPGStatComponent::CalculateDamage(const UPGStatComponent* const OtherStatComponent, OUT EPGDamageType OutDamageType) const
+int32 UPGStatComponent::CalculateDamage(const UPGStatComponent* const OtherStatComponent, OUT EPGDamageType& OutDamageType) const
 {
 	// 1. 기본 데미지
 	float BaseDamage = OtherStatComponent->GetStat(EPGStatType::Attack);
@@ -61,7 +61,7 @@ int32 UPGStatComponent::CalculateDamage(const UPGStatComponent* const OtherStatC
 }
 
 int32 UPGStatComponent::CalculateDamageWithWeapon(const UPGStatComponent* const OtherStatComponent, 
-	const UPGPawnCombatComponent* const OtherCombatComponent, OUT EPGDamageType OutDamageType) const
+	const UPGPawnCombatComponent* const OtherCombatComponent, OUT EPGDamageType& OutDamageType) const
 {
 	// 1. 기본 공격력 (캐릭터 스탯)
 	float BaseDamage = OtherStatComponent->GetStat(EPGStatType::Attack);
@@ -125,7 +125,7 @@ int32 UPGStatComponent::CalculateDamageWithWeapon(const UPGStatComponent* const 
 }
 
 int32 UPGStatComponent::CalculateDamageAuto(const UPGStatComponent* const OtherStatComponent, 
-	const UPGPawnCombatComponent* const OtherCombatComponent, OUT EPGDamageType OutDamageType) const
+	const UPGPawnCombatComponent* const OtherCombatComponent, OUT EPGDamageType& OutDamageType) const
 {
 	// 무기가 있으면 무기 포함 계산, 없으면 기본 계산
 	if (OtherCombatComponent && OtherCombatComponent->GetCharacterCurrentEquippedWeapon())

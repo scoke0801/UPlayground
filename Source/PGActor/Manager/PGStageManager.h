@@ -61,6 +61,7 @@ private:
 
 private:
 	FDelegateHandle OnActorDiedHandle;
+	FDelegateHandle OnActorSpawnedHandle;
 
 public:    
 	APGStageManager();
@@ -139,7 +140,10 @@ private:
 
 private:
 	// 액터 사망 시 메시지 수신
-	void OnActorDied(const IPGEventData* IpgEventData);
+	void OnActorDied(const IPGEventData* InEventData);
+
+	// 액터 생성 메시지 수신 - 스폰스킬에 의한...
+	void OnActorSpawned(const IPGEventData* InEventData);
 	
 public:
 	// Getter 함수들

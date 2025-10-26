@@ -41,20 +41,38 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Projectile")
 	float LifeTime = 5.0f;
 
+	// 최대 이동 거리 (0이면 거리 제한 없음)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PG|Projectile")
+	float MaxTravelDistance = 0.0f;
+
 protected:
 	UPROPERTY(Transient)
 	FTimerHandle LifeTimeHandle;
 
 	UPROPERTY(Transient)
 	AActor* Shooter;
+
+	// 거리 추적용 변수들
+	UPROPERTY(Transient)
+	FVector StartLocation;
+
+	UPROPERTY(Transient)
+	float TraveledDistance;
 	
 public:
 	APGProjectileBase();
+
+protected:
+	virtual void Tick(float DeltaTime) override;
 	
 public:
 	// 투사체 발사
 	UFUNCTION(BlueprintCallable)
-	virtual void Fire(AActor* InShooterActor, const FVector& StartLocation, const FVector& Direction, float Speed = 1000.0f, float InDamage = 10.0f);
+	virtual void Fire(AActor* InShooterActor, const FVector& InStartLocation, const FVector& Direction, float Speed = 1000.0f, float InDamage = 10.0f);
+
+	// 최대 이동 거리 설정
+	UFUNCTION(BlueprintCallable)
+	void SetMaxTravelDistance(float InMaxDistance) { MaxTravelDistance = InMaxDistance; }
 
 protected:
 	UFUNCTION()
@@ -68,4 +86,10 @@ protected:
 		const FHitResult& Hit);
 	
 	virtual void OnLifeTimeExpired();
+
+	// 최대 거리 도달 시 호출
+	virtual void OnMaxDistanceReached();
+
+	// 거리 체크
+	void CheckTravelDistance();
 };

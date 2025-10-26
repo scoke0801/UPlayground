@@ -43,6 +43,7 @@ enum class EPGSharedMessageType : uint8
 
     OnHit,
     OnDied,
+    OnSpawned,
     
     Max UMETA(Hidden)
 };
@@ -53,6 +54,7 @@ enum class EPGUIMessageType : uint8
     None = 0,
 
     ClickSkillButton,
+    StageChanged,
     
     Max UMETA(Hidden)
 };

@@ -20,6 +20,11 @@ void APGGameModeStage::BeginPlay()
 	
 	// 스테이지 매니저 생성
 	CreateStageManager();
+}
+
+void APGGameModeStage::StartPlay()
+{
+	Super::StartPlay();
 	
 	// 게임 시작
 	StartGame();

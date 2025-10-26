@@ -25,6 +25,9 @@ void APGStageManager::BeginPlay()
 
 	OnActorDiedHandle = PGMessage()->RegisterDelegate(EPGSharedMessageType::OnDied,
 	this, &ThisClass::OnActorDied);
+
+	OnActorDiedHandle = PGMessage()->RegisterDelegate(EPGSharedMessageType::OnSpawned,
+	this, &ThisClass::OnActorSpawned);
 }
 
 void APGStageManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -34,6 +37,7 @@ void APGStageManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		if (UPGMessageManager* Manager = PGMessage())
 		{
 			Manager->UnregisterDelegate(EPGSharedMessageType::OnDied, OnActorDiedHandle);
+			Manager->UnregisterDelegate(EPGSharedMessageType::OnSpawned, OnActorSpawnedHandle);
 		}
 	}
 	Super::EndPlay(EndPlayReason);
@@ -69,6 +73,10 @@ void APGStageManager::StartStage(int32 StageId)
 	// 델리게이트 호출
 	OnStageStarted.Broadcast(CurrentStageId);
 	OnMonsterCountChanged.Broadcast(RemainingMonsters);
+
+	// 메시지 전송
+	FPGEventDataOneParam<int32> ToSendData(StageId);
+	UPGMessageManager::Get()->SendMessage(EPGUIMessageType::StageChanged, &ToSendData);
 	
 	UE_LOG(LogTemp, Log, TEXT("PGStageManager: 스테이지 %d 시작 - 몬스터 %d마리"), 
 		   CurrentStageId, CurrentStageDataCache.TotalMonsterCount);
@@ -388,10 +396,10 @@ void APGStageManager::ShowRewardSelection()
 {
 	// TODO: 보상 선택 UI 표시
 	
-	// 테스트용: 3초 후 자동으로 보상 선택 완료
+	// 테스트용: {}초 후 자동으로 보상 선택 완료
 	FTimerHandle AutoRewardTimer;
 	GetWorld()->GetTimerManager().SetTimer(AutoRewardTimer, 
-		this, &APGStageManager::OnRewardSelected, 3.0f, false);
+		this, &APGStageManager::OnRewardSelected, 1.5f, false);
 }
 
 void APGStageManager::OnRewardSelected()
@@ -456,6 +464,19 @@ void APGStageManager::OnActorDied(const IPGEventData* InEventData)
 		
 		UE_LOG(LogTemp, Log, TEXT("PGStageManager: 스테이지 %d 클리어! 보상 선택 단계"), CurrentStageId);
 	}
+}
+
+void APGStageManager::OnActorSpawned(const IPGEventData* InEventData)
+{
+	const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>* CastedParam
+		= static_cast<const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>*>(InEventData);
+	if (nullptr == CastedParam || false == CastedParam->Value.IsValid())
+	{
+		return;
+	}
+
+	SpawnedEnemies.Add(CastedParam->Value.Get());
+	++RemainingMonsters;
 }
 
 void APGStageManager::ClearAllEnemies()

@@ -28,6 +28,7 @@ public:
 	
 protected:
 	virtual void BeginPlay() override;
+	virtual void StartPlay() override;
 	
 public:
 	// 스테이지 매니저 접근 함수
