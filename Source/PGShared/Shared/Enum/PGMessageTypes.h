@@ -53,6 +53,7 @@ enum class EPGUIMessageType : uint8
     None = 0,
 
     ClickSkillButton,
+    StageChanged,
     
     Max UMETA(Hidden)
 };

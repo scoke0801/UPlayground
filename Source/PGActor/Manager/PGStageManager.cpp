@@ -69,6 +69,10 @@ void APGStageManager::StartStage(int32 StageId)
 	// 델리게이트 호출
 	OnStageStarted.Broadcast(CurrentStageId);
 	OnMonsterCountChanged.Broadcast(RemainingMonsters);
+
+	// 메시지 전송
+	FPGEventDataOneParam<int32> ToSendData(StageId);
+	UPGMessageManager::Get()->SendMessage(EPGUIMessageType::StageChanged, &ToSendData);
 	
 	UE_LOG(LogTemp, Log, TEXT("PGStageManager: 스테이지 %d 시작 - 몬스터 %d마리"), 
 		   CurrentStageId, CurrentStageDataCache.TotalMonsterCount);
