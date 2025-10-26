@@ -26,4 +26,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DefaultDamage = 10.0f;
+
+	// 최대 이동 거리 (0이면 거리 제한 없음)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxTravelDistance = 0.0f;
 };

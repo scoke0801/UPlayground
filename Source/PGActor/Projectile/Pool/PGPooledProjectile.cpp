@@ -11,7 +11,7 @@
 #include "PGShared/Shared/Debug/PGDebugHelper.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 
-void APGPooledProjectile::Fire(AActor* InShooterActor, const FVector& StartLocation, const FVector& Direction, float Speed, float InDamage)
+void APGPooledProjectile::Fire(AActor* InShooterActor, const FVector& InStartLocation, const FVector& Direction, float Speed, float InDamage)
 {
 	// MovementComponent 재활성화
 	if (MovementComponent)
@@ -20,7 +20,7 @@ void APGPooledProjectile::Fire(AActor* InShooterActor, const FVector& StartLocat
 		MovementComponent->SetUpdatedComponent(RootComponent);
 	}
 
-	Super::Fire(InShooterActor, StartLocation, Direction, Speed, InDamage);
+	Super::Fire(InShooterActor, InStartLocation, Direction, Speed, InDamage);
 	
 	bInUse = true;
 }
@@ -72,6 +72,13 @@ void APGPooledProjectile::OnProjectileOverlapped(UPrimitiveComponent* HitComp, A
 void APGPooledProjectile::OnLifeTimeExpired()
 {
 	// 수명 만료 시 풀로 반환
+	ReturnToPool();
+}
+
+void APGPooledProjectile::OnMaxDistanceReached()
+{
+	// 최대 거리 도달 시 풀로 반환
+	UE_LOG(LogTemp, Log, TEXT("APGPooledProjectile: 최대 이동거리 도달, 풀로 반환"));
 	ReturnToPool();
 }
 

@@ -73,6 +73,12 @@ APGPooledProjectile* UPGProjectileManager::FireProjectile(int32 ProjectileId, AA
 	float FinalSpeed = (Speed > 0) ? Speed : (ProjectileData ? ProjectileData->DefaultSpeed : 1000.0f);
 	float FinalDamage = ProjectileData ? ProjectileData->DefaultDamage : 10.0f;
 
+	// 최대 이동 거리 설정
+	if (ProjectileData && ProjectileData->MaxTravelDistance > 0.0f)
+	{
+		Projectile->SetMaxTravelDistance(ProjectileData->MaxTravelDistance);
+	}
+
 	// 발사
 	Projectile->Fire(Shooter, Origin, Direction, FinalSpeed, FinalDamage);
 	
