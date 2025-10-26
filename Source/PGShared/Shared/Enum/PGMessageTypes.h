@@ -43,6 +43,7 @@ enum class EPGSharedMessageType : uint8
 
     OnHit,
     OnDied,
+    OnSpawned,
     
     Max UMETA(Hidden)
 };

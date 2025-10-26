@@ -6,6 +6,10 @@
 #include "AbilitySystemComponent.h"
 #include "NavigationSystem.h"
 #include "Engine/AssetManager.h"
+#include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 
 void UPGAbilityTask_WaitSpawnEnemy::OnDestroy(bool bInOwnerFinished)
 {
@@ -94,6 +98,9 @@ void UPGAbilityTask_WaitSpawnEnemy::OnEnemyClassLoaded()
 		if (SpawnedEnemy)
 		{
 			SpawndEnemies.Add(SpawnedEnemy);
+			
+			FPGEventDataOneParam<TWeakObjectPtr<AActor>> ToSendData(SpawnedEnemy);
+			UPGMessageManager::Get()->SendMessage(EPGSharedMessageType::OnSpawned, &ToSendData);
 		}
 	}
 
