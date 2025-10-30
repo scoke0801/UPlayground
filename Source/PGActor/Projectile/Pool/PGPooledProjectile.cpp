@@ -77,6 +77,11 @@ void APGPooledProjectile::OnLifeTimeExpired()
 
 void APGPooledProjectile::OnMaxDistanceReached()
 {
+	if (!bInUse)
+	{
+		return;
+	}
+		
 	// 최대 거리 도달 시 풀로 반환
 	UE_LOG(LogTemp, Log, TEXT("APGPooledProjectile: 최대 이동거리 도달, 풀로 반환"));
 	ReturnToPool();
@@ -84,7 +89,10 @@ void APGPooledProjectile::OnMaxDistanceReached()
 
 void APGPooledProjectile::ReturnToPool()
 {
-	if (!bInUse) return;
+	if (!bInUse)
+	{
+		return;
+	}
 	
 	// MovementComponent 안전하게 정지
 	if (MovementComponent)

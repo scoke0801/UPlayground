@@ -56,6 +56,11 @@ void APGStageManager::StartStage(int32 StageId)
 	{
 		return;
 	}
+	if (!IsValidStageData(CurrentStageDataCache))
+	{
+		UE_LOG(LogTemp, Error, TEXT("PGStageManagerImproved: 스테이지 %d 데이터가 유효하지 않음"), StageId);
+		return;
+	}
 	
 	// 기존 타이머 정리
 	GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
@@ -66,9 +71,12 @@ void APGStageManager::StartStage(int32 StageId)
 	
 	// 스테이지 설정
 	CurrentStageId = StageId;
-	RemainingMonsters = CurrentStageDataCache.TotalMonsterCount;
+	const int32 TotalMonsterCount = GetTotalMonsterCount(CurrentStageDataCache);
+	RemainingMonsters = TotalMonsterCount;
 	SpawnedMonsters = 0;
 	CurrentStageState = EPGStageState::InProgress;
+
+	InitializeMonsterSpawnQueue();
 	
 	// 델리게이트 호출
 	OnStageStarted.Broadcast(CurrentStageId);
@@ -78,9 +86,9 @@ void APGStageManager::StartStage(int32 StageId)
 	FPGEventDataOneParam<int32> ToSendData(StageId);
 	UPGMessageManager::Get()->SendMessage(EPGUIMessageType::StageChanged, &ToSendData);
 	
-	UE_LOG(LogTemp, Log, TEXT("PGStageManager: 스테이지 %d 시작 - 몬스터 %d마리"), 
-		   CurrentStageId, CurrentStageDataCache.TotalMonsterCount);
-	
+	UE_LOG(LogTemp, Log, TEXT("PGStageManagerImproved: 스테이지 %d 시작 - 총 몬스터 %d마리 (타입 %d가지)"), 
+		   CurrentStageId, TotalMonsterCount, CurrentStageDataCache.MonsterSpawnInfos.Num());
+    
 	// 몬스터 스폰 시작
 	if (CurrentStageDataCache.SpawnInterval > 0.0f)
 	{
@@ -91,7 +99,8 @@ void APGStageManager::StartStage(int32 StageId)
 	else
 	{
 		// 즉시 모든 몬스터 스폰
-		while (SpawnedMonsters < CurrentStageDataCache.TotalMonsterCount)
+		const int32 TotalCount = GetTotalMonsterCount(CurrentStageDataCache);
+		while (SpawnedMonsters < TotalCount && !MonsterSpawnQueue.IsEmpty())
 		{
 			SpawnEnemyBatch();
 		}
@@ -123,6 +132,30 @@ bool APGStageManager::LoadStageData(int32 StageId)
 	return true;
 }
 
+void APGStageManager::InitializeMonsterSpawnQueue()
+{
+	MonsterSpawnQueue.Empty();
+    
+	// 각 몬스터 타입별로 스폰 대기열 항목 생성
+	for (const FPGMonsterSpawnInfo& SpawnInfo : CurrentStageDataCache.MonsterSpawnInfos)
+	{
+		if (SpawnInfo.SpawnCount > 0)
+		{
+			FPGMonsterSpawnQueueItem QueueItem(
+				SpawnInfo.MonsterId,
+				SpawnInfo.SpawnCount,
+				SpawnInfo.SpawnDelayTime,
+				SpawnInfo.SpawnPriority
+			);
+            
+			MonsterSpawnQueue.Add(QueueItem);
+		}
+	}
+    
+	// 우선순위와 딜레이 시간에 따라 정렬
+	MonsterSpawnQueue.Sort();
+}
+
 void APGStageManager::SpawnEnemyBatch()
 {
 	if (CurrentStageState != EPGStageState::InProgress)
@@ -130,36 +163,48 @@ void APGStageManager::SpawnEnemyBatch()
 		return;
 	}
 	
-	// 스폰할 몬스터 수 계산
-	int32 MonstersToSpawn = FMath::Min(CurrentStageDataCache.SpawnBatchSize, 
-									  CurrentStageDataCache.TotalMonsterCount - SpawnedMonsters);
-	
-	// 배치 스폰
-	for (int32 i = 0; i < MonstersToSpawn; i++)
+	if (MonsterSpawnQueue.IsEmpty())
 	{
-		if (CurrentStageDataCache.SpawnTargets.Num() > 0)
+		// 모든 몬스터 스폰 완료
+		GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
+		return;
+	}
+
+	// 스폰할 몬스터 수 계산
+	const int32 TotalRemaining = GetTotalMonsterCount(CurrentStageDataCache) - SpawnedMonsters;
+	const int32 MonstersToSpawn = FMath::Min(CurrentStageDataCache.SpawnBatchSize, TotalRemaining);
+    
+	int32 SpawnedInThisBatch = 0;
+    
+	// 배치 스폰
+	for (int32 i = 0; i < MonstersToSpawn && !MonsterSpawnQueue.IsEmpty(); i++)
+	{
+		int32 SelectedMonsterId = SelectNextMonsterToSpawn();
+		if (SelectedMonsterId <= 0)
 		{
-			// 랜덤 적 타입 선택
-			int32 RandomIndex = FMath::RandRange(0, CurrentStageDataCache.SpawnTargets.Num() - 1);
-			int32 EnemyId = CurrentStageDataCache.SpawnTargets[RandomIndex];
-			
-			APGCharacterEnemy* SpawnedEnemy = SpawnSingleEnemy(EnemyId);
-			if (SpawnedEnemy)
-			{
-				SpawnedMonsters++;
-				SpawnedEnemies.Add(SpawnedEnemy);
-			}
+			break;
+		}
+        
+		APGCharacterEnemy* SpawnedEnemy = SpawnSingleEnemy(SelectedMonsterId);
+		if (SpawnedEnemy)
+		{
+			SpawnedMonsters++;
+			SpawnedInThisBatch++;
+			SpawnedEnemies.Add(SpawnedEnemy);
+            
+			// 몬스터 타입별 스폰 알림
+			const int32 RemainingOfThisType = GetRemainingSpawnCountForMonsterType(SelectedMonsterId);
+			OnMonsterTypeSpawned.Broadcast(SelectedMonsterId, RemainingOfThisType);
 		}
 	}
-	
-	UE_LOG(LogTemp, Log, TEXT("PGStageManager: %d마리 몬스터 스폰됨 (총 %d/%d)"), 
-		   MonstersToSpawn, SpawnedMonsters, CurrentStageDataCache.TotalMonsterCount);
-	
+    
+	UE_LOG(LogTemp, Log, TEXT("PGStageManagerImproved: %d마리 몬스터 스폰됨 (총 %d/%d)"), 
+		   SpawnedInThisBatch, SpawnedMonsters, GetTotalMonsterCount(CurrentStageDataCache));
+    
 	// 모든 몬스터 스폰 완료 시 타이머 정지
-	if (SpawnedMonsters >= CurrentStageDataCache.TotalMonsterCount)
+	if (SpawnedMonsters >= GetTotalMonsterCount(CurrentStageDataCache) || MonsterSpawnQueue.IsEmpty())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
-		UE_LOG(LogTemp, Log, TEXT("PGStageManager: 모든 몬스터 스폰 완료"));
 	}
 }
 
@@ -218,6 +263,43 @@ APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
 	}
 	
 	return SpawnedEnemy;
+}
+
+int32 APGStageManager::SelectNextMonsterToSpawn()
+{
+	if (MonsterSpawnQueue.IsEmpty())
+	{
+		return 0;
+	}
+    
+	// 현재 시간 기준으로 스폰 가능한 몬스터 찾기
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const float StageStartTime = CurrentTime - (SpawnedMonsters * CurrentStageDataCache.SpawnInterval);
+    
+	// 우선순위가 높고 딜레이 시간이 지난 몬스터 중에서 선택
+	for (int32 i = 0; i < MonsterSpawnQueue.Num(); i++)
+	{
+		FPGMonsterSpawnQueueItem& QueueItem = MonsterSpawnQueue[i];
+        
+		// 딜레이 시간 체크
+		if (CurrentTime >= StageStartTime + QueueItem.DelayTime)
+		{
+			// 이 타입에서 하나 스폰
+			QueueItem.RemainingCount--;
+			const int32 SelectedMonsterId = QueueItem.MonsterId;
+            
+			// 남은 수량이 0이면 대기열에서 제거
+			if (QueueItem.RemainingCount <= 0)
+			{
+				MonsterSpawnQueue.RemoveAt(i);
+			}
+            
+			return SelectedMonsterId;
+		}
+	}
+    
+	// 딜레이 시간이 지나지 않은 경우 0 반환 (스폰하지 않음)
+	return 0;
 }
 
 FVector APGStageManager::GetRandomSpawnLocation() const
@@ -489,6 +571,65 @@ void APGStageManager::ClearAllEnemies()
 		}
 	}
 	SpawnedEnemies.Empty();
+}
+
+int32 APGStageManager::GetRemainingSpawnCountForMonsterType(int32 MonsterId) const
+{
+	for (const FPGMonsterSpawnQueueItem& QueueItem : MonsterSpawnQueue)
+	{
+		if (QueueItem.MonsterId == MonsterId)
+		{
+			return QueueItem.RemainingCount;
+		}
+	}
+	return 0;
+}
+
+int32 APGStageManager::GetTotalMonsterCount(const FPGStageDataRow& StageData)
+{
+	int32 TotalCount = 0;
+	for (const FPGMonsterSpawnInfo& SpawnInfo : StageData.MonsterSpawnInfos)
+	{
+		TotalCount += SpawnInfo.SpawnCount;
+	}
+	return TotalCount;
+}
+
+bool APGStageManager::IsValidStageData(const FPGStageDataRow& StageData)
+{
+	if (StageData.MonsterSpawnInfos.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("스테이지 데이터 검증 실패: MonsterSpawnInfos가 비어있음"));
+		return false;
+	}
+
+	for (int32 i = 0; i < StageData.MonsterSpawnInfos.Num(); i++)
+	{
+		const FPGMonsterSpawnInfo& SpawnInfo = StageData.MonsterSpawnInfos[i];
+        
+		if (SpawnInfo.MonsterId <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("스테이지 데이터 검증 실패: 인덱스 %d - 유효하지 않은 몬스터 ID: %d"), 
+				i, SpawnInfo.MonsterId);
+			return false;
+		}
+        
+		if (SpawnInfo.SpawnCount <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("스테이지 데이터 검증 실패: 인덱스 %d - 유효하지 않은 스폰 수량: %d"), 
+				i, SpawnInfo.SpawnCount);
+			return false;
+		}
+        
+		if (SpawnInfo.SpawnDelayTime < 0.0f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("스테이지 데이터 검증 실패: 인덱스 %d - 유효하지 않은 딜레이 시간: %.2f"), 
+				i, SpawnInfo.SpawnDelayTime);
+			return false;
+		}
+	}
+
+	return true;
 }
 
 FPGStageDataRow APGStageManager::GetCurrentStageDataCopy() const
