@@ -12,7 +12,10 @@
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGShared/Shared/Enum/PGUIWIdgetEnumTypes.h"
 #include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
+#include "PGUI/Manager/PGUIManager.h"
+#include "PGUI/Widget/Window/PGUIWindowRewardSelect.h"
 
 APGStageManager::APGStageManager()
 {
@@ -477,6 +480,14 @@ void APGStageManager::OnEnemyKilled(APGCharacterEnemy* KilledEnemy)
 void APGStageManager::ShowRewardSelection()
 {
 	// TODO: 보상 선택 UI 표시
+	if (UPGUIManager* UIManager = PGUI())
+	{
+		if (UPGUIWindowRewardSelect* Window =
+			Cast<UPGUIWindowRewardSelect>(UIManager->OpenAndGetWidget(EPGUIWIdgetEnumTypes::Window_RewardSelect)))
+		{
+		// TODO..
+		}
+	}
 	
 	// 테스트용: {}초 후 자동으로 보상 선택 완료
 	FTimerHandle AutoRewardTimer;

@@ -2,10 +2,25 @@
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Kismet/GameplayStatics.h"
+#include "PGData/PGDataTableManager.h"
+#include "PGData/DataTable/AssetPath/PGUIWidgetPathRow.h"
+
+TWeakObjectPtr<UPGUIManager> UPGUIManager::WeakThis = nullptr;
+
+UPGUIManager* UPGUIManager::Get()
+{
+    if (WeakThis.IsValid())
+    {
+        return WeakThis.Get();
+    }
+    return nullptr;
+}
 
 void UPGUIManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
+    
+    WeakThis = MakeWeakObjectPtr(this);
     
     UE_LOG(LogTemp, Log, TEXT("PGUIManager Initialized"));
 }
@@ -79,6 +94,33 @@ bool UPGUIManager::OpenWindow(TSubclassOf<UPGUIWindow> WindowClass)
     }
 
     return false;
+}
+
+UPGWidgetBase* UPGUIManager::OpenAndGetWidget(const EPGUIWIdgetEnumTypes& InKey)
+{
+    UPGDataTableManager* tableManager= PGData();
+    if (nullptr == tableManager)
+    {
+        return nullptr;
+    }
+    
+    FPGUIWidgetPathRow* Data = PGData()->GetRowData<FPGUIWidgetPathRow>(static_cast<int64>(InKey));
+    if (nullptr == Data)
+    {
+        return nullptr;
+    }
+    TSoftClassPtr<UPGWidgetBase> SoftClassPtr(Data->ClassPath);
+
+    if (UClass* LoadedClass = SoftClassPtr.LoadSynchronous())
+    {
+        // 현재 월드 가져오기
+        if (UWorld* World = GetWorld())
+        {
+            return CreateWidget<UPGWidgetBase>(World, LoadedClass);
+        }
+    }
+    
+    return nullptr;
 }
 
 void UPGUIManager::CloseCurrentWindow()

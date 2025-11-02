@@ -4,10 +4,10 @@
 #include "PGDamageFloaterManager.h"
 
 #include "Components/CapsuleComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "PGData/PGDataTableManager.h"
-#include "PGData/DataTable/AssetPath/PGUIWidgetPathRow.h"
+#include "PGData/DataTable/AssetPath/PGUIDamageFloaterPathRow.h"
+#include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "PGUI/Widget/DamageFloater/PGUIDamageFloater.h"
 
 
@@ -177,7 +177,7 @@ void UPGDamageFloaterManager::CleanupExpiredFloaters()
 
 UPGUIDamageFloater* UPGDamageFloaterManager::CreateFloaterWidget(EPGDamageType DamageType)
 {
-	if (FPGUIWidgetPathRow* Data = PGData()->GetRowData<FPGUIWidgetPathRow>(static_cast<int64>(DamageType)))
+	if (FPGUIDamageFloaterPathRow* Data = PGData()->GetRowData<FPGUIDamageFloaterPathRow>(static_cast<int64>(DamageType)))
 	{
 		TSoftClassPtr<UPGUIDamageFloater> SoftClassPtr(Data->ClassPath);
 

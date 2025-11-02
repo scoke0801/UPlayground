@@ -45,6 +45,11 @@ private:
     float NotificationVerticalOffset = 0.0f;
     const float NotificationSpacing = 80.0f; // 알림 간 간격
 
+    static TWeakObjectPtr<UPGUIManager> WeakThis;
+    
+public:
+    static UPGUIManager* Get();
+    
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
@@ -62,48 +67,57 @@ public:
     UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
     bool OpenWindow(TSubclassOf<UPGUIWindow> WindowClass);
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+public:
+    // 윈도우 관리
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|WINDOW")
+    UPGWidgetBase* OpenAndGetWidget(const EPGUIWIdgetEnumTypes& InKey);
+
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|WINDOW")
     void CloseCurrentWindow();
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|WINDOW")
     bool IsWindowOpen() const { return CurrentWindow != nullptr; }
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|WINDOW")
     UPGUIWindow* GetCurrentWindow() const { return CurrentWindow; }
 
+public:
     // HUD 관리
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|HUD")
     void SetMainHUD(TSubclassOf<UPGUIHUD> HUDClass);
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|HUD")
     UPGUIHUD* GetMainHUD() const { return MainHUD; }
 
+public:
     // 팝업 관리
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|POPUP")
     UPGUIPopup* ShowPopup(TSubclassOf<UPGUIPopup> PopupClass, const FText& Title, const FText& Message, EPGUIPopupType Type = EPGUIPopupType::Information);
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|POPUP")
     UPGUIPopup* ShowConfirmationPopup(TSubclassOf<UPGUIPopup> PopupClass, const FText& Title, const FText& Message);
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|POPUP")
     void CloseAllPopups();
 
+public:
     // 알림 관리
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|NOTI")
     UPGUINotification* ShowNotification(TSubclassOf<UPGUINotification> NotificationClass, const FText& Message, EPGUINotificationType Type = EPGUINotificationType::Info, const FText& Title = FText::GetEmpty());
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|NOTI")
     UPGUINotification* ShowItemAcquiredNotification(TSubclassOf<UPGUINotification> NotificationClass, const FText& ItemName, int32 Quantity = 1, const FText& ItemIcon = FText::GetEmpty());
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|NOTI")
     UPGUINotification* ShowAchievementNotification(TSubclassOf<UPGUINotification> NotificationClass, const FText& AchievementName, const FText& Description = FText::GetEmpty());
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|NOTI")
     UPGUINotification* ShowLevelUpNotification(TSubclassOf<UPGUINotification> NotificationClass, int32 NewLevel, const FText& CharacterName = FText::GetEmpty());
 
-    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
+    UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|NOTI")
     void ClearAllNotifications();
 
+public:
     // UI 정리
     UFUNCTION(BlueprintCallable, Category = "PG|UI Manager")
     void CleanupInactiveWidgets();
@@ -127,3 +141,6 @@ private:
     void UnregisterWidget(UPGWidgetBase* Widget);
     APlayerController* GetFirstPlayerController() const;
 };
+
+
+#define PGUI() UPGUIManager::Get()
