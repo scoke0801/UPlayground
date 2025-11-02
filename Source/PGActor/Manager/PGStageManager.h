@@ -16,11 +16,44 @@ enum class EPGStageState : uint8
     Completed   UMETA(DisplayName = "Completed")
 };
 
+
+// 몬스터 스폰 대기열 항목
+USTRUCT()
+struct FPGMonsterSpawnQueueItem
+{
+	GENERATED_BODY()
+
+public:
+	int32 MonsterId = 0;
+	int32 RemainingCount = 0;
+	float DelayTime = 0.0f;
+	int32 Priority = 0;
+
+	FPGMonsterSpawnQueueItem() = default;
+    
+	FPGMonsterSpawnQueueItem(int32 InMonsterId, int32 InRemainingCount, float InDelayTime, int32 InPriority)
+		: MonsterId(InMonsterId), RemainingCount(InRemainingCount), DelayTime(InDelayTime), Priority(InPriority)
+	{
+	}
+
+	// 우선순위 정렬용 (높은 우선순위가 먼저)
+	bool operator<(const FPGMonsterSpawnQueueItem& Other) const
+	{
+		if (Priority != Other.Priority)
+		{
+			return Priority > Other.Priority;
+		}
+		return DelayTime < Other.DelayTime;
+	}
+};
+
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStageStarted, int32, StageNumber);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStageCompleted, int32, StageNumber);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMonsterCountChanged, int32, RemainingCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAllMonstersKilled);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, class APGCharacterEnemy*, SpawnedEnemy);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterTypeSpawned, int32, MonsterId, int32, RemainingOfThisType);
 
 UCLASS(BlueprintType, Blueprintable)
 class PGACTOR_API APGStageManager : public AActor
@@ -46,6 +79,10 @@ private:
 	
 	// 현재 스테이지 데이터 (값으로 저장하여 안전성 확보)
 	FPGStageDataRow CurrentStageDataCache;
+	
+	// 몬스터 스폰 대기열 (우선순위와 지정된 수량에 따라 관리)
+	UPROPERTY()
+	TArray<FPGMonsterSpawnQueueItem> MonsterSpawnQueue;
 	
 	// 스폰 타이머
 	UPROPERTY()
@@ -87,30 +124,48 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnEnemySpawned OnEnemySpawned;
 
+	// 몬스터 타입별 스폰 알림
+	UPROPERTY(BlueprintAssignable)
+	FOnMonsterTypeSpawned OnMonsterTypeSpawned;
+
 public:
 	// 스테이지 시작
-	UFUNCTION(BlueprintCallable, Category = "Stage Management")
+	UFUNCTION(BlueprintCallable, Category = "PG|Stage Management")
 	void StartStage(int32 StageId = -1);
 	
 	// 몬스터 처치 알림
-	UFUNCTION(BlueprintCallable, Category = "Stage Management")
+	UFUNCTION(BlueprintCallable, Category = "PG|Stage Management")
 	void OnEnemyKilled(APGCharacterEnemy* KilledEnemy);
 	
 	// 보상 선택 완료
-	UFUNCTION(BlueprintCallable, Category = "Stage Management")
+	UFUNCTION(BlueprintCallable, Category = "PG|Stage Management")
 	void OnRewardSelected();
 	
 	// 다음 스테이지로 진행
-	UFUNCTION(BlueprintCallable, Category = "Stage Management")
+	UFUNCTION(BlueprintCallable, Category = "PG|Stage Management")
 	void GoToNextStage();
 
 	// 모든 적 강제 제거
-	UFUNCTION(BlueprintCallable, Category = "Stage Management")
+	UFUNCTION(BlueprintCallable, Category = "PG|Stage Management")
 	void ClearAllEnemies();
+
+	// 특정 몬스터 타입의 남은 스폰 수량 확인
+	UFUNCTION(BlueprintCallable, Category = "PG|Stage Info")
+	int32 GetRemainingSpawnCountForMonsterType(int32 MonsterId) const;
+
+private:
+	// 스테이지 데이터의 전체 몬스터 수량 계산
+	static int32 GetTotalMonsterCount(const FPGStageDataRow& StageData);
+    
+	// 스테이지 데이터 유효성 검증
+	static bool IsValidStageData(const FPGStageDataRow& StageData);
 
 private:
 	// 스테이지 데이터 로드
 	bool LoadStageData(int32 StageId);
+	
+	// 몬스터 스폰 대기열 초기화
+	void InitializeMonsterSpawnQueue();
 	
 	// 몬스터 배치 스폰
 	UFUNCTION()
@@ -118,6 +173,9 @@ private:
 	
 	// 단일 몬스터 스폰
 	APGCharacterEnemy* SpawnSingleEnemy(int32 EnemyId);
+	
+	// 스폰 가능한 몬스터 타입 선택
+	int32 SelectNextMonsterToSpawn();
 	
 	// 스폰 위치 계산
 	FVector GetRandomSpawnLocation() const;
