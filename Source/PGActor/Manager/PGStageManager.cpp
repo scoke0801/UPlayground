@@ -485,7 +485,7 @@ void APGStageManager::ShowRewardSelection()
 		if (UPGUIWindowRewardSelect* Window =
 			Cast<UPGUIWindowRewardSelect>(UIManager->OpenAndGetWidget(EPGUIWIdgetEnumTypes::Window_RewardSelect)))
 		{
-		// TODO..
+			Window->SetRewardId(CurrentStageId);
 		}
 	}
 	

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "PGShared/Shared/Enum/PGRewardTypes.h"
 #include "UObject/SoftObjectPath.h"
 #include "PGStageDataRow.generated.h"
 
@@ -40,6 +41,33 @@ public:
 	}
 };
 
+
+USTRUCT(BlueprintType)
+struct PGDATA_API FPGStageReward
+{
+	GENERATED_BODY()
+
+public:
+	// 보상 타입
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "PG|Reward")
+	EPGRewardType RewardType = EPGRewardType::None;
+    
+	// 보상 ID
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "PG|Reward")
+	int32 RewardId = 0;
+    
+	// 가중치 (높을수록 나올 확률 높음)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "PG|Reward", meta=(ClampMin = "0.1"))
+	float Weight = 1.0f;
+    
+	FPGStageReward()
+	{
+		RewardType = EPGRewardType::None;
+		RewardId = 0;
+		Weight = 1.0f;
+	}
+};
+
 USTRUCT(BlueprintType)
 struct PGDATA_API FPGStageDataRow : public FTableRowBase
 {
@@ -52,6 +80,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage Info")
 	FString StageName = TEXT("Stage");
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage Info")
+	bool bIsBossStage = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage Info", meta = (ClampMin = "0.0"))
+	float NextStageDelay = 3.0f;
+	
 	// 개선된 몬스터 스폰 정보 (몬스터별 수량 지정 가능)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster Spawn")
 	TArray<FPGMonsterSpawnInfo> MonsterSpawnInfos;
@@ -71,9 +105,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
 	TArray<int32> PossibleRewards;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage Info", meta = (ClampMin = "0.0"))
-	float NextStageDelay = 3.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage Info")
-	bool bIsBossStage = false;
+	// 보상 풀 (확률 기반)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
+	TArray<FPGStageReward> RewardPool;
 };

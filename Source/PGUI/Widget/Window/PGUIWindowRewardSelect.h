@@ -6,6 +6,7 @@
 #include "PGUIWindow.h"
 #include "PGUIWindowRewardSelect.generated.h"
 
+struct FPGStageDataRow;
 /**
  * 
  */
@@ -13,5 +14,10 @@ UCLASS()
 class PGUI_API UPGUIWindowRewardSelect : public UPGUIWindow
 {
 	GENERATED_BODY()
-	
+
+public:
+	void SetRewardId(int StageId);
+
+private:
+	void SelectReward(const FPGStageDataRow* InData);
 };
