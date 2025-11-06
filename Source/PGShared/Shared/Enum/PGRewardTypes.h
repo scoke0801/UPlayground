@@ -12,3 +12,12 @@ enum class EPGRewardType : uint8
     Stat,
     Skill
 };
+
+UENUM(BlueprintType)
+enum class EPGRewardGrade : uint8
+{
+    Normal = 0,
+    Magic,
+    Rare
+};
+

@@ -102,10 +102,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster Spawn", meta = (ClampMin = "100.0"))
 	float SpawnRadius = 1000.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
-	TArray<int32> PossibleRewards;
-
-	// 보상 풀 (확률 기반)
+	// 보상 풀
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
 	TArray<FPGStageReward> RewardPool;
 };
