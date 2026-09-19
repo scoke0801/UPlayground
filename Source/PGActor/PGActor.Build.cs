@@ -7,6 +7,9 @@ public class PGActor : ModuleRules
 	public PGActor(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+		// Preserve existing cross-module references during the UE 5.8 migration.
+		CircularlyReferencedDependentModules.AddRange(new string[] { "PGUI" });
         
         // C++ 20 사용 설정
         CppStandard = CppStandardVersion.Cpp20;

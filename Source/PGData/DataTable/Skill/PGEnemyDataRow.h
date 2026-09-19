@@ -20,6 +20,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<int32> SkillIdList;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowedClasses = "Actor"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowedClasses = "/Script/Engine.Actor"))
 	TSoftClassPtr<AActor> ActorClass;
 };
