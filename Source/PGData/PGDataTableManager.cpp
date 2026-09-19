@@ -1,8 +1,22 @@
 #include "PGDataTableManager.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "DataTable/Skill/PGSkillDataRow.h"
+#include "DataTable/ActorAssetPath/PGDeathDataRow.h"
+#include "DataTable/AreaOfEffect/PGAreaOfEffectDataRow.h"
+#include "DataTable/AssetPath/PGUIDamageFloaterPathRow.h"
+#include "DataTable/AssetPath/PGUIWidgetPathRow.h"
+#include "DataTable/Item/PGItemDataRow.h"
+#include "DataTable/Projectile/PGProjectileDataRow.h"
+#include "DataTable/Projectile/PGProjectilePoolDataRow.h"
+#include "DataTable/Reward/PGRewardItemDataRow.h"
+#include "DataTable/Reward/PGRewardSkillDataRow.h"
+#include "DataTable/Reward/PGRewardStatDataRow.h"
 #include "DataTable/Skill/PGEnemyDataRow.h"
+#include "DataTable/Skill/PGSkillDataRow.h"
+#include "DataTable/Skill/PGSkillIndicatorDataRow.h"
+#include "DataTable/Stage/PGStageDataRow.h"
+#include "DataTable/Stat/PGCharacterStatDataRow.h"
+#include "DataTable/Stat/PGWeaponDataRow.h"
 
 TWeakObjectPtr<UPGDataTableManager> UPGDataTableManager::WeakThis = nullptr;
 
@@ -364,6 +378,7 @@ const FProperty* UPGDataTableManager::FindSearchKeyProperty(const UScriptStruct*
         return nullptr;
     }
 
+#if WITH_METADATA
     // 모든 프로퍼티를 순회하며 SearchKey 메타데이터 찾기
     for (TFieldIterator<FProperty> It(RowStruct); It; ++It)
     {
@@ -384,6 +399,36 @@ const FProperty* UPGDataTableManager::FindSearchKeyProperty(const UScriptStruct*
         }
     }
 
+#endif
+
+    // Cooked builds strip metadata. Keep native search keys available at runtime.
+    // Add an entry here when introducing a new native row with SearchKey metadata.
+    static const TMap<const UScriptStruct*, FName> NativeSearchKeys =
+    {
+        { FPGDeathDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGDeathDataRow, ObjectTID) },
+        { FPGAreaOfEffectDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGAreaOfEffectDataRow, EffectId) },
+        { FPGUIDamageFloaterPathRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGUIDamageFloaterPathRow, Key) },
+        { FPGUIWidgetPathRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGUIWidgetPathRow, Key) },
+        { FPGItemDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGItemDataRow, Id) },
+        { FPGProjectileDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGProjectileDataRow, ProjectileId) },
+        { FPGProjectilePoolDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGProjectilePoolDataRow, ProjectileType) },
+        { FPGRewardItemDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGRewardItemDataRow, ItemId) },
+        { FPGRewardSkillDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGRewardSkillDataRow, SkillId) },
+        { FPGRewardStatDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGRewardStatDataRow, StatId) },
+        { FPGEnemyDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGEnemyDataRow, EnemyID) },
+        { FPGSkillDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGSkillDataRow, SkillID) },
+        { FPGSkillIndicatorDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGSkillIndicatorDataRow, IndicatorId) },
+        { FPGStageDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGStageDataRow, Id) },
+        { FPGCharacterStatDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGCharacterStatDataRow, CharacterID) },
+        { FPGWeaponDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGWeaponDataRow, WeaponID) },
+    };
+    for (const UStruct* Struct = RowStruct; Struct; Struct = Struct->GetSuperStruct())
+    {
+        if (const FName* Key = NativeSearchKeys.Find(Cast<UScriptStruct>(Struct)))
+        {
+            return FindFProperty<FProperty>(RowStruct, *Key);
+        }
+    }
     return nullptr;
 }
 
