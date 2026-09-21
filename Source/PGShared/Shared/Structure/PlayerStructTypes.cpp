@@ -3,7 +3,7 @@
 
 #include "PlayerStructTypes.h"
 
-#include "PGAbilitySystem/Abilities/PGPlayerGameplayAbility.h"
+#include "Abilities/GameplayAbility.h"
 
 bool FPGPlayerAbilitySet::IsValid() const
 {

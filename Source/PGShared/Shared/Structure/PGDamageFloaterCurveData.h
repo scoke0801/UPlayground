@@ -16,9 +16,9 @@ struct FPGDamageFloaterCurveData
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EPGDamageFloaterCurveType CurveType;
+	EPGDamageFloaterCurveType CurveType = {};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UCurveBase* Curve;
+	UCurveBase* Curve = {};
 };
 

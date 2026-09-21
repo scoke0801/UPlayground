@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -13,5 +13,5 @@ struct PGDATA_API FPGRewardSkillDataRow : public FTableRowBase
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	int32 SkillId;
+	int32 SkillId = {};
 };

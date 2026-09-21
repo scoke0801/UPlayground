@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -42,7 +42,7 @@ public class UPlayground : ModuleRules
             "PGData",
             "PGAbilitySystem",
             "PGActor",
-            "PGShared", "PGAI"
+            "PGShared", "PGAI", "PGUI"
 		});
 
 		// UI 시스템을 위한 Slate 및 SlateCore 의존성 추가
@@ -54,3 +54,4 @@ public class UPlayground : ModuleRules
 		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
 	}
 }
+

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -13,10 +13,10 @@ struct PGDATA_API FPGProjectileDataRow : public FTableRowBase
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	int32 ProjectileId;
+	int32 ProjectileId = {};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EPGProjectileType ProjectileType;
+	EPGProjectileType ProjectileType = {};
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FSoftClassPath ProjectileClassPath;

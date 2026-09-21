@@ -7,6 +7,7 @@ public class PGActor : ModuleRules
 	public PGActor(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PublicDependencyModuleNames.AddRange(new string[] { "PGShared", "PGData", "AIModule" });
 
 		// Preserve existing cross-module references during the UE 5.8 migration.
 		CircularlyReferencedDependentModules.AddRange(new string[] { "PGUI" });
@@ -31,16 +32,12 @@ public class PGActor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"PGShared",
-				
-				"PGData",
 				"PGAbilitySystem", 
 				"MotionWarping",
-				"AIModule", 
 				"PGMessage",
 				"PGUI", 
 				"Niagara",
-				"NavigationSystem"
+				"NavigationSystem", "Slate", "SlateCore", "InputCore"
 			});
 	}
 }

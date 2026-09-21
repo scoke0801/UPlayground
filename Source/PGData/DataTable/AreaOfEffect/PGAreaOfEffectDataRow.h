@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -14,10 +14,10 @@ struct PGDATA_API FPGAreaOfEffectDataRow : public FTableRowBase
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	int32 EffectId;
+	int32 EffectId = {};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EPGEffectType EffectType;
+	EPGEffectType EffectType = {};
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, 
 		meta=(EditCondition="EffectType==EPGEffectType::Niagara", EditConditionHides))

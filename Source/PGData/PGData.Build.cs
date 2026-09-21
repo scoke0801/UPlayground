@@ -7,6 +7,7 @@ public class PGData : ModuleRules
 	public PGData(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PublicDependencyModuleNames.AddRange(new string[] { "PGShared" });
         
         // C++ 20 사용 설정
         CppStandard = CppStandardVersion.Cpp20;
@@ -24,17 +25,10 @@ public class PGData : ModuleRules
 				"EnhancedInput",
 			}
 		);
-		CircularlyReferencedDependentModules.AddRange(
-			new string[]
-			{
-				"PGAbilitySystem",
-			});
 		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"PGShared",
-				"PGAbilitySystem", 
 				"Niagara",
 				"PGMessage"
 			});

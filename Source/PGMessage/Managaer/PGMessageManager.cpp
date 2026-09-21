@@ -1,7 +1,9 @@
+#include "PGMessageManager.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "PGMessageManager.h"
 
 TWeakObjectPtr<UPGMessageManager> UPGMessageManager::WeakThis = nullptr;
 
@@ -28,7 +30,7 @@ void UPGMessageManager::Deinitialize()
 	// 모든 델리게이터 정리
 	ClearAllDelegates();
 	
-    WeakThis = nullptr;
+    if (WeakThis.Get() == this) WeakThis = nullptr;
     
 	Super::Deinitialize();
 	
@@ -45,4 +47,10 @@ void UPGMessageManager::ClearAllDelegates()
 		}
 	}
 	MessageDelegates.Empty();
+}
+
+UPGMessageManager* UPGMessageManager::Get(const UObject* Context)
+{
+    const UWorld* World = Context ? Context->GetWorld() : nullptr;
+    return World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UPGMessageManager>() : nullptr;
 }

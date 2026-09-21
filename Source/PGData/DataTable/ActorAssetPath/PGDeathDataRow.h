@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -12,7 +12,7 @@ struct PGDATA_API FPGDeathDataRow : public FTableRowBase
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	int32 ObjectTID;
+	int32 ObjectTID = {};
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<FSoftObjectPath> DeathMontagePath;

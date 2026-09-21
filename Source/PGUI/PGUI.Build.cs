@@ -6,8 +6,9 @@ public class PGUI : ModuleRules
 {
 	public PGUI(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PrivateDependencyModuleNames.AddRange(new string[] { "PGShared", "PGData", "Paper2D", "PGActor", "PGMessage" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Paper2D", "PGActor", "PGMessage", "PGAbilitySystem", "GameplayAbilities", "EnhancedInput" });
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PublicDependencyModuleNames.AddRange(new string[] { "PGShared", "PGData" });
 
 		// C++ 20 사용 설정
 		CppStandard = CppStandardVersion.Cpp20;
@@ -25,13 +26,6 @@ public class PGUI : ModuleRules
 				"SlateCore", // Slate의 핵심 기능
 				"Niagara",
 				"InputCore"
-			}
-		);
-
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"PGMessage", 
 			}
 		);
 	}

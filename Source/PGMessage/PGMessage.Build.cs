@@ -7,6 +7,7 @@ public class PGMessage : ModuleRules
 	public PGMessage(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PublicDependencyModuleNames.AddRange(new string[] { "PGShared" });
         
         // C++ 20 사용 설정
         CppStandard = CppStandardVersion.Cpp20;
@@ -23,7 +24,6 @@ public class PGMessage : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"PGShared"
-			});
+				});
 	}
 }
