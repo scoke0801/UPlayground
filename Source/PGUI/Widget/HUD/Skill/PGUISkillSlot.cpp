@@ -2,6 +2,7 @@
 
 
 #include "PGUISkillSlot.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
 
 #include "Components/Button.h"
 #include "Components/Image.h"
@@ -25,7 +26,7 @@ void UPGUISkillSlot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	DelegateHandle = UPGMessageManager::Get()->RegisterDelegate(EPGPlayerMessageType::UseSkill, this,
+	DelegateHandle = UPGMessageManager::Get(this)->RegisterDelegate(EPGPlayerMessageType::UseSkill, this,
 		&ThisClass::OnPlayerUseSkill);
 
 	SkillButton->OnClicked.AddDynamic(this, &ThisClass::OnButtonClicked);
@@ -34,7 +35,7 @@ void UPGUISkillSlot::NativeConstruct()
 void UPGUISkillSlot::NativeDestruct()
 {
 	SkillButton->OnClicked.RemoveDynamic(this,&ThisClass::OnButtonClicked);
-	PGMessage()->UnregisterDelegate(EPGPlayerMessageType::UseSkill,DelegateHandle);
+	UPGMessageManager::Get(this)->UnregisterDelegate(EPGPlayerMessageType::UseSkill,DelegateHandle);
 
 	if (CoolTimeTimerHandle.IsValid())
 	{
@@ -48,8 +49,9 @@ void UPGUISkillSlot::SetData(const EPGSkillSlot InSkillSlot, const PGSkillId InS
 	SkillSlot = InSkillSlot;
 	SkillId = InSkillId;
 	CacheSkillTag(SkillSlot);
+    SetCoolTime();
 	
-	if (FPGSkillDataRow* Data = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(InSkillId))
+	if (FPGSkillDataRow* Data = UPGDataTableManager::Get(this)->GetRowData<FPGSkillDataRow>(InSkillId))
 	{
 		if (UObject* LoadedObject = Data->SkillIconPath.TryLoad())
 		{
@@ -70,28 +72,13 @@ void UPGUISkillSlot::SetData(const EPGSkillSlot InSkillSlot, const PGSkillId InS
 void UPGUISkillSlot::OnButtonClicked()
 {
 	FPGEventDataOneParam<FGameplayTag> ToSendData(SkillTag);
-	UPGMessageManager::Get()->SendMessage(EPGUIMessageType::ClickSkillButton, &ToSendData);
+	UPGMessageManager::Get(this)->SendMessage(EPGUIMessageType::ClickSkillButton, &ToSendData);
 }
 
 void UPGUISkillSlot::SetCoolTime()
 {
-	if (nullptr == CachedSkillData)
-	{
-		CachedSkillData = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillId);
-	}
-
-	if (nullptr == CachedSkillData)
-	{
-		return;
-	}
-
-	if (0 < CachedSkillData->SkillCoolTime)
-	{
-		RemainCoolTime = CachedSkillData->SkillCoolTime;
-		CoolTimeText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		CoolTimeText->SetText(FText::FromString(FString::FromInt(RemainCoolTime)));
-		GetWorld()->GetTimerManager().SetTimer(CoolTimeTimerHandle, this, &UPGUISkillSlot::UpdateCoolTime, CoolTimeTick,true);
-	}
+    UpdateCoolTime();
+    if (RemainCoolTime > 0.f) GetWorld()->GetTimerManager().SetTimer(CoolTimeTimerHandle, this, &ThisClass::UpdateCoolTime, FMath::Max(.05f, CoolTimeTick), true);
 }
 
 void UPGUISkillSlot::OnPlayerUseSkill(const class IPGEventData* InData)
@@ -110,14 +97,14 @@ void UPGUISkillSlot::OnPlayerUseSkill(const class IPGEventData* InData)
 
 void UPGUISkillSlot::UpdateCoolTime()
 {
-	RemainCoolTime -= CoolTimeTick;
-	if (FMath::IsNearlyEqual(0, RemainCoolTime))
-	{
-		CoolTimeText->SetVisibility(ESlateVisibility::Collapsed);
-		GetWorld()->GetTimerManager().ClearTimer(CoolTimeTimerHandle);
-	}
-
-	CoolTimeText->SetText(FText::FromString(FString::FromInt(RemainCoolTime)));
+    RemainCoolTime = 0.f;
+    const auto* Character = Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+    if (Character && Character->GetSkillHandler())
+        if (const auto* Data = Character->GetSkillHandler()->GetSkillData(SkillSlot)) RemainCoolTime = Data->GetRemainingCooldown();
+    if (!CoolTimeText) return;
+    CoolTimeText->SetVisibility(RemainCoolTime > 0.f ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+    CoolTimeText->SetText(FText::FromString(FString::Printf(TEXT("%.1f"), RemainCoolTime)));
+    if (RemainCoolTime <= 0.f && GetWorld()) GetWorld()->GetTimerManager().ClearTimer(CoolTimeTimerHandle);
 }
 
 void UPGUISkillSlot::CacheSkillTag(const EPGSkillSlot InSkillSlot)

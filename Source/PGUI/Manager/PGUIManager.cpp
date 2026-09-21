@@ -1,4 +1,10 @@
 #include "PGUIManager.h"
+#include "PGActor/Manager/PGStagePresentation.h"
+#include "PGUI/Widget/Window/PGUIWindowRewardSelect.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Kismet/GameplayStatics.h"
@@ -21,13 +27,18 @@ void UPGUIManager::Initialize(FSubsystemCollectionBase& Collection)
     Super::Initialize(Collection);
     
     WeakThis = MakeWeakObjectPtr(this);
+    Collection.InitializeDependency<UPGMessageManager>();
+    StagePresentationHandle = GetGameInstance()->GetSubsystem<UPGMessageManager>()->RegisterDelegate(EPGUIMessageType::StagePresentation, this, &ThisClass::OnStagePresentation);
     
     UE_LOG(LogTemp, Log, TEXT("PGUIManager Initialized"));
 }
 
 void UPGUIManager::Deinitialize()
 {
+    CloseStageWindow();
+    if (auto* Messages = GetGameInstance()->GetSubsystem<UPGMessageManager>()) Messages->UnregisterDelegate(EPGUIMessageType::StagePresentation, StagePresentationHandle);
     CloseAllUI();
+    if (WeakThis.Get() == this) WeakThis.Reset();
     Super::Deinitialize();
 }
 
@@ -443,4 +454,46 @@ APlayerController* UPGUIManager::GetFirstPlayerController() const
         return World->GetFirstPlayerController();
     }
     return nullptr;
+}
+
+UPGUIManager* UPGUIManager::Get(const UObject* Context)
+{
+    const UWorld* World = Context ? Context->GetWorld() : nullptr;
+    return World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UPGUIManager>() : nullptr;
+}
+
+void UPGUIManager::CloseStageWindow()
+{
+    if (!StageWindow) return;
+    APlayerController* PC = StageWindow->GetOwningPlayer();
+    StageWindow->OnSubmit.Unbind(); StageWindow->OnRetry.Unbind(); StageWindow->RemoveFromParent(); StageWindow = nullptr;
+    StageOwner.Reset();
+    if (PC)
+    {
+        PC->SetIgnoreMoveInput(false);
+        FInputModeGameAndUI Input; Input.SetHideCursorDuringCapture(false); PC->SetInputMode(Input); PC->FlushPressedKeys();
+    }
+}
+void UPGUIManager::OnStagePresentation(const IPGEventData* Event)
+{
+    if (!Event) return;
+    const auto& View = *static_cast<const FPGStagePresentation*>(Event);
+    if (!View.Owner.IsValid() || View.Owner->GetWorld() != GetWorld()) return;
+    if (View.bClose) { if (StageOwner == View.Owner) CloseStageWindow(); return; }
+    CloseStageWindow();
+    APlayerController* PC = GetFirstPlayerController();
+    if (!PC || !PC->IsLocalController()) return;
+    StageWindow = CreateWidget<UPGUIWindowRewardSelect>(PC);
+    if (!StageWindow) return;
+    StageOwner = View.Owner;
+    if (!View.Status.IsEmpty()) { StageWindow->SetStatus(View.Status); StageWindow->OnRetry = View.Retry; }
+    else
+    {
+        const FPGStageSubmit Submit = View.Submit;
+        StageWindow->OnSubmit.BindLambda([Submit](FGuid Token, int32 Index){ return Submit.IsBound() && Submit.Execute(Token, Index); });
+        StageWindow->SetChoices(View.Token, View.Choices);
+    }
+    StageWindow->AddToViewport(100);
+    FInputModeUIOnly Input; Input.SetWidgetToFocus(StageWindow->TakeWidget());
+    PC->SetIgnoreMoveInput(true); PC->SetInputMode(Input); PC->FlushPressedKeys();
 }

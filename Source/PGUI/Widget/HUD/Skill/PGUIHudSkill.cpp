@@ -91,3 +91,15 @@ void UPGUIHudSkill::OnPlayerInit(const IPGEventData* InData)
 	SetSkillSlot(EPGSkillSlot::SkillSlot_5);
 	SetSkillSlot(EPGSkillSlot::SkillSlot_6);
 }
+
+void UPGUIHudSkill::NativeConstruct()
+{
+    Super::NativeConstruct();
+    if (auto* Messages = UPGMessageManager::Get(this)) LoadoutHandle = Messages->RegisterDelegate(EPGPlayerMessageType::LoadoutChanged, this, &ThisClass::OnPlayerInit);
+    OnPlayerInit(nullptr);
+}
+void UPGUIHudSkill::NativeDestruct()
+{
+    if (auto* Messages = UPGMessageManager::Get(this)) Messages->UnregisterDelegate(EPGPlayerMessageType::LoadoutChanged, LoadoutHandle);
+    Super::NativeDestruct();
+}
