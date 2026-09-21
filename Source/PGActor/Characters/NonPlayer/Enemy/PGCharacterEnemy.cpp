@@ -2,6 +2,8 @@
 
 
 #include "PGCharacterEnemy.h"
+#include "PGActor/Progression/PGLootDrop.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
 
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -160,57 +162,30 @@ void APGCharacterEnemy::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 }
 
-void APGCharacterEnemy::OnHit(UPGStatComponent* StatComponent, const UPGPawnCombatComponent* const InCombatComponent)
+void APGCharacterEnemy::OnHit(UPGStatComponent* Source, const UPGPawnCombatComponent* Combat)
 {
-	Super::OnHit(StatComponent, InCombatComponent);
-	
-	int32 CurrentHp = EnemyStatComponent->CurrentHealth;
-
-	EPGDamageType DamageType = EPGDamageType::Normal;
-	int32 DamageAmount = EnemyStatComponent->CalculateDamageWithWeapon(StatComponent, InCombatComponent, DamageType);
-	EnemyStatComponent->CurrentHealth = FMath::Max(0, CurrentHp - DamageAmount);
-
-	if (EnemyNamePlate)
-	{
-		EnemyNamePlate->ShowWidget(5.0f);
-	}
-
-	PGDamageFloater()->AddFloater(DamageAmount,
-		DamageType, this, false);
-	
-	UpdateHpBar();
-
-	if (EnemyStatComponent->CurrentHealth == 0.f)
-	{
-		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
-	}
+    EPGDamageType Type = EPGDamageType::Normal;
+    const float Damage = AbilitySystemComponent->ReceiveCombatHit(Source ? Source->GetASC() : nullptr, Type);
+    if (Damage > 0.f)
+    {
+        if (auto* Manager = UPGDamageFloaterManager::Get(this)) Manager->AddFloater(FMath::RoundToInt(Damage), Type, this, false);
+        if (EnemyNamePlate) EnemyNamePlate->ShowWidget(5.f);
+        PlayCombatFeedback(Source ? Source->GetOwner() : nullptr, Type);
+    }
 }
 
-void APGCharacterEnemy::OnHeal(UPGStatComponent* StatComponent, int32 HealAmount)
+void APGCharacterEnemy::OnHeal(UPGStatComponent* Source, int32 HealAmount)
 {
-	Super::OnHeal(StatComponent, HealAmount);
-	
-	int32 CurrentHp = EnemyStatComponent->CurrentHealth;
-	int32 MaxHp = EnemyStatComponent->GetStat(EPGStatType::Health);
-	
-	// HP 회복 (MaxHP를 초과하지 않도록)
-	EnemyStatComponent->CurrentHealth = FMath::Min(MaxHp, CurrentHp + HealAmount);
-	
-	// 네임플레이트 표시
-	if (EnemyNamePlate)
-	{
-		EnemyNamePlate->ShowWidget(5.0f);
-	}
-	
-	// 힐 플로터 표시
-	PGDamageFloater()->AddFloater(HealAmount, EPGDamageType::Heal, this, false);
-	
-	// HP바 업데이트
-	UpdateHpBar();
+    const float Healed = AbilitySystemComponent->RestoreHealth(HealAmount);
+    if (Healed > 0.f)
+        if (auto* Manager = UPGDamageFloaterManager::Get(this)) Manager->AddFloater(FMath::RoundToInt(Healed), EPGDamageType::Heal, this, false);
 }
 
 void APGCharacterEnemy::OnDied()
 {
+    if (bDeathFinished) return;
+    bDeathFinished = true;
+    GetWorldTimerManager().ClearTimer(DeathFallbackTimer);
 	// 충돌 비활성화
 	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
@@ -223,7 +198,7 @@ void APGCharacterEnemy::OnDied()
 	// 보유 위젯 비활성화
 	if (EnemyNamePlate)
 	{
-		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+		if (EnemyNamePlate) EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	// 스테이지 매니저에 처치 알림
@@ -238,7 +213,7 @@ void APGCharacterEnemy::OnDied()
 			{
 				UAssetManager::GetStreamableManager().RequestAsyncLoad(
 					Data->DissolveVFXPath.ToSoftObjectPath(), 
-					FStreamableDelegate::CreateLambda([this, VFXPath = Data->DissolveVFXPath]()
+					FStreamableDelegate::CreateWeakLambda(this, [this, VFXPath = Data->DissolveVFXPath]()
 					{
 						if (UNiagaraSystem* Template = VFXPath.Get())
 						{
@@ -320,7 +295,7 @@ void APGCharacterEnemy::InitEnemyStartUpData()
 
 	UAssetManager::GetStreamableManager().RequestAsyncLoad(
 		CharacterStartUpData.ToSoftObjectPath(),
-		FStreamableDelegate::CreateLambda([this]()
+		FStreamableDelegate::CreateWeakLambda(this, [this]()
 		{
 			if (UPGDataAsset_StartUpDataBase* LoadedData = CharacterStartUpData.Get())
 			{
@@ -337,11 +312,11 @@ void APGCharacterEnemy::InitUIComponents()
 		EnemyNamePlate = Cast<UPGUIEnemyNamePlate>(EnemyNameplateWidgetComponent->GetWidget());
 
 		// 기본적으로 노출하지 않는다. 피격 시에만 노출
-		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+		if (EnemyNamePlate) EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
 
 		if (FPGEnemyDataRow* EnemyData = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
 		{
-			EnemyNamePlate->SetNameText(EnemyData->EnemyName);
+			if (EnemyNamePlate) EnemyNamePlate->SetNameText(EnemyData->EnemyName);
 		}
 	}
 }
@@ -352,12 +327,12 @@ void APGCharacterEnemy::UpdateHpBar()
 	{
 		return;
 	}
-	EnemyNamePlate->SetHpPercent(static_cast<float>(EnemyStatComponent->CurrentHealth) / EnemyStatComponent->GetStat(EPGStatType::Health));
+	EnemyNamePlate->SetHpPercent(EnemyStatComponent->GetHealthRatio());
 }
 
 void APGCharacterEnemy::NotifyStageManagerOnDeath()
 {
-	if (UPGMessageManager* Manager = PGMessage())
+	if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
 	{
 		FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>> EventData(this);
 		Manager->SendMessage(EPGSharedMessageType::OnDied, &EventData);
@@ -453,7 +428,7 @@ void APGCharacterEnemy::OnClickCancelled_Implementation()
 	// 클릭 취소 시 네임플레이트 숨김
 	if (EnemyNamePlate)
 	{
-		EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
+		if (EnemyNamePlate) EnemyNamePlate->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 }
@@ -462,4 +437,12 @@ bool APGCharacterEnemy::IsClickable_Implementation() const
 {
 	// 죽은 상태가 아닐 때만 클릭 가능
 	return !AbilitySystemComponent->HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead);
+}
+
+void APGCharacterEnemy::OnHealthChanged()
+{
+    const bool bWasDead = bDeathStarted;
+    Super::OnHealthChanged();
+    UpdateHpBar();
+    if (!bWasDead && bDeathStarted) { APGLootDrop::SpawnForEnemy(this); NotifyStageManagerOnDeath(); }
 }

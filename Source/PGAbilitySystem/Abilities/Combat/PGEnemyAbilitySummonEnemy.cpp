@@ -41,6 +41,7 @@ void UPGEnemyAbilitySummonEnemy::ActivateAbility(const FGameplayAbilitySpecHandl
 	if (nullptr == MontageToPlay)
 	{
 		EndAbilitySelf();
+        return;
 	}
 	if (UAbilityTask_PlayMontageAndWait* Task = PlayMontageWait(MontageToPlay))
 	{
@@ -58,7 +59,7 @@ void UPGEnemyAbilitySummonEnemy::ActivateAbility(const FGameplayAbilitySpecHandl
 	// 소환 원점(현재 적의 위치) 가져오기
 	FVector SpawnOrigin = EnemyCharacter->GetActorLocation();
 
-	for (int32 index = 0; index <= NumToSpawn; ++index)
+	if (NumToSpawn > 0 && !SoftClassToSpawn.IsEmpty())
 	{
 		int32 randomIndex = FMath::RandRange(0,SoftClassToSpawn.Num() - 1);
 		if (false == SoftClassToSpawn.IsValidIndex(randomIndex))
@@ -78,7 +79,8 @@ void UPGEnemyAbilitySummonEnemy::ActivateAbility(const FGameplayAbilitySpecHandl
 
 		if (!SpawnTask)
 		{
-			continue;
+            EndAbilitySelf();
+            return;
 		}
 
 		// 델리게이트 바인딩
