@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -75,7 +75,7 @@ struct PGDATA_API FPGStageDataRow : public FTableRowBase
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	int32 Id;
+	int32 Id = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage Info")
 	FString StageName = TEXT("Stage");
@@ -102,7 +102,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster Spawn", meta = (ClampMin = "100.0"))
 	float SpawnRadius = 1000.0f;
 
-	// 보상 풀
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster Spawn", meta=(ClampMin="1"))
+    int32 MaxSpawnRetries = 5;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster Spawn")
+    bool bCountSummonedEnemies = true;
+
+    // 보상 풀
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
 	TArray<FPGStageReward> RewardPool;
 };

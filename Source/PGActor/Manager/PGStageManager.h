@@ -13,7 +13,7 @@ enum class EPGStageState : uint8
     None        UMETA(DisplayName = "None"),
     InProgress  UMETA(DisplayName = "In Progress"),
     RewardPhase UMETA(DisplayName = "Reward Phase"),
-    Completed   UMETA(DisplayName = "Completed")
+    Completed   UMETA(DisplayName = "Completed"), Failed, Finished
 };
 
 
@@ -52,6 +52,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStageStarted, int32, StageNumber)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStageCompleted, int32, StageNumber);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMonsterCountChanged, int32, RemainingCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAllMonstersKilled);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPGOnStageFailed, const FString&, Reason);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemySpawned, class APGCharacterEnemy*, SpawnedEnemy);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterTypeSpawned, int32, MonsterId, int32, RemainingOfThisType);
 
@@ -97,8 +98,26 @@ private:
 	TArray<APGCharacterEnemy*> SpawnedEnemies;
 
 private:
-	FDelegateHandle OnActorDiedHandle;
+	float StageStartTime = 0.f;
+    int32 SpawnFailureCount = 0;
+    bool bRewardCommitted = false;
+    FGuid RewardToken;
+    TArray<FPGStageReward> OfferedRewards;
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UClass>> PreparedEnemyClasses;
+    void FailStage(const FString& Reason);
+    void CloseRewardWindow();
+    void CheckStageComplete();
+    bool CommitReward(FGuid Token, int32 Choice);
+    FDelegateHandle OnActorDiedHandle;
 	FDelegateHandle OnActorSpawnedHandle;
+    FDelegateHandle OnPlayerDiedHandle;
+    void OnPlayerDied(const IPGEventData* Data);
+    void ShowStageStatus(const FText& Text);
+    void RestartRun();
+      friend class FPGStageLifecycleTest;
+      friend class UPGCheatManager;
+      friend class APGGameModeStage;
 
 public:    
 	APGStageManager();
@@ -108,7 +127,13 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
-	// 델리게이트
+	UPROPERTY(BlueprintAssignable)
+    FPGOnStageFailed OnStageFailed;
+    UPROPERTY(BlueprintAssignable)
+    FOnAllMonstersKilled OnRunFinished;
+    UFUNCTION()
+    void OnTrackedEnemyDestroyed(AActor* Actor);
+    // 델리게이트
 	UPROPERTY(BlueprintAssignable)
 	FOnStageStarted OnStageStarted;
 	

@@ -1,4 +1,6 @@
 #include "PGDataTableManager.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "DataTable/ActorAssetPath/PGDeathDataRow.h"
@@ -61,10 +63,11 @@ void UPGDataTableManager::Deinitialize()
     
     // 구조체 타입 매핑 정리
     StructTypeToTableNameMap.Empty();
+    AmbiguousStructTypes.Empty();
 
     AssetRegistryModule = nullptr;
 
-    WeakThis = nullptr;
+    if (WeakThis.Get() == this) WeakThis = nullptr;
     
     Super::Deinitialize();
 }
@@ -80,8 +83,12 @@ void UPGDataTableManager::ScanDataTables()
     // 기존 정보 초기화
     DataTableInfos.Empty();
     StructTypeToTableNameMap.Empty();
+    AmbiguousStructTypes.Empty();
 
     IAssetRegistry& AssetRegistry = AssetRegistryModule->Get();
+    // GameInstance can initialize before the editor background registry scan finishes.
+    if (!FPlatformProperties::RequiresCookedData())
+        AssetRegistry.ScanPathsSynchronous({TEXT("/Game/DataCenter/DataTables")}, true);
     /* 
      * AssetRegistry에서 모든 데이터 테이블 에셋 검색
      * 경로는 DataTables 하위 폴더로만 한정.
@@ -120,7 +127,12 @@ void UPGDataTableManager::CollectDataTableInfo(const FAssetData& AssetData)
         {
             // 구조체 타입 매핑 등록 (테이블명은 에셋 이름 사용)
             FName TableName = FName(*Info.AssetName);
-            StructTypeToTableNameMap.Add(Info.RowStructType, TableName);
+            if (StructTypeToTableNameMap.Contains(Info.RowStructType))
+            {
+                AmbiguousStructTypes.Add(Info.RowStructType);
+                UE_LOG(LogTemp, Error, TEXT("Ambiguous data table type %s: %s"), *Info.RowStructType->GetName(), *Info.AssetName);
+            }
+            else StructTypeToTableNameMap.Add(Info.RowStructType, TableName);
             UE_LOG(LogTemp, Warning, TEXT("✓ 구조체 매핑 성공: %s -> %s"), 
                 *Info.RowStructType->GetName(), *TableName.ToString());
         }
@@ -284,6 +296,7 @@ const UScriptStruct* UPGDataTableManager::FindStructTypeByName(const FString& St
 
 FName UPGDataTableManager::FindTableNameByStructType(const UScriptStruct* StructType) const
 {
+    if (AmbiguousStructTypes.Contains(StructType)) return NAME_None;
     if (const FName* FoundTableName = StructTypeToTableNameMap.Find(StructType))
     {
         return *FoundTableName;
@@ -360,6 +373,12 @@ void UPGDataTableManager::BuildSearchKeyIndex(FPGDataTableCacheEntry& CacheEntry
         
         if (PropertyToInteger(SearchKeyProperty, ValuePtr, SearchKeyValue))
         {
+            if (SearchKeyIndex.IndexMap.Contains(SearchKeyValue))
+            {
+                UE_LOG(LogTemp, Error, TEXT("Duplicate SearchKey %lld in %s, row %s"), SearchKeyValue, *CacheEntry.DataTable->GetPathName(), *RowName.ToString());
+                CacheEntry.SearchKeyIndex = FPGSearchKeyIndex();
+                return; // Fail closed: no ambiguous row lookup.
+            }
             SearchKeyIndex.IndexMap.Add(SearchKeyValue, RowName);
         }
     }
@@ -482,4 +501,10 @@ FPGSkillDataRow* UPGDataTableManager::GetSkillDataRowByKey(int32 SkillID)
 FPGEnemyDataRow* UPGDataTableManager::GetEnemyDataRowByKey(int32 EnemyID)
 {
     return GetRowData<FPGEnemyDataRow>(EnemyID);
+}
+
+UPGDataTableManager* UPGDataTableManager::Get(const UObject* Context)
+{
+    const UWorld* World = Context ? Context->GetWorld() : nullptr;
+    return World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UPGDataTableManager>() : nullptr;
 }

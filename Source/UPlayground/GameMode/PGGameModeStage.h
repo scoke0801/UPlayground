@@ -47,6 +47,7 @@ public:
 private:
 	// 스테이지 매니저 생성
 	void CreateStageManager();
+    void RunRetryProbe();
 
 protected:
 	// 스테이지 이벤트 바인딩

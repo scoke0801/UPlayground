@@ -1,4 +1,10 @@
 #include "PGStageManager.h"
+#include "PGActor/Progression/PGProfileSubsystem.h"
+#include "Engine/Engine.h"
+#include "PGData/Validation/PGStageValidation.h"
+#include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Components/Stat/PGStatComponent.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Engine/DataTable.h"
@@ -14,8 +20,8 @@
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Enum/PGUIWIdgetEnumTypes.h"
 #include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
-#include "PGUI/Manager/PGUIManager.h"
-#include "PGUI/Widget/Window/PGUIWindowRewardSelect.h"
+#include "PGStagePresentation.h"
+
 
 APGStageManager::APGStageManager()
 {
@@ -24,90 +30,82 @@ APGStageManager::APGStageManager()
 
 void APGStageManager::BeginPlay()
 {
-	Super::BeginPlay();
-
-	OnActorDiedHandle = PGMessage()->RegisterDelegate(EPGSharedMessageType::OnDied,
-	this, &ThisClass::OnActorDied);
-
-	OnActorDiedHandle = PGMessage()->RegisterDelegate(EPGSharedMessageType::OnSpawned,
-	this, &ThisClass::OnActorSpawned);
+    Super::BeginPlay();
+    if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
+    {
+        OnActorDiedHandle = Manager->RegisterDelegate(EPGSharedMessageType::OnDied, this, &ThisClass::OnActorDied);
+        OnActorSpawnedHandle = Manager->RegisterDelegate(EPGSharedMessageType::OnSpawned, this, &ThisClass::OnActorSpawned);
+        OnPlayerDiedHandle = Manager->RegisterDelegate(EPGPlayerMessageType::Died, this, &ThisClass::OnPlayerDied);
+    }
 }
 
 void APGStageManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (OnActorDiedHandle.IsValid())
-	{
-		if (UPGMessageManager* Manager = PGMessage())
-		{
-			Manager->UnregisterDelegate(EPGSharedMessageType::OnDied, OnActorDiedHandle);
-			Manager->UnregisterDelegate(EPGSharedMessageType::OnSpawned, OnActorSpawnedHandle);
-		}
-	}
-	Super::EndPlay(EndPlayReason);
+    CurrentStageState = EPGStageState::None;
+    GetWorldTimerManager().ClearAllTimersForObject(this);
+    CloseRewardWindow();
+    if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
+    {
+        Manager->UnregisterDelegate(EPGSharedMessageType::OnDied, OnActorDiedHandle);
+        Manager->UnregisterDelegate(EPGSharedMessageType::OnSpawned, OnActorSpawnedHandle);
+        Manager->UnregisterDelegate(EPGPlayerMessageType::Died, OnPlayerDiedHandle);
+    }
+    Super::EndPlay(EndPlayReason);
 }
 
 void APGStageManager::StartStage(int32 StageId)
 {
-	// 다음 스테이지로 자동 진행하는 경우
-	if (StageId == -1)
-	{
-		StageId = CurrentStageId + 1;
-	}
-	
-	// 스테이지 데이터 로드
-	if (!LoadStageData(StageId))
-	{
-		return;
-	}
-	if (!IsValidStageData(CurrentStageDataCache))
-	{
-		UE_LOG(LogTemp, Error, TEXT("PGStageManagerImproved: 스테이지 %d 데이터가 유효하지 않음"), StageId);
-		return;
-	}
-	
-	// 기존 타이머 정리
-	GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
-	GetWorld()->GetTimerManager().ClearTimer(NextStageTimer);
-	
-	// 기존 적들 제거
-	ClearAllEnemies();
-	
-	// 스테이지 설정
-	CurrentStageId = StageId;
-	const int32 TotalMonsterCount = GetTotalMonsterCount(CurrentStageDataCache);
-	RemainingMonsters = TotalMonsterCount;
-	SpawnedMonsters = 0;
-	CurrentStageState = EPGStageState::InProgress;
-
-	InitializeMonsterSpawnQueue();
-	
-	// 델리게이트 호출
-	OnStageStarted.Broadcast(CurrentStageId);
-	OnMonsterCountChanged.Broadcast(RemainingMonsters);
-
-	// 메시지 전송
-	FPGEventDataOneParam<int32> ToSendData(StageId);
-	UPGMessageManager::Get()->SendMessage(EPGUIMessageType::StageChanged, &ToSendData);
-	
-	UE_LOG(LogTemp, Log, TEXT("PGStageManagerImproved: 스테이지 %d 시작 - 총 몬스터 %d마리 (타입 %d가지)"), 
-		   CurrentStageId, TotalMonsterCount, CurrentStageDataCache.MonsterSpawnInfos.Num());
-    
-	// 몬스터 스폰 시작
-	if (CurrentStageDataCache.SpawnInterval > 0.0f)
-	{
-		GetWorld()->GetTimerManager().SetTimer(SpawnTimer, 
-			this, &APGStageManager::SpawnEnemyBatch, 
-			CurrentStageDataCache.SpawnInterval, true, 0.0f);
-	}
-	else
-	{
-		// 즉시 모든 몬스터 스폰
-		const int32 TotalCount = GetTotalMonsterCount(CurrentStageDataCache);
-		while (SpawnedMonsters < TotalCount && !MonsterSpawnQueue.IsEmpty())
-		{
-			SpawnEnemyBatch();
-		}
-	}
+    if (StageId == -1) StageId = CurrentStageId + 1;
+    CurrentStageState = EPGStageState::None;
+    GetWorldTimerManager().ClearAllTimersForObject(this);
+    CloseRewardWindow();
+    RewardToken.Invalidate();
+    bRewardCommitted = false;
+    ClearAllEnemies();
+    PreparedEnemyClasses.Reset();
+    if (!LoadStageData(StageId) || !IsValidStageData(CurrentStageDataCache))
+    {
+        FailStage(TEXT("Stage data is missing or invalid."));
+        return;
+    }
+    for (const FPGStageReward& Reward : CurrentStageDataCache.RewardPool)
+    {
+        const FPGRewardStatDataRow* Stat = PGData()->GetRowData<FPGRewardStatDataRow>(Reward.RewardId);
+        if (Reward.RewardType != EPGRewardType::Stat || !Stat || (Stat->Amount < 0 || (Stat->Amount == 0 && Stat->Perk == EPGCombatPerk::None) || Stat->Perk >= EPGCombatPerk::Max || Stat->PerkPercent < 0 || Stat->PerkPercent > 100) || Stat->StatType <= EPGStatType::None || Stat->StatType >= EPGStatType::Max)
+        {
+            FailStage(FString::Printf(TEXT("Unsupported or invalid reward %d."), Reward.RewardId));
+            return;
+        }
+    }
+    // Preload and pin classes before starting the encounter, not on the first combat frame.
+    for (const FPGMonsterSpawnInfo& Spawn : CurrentStageDataCache.MonsterSpawnInfos)
+    {
+        const FPGEnemyDataRow* Enemy = PGData()->GetRowData<FPGEnemyDataRow>(Spawn.MonsterId);
+        UClass* Class = Enemy ? Enemy->ActorClass.LoadSynchronous() : nullptr;
+        if (!Class || !Class->IsChildOf(APGCharacterEnemy::StaticClass()))
+        {
+            FailStage(FString::Printf(TEXT("Missing enemy class: %d"), Spawn.MonsterId));
+            return;
+        }
+        PreparedEnemyClasses.AddUnique(Class);
+    }
+    CurrentStageId = StageId;
+    StageStartTime = GetWorld()->GetTimeSeconds();
+    SpawnFailureCount = 0;
+    RemainingMonsters = GetTotalMonsterCount(CurrentStageDataCache);
+    SpawnedMonsters = 0;
+    CurrentStageState = EPGStageState::InProgress;
+    InitializeMonsterSpawnQueue();
+    OnStageStarted.Broadcast(StageId);
+    OnMonsterCountChanged.Broadcast(RemainingMonsters);
+    if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
+    {
+        FPGEventDataOneParam<int32> Data(StageId);
+        Manager->SendMessage(EPGUIMessageType::StageChanged, &Data);
+    }
+    // A bounded batch per timer also handles zero interval plus delayed entries safely.
+    GetWorldTimerManager().SetTimer(SpawnTimer, this, &ThisClass::SpawnEnemyBatch,
+        FMath::Max(0.01f, CurrentStageDataCache.SpawnInterval), true, 0.f);
 }
 
 bool APGStageManager::LoadStageData(int32 StageId)
@@ -161,54 +159,29 @@ void APGStageManager::InitializeMonsterSpawnQueue()
 
 void APGStageManager::SpawnEnemyBatch()
 {
-	if (CurrentStageState != EPGStageState::InProgress)
-	{
-		return;
-	}
-	
-	if (MonsterSpawnQueue.IsEmpty())
-	{
-		// 모든 몬스터 스폰 완료
-		GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
-		return;
-	}
-
-	// 스폰할 몬스터 수 계산
-	const int32 TotalRemaining = GetTotalMonsterCount(CurrentStageDataCache) - SpawnedMonsters;
-	const int32 MonstersToSpawn = FMath::Min(CurrentStageDataCache.SpawnBatchSize, TotalRemaining);
-    
-	int32 SpawnedInThisBatch = 0;
-    
-	// 배치 스폰
-	for (int32 i = 0; i < MonstersToSpawn && !MonsterSpawnQueue.IsEmpty(); i++)
-	{
-		int32 SelectedMonsterId = SelectNextMonsterToSpawn();
-		if (SelectedMonsterId <= 0)
-		{
-			break;
-		}
-        
-		APGCharacterEnemy* SpawnedEnemy = SpawnSingleEnemy(SelectedMonsterId);
-		if (SpawnedEnemy)
-		{
-			SpawnedMonsters++;
-			SpawnedInThisBatch++;
-			SpawnedEnemies.Add(SpawnedEnemy);
-            
-			// 몬스터 타입별 스폰 알림
-			const int32 RemainingOfThisType = GetRemainingSpawnCountForMonsterType(SelectedMonsterId);
-			OnMonsterTypeSpawned.Broadcast(SelectedMonsterId, RemainingOfThisType);
-		}
-	}
-    
-	UE_LOG(LogTemp, Log, TEXT("PGStageManagerImproved: %d마리 몬스터 스폰됨 (총 %d/%d)"), 
-		   SpawnedInThisBatch, SpawnedMonsters, GetTotalMonsterCount(CurrentStageDataCache));
-    
-	// 모든 몬스터 스폰 완료 시 타이머 정지
-	if (SpawnedMonsters >= GetTotalMonsterCount(CurrentStageDataCache) || MonsterSpawnQueue.IsEmpty())
-	{
-		GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
-	}
+    if (CurrentStageState != EPGStageState::InProgress) return;
+    for (int32 Count = 0; Count < CurrentStageDataCache.SpawnBatchSize; ++Count)
+    {
+        const int32 QueueIndex = SelectNextMonsterToSpawn();
+        if (!MonsterSpawnQueue.IsValidIndex(QueueIndex)) break;
+        const int32 MonsterId = MonsterSpawnQueue[QueueIndex].MonsterId;
+        APGCharacterEnemy* Enemy = SpawnSingleEnemy(MonsterId);
+        if (!Enemy)
+        {
+            if (++SpawnFailureCount >= CurrentStageDataCache.MaxSpawnRetries)
+                FailStage(FString::Printf(TEXT("Spawn retries exhausted: %d"), MonsterId));
+            break;
+        }
+        SpawnFailureCount = 0;
+        ++SpawnedMonsters;
+        SpawnedEnemies.AddUnique(Enemy);
+        Enemy->OnDestroyed.AddUniqueDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
+        if (--MonsterSpawnQueue[QueueIndex].RemainingCount <= 0) MonsterSpawnQueue.RemoveAt(QueueIndex);
+        OnEnemySpawned.Broadcast(Enemy);
+        OnMonsterTypeSpawned.Broadcast(MonsterId, GetRemainingSpawnCountForMonsterType(MonsterId));
+    }
+    if (MonsterSpawnQueue.IsEmpty()) GetWorldTimerManager().ClearTimer(SpawnTimer);
+    CheckStageComplete();
 }
 
 APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
@@ -262,7 +235,7 @@ APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
 	if (SpawnedEnemy)
 	{
 		// 델리게이트 호출
-		OnEnemySpawned.Broadcast(SpawnedEnemy);
+		// Registration and notification happen atomically in SpawnEnemyBatch.
 	}
 	
 	return SpawnedEnemy;
@@ -270,39 +243,10 @@ APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
 
 int32 APGStageManager::SelectNextMonsterToSpawn()
 {
-	if (MonsterSpawnQueue.IsEmpty())
-	{
-		return 0;
-	}
-    
-	// 현재 시간 기준으로 스폰 가능한 몬스터 찾기
-	const float CurrentTime = GetWorld()->GetTimeSeconds();
-	const float StageStartTime = CurrentTime - (SpawnedMonsters * CurrentStageDataCache.SpawnInterval);
-    
-	// 우선순위가 높고 딜레이 시간이 지난 몬스터 중에서 선택
-	for (int32 i = 0; i < MonsterSpawnQueue.Num(); i++)
-	{
-		FPGMonsterSpawnQueueItem& QueueItem = MonsterSpawnQueue[i];
-        
-		// 딜레이 시간 체크
-		if (CurrentTime >= StageStartTime + QueueItem.DelayTime)
-		{
-			// 이 타입에서 하나 스폰
-			QueueItem.RemainingCount--;
-			const int32 SelectedMonsterId = QueueItem.MonsterId;
-            
-			// 남은 수량이 0이면 대기열에서 제거
-			if (QueueItem.RemainingCount <= 0)
-			{
-				MonsterSpawnQueue.RemoveAt(i);
-			}
-            
-			return SelectedMonsterId;
-		}
-	}
-    
-	// 딜레이 시간이 지나지 않은 경우 0 반환 (스폰하지 않음)
-	return 0;
+    const float Elapsed = GetWorld()->GetTimeSeconds() - StageStartTime;
+    for (int32 Index = 0; Index < MonsterSpawnQueue.Num(); ++Index)
+        if (Elapsed >= MonsterSpawnQueue[Index].DelayTime) return Index;
+    return INDEX_NONE;
 }
 
 FVector APGStageManager::GetRandomSpawnLocation() const
@@ -474,54 +418,76 @@ bool APGStageManager::IsValidSlope(const FVector& Location) const
 
 void APGStageManager::OnEnemyKilled(APGCharacterEnemy* KilledEnemy)
 {
-
+    if (CurrentStageState != EPGStageState::InProgress || !KilledEnemy || SpawnedEnemies.Remove(KilledEnemy) == 0) return;
+    KilledEnemy->OnDestroyed.RemoveDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
+    RemainingMonsters = FMath::Max(0, RemainingMonsters - 1);
+    OnMonsterCountChanged.Broadcast(RemainingMonsters);
+    CheckStageComplete();
 }
 
 void APGStageManager::ShowRewardSelection()
 {
-	// TODO: 보상 선택 UI 표시
-	if (UPGUIManager* UIManager = PGUI())
-	{
-		if (UPGUIWindowRewardSelect* Window =
-			Cast<UPGUIWindowRewardSelect>(UIManager->OpenAndGetWidget(EPGUIWIdgetEnumTypes::Window_RewardSelect)))
-		{
-			Window->SetRewardId(CurrentStageId);
-		}
-	}
-	
-	// 테스트용: {}초 후 자동으로 보상 선택 완료
-	FTimerHandle AutoRewardTimer;
-	GetWorld()->GetTimerManager().SetTimer(AutoRewardTimer, 
-		this, &APGStageManager::OnRewardSelected, 1.5f, false);
+    OfferedRewards.Reset();
+    for (const FPGStageReward& Reward : CurrentStageDataCache.RewardPool)
+    {
+        // Item/skill ownership arrives in the farming milestone. Never silently grant unsupported rewards.
+        if (Reward.RewardType != EPGRewardType::Stat || !PGData()->GetRowData<FPGRewardStatDataRow>(Reward.RewardId))
+        {
+            FailStage(TEXT("Reward pool contains an unsupported or missing reward. Configure Stat rewards for this milestone."));
+            return;
+        }
+    }
+    TArray<FPGStageReward> Pool = CurrentStageDataCache.RewardPool;
+    if (const auto* Profile = UPGProfileSubsystem::Get(this))
+        Pool.RemoveAll([&](const FPGStageReward& Entry)
+        {
+            const auto* Reward = PGData()->GetRowData<FPGRewardStatDataRow>(Entry.RewardId);
+            return Reward && Reward->Amount == 0 && Reward->Perk != EPGCombatPerk::None && Profile->GetProfile()->CombatPerks.FindRef(Reward->Perk) >= 100;
+        });
+    while (Pool.Num() > 0 && OfferedRewards.Num() < 3)
+    {
+        float TotalWeight = 0.f;
+        for (const auto& Reward : Pool) TotalWeight += Reward.Weight;
+        float Roll = FMath::FRand() * TotalWeight;
+        int32 Selected = Pool.Num() - 1;
+        for (int32 Index = 0; Index < Pool.Num(); ++Index)
+        {
+            Roll -= Pool[Index].Weight;
+            if (Roll <= 0.f) { Selected = Index; break; }
+        }
+        OfferedRewards.Add(Pool[Selected]);
+        Pool.RemoveAt(Selected);
+    }
+    RewardToken = FGuid::NewGuid();
+    for (const auto& Reward : CurrentStageDataCache.RewardPool)
+        UE_LOG(LogTemp, Log, TEXT("PGReward pool stage=%d id=%d weight=%.2f"), CurrentStageId, Reward.RewardId, Reward.Weight);
+    UE_LOG(LogTemp, Log, TEXT("PGReward offered stage=%d token=%s count=%d"), CurrentStageId, *RewardToken.ToString(), OfferedRewards.Num());
+    FPGStagePresentation View;
+    View.Owner = this; View.Token = RewardToken; View.Choices = OfferedRewards;
+    View.Submit.BindUObject(this, &ThisClass::CommitReward);
+    if (auto* Messages = UPGMessageManager::Get(this)) Messages->SendMessage(EPGUIMessageType::StagePresentation, &View);
 }
 
 void APGStageManager::OnRewardSelected()
 {
-	if (CurrentStageState != EPGStageState::RewardPhase)
-	{
-		return;
-	}
-	
-	CurrentStageState = EPGStageState::Completed;
-	OnStageCompleted.Broadcast(CurrentStageId);
-	
-	// 다음 스테이지로 진행
-	GetWorld()->GetTimerManager().SetTimer(NextStageTimer, 
-		this, &APGStageManager::StartNextStageAfterDelay, 
-		CurrentStageDataCache.NextStageDelay, false);
+    if (CurrentStageState != EPGStageState::RewardPhase || !bRewardCommitted) return;
+    CurrentStageState = EPGStageState::Completed;
+    CloseRewardWindow();
+    OnStageCompleted.Broadcast(CurrentStageId);
+    GetWorldTimerManager().SetTimer(NextStageTimer, this, &ThisClass::StartNextStageAfterDelay,
+        FMath::Max(0.01f, CurrentStageDataCache.NextStageDelay), false);
 }
 
 void APGStageManager::GoToNextStage()
 {
-	// 다음 스테이지 데이터 확인
-	if (LoadStageData(CurrentStageId + 1))
-	{
-		StartStage(CurrentStageId + 1);
-	}
-	else
-	{
-		// TODO: 게임 완료 처리
-	}
+    if (CurrentStageState != EPGStageState::Completed) return;
+    if (PGData() && PGData()->GetRowData<FPGStageDataRow>(CurrentStageId + 1)) StartStage(CurrentStageId + 1);
+    else
+    {
+        CurrentStageState = EPGStageState::Finished;
+        OnRunFinished.Broadcast();
+        ShowStageStatus(NSLOCTEXT("PG", "RunCompleted", "모든 구간을 완료했습니다"));
+    }
 }
 
 void APGStageManager::StartNextStageAfterDelay()
@@ -531,57 +497,33 @@ void APGStageManager::StartNextStageAfterDelay()
 
 void APGStageManager::OnActorDied(const IPGEventData* InEventData)
 {
-	if (CurrentStageState != EPGStageState::InProgress)
-	{
-		return;
-	}
-
-	const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>* CastedParam
-		= static_cast<const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>*>(InEventData);
-	if (nullptr == CastedParam || false == CastedParam->Value.IsValid())
-
-	// 스폰된 적 목록에서 제거
-	SpawnedEnemies.Remove(CastedParam->Value.Get());
-	
-	RemainingMonsters = FMath::Max(0, RemainingMonsters - 1);
-	OnMonsterCountChanged.Broadcast(RemainingMonsters);
-	
-	UE_LOG(LogTemp, Log, TEXT("PGStageManager: 적 처치됨. 남은 적: %d"), RemainingMonsters);
-	
-	// 모든 몬스터 처치 완료
-	if (RemainingMonsters <= 0)
-	{
-		CurrentStageState = EPGStageState::RewardPhase;
-		OnAllMonstersKilled.Broadcast();
-		ShowRewardSelection();
-		
-		UE_LOG(LogTemp, Log, TEXT("PGStageManager: 스테이지 %d 클리어! 보상 선택 단계"), CurrentStageId);
-	}
+    if (!InEventData) return;
+    const auto* Data = static_cast<const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>*>(InEventData);
+    if (Data->Value.IsValid()) OnEnemyKilled(Data->Value.Get());
 }
 
 void APGStageManager::OnActorSpawned(const IPGEventData* InEventData)
 {
-	const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>* CastedParam
-		= static_cast<const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>*>(InEventData);
-	if (nullptr == CastedParam || false == CastedParam->Value.IsValid())
-	{
-		return;
-	}
-
-	SpawnedEnemies.Add(CastedParam->Value.Get());
-	++RemainingMonsters;
+    if (CurrentStageState != EPGStageState::InProgress || !CurrentStageDataCache.bCountSummonedEnemies || !InEventData) return;
+    const auto* Data = static_cast<const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>*>(InEventData);
+    APGCharacterEnemy* Enemy = Data->Value.Get();
+    if (!IsValid(Enemy) || Enemy->GetWorld() != GetWorld() || SpawnedEnemies.Contains(Enemy)) return;
+    SpawnedEnemies.Add(Enemy);
+    Enemy->OnDestroyed.AddUniqueDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
+    ++RemainingMonsters;
+    OnMonsterCountChanged.Broadcast(RemainingMonsters);
 }
 
 void APGStageManager::ClearAllEnemies()
 {
-	for (APGCharacterEnemy* Enemy : SpawnedEnemies)
-	{
-		if (IsValid(Enemy))
-		{
-			Enemy->Destroy();
-		}
-	}
-	SpawnedEnemies.Empty();
+    const auto Enemies = SpawnedEnemies;
+    SpawnedEnemies.Empty();
+    for (APGCharacterEnemy* Enemy : Enemies)
+        if (IsValid(Enemy))
+        {
+            Enemy->OnDestroyed.RemoveDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
+            Enemy->Destroy();
+        }
 }
 
 int32 APGStageManager::GetRemainingSpawnCountForMonsterType(int32 MonsterId) const
@@ -608,42 +550,92 @@ int32 APGStageManager::GetTotalMonsterCount(const FPGStageDataRow& StageData)
 
 bool APGStageManager::IsValidStageData(const FPGStageDataRow& StageData)
 {
-	if (StageData.MonsterSpawnInfos.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("스테이지 데이터 검증 실패: MonsterSpawnInfos가 비어있음"));
-		return false;
-	}
-
-	for (int32 i = 0; i < StageData.MonsterSpawnInfos.Num(); i++)
-	{
-		const FPGMonsterSpawnInfo& SpawnInfo = StageData.MonsterSpawnInfos[i];
-        
-		if (SpawnInfo.MonsterId <= 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("스테이지 데이터 검증 실패: 인덱스 %d - 유효하지 않은 몬스터 ID: %d"), 
-				i, SpawnInfo.MonsterId);
-			return false;
-		}
-        
-		if (SpawnInfo.SpawnCount <= 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("스테이지 데이터 검증 실패: 인덱스 %d - 유효하지 않은 스폰 수량: %d"), 
-				i, SpawnInfo.SpawnCount);
-			return false;
-		}
-        
-		if (SpawnInfo.SpawnDelayTime < 0.0f)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("스테이지 데이터 검증 실패: 인덱스 %d - 유효하지 않은 딜레이 시간: %.2f"), 
-				i, SpawnInfo.SpawnDelayTime);
-			return false;
-		}
-	}
-
-	return true;
+    FString Error;
+    const bool bValid = PGStageValidation::Validate(StageData, Error);
+    if (!bValid) UE_LOG(LogTemp, Error, TEXT("Stage %d: %s"), StageData.Id, *Error);
+    return bValid;
 }
 
 FPGStageDataRow APGStageManager::GetCurrentStageDataCopy() const
 {
 	return CurrentStageDataCache;
+}
+
+void APGStageManager::FailStage(const FString& Reason)
+{
+    CurrentStageState = EPGStageState::Failed;
+    GetWorldTimerManager().ClearAllTimersForObject(this);
+    RewardToken.Invalidate();
+    CloseRewardWindow();
+    UE_LOG(LogTemp, Error, TEXT("Stage %d failed: %s"), CurrentStageId, *Reason);
+    ShowStageStatus(FText::Format(NSLOCTEXT("PG", "StageFailed", "진행을 중단했습니다\n{0}"), FText::FromString(Reason)));
+    OnStageFailed.Broadcast(Reason);
+}
+
+void APGStageManager::CloseRewardWindow()
+{
+    FPGStagePresentation View; View.Owner = this; View.bClose = true;
+    if (auto* Messages = UPGMessageManager::Get(this)) Messages->SendMessage(EPGUIMessageType::StagePresentation, &View);
+}
+
+void APGStageManager::CheckStageComplete()
+{
+    if (CurrentStageState == EPGStageState::InProgress && RemainingMonsters == 0 && MonsterSpawnQueue.IsEmpty())
+    {
+        CurrentStageState = EPGStageState::RewardPhase;
+        OnAllMonstersKilled.Broadcast();
+        ShowRewardSelection();
+    }
+}
+
+bool APGStageManager::CommitReward(FGuid Token, int32 Choice)
+{
+    UE_LOG(LogTemp, Log, TEXT("PGReward submit stage=%d token=%s choice=%d"), CurrentStageId, *Token.ToString(), Choice);
+    if (CurrentStageState != EPGStageState::RewardPhase || bRewardCommitted || !Token.IsValid() || Token != RewardToken) return false;
+    APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
+    if (!Player || !Player->GetStatComponent() || Player->GetStatComponent()->GetCurrentHealth() <= 0.f) return false;
+    EPGStatType RewardStat = EPGStatType::None;
+    int32 RewardAmount = 0, PerkPercent = 0;
+    EPGCombatPerk Perk = EPGCombatPerk::None;
+    if (!OfferedRewards.IsEmpty())
+    {
+        if (!OfferedRewards.IsValidIndex(Choice)) return false;
+        const FPGRewardStatDataRow* Reward = PGData()->GetRowData<FPGRewardStatDataRow>(OfferedRewards[Choice].RewardId);
+        if (!Reward) return false;
+        RewardStat = Reward->StatType; RewardAmount = Reward->Amount; Perk = Reward->Perk; PerkPercent = Reward->PerkPercent;
+    }
+    else if (Choice != INDEX_NONE) return false;
+    if (auto* Profile = UPGProfileSubsystem::Get(this))
+    {
+        if (!Profile->CommitReward(Token, CurrentStageId + 1, RewardStat, RewardAmount, Perk, PerkPercent)) return false;
+    }
+    else if (Perk != EPGCombatPerk::None) return false;
+    else if (RewardAmount > 0 && !Player->GetStatComponent()->ApplyStatReward(RewardStat, RewardAmount)) return false;
+    bRewardCommitted = true;
+    UE_LOG(LogTemp, Log, TEXT("PGReward applied stage=%d stat=%d amount=%d"), CurrentStageId, static_cast<int32>(RewardStat), RewardAmount);
+    RewardToken.Invalidate();
+    OnRewardSelected();
+    return true;
+}
+
+void APGStageManager::OnTrackedEnemyDestroyed(AActor* Actor)
+{
+    OnEnemyKilled(Cast<APGCharacterEnemy>(Actor));
+}
+void APGStageManager::OnPlayerDied(const IPGEventData* Data)
+{
+    if (CurrentStageState == EPGStageState::InProgress || CurrentStageState == EPGStageState::RewardPhase || CurrentStageState == EPGStageState::Completed)
+        FailStage(TEXT("Player defeated."));
+}
+void APGStageManager::ShowStageStatus(const FText& Text)
+{
+    FPGStagePresentation View; View.Owner = this; View.Status = Text;
+    View.Retry.BindUObject(this, &ThisClass::RestartRun);
+    if (auto* Messages = UPGMessageManager::Get(this)) Messages->SendMessage(EPGUIMessageType::StagePresentation, &View);
+}
+void APGStageManager::RestartRun()
+{
+    if (CurrentStageState == EPGStageState::Finished)
+        if (auto* Profile = UPGProfileSubsystem::Get(this)) if (!Profile->BeginNewRun()) return;
+    UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this, true)));
 }

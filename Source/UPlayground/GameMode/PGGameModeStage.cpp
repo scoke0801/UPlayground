@@ -2,6 +2,16 @@
 
 
 #include "GameMode/PGGameModeStage.h"
+#include "PGActor/Progression/PGProfileSubsystem.h"
+#include "PGData/PGDataTableManager.h"
+#include "PGData/DataTable/Stage/PGStageDataRow.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGAbilitySystem/PGAtrributeSet.h"
+#include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
+#include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Manager/PGStageManager.h"
@@ -62,7 +72,24 @@ void APGGameModeStage::StartGame()
 	// 첫 번째 스테이지 시작
 	if (StageManager)
 	{
-		StageManager->StartStage(1);
+		int32 Stage = 1;
+        if (auto* Profile = UPGProfileSubsystem::Get(this))
+        {
+            Stage = Profile->GetProfile()->Checkpoint;
+            if (!PGData()->GetRowData<FPGStageDataRow>(Stage))
+            {
+                if (!Profile->BeginNewRun()) return;
+                Stage = 1;
+            }
+        }
+        StageManager->StartStage(Stage);
+#if !UE_BUILD_SHIPPING
+        if (auto* Profile = UPGProfileSubsystem::Get(this)) if (Profile->RetryProbeRemaining >= 0)
+        {
+            FTimerHandle Timer;
+            GetWorldTimerManager().SetTimer(Timer, this, &ThisClass::RunRetryProbe, 0.5f, false);
+        }
+#endif
 	}
 }
 
@@ -105,4 +132,30 @@ void APGGameModeStage::OnEnemySpawned(APGCharacterEnemy* SpawnedEnemy)
 		// 블루프린트 이벤트 호출
 		OnEnemySpawnedEvent(SpawnedEnemy);
 	}
+}
+
+void APGGameModeStage::RunRetryProbe()
+{
+#if !UE_BUILD_SHIPPING
+    auto* Profile = UPGProfileSubsystem::Get(this);
+    auto* Character = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
+    if (!Profile || !Character || !StageManager) return;
+    auto* ASC = Character->GetPGAbilitySystemComponent();
+    const bool bHealthy = ASC->GetHealth() > 0 && !ASC->HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead)
+        && Character->GetCapsuleComponent()->GetCollisionEnabled() != ECollisionEnabled::NoCollision
+        && !Character->GetController()->IsMoveInputIgnored() && StageManager->GetCurrentStageState() == EPGStageState::InProgress;
+    if (!bHealthy) ++Profile->RetryProbeFailures;
+    UE_LOG(LogTemp, Display, TEXT("PGRetryProbe remaining=%d healthy=%d failures=%d"), Profile->RetryProbeRemaining, bHealthy, Profile->RetryProbeFailures);
+    if (Profile->RetryProbeRemaining == 0)
+    {
+        Profile->RetryProbeRemaining = -1;
+        UE_LOG(LogTemp, Display, TEXT("PGRetryProbe COMPLETE failures=%d"), Profile->RetryProbeFailures);
+        FPlatformMisc::RequestExit(false); return;
+    }
+    --Profile->RetryProbeRemaining;
+    ASC->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(), 0.f);
+    if (StageManager->GetCurrentStageState() != EPGStageState::Failed) ++Profile->RetryProbeFailures;
+    FTimerHandle Timer;
+    GetWorldTimerManager().SetTimer(Timer, FTimerDelegate::CreateWeakLambda(this, [this](){ if (StageManager) StageManager->RestartRun(); }), 0.1f, false);
+#endif
 }

@@ -1,54 +1,30 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
-
 #include "CoreMinimal.h"
 #include "PGUI/Widget/Base/PGWidgetBase.h"
+#include "PGShared/Shared/Enum/PGRewardTypes.h"
 #include "PGUIRewardCard.generated.h"
 
-class UTextBlock;
-class UWidgetSwitcher;
-class UImage;
-
-enum class EPGRewardGrade : uint8;
-/**
- * 
- */
+DECLARE_DELEGATE_OneParam(FPGRewardCardSelected, int32);
 UCLASS()
 class PGUI_API UPGUIRewardCard : public UPGWidgetBase
 {
-	GENERATED_BODY()
-
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UWidgetSwitcher* GradeBGSwitcher;
-
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UTextBlock* RewardNameText;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UWidgetSwitcher* RewardTypeSwitcher;
-
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UImage* ItemImage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UTextBlock* ItemDescText;
-
-protected:	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UTextBlock* StatDescText;
-
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UImage* SkillImage;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI", meta=(BindWidget))
-	UTextBlock* SkillDescText;
-
+    GENERATED_BODY()
 public:
-	void SetGrade(const EPGRewardGrade InGrade);
-
+    FPGRewardCardSelected OnSelected;
+    void Configure(int32 InIndex, FText InTitle, FText InDescription, EPGRewardGrade InGrade, UTexture2D* InIcon, int32 InIconPanel = -1);
+    void SetGrade(EPGRewardGrade InGrade);
+    void SetConfirmed(bool bSelected);
+protected:
+    virtual TSharedRef<SWidget> RebuildWidget() override;
+private:
+    UPROPERTY(Transient) TObjectPtr<class UBorder> Frame;
+    UPROPERTY(Transient) TObjectPtr<class UButton> Button;
+    UPROPERTY(Transient) TObjectPtr<UTexture2D> Icon;
+    FText Title, Description;
+    FLinearColor GradeColor = FLinearColor::White;
+    int32 Index = 0;
+    int32 IconPanel = -1;
+    UFUNCTION() void Clicked();
+    UFUNCTION() void Hovered();
+    UFUNCTION() void Unhovered();
 };

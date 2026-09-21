@@ -21,3 +21,13 @@ enum class EPGRewardGrade : uint8
     Rare
 };
 
+UENUM(BlueprintType)
+enum class EPGCombatPerk : uint8
+{
+    None,
+    LifeSteal,
+    Execution,
+    Counter,
+    Max UMETA(Hidden)
+};
+
