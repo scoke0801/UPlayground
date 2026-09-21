@@ -19,7 +19,7 @@ public:
 	FGameplayTag InputTag;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Category = "PG|InputTag"))
-	UInputAction* InputAction;
+	UInputAction* InputAction = {};
 
 	bool IsValid() const
 	{
