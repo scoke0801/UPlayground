@@ -103,3 +103,7 @@ Script/**/*.png
 
 
 **/*.md
+# Track project planning documents
+!/Docs/todo/*.md
+!/CLAUDE.md
+!/PROJECT_OVERVIEW.md
