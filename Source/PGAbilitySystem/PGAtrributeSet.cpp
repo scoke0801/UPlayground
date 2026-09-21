@@ -1,29 +1,40 @@
-
-
-
 #include "PGAtrributeSet.h"
-
 #include "GameplayEffectExtension.h"
 
-/**
- * 기본 생성자
- * 모든 어트리뷰트를 기본값 1.0으로 초기화
- */
 UPGAtrributeSet::UPGAtrributeSet()
 {
-	InitCurrentHealth(1.f);
-	InitMaxHealth(1.f);
-	InitCurrentRage(1.f);
-	InitMaxRage(1.f);
-	InitAttackPower(1.f);
-	InitDefensePower(1.f);
+    InitCurrentHealth(1.f); InitMaxHealth(1.f);
+    InitCurrentRage(0.f); InitMaxRage(1.f);
+    InitAttackPower(1.f); InitDefensePower(0.f);
+    InitDamageTaken(0.f); InitCriticalRate(0.f); InitCriticalDamage(0.f);
+    InitHealAmount(0.f); InitMovementSpeed(600.f);
 }
-
-/**
- * 게임플레이 이펙트 실행 후 호출되는 함수
- * 어트리뷰트 값의 유효성 검증 및 클램핑 처리를 수행
- */
-void UPGAtrributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
+void UPGAtrributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
-
+    Super::PreAttributeChange(Attribute, NewValue);
+    NewValue = FMath::IsFinite(NewValue) ? FMath::Max(0.f, NewValue) : 0.f;
+    if (Attribute == GetCurrentHealthAttribute()) NewValue = FMath::Min(NewValue, GetMaxHealth());
+    if (Attribute == GetCurrentRageAttribute()) NewValue = FMath::Min(NewValue, GetMaxRage());
+    if (Attribute == GetCriticalRateAttribute()) NewValue = FMath::Min(NewValue, 10000.f);
+}
+void UPGAtrributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+{
+    Super::PostAttributeChange(Attribute, OldValue, NewValue);
+    // Increasing maximum health does not heal; decreasing it clamps current health.
+    if (Attribute == GetMaxHealthAttribute() && GetCurrentHealth() > NewValue) SetCurrentHealth(NewValue);
+    if (Attribute == GetMaxRageAttribute() && GetCurrentRage() > NewValue) SetCurrentRage(NewValue);
+}
+void UPGAtrributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+    Super::PostGameplayEffectExecute(Data);
+    if (Data.EvaluatedData.Attribute == GetDamageTakenAttribute())
+    {
+        const float Damage = FMath::IsFinite(GetDamageTaken()) ? FMath::Max(0.f, GetDamageTaken()) : 0.f;
+        SetDamageTaken(0.f);
+        SetCurrentHealth(FMath::Clamp(GetCurrentHealth() - Damage, 0.f, GetMaxHealth()));
+    }
+    if (Data.EvaluatedData.Attribute == GetCurrentHealthAttribute())
+        SetCurrentHealth(FMath::Clamp(GetCurrentHealth(), 0.f, GetMaxHealth()));
+    if (Data.EvaluatedData.Attribute == GetCurrentRageAttribute())
+        SetCurrentRage(FMath::Clamp(GetCurrentRage(), 0.f, GetMaxRage()));
 }

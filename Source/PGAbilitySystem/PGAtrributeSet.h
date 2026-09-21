@@ -36,7 +36,9 @@ public:
 	 * 게임플레이 이펙트 실행 후 호출되는 함수
 	 * 어트리뷰트 값의 유효성 검증 및 클램핑 처리를 수행
 	 */
-	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+    virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+    virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 	
 public:
 	/**
@@ -88,6 +90,19 @@ public:
 	FGameplayAttributeData DamageTaken;
 	ATTRIBUTE_ACCESSORS(UPGAtrributeSet, DamageTaken)
 
+public:
+    UPROPERTY(BlueprintReadOnly, Category="PG|Damage")
+    FGameplayAttributeData CriticalRate;
+    ATTRIBUTE_ACCESSORS(UPGAtrributeSet, CriticalRate)
+    UPROPERTY(BlueprintReadOnly, Category="PG|Damage")
+    FGameplayAttributeData CriticalDamage;
+    ATTRIBUTE_ACCESSORS(UPGAtrributeSet, CriticalDamage)
+    UPROPERTY(BlueprintReadOnly, Category="PG|Stats")
+    FGameplayAttributeData HealAmount;
+    ATTRIBUTE_ACCESSORS(UPGAtrributeSet, HealAmount)
+    UPROPERTY(BlueprintReadOnly, Category="PG|Stats")
+    FGameplayAttributeData MovementSpeed;
+    ATTRIBUTE_ACCESSORS(UPGAtrributeSet, MovementSpeed)
 private:
 	//TWeakInterfacePtr<IPGPawnUIInterface> CachedPawnUIInterface;
 };

@@ -13,7 +13,9 @@ void FPGPlayerSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 {
 	PGSkillId SkillId = Super::GetSkillID(InSlotId);
 	
-	if (FPGSkillDataRow* SkillData = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillId))
+    UPGDataTableManager* Manager = UPGDataTableManager::Get(Context.Get());
+    if (!Manager) return;
+	if (FPGSkillDataRow* SkillData = Manager->GetRowData<FPGSkillDataRow>(SkillId))
 	{
 		if ( 0 < SkillData->ChainSkillIdList.Num() &&
 			ComboCount < SkillData->ChainSkillIdList.Num())
@@ -38,7 +40,7 @@ void FPGPlayerSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 	}
 	
 	FPGEventDataTwoParam<PGSkillId, EPGSkillSlot> ToSendData(SkillId, InSlotId);
-	UPGMessageManager::Get()->SendMessage(EPGPlayerMessageType::UseSkill, &ToSendData);
+    if (auto* Messages = UPGMessageManager::Get(Context.Get())) Messages->SendMessage(EPGPlayerMessageType::UseSkill, &ToSendData);
 }
 
 PGSkillId FPGPlayerSkillHandler::GetSkillID(const EPGSkillSlot InSlotId)
@@ -50,7 +52,9 @@ PGSkillId FPGPlayerSkillHandler::GetSkillID(const EPGSkillSlot InSlotId)
 	
 	PGSkillId SkillId = Super::GetSkillID(InSlotId);
 	
-	if (FPGSkillDataRow* SkillData = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillId))
+    UPGDataTableManager* Manager = UPGDataTableManager::Get(Context.Get());
+    if (!Manager) return SkillId;
+	if (FPGSkillDataRow* SkillData = Manager->GetRowData<FPGSkillDataRow>(SkillId))
 	{
 		if (0 < ComboCount && SkillData->ChainSkillIdList.IsValidIndex(ComboCount - 1))
 		{

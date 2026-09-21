@@ -19,7 +19,17 @@ class PGACTOR_API UPGStatComponent : public UPGPawnExtensionComponentBase
 public:
 	TMap<EPGStatType, int32> StatMap;
 
-	int32 CurrentHealth;
+	float GetCurrentHealth() const;
+    float GetHealthRatio() const;
+    class UPGAbilitySystemComponent* GetASC() const;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+private:
+    FDelegateHandle HealthChangedHandle;
+    FDelegateHandle MaxHealthChangedHandle;
+    FDelegateHandle MovementChangedHandle;
+    void OnHealthChanged(const struct FOnAttributeChangeData& Data);
+public:
+    bool ApplyStatReward(EPGStatType Type, int32 Amount);
 	
 public:
 	virtual void InitData(int32 CharacterTID);

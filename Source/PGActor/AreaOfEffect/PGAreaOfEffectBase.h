@@ -41,7 +41,7 @@ protected:
 	AActor* Shooter;
 
 	UPROPERTY(Transient)
-	APawn* OverlappedPawn = nullptr;
+	TArray<TObjectPtr<APawn>> OverlappedPawns;
 
 private:
 	float LifeTime = 5.0f;
@@ -70,4 +70,6 @@ private:
 	void Fire(AActor* InShooterActor, const FVector& StartLocation);
 	
 	void OnDamageTicked();
+    void ApplyAreaHit(APawn* Target);
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 };

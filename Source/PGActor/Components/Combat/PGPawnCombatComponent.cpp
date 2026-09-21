@@ -2,6 +2,8 @@
 
 
 #include "PGPawnCombatComponent.h"
+#include "PGActor/Characters/PGCharacterBase.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 
 #include "GameplayTagContainer.h"
 #include "Components/BoxComponent.h"
@@ -31,7 +33,7 @@ void UPGPawnCombatComponent::RegisterSpawnedWeapon(FGameplayTag InWeaponTagToReg
 	
 	if (bRegsisterAsEquippedWeapon)
 	{
-		CurrentEquippedWeaponTag = InWeaponTagToRegister;
+		SetCurrentEquippedWeaponTag(InWeaponTagToRegister);
 	}
 }
 
@@ -47,7 +49,19 @@ APGWeaponBase* UPGPawnCombatComponent::GetCharacterCurrentEquippedWeapon() const
 
 void UPGPawnCombatComponent::SetCurrentEquippedWeaponTag(FGameplayTag WeaponTag)
 {
-	CurrentEquippedWeaponTag = WeaponTag;
+    CurrentEquippedWeaponTag = WeaponTag;
+    if (APGCharacterBase* Character = Cast<APGCharacterBase>(GetOwner()))
+    {
+        TMap<EPGStatType, int32> Bonuses;
+        if (const APGWeaponBase* Weapon = GetCharacterCurrentEquippedWeapon())
+            for (uint8 Index = 1; Index < static_cast<uint8>(EPGStatType::Max); ++Index)
+            {
+                const auto Type = static_cast<EPGStatType>(Index);
+                const int32 Value = Weapon->GetWeaponStat(Type);
+                if (Value != 0) Bonuses.Add(Type, Value);
+            }
+        Character->GetPGAbilitySystemComponent()->SetEquipmentBonuses(Bonuses);
+    }
 }
 
 void UPGPawnCombatComponent::ToggleWeaponCollision(bool bShouldEnable, EPGToggleDamageType ToggleDamageType)

@@ -10,6 +10,8 @@
 
 void UPGEnemyCombatComponent::OnHitTargetActor(AActor* HitActor)
 {
+    // The elite disk owns the only hit during its windup/strike/recovery sequence.
+    if (const auto* Enemy = GetOwningPawn<APGCharacterEnemy>(); Enemy && Enemy->bPerformingHeavyAttack) return;
 	if (OverlappedActors.Contains(HitActor))
 	{
 		return;

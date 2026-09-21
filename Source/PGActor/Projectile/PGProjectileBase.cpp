@@ -68,6 +68,7 @@ void APGProjectileBase::Tick(float DeltaTime)
 void APGProjectileBase::Fire(AActor* InShooterActor, const FVector& InStartLocation, const FVector& Direction, float Speed,
 	float InDamage)
 {
+	SetActorEnableCollision(false);
 	SetActorLocation(InStartLocation);
 	SetActorRotation(Direction.Rotation());
 
@@ -81,7 +82,6 @@ void APGProjectileBase::Fire(AActor* InShooterActor, const FVector& InStartLocat
 	Damage = InDamage;
 	
 	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
 
 	if (APGCharacterBase* Character = Cast<APGCharacterBase>(Shooter))
 	{
@@ -94,6 +94,9 @@ void APGProjectileBase::Fire(AActor* InShooterActor, const FVector& InStartLocat
 		GetWorldTimerManager().SetTimer(LifeTimeHandle, this, 
 			&ThisClass::OnLifeTimeExpired, LifeTime, false);
 	}
+
+	// Enable last: an immediate overlap may return this projectile to its pool.
+	SetActorEnableCollision(true);
 }
 
 void APGProjectileBase::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor,

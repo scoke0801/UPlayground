@@ -23,8 +23,9 @@ UPGProjectileManager* UPGProjectileManager::Get()
 void UPGProjectileManager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+    Collection.InitializeDependency<UPGDataTableManager>();
 
-	PreAllocPools();
+    // Pools are created lazily in the playable world, after GameInstance initialization.
 	
 	WeakThis = MakeWeakObjectPtr(this);
 	
@@ -55,6 +56,10 @@ APGPooledProjectile* UPGProjectileManager::FireProjectile(int32 ProjectileId, AA
 	const FPGProjectilePoolDataRow* Setting = DataTableManager->GetRowData<FPGProjectilePoolDataRow>(
 		StaticCast<int32>(ProjectileData->ProjectileType));
 	if (nullptr == Setting) { return nullptr; }
+
+    if (!IsValid(Shooter) || Shooter->GetWorld() != GetWorld()) return nullptr;
+    if (UPGProjectilePool* Existing = ProjectilePools.FindRef(ProjectileData->ProjectileType))
+        if (Existing->GetWorld() != GetWorld()) CleanupAllPools();
 
 	// 풀이 없으면 생성
 	if (!ProjectilePools.Contains(ProjectileData->ProjectileType))
@@ -140,7 +145,7 @@ UPGProjectilePool* UPGProjectileManager::CreateProjectilePool(EPGProjectileType 
 	UPGProjectilePool* NewPool = NewObject<UPGProjectilePool>(
 		this,  // Outer를 Manager로 설정 (GC 관리)
 		UPGProjectilePool::StaticClass(),
-		FName(*PoolName),
+		MakeUniqueObjectName(this, UPGProjectilePool::StaticClass(), FName(*PoolName)),
 		RF_NoFlags  // 일반 플래그 사용
 	);
 	

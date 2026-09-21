@@ -16,7 +16,7 @@ class PGDATA_API UPGDataAsset_PlayerStartUpData : public UPGDataAsset_StartUpDat
 	GENERATED_BODY()
 
 public:
-	virtual void GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive, int32 ApplyLevel = 1) override;
+	virtual void GiveToAbilitySystemComponent(UAbilitySystemComponent* InASCToGive, int32 ApplyLevel = 1) override;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "PG|StartUpData", meta = (TitleProperty = "InputTag"))

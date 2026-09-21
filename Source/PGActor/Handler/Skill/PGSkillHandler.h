@@ -11,7 +11,7 @@ enum class EPGSkillType : uint8;
 enum class EPGSkillSlot : uint8;
 
 USTRUCT(BlueprintType)
-struct FPGSkillData
+struct PGACTOR_API FPGSkillData
 {
 	GENERATED_BODY()
 
@@ -44,10 +44,12 @@ public:
 class PGACTOR_API FPGSkillHandler : public FPGHandler
 {
 protected:
+    TWeakObjectPtr<UObject> Context;
 	TMap<EPGSkillSlot, FPGSkillData> SkillDataMap;
 	
 public:
 	virtual ~FPGSkillHandler();
+    void SetContext(UObject* InContext) { Context = InContext; }
 
 public:
 	// FPGHandler override

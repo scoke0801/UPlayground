@@ -20,9 +20,8 @@ void APGPooledProjectile::Fire(AActor* InShooterActor, const FVector& InStartLoc
 		MovementComponent->SetUpdatedComponent(RootComponent);
 	}
 
-	Super::Fire(InShooterActor, InStartLocation, Direction, Speed, InDamage);
-	
 	bInUse = true;
+	Super::Fire(InShooterActor, InStartLocation, Direction, Speed, InDamage);
 }
 
 void APGPooledProjectile::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
@@ -37,7 +36,8 @@ void APGPooledProjectile::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* 
 void APGPooledProjectile::OnProjectileOverlapped(UPrimitiveComponent* HitComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
 {
-	if (APawn* CastedPawn = Cast<APawn>(OtherActor))
+	if (!bInUse || !IsValid(Shooter)) return;
+    if (APawn* CastedPawn = Cast<APawn>(OtherActor))
 	{
 		if (UPGAbilityBPLibrary::IsTargetActorHostile(Shooter ,OtherActor))
 		{
@@ -110,6 +110,7 @@ void APGPooledProjectile::ReturnToPool()
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	bInUse = false;
+    Shooter = nullptr;
 
 	// 타이머 정리
 	GetWorldTimerManager().ClearTimer(LifeTimeHandle);
