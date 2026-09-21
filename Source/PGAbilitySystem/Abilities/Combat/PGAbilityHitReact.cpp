@@ -15,20 +15,21 @@ void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (const APGCharacterBase* Instigator = Cast<APGCharacterBase>(TriggerEventData->Instigator))
+	if (!TriggerEventData || !IsValid(TriggerEventData->Instigator.Get())) { EndAbilitySelf(); return; }
+    if (const APGCharacterBase* Instigator = Cast<APGCharacterBase>(TriggerEventData->Instigator))
 	{
 		if (APGCharacterBase* Owner = GetCharacter())
 		{
 			// 사망한 대상에게는 추가 처리 진행하지 않는다.
 			if (UPGStatComponent* StatComponent = Owner->GetStatComponent())
 			{
-				if (FMath::IsNearlyZero(StatComponent->CurrentHealth, 0.01f))
+				if (FMath::IsNearlyZero(StatComponent->GetCurrentHealth(), 0.01f))
 				{
 					EndAbilitySelf();
 					return;
 				}
 			}
-			Owner->OnHit(Instigator->GetStatComponent(), Instigator->GetCombatComponent());
+			// Damage is committed by ASC before this optional reaction ability.
 
 			if (USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>())
 			{
@@ -88,7 +89,7 @@ void UPGAbilityHitReact::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 
 	if(APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetOwningActorFromActorInfo()))
 	{
-		Player->SetIsCanControl(true);
+		if (Player->GetStatComponent()->GetCurrentHealth() > 0.f) Player->SetIsCanControl(true);
 	}
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

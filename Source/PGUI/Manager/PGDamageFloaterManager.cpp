@@ -1,7 +1,9 @@
+#include "PGDamageFloaterManager.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "PGDamageFloaterManager.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
@@ -24,7 +26,7 @@ UPGDamageFloaterManager* UPGDamageFloaterManager::Get()
 
 UPGUIDamageFloater* UPGDamageFloaterManager::GetPooledFloater(EPGDamageType DamageType)
 {
-	if (Pools[DamageType].Widgets.Num() > 0)
+	if (Pools.FindOrAdd(DamageType).Widgets.Num() > 0)
 	{
 		UPGUIDamageFloater* Floater = Pools[DamageType].Widgets.Pop();
 		Floater->SetVisibility(ESlateVisibility::Visible);
@@ -36,30 +38,22 @@ UPGUIDamageFloater* UPGDamageFloaterManager::GetPooledFloater(EPGDamageType Dama
 
 void UPGDamageFloaterManager::ReturnFloaterToPool(EPGDamageType DamageType, UPGUIDamageFloater* Floater)
 {
-	if (Floater)
+	if (Floater && ActiveFloaters.Remove(Floater) > 0)
 	{
 		// 액터별 목록에서 제거
-		AActor* TargetActor = Floater->GetTargetActor();
-		if (TargetActor)
-		{
-			if (FPGDamageFloaterPool* FloaterPool = ActiveFloatersByActor.Find(TargetActor))
-			{
-				FloaterPool->Widgets.Remove(Floater);
-				
-				// 목록이 비었으면 맵에서 제거
-				if (FloaterPool->Widgets.Num() == 0)
-				{
-					ActiveFloatersByActor.Remove(TargetActor);
-				}
-			}
-		}
-		
+        for (auto It = ActiveFloatersByActor.CreateIterator(); It; ++It)
+        {
+            It.Value().Widgets.Remove(Floater);
+            if (It.Value().Widgets.IsEmpty()) It.RemoveCurrent();
+        }
+        Floater->SetTargetActor(nullptr, FVector::ZeroVector);
+
 		Floater->SetVisibility(ESlateVisibility::Collapsed);
 		Floater->RemoveFromParent();
 		
 		if (Pools[DamageType].Widgets.Num() < MaxPoolSize)
 		{
-			Pools[DamageType].Widgets.Add(Floater);
+			Pools.FindOrAdd(DamageType).Widgets.AddUnique(Floater);
 		}
 	}
 }
@@ -69,6 +63,8 @@ void UPGDamageFloaterManager::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 	
 	WeakThis = MakeWeakObjectPtr(this);
+    Collection.InitializeDependency<UPGDataTableManager>();
+    WorldCleanupHandle = FWorldDelegates::OnWorldCleanup.AddUObject(this, &ThisClass::OnWorldCleanup);
 	
 	Pools.Emplace(EPGDamageType::Normal);
 	Pools.Emplace(EPGDamageType::Critical);
@@ -98,6 +94,8 @@ void UPGDamageFloaterManager::Deinitialize()
 		GetWorld()->GetTimerManager().ClearTimer(CleanupTimerHandle);
 	}
 	
+    FWorldDelegates::OnWorldCleanup.Remove(WorldCleanupHandle);
+    if (WeakThis.Get() == this) WeakThis.Reset();
 	Super::Deinitialize();
 }
 
@@ -106,7 +104,7 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
                                          AActor* TargetActor,
                                          bool IsPlayer)
 {
-	if (!TargetActor)
+	if (!IsValid(TargetActor) || TargetActor->GetWorld() != GetWorld() || ActiveFloaters.Num() >= MaxActiveFloaters)
 	{
 		return;
 	}
@@ -114,7 +112,8 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 	// 동일한 액터의 기존 플로터들을 위로 이동
 	if (FPGDamageFloaterPool* ExistingFloaters = ActiveFloatersByActor.Find(TargetActor))
 	{
-		int32 StackIndex = 0;
+		if (ExistingFloaters->Widgets.Num() >= MaxFloatersPerActor) return;
+        int32 StackIndex = 0;
 		for (UPGUIDamageFloater* ExistingFloater : ExistingFloaters->Widgets)
 		{
 			if (IsValid(ExistingFloater))
@@ -143,6 +142,7 @@ void UPGDamageFloaterManager::AddFloater(float DamageAmount,
 	}
 	
 	// 뷰포트에 추가
+    ActiveFloaters.Add(Floater);
 	Floater->AddToViewport();
 	
 	// 액터와 오프셋 설정
@@ -177,7 +177,7 @@ void UPGDamageFloaterManager::CleanupExpiredFloaters()
 
 UPGUIDamageFloater* UPGDamageFloaterManager::CreateFloaterWidget(EPGDamageType DamageType)
 {
-	if (FPGUIDamageFloaterPathRow* Data = PGData()->GetRowData<FPGUIDamageFloaterPathRow>(static_cast<int64>(DamageType)))
+	if (FPGUIDamageFloaterPathRow* Data = UPGDataTableManager::Get(this)->GetRowData<FPGUIDamageFloaterPathRow>(static_cast<int64>(DamageType)))
 	{
 		TSoftClassPtr<UPGUIDamageFloater> SoftClassPtr(Data->ClassPath);
 
@@ -222,4 +222,14 @@ void UPGDamageFloaterManager::ClearPool()
 		}
 		Pair.Value.Widgets.Empty();
 	}
+}
+
+UPGDamageFloaterManager* UPGDamageFloaterManager::Get(const UObject* Context)
+{
+    const UWorld* World = Context ? Context->GetWorld() : nullptr;
+    return World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UPGDamageFloaterManager>() : nullptr;
+}
+void UPGDamageFloaterManager::OnWorldCleanup(UWorld* World, bool bSessionEnded, bool bCleanupResources)
+{
+    if (World && World->GetGameInstance() == GetGameInstance()) ClearPool();
 }
