@@ -139,39 +139,22 @@ APGAreaOfEffectBase* APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVe
 }
 
 void APGAreaOfEffectBase::OnEffectOverlapped(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
+    UPrimitiveComponent* OtherComp, int OtherBodyIndex, bool bFromSweep, const FHitResult& Hit)
 {
-	if (nullptr == Shooter || nullptr == OtherActor)
-	{
-		return;
-	}
-	
-	if (false == UPGAbilityBPLibrary::IsTargetActorHostile(Shooter ,OtherActor))
-	{
-		return;
-	}
-	
-	if (APawn* CastedPawn = Cast<APawn>(OtherActor))
-	{
-		FGameplayEventData Data;
-		Data.Instigator = Shooter;
-		Data.Target = CastedPawn;
-				
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-			CastedPawn,
-			PGGamePlayTags::Shared_Event_HitReact,
-			Data);
-		
-		OverlappedPawn = CastedPawn;
-		GetWorldTimerManager().SetTimer(DamageTickTimerHandle, this, 
-			&ThisClass::OnDamageTicked, DamageTickInterval, true);
-	}
+    APawn* Pawn = Cast<APawn>(OtherActor);
+    if (!IsValid(Shooter) || !IsValid(Pawn) || OverlappedPawns.Contains(Pawn) || !UPGAbilityBPLibrary::IsTargetActorHostile(Shooter, Pawn)) return;
+    OverlappedPawns.Add(Pawn);
+    ApplyAreaHit(Pawn);
+    if (!GetWorldTimerManager().IsTimerActive(DamageTickTimerHandle) && DamageTickInterval > 0.f)
+        GetWorldTimerManager().SetTimer(DamageTickTimerHandle, this, &ThisClass::OnDamageTicked, DamageTickInterval, true);
 }
 
 void APGAreaOfEffectBase::OnEffectEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int OtherBodyIndex)
+    UPrimitiveComponent* OtherComp, int OtherBodyIndex)
 {
-	GetWorldTimerManager().ClearTimer(DamageTickTimerHandle);
+    // Another component of the same pawn may still overlap.
+    if (!CollisionBox->IsOverlappingActor(OtherActor)) OverlappedPawns.Remove(Cast<APawn>(OtherActor));
+    if (OverlappedPawns.IsEmpty()) GetWorldTimerManager().ClearTimer(DamageTickTimerHandle);
 }
 
 void APGAreaOfEffectBase::OnLifeTimeExpired()
@@ -192,17 +175,29 @@ void APGAreaOfEffectBase::Fire(AActor* InShooterActor, const FVector& StartLocat
 	
 	// 수명 타이머
 	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, 
-		&ThisClass::OnLifeTimeExpired, LifeTime, true);
+		&ThisClass::OnLifeTimeExpired, FMath::Max(0.01f, LifeTime), false);
 }
 
 void APGAreaOfEffectBase::OnDamageTicked()
 {
-	FGameplayEventData Data;
-	Data.Instigator = Shooter;
-	Data.Target = OverlappedPawn;
-				
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-		OverlappedPawn,
-		PGGamePlayTags::Shared_Event_HitReact,
-		Data);
+    if (!IsValid(Shooter)) { Destroy(); return; }
+    OverlappedPawns.RemoveAll([this](const TObjectPtr<APawn>& Pawn) { return !IsValid(Pawn) || !CollisionBox->IsOverlappingActor(Pawn); });
+    const auto Targets = OverlappedPawns;
+    for (APawn* Pawn : Targets) ApplyAreaHit(Pawn);
+    if (OverlappedPawns.IsEmpty()) GetWorldTimerManager().ClearTimer(DamageTickTimerHandle);
+}
+
+void APGAreaOfEffectBase::ApplyAreaHit(APawn* Target)
+{
+    if (!IsValid(Shooter) || !IsValid(Target)) return;
+    FGameplayEventData Data;
+    Data.Instigator = Shooter;
+    Data.Target = Target;
+    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Target, PGGamePlayTags::Shared_Event_HitReact, Data);
+}
+void APGAreaOfEffectBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    GetWorldTimerManager().ClearAllTimersForObject(this);
+    OverlappedPawns.Reset();
+    Super::EndPlay(EndPlayReason);
 }

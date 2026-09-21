@@ -4,10 +4,10 @@
 #include "PGDataAsset_PlayerStartUpData.h"
 
 #include "GameplayAbilitySpec.h"
-#include "PGAbilitySystem/PGAbilitySystemComponent.h"
-#include "PGAbilitySystem/Abilities/PGPlayerGameplayAbility.h"
+#include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbility.h"
 
-void UPGDataAsset_PlayerStartUpData::GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive,
+void UPGDataAsset_PlayerStartUpData::GiveToAbilitySystemComponent(UAbilitySystemComponent* InASCToGive,
 	int32 ApplyLevel)
 {
 	Super::GiveToAbilitySystemComponent(InASCToGive, ApplyLevel);
@@ -18,10 +18,11 @@ void UPGDataAsset_PlayerStartUpData::GiveToAbilitySystemComponent(UPGAbilitySyst
 		{
 			continue;
 		}
-		FGameplayAbilitySpec AbilitySpec(AbilitySet.AbilityToGrant);
+		if (InASCToGive->FindAbilitySpecFromClass(AbilitySet.AbilityToGrant)) continue;
+        FGameplayAbilitySpec AbilitySpec(AbilitySet.AbilityToGrant);
 		AbilitySpec.SourceObject = InASCToGive->GetAvatarActor();
 		AbilitySpec.Level = ApplyLevel;
-		AbilitySpec.DynamicAbilityTags.AddTag(AbilitySet.InputTag);
+		AbilitySpec.GetDynamicSpecSourceTags().AddTag(AbilitySet.InputTag);
 		
  		InASCToGive->GiveAbility(AbilitySpec);
 	}

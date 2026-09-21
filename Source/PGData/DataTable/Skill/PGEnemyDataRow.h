@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -12,7 +12,7 @@ struct PGDATA_API FPGEnemyDataRow : public FTableRowBase
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	int32 EnemyID;
+	int32 EnemyID = {};
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FName EnemyName;
@@ -20,6 +20,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<int32> SkillIdList;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowedClasses = "Actor"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowedClasses = "/Script/Engine.Actor"))
 	TSoftClassPtr<AActor> ActorClass;
 };

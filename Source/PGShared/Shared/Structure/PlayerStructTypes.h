@@ -36,7 +36,7 @@ public:
 	// TSubclassOf<UPGPlayerAnimLayer> WeaponAnimLayerToLink;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly )
-	UInputMappingContext* WeaponInputMappingContext;
+	UInputMappingContext* WeaponInputMappingContext = {};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (TitleProperty = "InputTag"))
 	TArray<FPGPlayerAbilitySet> DefaultWeaponAbilities;

@@ -46,7 +46,8 @@ void UPGAbilityBPLibrary::RemoveGameplayTagFromActorIfFound(AActor* InActor, FGa
 
 bool UPGAbilityBPLibrary::IsTargetPawnHostile(APawn* QueryPawn, APawn* TargetPawn)
 {
-	IGenericTeamAgentInterface* QueryTeamAgent = Cast<IGenericTeamAgentInterface>(QueryPawn->GetController());
+	if (!IsValid(QueryPawn) || !IsValid(TargetPawn)) return false;
+    IGenericTeamAgentInterface* QueryTeamAgent = Cast<IGenericTeamAgentInterface>(QueryPawn->GetController());
 	IGenericTeamAgentInterface* TargetTeamAgent = Cast<IGenericTeamAgentInterface>(TargetPawn->GetController());
 
 	if (QueryTeamAgent && TargetTeamAgent)
@@ -70,7 +71,8 @@ bool UPGAbilityBPLibrary::IsTargetActorHostile(AActor* QueryActor, AActor* Targe
 		return false;
 	}
 	
-	IGenericTeamAgentInterface* QueryTeamAgent = Cast<IGenericTeamAgentInterface>(QueryPawn->GetController());
+	if (!IsValid(QueryPawn) || !IsValid(TargetPawn)) return false;
+    IGenericTeamAgentInterface* QueryTeamAgent = Cast<IGenericTeamAgentInterface>(QueryPawn->GetController());
 	IGenericTeamAgentInterface* TargetTeamAgent = Cast<IGenericTeamAgentInterface>(TargetPawn->GetController());
 
 	if (QueryTeamAgent && TargetTeamAgent)

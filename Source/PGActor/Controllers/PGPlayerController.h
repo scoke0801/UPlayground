@@ -18,6 +18,17 @@ UCLASS()
 class PGACTOR_API APGPlayerController : public APlayerController, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
+public:
+    void ToggleInventory();
+    void PickupNearest();
+    // Development capture after streaming and HUD data have settled.
+    UFUNCTION(Exec)
+    void PGHUDCapture();
+private:
+    UPROPERTY() TObjectPtr<class UPGUIInventory> InventoryWidget;
+
+public:
+    bool IsPointerOverUI() const;
 
 private:
 	FGenericTeamId PlayerTeamId;
@@ -34,6 +45,10 @@ private:
 	bool bLastClickConsumed = false;
 
 protected:
+	// The native HUD replaces the legacy blueprint by default.
+	UPROPERTY(EditDefaultsOnly, Category = "PG|UI")
+	bool bUseLegacyHUD = false;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|UI")
 	TSubclassOf<UUserWidget> HUDWidgetClass;
 

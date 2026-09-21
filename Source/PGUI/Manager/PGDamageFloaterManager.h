@@ -16,19 +16,19 @@ struct FDamageFloaterData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float DamageAmount;
+	float DamageAmount = {};
     
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EPGDamageType DamageType;
+	EPGDamageType DamageType = {};
     
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector WorldLocation;
+	FVector WorldLocation = {};
     
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FLinearColor TextColor;
+	FLinearColor TextColor = {};
     
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIsCritical;
+	bool bIsCritical = {};
 	
 	// 추적할 대상 액터
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -70,6 +70,10 @@ private:
 	// 풀 설정
 	UPROPERTY(EditAnywhere, Category = "PG|PoolSettings")
 	int32 MaxPoolSize = 50;
+    UPROPERTY(EditAnywhere, Category="PG|PoolSettings") int32 MaxActiveFloaters = 128;
+    UPROPERTY(EditAnywhere, Category="PG|PoolSettings") int32 MaxFloatersPerActor = 8;
+    FDelegateHandle WorldCleanupHandle;
+    void OnWorldCleanup(UWorld* World, bool bSessionEnded, bool bCleanupResources);
 
 	// 플로터 간격 (위로 밀어올릴 오프셋)
 	UPROPERTY(EditAnywhere, Category = "PG|Display")
@@ -93,6 +97,7 @@ private:
 
 public:
 	static UPGDamageFloaterManager* Get();
+    static UPGDamageFloaterManager* Get(const UObject* Context);
 	
 public:
 	UPGUIDamageFloater* GetPooledFloater(EPGDamageType DamageType);

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -18,6 +18,7 @@ UCLASS()
 class PGUI_API UPGUIDamageFloater : public UPGWidgetBase
 {
 	GENERATED_BODY()
+    float FeedbackScale = 1.f;
 
 private:
 	enum class EPGSwitcherIndexType : uint8
@@ -83,3 +84,4 @@ private:
 	bool PlayScaleAnimation(UCurveVector* Curve,float DeltaTime);
 	bool PlayOpacityAnimation(UCurveFloat* Curve,float DeltaTime);
 };
+

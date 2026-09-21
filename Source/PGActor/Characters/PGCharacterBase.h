@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "PGCharacterBase.generated.h"
 
+enum class EPGDamageType : uint8;
 class UPGSkillMontageController;
 class UNiagaraSystem;
 class FPGSkillHandler;
@@ -44,7 +45,8 @@ protected:
 	UPGSkillMontageController* SkillMontageController;
 	
 protected:
-	TObjectPtr<FPGSkillHandler> SkillHandler;
+    // Native handler owned by this actor and released in EndPlay; it is not a UObject.
+    FPGSkillHandler* SkillHandler = nullptr;
 	
 public:	
 	// Sets default values for this actor's properties
@@ -72,9 +74,33 @@ public:
 	virtual void OnHeal(UPGStatComponent* StatComponent, int32 HealAmount) {}
 
 	virtual void OnDied();
+    virtual void OnHealthChanged();
+protected:
+    UPROPERTY(EditDefaultsOnly, Category="PG|Feedback")
+    TObjectPtr<class UPGCombatFeedbackData> FeedbackData;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Feedback", meta=(ClampMin="0", ClampMax="1"))
+    float FeedbackIntensity = 1.f;
+    FTimerHandle HitStopTimer;
+    float SavedAnimRate = 1.f;
+    double LastFeedbackTime = -1.;
+    double LastCameraShakeTime = -1.;
+    int32 SuppressedFeedbackRequests = 0;
+    float TotalHitStopSeconds = 0.f;
+    void EndHitStop();
+    void ApplyHitStop(float Seconds);
+    void PlayCombatFeedback(AActor* Source, EPGDamageType Type);
+    bool bDeathStarted = false;
+    bool bDeathFinished = false;
+    FTimerHandle DeathFallbackTimer;
+public:
 	
 public:
 	int32 GetCharacterTID() const {return CharacterTID;}
+    bool bPerformingHeavyAttack = false;
+    const class UPGCombatFeedbackData* GetCombatFeedbackData() const;
+    int32 GetSuppressedFeedbackRequests() const { return SuppressedFeedbackRequests; }
+    float GetTotalHitStopSeconds() const { return TotalHitStopSeconds; }
+    friend class FPGFeedbackBudgetTest;
 	
 public:
 	/**

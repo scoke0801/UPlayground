@@ -4,9 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
-#include "PGMessage/Managaer/PGMessageManager.h"
+// Message manager is only required by the implementation.
 #include "PGShared/Shared/Message/Base/PGMessageEventDataBase.h"
 #include "PGShared/Shared/Structure/PlayerStructTypes.h"
+#include "PGShared/Shared/Enum/PGStatEnumTypes.h"
+#include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
+#include "PGShared/Shared/Enum/PGRewardTypes.h"
 #include "PGAbilitySystemComponent.generated.h"
 
 /**
@@ -19,13 +22,49 @@ class PGABILITYSYSTEM_API UPGAbilitySystemComponent : public UAbilitySystemCompo
 	GENERATED_BODY()
 
 private:
-	FDelegateHandle DelegateHandle;
+	friend class FPGInputBufferTest;
+    FDelegateHandle DelegateHandle;
+    UPROPERTY()
+    TObjectPtr<class UPGAtrributeSet> CombatAttributes;
+    FActiveGameplayEffectHandle EquipmentEffect;
+    FActiveGameplayEffectHandle ProfileEffect;
+    bool bStatsInitialized = false;
+    TMap<EPGCombatPerk, int32> CombatPerks;
+    double RecoveryExpiresAt = 0.;
+    float RecoveryDamageBonus = 0.f;
+    FGameplayTag BufferedInput;
+    double BufferExpiresAt = 0.;
+    FTimerHandle InputBufferTimer;
+    bool TryInput(const FGameplayTag& Tag);
+    void RetryBufferedInput();
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void BeginDestroy() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 public:
+    UPGAbilitySystemComponent();
+    virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
+    UPROPERTY(EditDefaultsOnly, Category="PG|Combat")
+    TObjectPtr<class UPGCombatTuningData> CombatTuning;
+    UPROPERTY(EditDefaultsOnly, Category="PG|Input", meta=(ClampMin="0", ClampMax="0.5"))
+    float InputBufferSeconds = 0.12f;
+    void InitializeCombatStats(const TMap<EPGStatType, int32>& Stats);
+    static FGameplayAttribute AttributeForStat(EPGStatType Type);
+    float GetCombatStat(EPGStatType Type) const;
+    float GetHealth() const;
+    float ReceiveCombatHit(UPGAbilitySystemComponent* Source, EPGDamageType& OutType);
+    void SetCombatPerks(const TMap<EPGCombatPerk, int32>& Perks);
+    int32 GetPerkPercent(EPGCombatPerk Perk) const;
+    void OpenRecoveryWindow(float Duration, float Bonus);
+    void CloseRecoveryWindow();
+    bool IsRecoveryExposed() const;
+    float RestoreHealth(float Amount);
+    bool ApplyStatBonus(EPGStatType Type, float Amount);
+    void SetProfileBonuses(const TMap<EPGStatType, int32>& Bonuses);
+    void SetEquipmentBonuses(const TMap<EPGStatType, int32>& Bonuses);
+    void ClearBufferedInput();
+    virtual int32 HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData* Payload) override;
 	/**
 	 * 어빌리티 입력이 눌렸을 때 호출되는 함수
 	 * @param InInputTag 입력된 게임플레이 태그

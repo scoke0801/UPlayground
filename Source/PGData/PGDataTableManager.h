@@ -136,12 +136,14 @@ private:
     // 캐시 정리 타이머
     FTimerHandle CleanupTimerHandle;
 
+    TSet<const UScriptStruct*> AmbiguousStructTypes;
     static TWeakObjectPtr<UPGDataTableManager> WeakThis;
     
 public:
     UPGDataTableManager();
 
     static UPGDataTableManager* Get();
+    static UPGDataTableManager* Get(const UObject* Context);
     
     // USubsystem interface
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;

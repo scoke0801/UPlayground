@@ -34,7 +34,7 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 	}
 
 	APGCharacterEnemy* Enemy = Cast<APGCharacterEnemy>(AIController->GetPawn());
-	if (!Enemy)
+	if (!Enemy || Enemy->bPerformingHeavyAttack)
 	{
 		return EBTNodeResult::Failed;
 	}
@@ -170,7 +170,7 @@ AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UB
 	
 	// 자신의 HP 비율
 	const UPGEnemyStatComponent* SelfStatComp = Self->GetEnemyStatComponent();
-	const float SelfHPRatio = SelfStatComp ? (SelfStatComp->CurrentHealth / SelfStatComp->GetStat(EPGStatType::Health)) : 1.f;
+	const float SelfHPRatio = SelfStatComp ? SelfStatComp->GetHealthRatio() : 1.f;
 	
 	// 최적의 힐 타겟 찾기
 	AActor* BestTarget = Self; // 기본값: 자신
@@ -193,7 +193,7 @@ AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UB
 		const UPGEnemyStatComponent* AllyStatComp = Ally->GetEnemyStatComponent();
 		if (AllyStatComp)
 		{
-			const float AllyHPRatio = AllyStatComp->CurrentHealth / AllyStatComp->GetStat(EPGStatType::Health);
+			const float AllyHPRatio = AllyStatComp->GetHealthRatio();
 			
 			// 가장 HP가 낮은 아군 선택
 			if (AllyHPRatio < LowestHPRatio)

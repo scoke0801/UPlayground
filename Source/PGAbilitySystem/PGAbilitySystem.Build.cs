@@ -7,6 +7,10 @@ public class PGAbilitySystem : ModuleRules
 	public PGAbilitySystem(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PublicDependencyModuleNames.AddRange(new string[] { "PGShared", "PGData", "PGActor" });
+
+		// Preserve existing cross-module references during the UE 5.8 migration.
+		CircularlyReferencedDependentModules.AddRange(new string[] { "PGActor", "PGAI" });
         
         // C++ 20 사용 설정
         CppStandard = CppStandardVersion.Cpp20;
@@ -28,11 +32,7 @@ public class PGAbilitySystem : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"PGActor",
-				"PGShared", 
-				"PGData", 
-				"PGData", 
-				"PGMessage", 
+				"PGMessage", "Niagara",
 				"MotionWarping", 
 				"AIModule", 
 				"PGAI"

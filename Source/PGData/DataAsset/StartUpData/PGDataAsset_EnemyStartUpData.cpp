@@ -3,24 +3,25 @@
 
 #include "PGDataAsset_EnemyStartUpData.h"
 
-#include "PGAbilitySystem/PGAbilitySystemComponent.h"
-#include "PGAbilitySystem/Abilities/PGEnemyGameplayAbility.h"
+#include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbility.h"
 
-void UPGDataAsset_EnemyStartUpData::GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive,
+void UPGDataAsset_EnemyStartUpData::GiveToAbilitySystemComponent(UAbilitySystemComponent* InASCToGive,
                                                                  int32 ApplyLevel)
 {
 	Super::GiveToAbilitySystemComponent(InASCToGive, ApplyLevel);
 
 	if (false == EnemyCombatAbilities.IsEmpty())
 	{
-		for (const TSubclassOf<UPGEnemyGameplayAbility>& AbilityClass : EnemyCombatAbilities)
+		for (const TSubclassOf<UGameplayAbility>& AbilityClass : EnemyCombatAbilities)
 		{
 			if (nullptr == AbilityClass)
 			{
 				continue;
 			}
 
-			FGameplayAbilitySpec AbilitySpec(AbilityClass);
+			if (InASCToGive->FindAbilitySpecFromClass(AbilityClass)) continue;
+            FGameplayAbilitySpec AbilitySpec(AbilityClass);
 			AbilitySpec.SourceObject = InASCToGive->GetAvatarActor();
 			AbilitySpec.Level = ApplyLevel;
 			

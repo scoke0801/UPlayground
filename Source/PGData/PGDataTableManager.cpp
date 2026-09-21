@@ -1,8 +1,24 @@
 #include "PGDataTableManager.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "DataTable/Skill/PGSkillDataRow.h"
+#include "DataTable/ActorAssetPath/PGDeathDataRow.h"
+#include "DataTable/AreaOfEffect/PGAreaOfEffectDataRow.h"
+#include "DataTable/AssetPath/PGUIDamageFloaterPathRow.h"
+#include "DataTable/AssetPath/PGUIWidgetPathRow.h"
+#include "DataTable/Item/PGItemDataRow.h"
+#include "DataTable/Projectile/PGProjectileDataRow.h"
+#include "DataTable/Projectile/PGProjectilePoolDataRow.h"
+#include "DataTable/Reward/PGRewardItemDataRow.h"
+#include "DataTable/Reward/PGRewardSkillDataRow.h"
+#include "DataTable/Reward/PGRewardStatDataRow.h"
 #include "DataTable/Skill/PGEnemyDataRow.h"
+#include "DataTable/Skill/PGSkillDataRow.h"
+#include "DataTable/Skill/PGSkillIndicatorDataRow.h"
+#include "DataTable/Stage/PGStageDataRow.h"
+#include "DataTable/Stat/PGCharacterStatDataRow.h"
+#include "DataTable/Stat/PGWeaponDataRow.h"
 
 TWeakObjectPtr<UPGDataTableManager> UPGDataTableManager::WeakThis = nullptr;
 
@@ -47,10 +63,11 @@ void UPGDataTableManager::Deinitialize()
     
     // 구조체 타입 매핑 정리
     StructTypeToTableNameMap.Empty();
+    AmbiguousStructTypes.Empty();
 
     AssetRegistryModule = nullptr;
 
-    WeakThis = nullptr;
+    if (WeakThis.Get() == this) WeakThis = nullptr;
     
     Super::Deinitialize();
 }
@@ -66,8 +83,12 @@ void UPGDataTableManager::ScanDataTables()
     // 기존 정보 초기화
     DataTableInfos.Empty();
     StructTypeToTableNameMap.Empty();
+    AmbiguousStructTypes.Empty();
 
     IAssetRegistry& AssetRegistry = AssetRegistryModule->Get();
+    // GameInstance can initialize before the editor background registry scan finishes.
+    if (!FPlatformProperties::RequiresCookedData())
+        AssetRegistry.ScanPathsSynchronous({TEXT("/Game/DataCenter/DataTables")}, true);
     /* 
      * AssetRegistry에서 모든 데이터 테이블 에셋 검색
      * 경로는 DataTables 하위 폴더로만 한정.
@@ -106,7 +127,12 @@ void UPGDataTableManager::CollectDataTableInfo(const FAssetData& AssetData)
         {
             // 구조체 타입 매핑 등록 (테이블명은 에셋 이름 사용)
             FName TableName = FName(*Info.AssetName);
-            StructTypeToTableNameMap.Add(Info.RowStructType, TableName);
+            if (StructTypeToTableNameMap.Contains(Info.RowStructType))
+            {
+                AmbiguousStructTypes.Add(Info.RowStructType);
+                UE_LOG(LogTemp, Error, TEXT("Ambiguous data table type %s: %s"), *Info.RowStructType->GetName(), *Info.AssetName);
+            }
+            else StructTypeToTableNameMap.Add(Info.RowStructType, TableName);
             UE_LOG(LogTemp, Warning, TEXT("✓ 구조체 매핑 성공: %s -> %s"), 
                 *Info.RowStructType->GetName(), *TableName.ToString());
         }
@@ -270,6 +296,7 @@ const UScriptStruct* UPGDataTableManager::FindStructTypeByName(const FString& St
 
 FName UPGDataTableManager::FindTableNameByStructType(const UScriptStruct* StructType) const
 {
+    if (AmbiguousStructTypes.Contains(StructType)) return NAME_None;
     if (const FName* FoundTableName = StructTypeToTableNameMap.Find(StructType))
     {
         return *FoundTableName;
@@ -346,6 +373,12 @@ void UPGDataTableManager::BuildSearchKeyIndex(FPGDataTableCacheEntry& CacheEntry
         
         if (PropertyToInteger(SearchKeyProperty, ValuePtr, SearchKeyValue))
         {
+            if (SearchKeyIndex.IndexMap.Contains(SearchKeyValue))
+            {
+                UE_LOG(LogTemp, Error, TEXT("Duplicate SearchKey %lld in %s, row %s"), SearchKeyValue, *CacheEntry.DataTable->GetPathName(), *RowName.ToString());
+                CacheEntry.SearchKeyIndex = FPGSearchKeyIndex();
+                return; // Fail closed: no ambiguous row lookup.
+            }
             SearchKeyIndex.IndexMap.Add(SearchKeyValue, RowName);
         }
     }
@@ -364,6 +397,7 @@ const FProperty* UPGDataTableManager::FindSearchKeyProperty(const UScriptStruct*
         return nullptr;
     }
 
+#if WITH_METADATA
     // 모든 프로퍼티를 순회하며 SearchKey 메타데이터 찾기
     for (TFieldIterator<FProperty> It(RowStruct); It; ++It)
     {
@@ -384,6 +418,36 @@ const FProperty* UPGDataTableManager::FindSearchKeyProperty(const UScriptStruct*
         }
     }
 
+#endif
+
+    // Cooked builds strip metadata. Keep native search keys available at runtime.
+    // Add an entry here when introducing a new native row with SearchKey metadata.
+    static const TMap<const UScriptStruct*, FName> NativeSearchKeys =
+    {
+        { FPGDeathDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGDeathDataRow, ObjectTID) },
+        { FPGAreaOfEffectDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGAreaOfEffectDataRow, EffectId) },
+        { FPGUIDamageFloaterPathRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGUIDamageFloaterPathRow, Key) },
+        { FPGUIWidgetPathRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGUIWidgetPathRow, Key) },
+        { FPGItemDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGItemDataRow, Id) },
+        { FPGProjectileDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGProjectileDataRow, ProjectileId) },
+        { FPGProjectilePoolDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGProjectilePoolDataRow, ProjectileType) },
+        { FPGRewardItemDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGRewardItemDataRow, ItemId) },
+        { FPGRewardSkillDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGRewardSkillDataRow, SkillId) },
+        { FPGRewardStatDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGRewardStatDataRow, StatId) },
+        { FPGEnemyDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGEnemyDataRow, EnemyID) },
+        { FPGSkillDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGSkillDataRow, SkillID) },
+        { FPGSkillIndicatorDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGSkillIndicatorDataRow, IndicatorId) },
+        { FPGStageDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGStageDataRow, Id) },
+        { FPGCharacterStatDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGCharacterStatDataRow, CharacterID) },
+        { FPGWeaponDataRow::StaticStruct(), GET_MEMBER_NAME_CHECKED(FPGWeaponDataRow, WeaponID) },
+    };
+    for (const UStruct* Struct = RowStruct; Struct; Struct = Struct->GetSuperStruct())
+    {
+        if (const FName* Key = NativeSearchKeys.Find(Cast<UScriptStruct>(Struct)))
+        {
+            return FindFProperty<FProperty>(RowStruct, *Key);
+        }
+    }
     return nullptr;
 }
 
@@ -437,4 +501,10 @@ FPGSkillDataRow* UPGDataTableManager::GetSkillDataRowByKey(int32 SkillID)
 FPGEnemyDataRow* UPGDataTableManager::GetEnemyDataRowByKey(int32 EnemyID)
 {
     return GetRowData<FPGEnemyDataRow>(EnemyID);
+}
+
+UPGDataTableManager* UPGDataTableManager::Get(const UObject* Context)
+{
+    const UWorld* World = Context ? Context->GetWorld() : nullptr;
+    return World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UPGDataTableManager>() : nullptr;
 }

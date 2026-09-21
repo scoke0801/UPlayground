@@ -75,6 +75,7 @@ void UPGInputComponent::BindAbilityInputAction(const UDataAsset_InputConfig* InI
 
 		BindAction(AbilityInputActionConfig.InputAction, ETriggerEvent::Started, ContextObject, InputPressedFunc, AbilityInputActionConfig.InputTag);
 		BindAction(AbilityInputActionConfig.InputAction, ETriggerEvent::Completed, ContextObject, InputReleasedFunc, AbilityInputActionConfig.InputTag);
+        BindAction(AbilityInputActionConfig.InputAction, ETriggerEvent::Canceled, ContextObject, InputReleasedFunc, AbilityInputActionConfig.InputTag);
 	
 	}
 }

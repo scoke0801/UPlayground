@@ -44,6 +44,8 @@ UPGAbilityTask_WaitSpawnEnemy* UPGAbilityTask_WaitSpawnEnemy::WaitSpawnEnemy(UGa
 
 void UPGAbilityTask_WaitSpawnEnemy::OnGameplayEventReceived(const FGameplayEventData* InPayload)
 {
+    if (bSpawnRequested || !ShouldBroadcastAbilityTaskDelegates()) return;
+    bSpawnRequested = true;
 	if (ensure(false == CachedSoftEnemyClassToSpawn.IsNull()))
 	{
 		UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(
@@ -63,6 +65,7 @@ void UPGAbilityTask_WaitSpawnEnemy::OnGameplayEventReceived(const FGameplayEvent
 
 void UPGAbilityTask_WaitSpawnEnemy::OnEnemyClassLoaded()
 {
+    if (!ShouldBroadcastAbilityTaskDelegates()) { EndTask(); return; }
 	UClass* LoadedClass = CachedSoftEnemyClassToSpawn.Get();
 	UWorld* World = GetWorld();
 
@@ -83,7 +86,7 @@ void UPGAbilityTask_WaitSpawnEnemy::OnEnemyClassLoaded()
 	
 	for (int32 i = 0; i < CachedNumToSpawn; ++i)
 	{
-		FVector RandomLocation;
+		FVector RandomLocation = CachedSpawnOrigin;
 		UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this,
 			CachedSpawnOrigin, RandomLocation, CachedRandomSpawnRadius);
 
@@ -99,8 +102,8 @@ void UPGAbilityTask_WaitSpawnEnemy::OnEnemyClassLoaded()
 		{
 			SpawndEnemies.Add(SpawnedEnemy);
 			
-			FPGEventDataOneParam<TWeakObjectPtr<AActor>> ToSendData(SpawnedEnemy);
-			UPGMessageManager::Get()->SendMessage(EPGSharedMessageType::OnSpawned, &ToSendData);
+			FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>> ToSendData(Cast<APGCharacterEnemy>(SpawnedEnemy));
+			if (auto* Messages = UPGMessageManager::Get(this)) Messages->SendMessage(EPGSharedMessageType::OnSpawned, &ToSendData);
 		}
 	}
 

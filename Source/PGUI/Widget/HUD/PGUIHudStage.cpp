@@ -14,7 +14,7 @@ void UPGUIHudStage::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 	
-	if (UPGMessageManager* MessageManager = PGMessage())
+	if (UPGMessageManager* MessageManager = UPGMessageManager::Get(this))
 	{
 		StageChangeHandle = MessageManager->RegisterDelegate(EPGUIMessageType::StageChanged,
 		this, &ThisClass::OnStageUpdated);
@@ -30,7 +30,7 @@ void UPGUIHudStage::NativeDestruct()
 {
 	Super::NativeDestruct();
 
-	if (UPGMessageManager* MessageManager = PGMessage())
+	if (UPGMessageManager* MessageManager = UPGMessageManager::Get(this))
 	{
 		MessageManager->UnregisterDelegate(EPGUIMessageType::StageChanged, StageChangeHandle);
 	}

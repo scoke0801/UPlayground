@@ -93,6 +93,7 @@ protected:
 	virtual void OnHit(UPGStatComponent* StatComponent,const UPGPawnCombatComponent* const OtherCombatComponent) override;
 	virtual void OnHeal(UPGStatComponent* StatComponent, int32 HealAmount) override;
 	virtual void OnDied() override;
+    virtual void OnHealthChanged() override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;

@@ -12,7 +12,7 @@ void UPGAbilityDirectionalHitReact::ActivateAbility(const FGameplayAbilitySpecHa
                                                     const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
                                                     const FGameplayEventData* TriggerEventData)
 {
-	ComputeHitReactDirection(TriggerEventData->Instigator);
+	if (TriggerEventData && IsValid(TriggerEventData->Instigator.Get())) ComputeHitReactDirection(TriggerEventData->Instigator);
 
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }

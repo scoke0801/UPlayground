@@ -3,10 +3,10 @@
 
 #include "PGDataAsset_StartUpDataBase.h"
 
-#include "PGAbilitySystem/PGAbilitySystemComponent.h"
-#include "PGAbilitySystem/Abilities/PGGameplayAbility.h"
+#include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbility.h"
 
-void UPGDataAsset_StartUpDataBase::GiveToAbilitySystemComponent(UPGAbilitySystemComponent* InASCToGive, int32 ApplyLevel)
+void UPGDataAsset_StartUpDataBase::GiveToAbilitySystemComponent(UAbilitySystemComponent* InASCToGive, int32 ApplyLevel)
 {
 	check(InASCToGive);
 	
@@ -32,22 +32,23 @@ void UPGDataAsset_StartUpDataBase::GiveToAbilitySystemComponent(UPGAbilitySystem
 	}
 }
 
-void UPGDataAsset_StartUpDataBase::GrantAbilities(const TArray<TSubclassOf<UPGGameplayAbility>>& InAbilitiesToGive,
-	UPGAbilitySystemComponent* InASCToGive, int32 ApplyLevel)
+void UPGDataAsset_StartUpDataBase::GrantAbilities(const TArray<TSubclassOf<UGameplayAbility>>& InAbilitiesToGive,
+	UAbilitySystemComponent* InASCToGive, int32 ApplyLevel)
 {
 	if (InAbilitiesToGive.IsEmpty())
 	{
 		return;
 	}
 
-	for (const TSubclassOf<UPGGameplayAbility>& Ability : InAbilitiesToGive)
+	for (const TSubclassOf<UGameplayAbility>& Ability : InAbilitiesToGive)
 	{
 		if (nullptr == Ability)
 		{
 			continue;
 		}
 
-		FGameplayAbilitySpec AbilitySpec(Ability);
+		if (InASCToGive->FindAbilitySpecFromClass(Ability)) continue;
+        FGameplayAbilitySpec AbilitySpec(Ability);
 		AbilitySpec.SourceObject = InASCToGive->GetAvatarActor();
 		AbilitySpec.Level = ApplyLevel;
 		

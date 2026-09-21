@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PGUIDamageFloater.h"
@@ -10,6 +10,8 @@
 #include "Curves/CurveVector.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "Engine/World.h"
+#include "PGActor/Characters/PGCharacterBase.h"
+#include "PGData/DataAsset/Combat/PGCombatFeedbackData.h"
 #include "PGUI/Manager/PGDamageFloaterManager.h"
 
 void UPGUIDamageFloater::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -57,13 +59,18 @@ void UPGUIDamageFloater::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 		false == IsDone || 
 		ElapsedTime >= LifeTime)
 	{
-		PGDamageFloater()->ReturnFloaterToPool(DamageType, this);
+		if (auto* Manager = UPGDamageFloaterManager::Get(this)) Manager->ReturnFloaterToPool(DamageType, this);
+        else RemoveFromParent();
 	}
 }
 
 void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVector2D InBasePosition, bool InIsPlayer)
 {
 	DamageType = InDamageType;
+    const auto* Player = Cast<APGCharacterBase>(GetOwningPlayerPawn());
+    const auto* Feedback = Player ? Player->GetCombatFeedbackData() : GetDefault<UPGCombatFeedbackData>();
+    FeedbackScale = InDamageType == EPGDamageType::Critical ? Feedback->CriticalFloaterScale : 1.f;
+    SetRenderScale(FVector2D(FeedbackScale));
 	ElapsedTime = 0.0f;
 	BasePosition = InBasePosition;
 	
@@ -116,7 +123,7 @@ void UPGUIDamageFloater::SetDamage(float Damage, EPGDamageType InDamageType, FVe
 			TextColor = FLinearColor::White;
 			break;
 		case EPGDamageType::Critical:
-			TextColor = FLinearColor::Red;
+			TextColor = Feedback->CriticalFloaterColor;
 			break;
 		case EPGDamageType::Miss:
 			TextColor = FLinearColor::Gray;
@@ -218,7 +225,7 @@ bool UPGUIDamageFloater::PlayScaleAnimation(UCurveVector* Curve, float DeltaTime
 	if (MaxTime > ElapsedTime)
 	{
 		FVector Result = Curve->GetVectorValue(ElapsedTime);
-		SetRenderScale(FVector2D(Result));
+		SetRenderScale(FVector2D(Result) * FeedbackScale);
 		return true;
 	}
 	
@@ -252,3 +259,4 @@ bool UPGUIDamageFloater::PlayOpacityAnimation(UCurveFloat* Curve, float DeltaTim
 	}
 	return false;
 }
+

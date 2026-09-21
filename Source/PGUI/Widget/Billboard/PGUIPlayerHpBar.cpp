@@ -14,7 +14,7 @@ void UPGUIPlayerHpBar::NativeConstruct()
 	Super::NativeOnInitialized();
 
 	// Player 정보 가져와야 한다...
-	PGMessage()->RegisterDelegate(EPGPlayerMessageType::StatUpdate,
+	UPGMessageManager::Get(this)->RegisterDelegate(EPGPlayerMessageType::StatUpdate,
 		this, &ThisClass::OnStatUpdate);
 }
 

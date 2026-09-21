@@ -2,10 +2,17 @@
 
 
 #include "PGCharacterPlayer.h"
+#include "PGActor/Progression/PGProfileSubsystem.h"
+#include "PGData/DataAsset/Input/PGQuarterViewData.h"
+#include "PGActor/Controllers/PGPlayerController.h"
+#include "Engine/GameViewportClient.h"
+#include "UnrealClient.h"
+#include "PGUI/Manager/PGUIManager.h"
 
 #include "EnhancedInputSubsystems.h"
 #include "Animation/AnimMontage.h"
 #include "Camera/CameraComponent.h"
+#include "Animation/AnimInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -84,6 +91,9 @@ APGCharacterPlayer::APGCharacterPlayer()
 void APGCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
+    if (auto* Profile = UPGProfileSubsystem::Get(this)) Profile->RestorePlayer(this);
+    AbilitySystemComponent->RestoreHealth(AbilitySystemComponent->GetCombatStat(EPGStatType::Health));
+    ConfigureQuarterView();
 
 	InitUIComponents();
 
@@ -94,14 +104,16 @@ void APGCharacterPlayer::BeginPlay()
 	{
 		GetWorldTimerManager().SetTimer(MeshCheckTimerHandle, this, &ThisClass::CheckAllMeshesLoaded, 0.1f, true);
 	}
-	//PGMessage()->SendMessage(EPGPlayerMessageType::Spawned, nullptr);
+	//UPGMessageManager::Get(this)->SendMessage(EPGPlayerMessageType::Spawned, nullptr);
 }
 
 void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
-	ULocalPlayer* localPlayer = GetController<APlayerController>()->GetLocalPlayer();
+	APlayerController* PC = GetController<APlayerController>();
+    if (!PC || !InputConfigDataAsset) return;
+    ULocalPlayer* localPlayer = PC->GetLocalPlayer();
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(localPlayer);
 	if (!Subsystem)
 	{
@@ -125,6 +137,7 @@ void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 void APGCharacterPlayer::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+    if (SkillHandler) return;
 	
 	if (false == CharacterStartUpData.IsNull())
 	{
@@ -134,52 +147,31 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
 		}
 	}
 
-	SkillHandler =  FPGHandler::Create<FPGPlayerSkillHandler>();
-	SkillHandler->AddSkill(EPGSkillSlot::NormalAttack, 100);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_1, 110);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_2, 111);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_3, 112);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_4, 113);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_5, 114);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_6, 115);
-
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Roll, 10000);
-	SkillHandler->AddSkill(EPGSkillSlot::SkillSlot_Jump, 20000);
+	if (SkillHandler) return;
+    SkillHandler = FPGHandler::Create<FPGPlayerSkillHandler>();
+    SkillHandler->SetContext(this);
+    if (auto* Profile = UPGProfileSubsystem::Get(this)) Profile->RestorePlayer(this);
 }
 
-void APGCharacterPlayer::OnHit(UPGStatComponent* InStatComponent, const UPGPawnCombatComponent* const InCombatComponent)
+void APGCharacterPlayer::OnHit(UPGStatComponent* Source, const UPGPawnCombatComponent* Combat)
 {
-	int32 CurrentHp = PlayerStatComponent->CurrentHealth;
-
-	EPGDamageType DamageType = EPGDamageType::Normal;
-	int32 DamageAmount = PlayerStatComponent->CalculateDamageAuto(InStatComponent, InCombatComponent, DamageType);
-	PlayerStatComponent->CurrentHealth = FMath::Max(0, CurrentHp - DamageAmount);
-
-	FPGStatUpdateEventData EventData(EPGStatType::Health,
-		PlayerStatComponent->CurrentHealth, PlayerStatComponent->GetStat(EPGStatType::Health));
-	PGMessage()->SendMessage(EPGPlayerMessageType::StatUpdate, &EventData);
-
-	if (UPGDamageFloaterManager* Manager = UPGDamageFloaterManager::Get())
-	{
-		PGDamageFloater()->AddFloater(
-			DamageAmount, DamageType, this, true);
-	}
-
-	UpdateHpComponent();
-	
-	if (PlayerStatComponent->CurrentHealth == 0.f)
-	{
-		UPGAbilityBPLibrary::AddGameplayTagToActorIfNone(this, PGGamePlayTags::Shared_Status_Dead);
-	}
+    EPGDamageType Type = EPGDamageType::Normal;
+    const float Damage = AbilitySystemComponent->ReceiveCombatHit(Source ? Source->GetASC() : nullptr, Type);
+    if (Damage > 0.f)
+    {
+        if (auto* Manager = UPGDamageFloaterManager::Get(this)) Manager->AddFloater(FMath::RoundToInt(Damage), Type, this, true);
+        PlayCombatFeedback(Source ? Source->GetOwner() : nullptr, Type);
+    }
 }
 
 void APGCharacterPlayer::StartSkillWindow()
 {
+    bSkillWindowOpen = true;
 }
 
 void APGCharacterPlayer::EndSkillWindow()
 {
-
+    bSkillWindowOpen = false;
 }
 
 void APGCharacterPlayer::SetIsJump(bool IsJump)
@@ -189,7 +181,7 @@ void APGCharacterPlayer::SetIsJump(bool IsJump)
 
 bool APGCharacterPlayer::IsCanJump() const
 {
-	if (false == GetIsCacControl())
+	if (!IsGameplayInputAllowed())
 	{
 		return false;
 	}
@@ -247,7 +239,7 @@ void APGCharacterPlayer::CheckAllMeshesLoaded()
 		UE_LOG(LogTemp, Log, TEXT("All %d meshes loaded successfully!"), TotalCount);
         
 		// 델리게이트 브로드캐스트
-		PGMessage()->SendMessage(EPGPlayerMessageType::Spawned, nullptr);
+		UPGMessageManager::Get(this)->SendMessage(EPGPlayerMessageType::Spawned, nullptr);
 	}
 	else
 	{
@@ -257,7 +249,7 @@ void APGCharacterPlayer::CheckAllMeshesLoaded()
 
 void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 {
-	if (false == GetIsCacControl())
+	if (!IsGameplayInputAllowed())
 	{
 		return;
 	}
@@ -267,7 +259,7 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 	if (MovementVector.SizeSquared() > 0.1f)
 	{
 		// 카메라(컨트롤러) 방향 기준으로 이동
-		const FRotator ControlRotation = Controller->GetControlRotation();
+		const FRotator ControlRotation = bUseQuarterView ? CameraBoom->GetComponentRotation() : Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
         
 		const FVector ForwardDirection = YawRotation.RotateVector(FVector::ForwardVector);
@@ -279,12 +271,13 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 		// 이동 방향으로 캐릭터 회전 (카메라는 독립적으로 공전)
 		const FRotator TargetRotation = MovementDirection.Rotation();
 		const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, GetWorld()->GetDeltaSeconds(), 8.0f);
-		SetActorRotation(NewRotation);
+		if (!bUseQuarterView) SetActorRotation(NewRotation);
 	}
 }
 
 void APGCharacterPlayer::Input_Look(const FInputActionValue& InputActionValue)
 {
+    if (bUseQuarterView || !IsGameplayInputAllowed()) return;
 	const FVector2D LookAxisVector = InputActionValue.Get<FVector2D>();
 
    
@@ -320,6 +313,7 @@ void APGCharacterPlayer::Input_Look(const FInputActionValue& InputActionValue)
 
 void APGCharacterPlayer::Input_Zoom(const FInputActionValue& InputActionValue)
 {
+    if (!IsGameplayInputAllowed()) return;
 	const float Delta = InputActionValue.Get<float>();
 
 	float NewLength = FMath::Clamp(CameraBoom->TargetArmLength - Delta * CameraUpdateSpeed, CameraMinOffset, CameraMaxOffset);
@@ -328,7 +322,11 @@ void APGCharacterPlayer::Input_Zoom(const FInputActionValue& InputActionValue)
 
 void APGCharacterPlayer::Input_AbilityInputPressed(FGameplayTag InInputTag)
 {
-	AbilitySystemComponent->OnAbilityInputPressed(InInputTag);	
+	if (!IsGameplayInputAllowed()) { AbilitySystemComponent->ClearBufferedInput(); return; }
+    if (const APGPlayerController* PC = Cast<APGPlayerController>(Controller))
+        if (PC->IsPointerOverUI()) return;
+    FaceAimDirection();
+    AbilitySystemComponent->OnAbilityInputPressed(InInputTag);
 }
 
 void APGCharacterPlayer::input_AbilityInputReleased(FGameplayTag InInputTag)
@@ -366,5 +364,84 @@ void APGCharacterPlayer::UpdateHpComponent()
 	{
 		return;
 	}
-	PlayerHpWidget->SetHpPercent(static_cast<float>(PlayerStatComponent->CurrentHealth) / PlayerStatComponent->GetStat(EPGStatType::Health));
+	PlayerHpWidget->SetHpPercent(PlayerStatComponent->GetHealthRatio());
+}
+
+void APGCharacterPlayer::OnHealthChanged()
+{
+    const bool bWasDead = bDeathStarted;
+    Super::OnHealthChanged();
+    if (!bWasDead && bDeathStarted && UPGMessageManager::Get(this)) UPGMessageManager::Get(this)->SendMessage(EPGPlayerMessageType::Died, nullptr);
+    if (GetStatComponent()->GetCurrentHealth() <= 0.f) bIsCanControl = false;
+    if (auto* Manager = UPGMessageManager::Get(this))
+    {
+        FPGStatUpdateEventData Data(EPGStatType::Health, FMath::RoundToInt(PlayerStatComponent->GetCurrentHealth()), PlayerStatComponent->GetStat(EPGStatType::Health));
+        Manager->SendMessage(EPGPlayerMessageType::StatUpdate, &Data);
+    }
+    UpdateHpComponent();
+}
+void APGCharacterPlayer::ConfigureQuarterView()
+{
+    if (!bUseQuarterView) return;
+    const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
+    CameraBoom->bUsePawnControlRotation = false;
+    CameraBoom->bInheritPitch = CameraBoom->bInheritYaw = CameraBoom->bInheritRoll = false;
+    CameraBoom->SetUsingAbsoluteRotation(true);
+    CameraBoom->SetWorldRotation(Data->Rotation);
+    CameraMinOffset = FMath::Max(100.f, Data->MinDistance);
+    CameraMaxOffset = FMath::Max(CameraMinOffset, Data->MaxDistance);
+    CameraBoom->TargetArmLength = FMath::Clamp(Data->Distance, CameraMinOffset, CameraMaxOffset);
+    CameraBoom->bEnableCameraLag = Data->LagSpeed > 0.f;
+    CameraBoom->CameraLagSpeed = FMath::Max(0.f, Data->LagSpeed);
+    CameraUpdateSpeed = Data->ZoomSpeed;
+    LastAimDirection = GetActorForwardVector();
+    GetWorldTimerManager().SetTimer(AimTimer, this, &ThisClass::UpdateAim, 1.f / 60.f, true);
+}
+bool APGCharacterPlayer::IsGameplayInputAllowed() const
+{
+    const APlayerController* PC = Cast<APlayerController>(Controller);
+    if (!bIsCanControl || !PC || PC->IsMoveInputIgnored() || GetWorld()->IsPaused() || bDeathStarted) return false;
+    if (UPGUIManager::Get(this) && UPGUIManager::Get(this)->IsWindowOpen()) return false;
+    const UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
+    return !Viewport || !Viewport->Viewport || Viewport->Viewport->HasFocus();
+}
+void APGCharacterPlayer::UpdateAim()
+{
+    if (!IsGameplayInputAllowed()) { AbilitySystemComponent->ClearBufferedInput(); return; }
+    APGPlayerController* PC = Cast<APGPlayerController>(Controller);
+    if (!PC || PC->IsPointerOverUI()) return;
+    FVector Origin, Direction;
+    if (PC->DeprojectMousePositionToWorld(Origin, Direction))
+    {
+        const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
+        FHitResult Hit;
+        FCollisionQueryParams Params(SCENE_QUERY_STAT(PGQuarterViewAim), false, this);
+        if (GetWorld()->LineTraceSingleByChannel(Hit, Origin, Origin + Direction * Data->AimTraceDistance, Data->AimChannel, Params))
+        {
+            const FVector Aim = (Hit.ImpactPoint - GetActorLocation()).GetSafeNormal2D();
+            if (!Aim.IsNearlyZero()) LastAimDirection = Aim;
+        }
+    }
+    if (!GetMesh()->GetAnimInstance() || !GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) FaceAimDirection();
+}
+void APGCharacterPlayer::FaceAimDirection()
+{
+    if (bUseQuarterView && !LastAimDirection.IsNearlyZero() && !bDeathStarted) SetActorRotation(LastAimDirection.Rotation());
+}
+bool APGCharacterPlayer::CanStartSkill(bool bDodge) const
+{
+    if (!IsGameplayInputAllowed()) return false;
+    const UAnimInstance* Anim = GetMesh()->GetAnimInstance();
+    if (!Anim) return false;
+    const UAnimMontage* Montage = Anim->GetCurrentActiveMontage();
+    if (!Montage || bSkillWindowOpen) return true;
+    const float Length = Montage->GetPlayLength();
+    const float Remaining = Length > 0.f ? (Length - Anim->Montage_GetPosition(Montage)) / Length : 0.f;
+    return Remaining <= (bDodge ? DodgeCancelFraction : AttackCancelFraction);
+}
+void APGCharacterPlayer::SetSkillCancelPolicy(float AttackFraction, float DodgeFraction)
+{
+    bSkillWindowOpen = false;
+    AttackCancelFraction = FMath::Clamp(AttackFraction, 0.f, 1.f);
+    DodgeCancelFraction = FMath::Clamp(DodgeFraction, 0.f, 1.f);
 }

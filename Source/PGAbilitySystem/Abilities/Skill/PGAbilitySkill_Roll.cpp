@@ -12,7 +12,9 @@ void UPGAbilitySkill_Roll::ActivateAbility(const FGameplayAbilitySpecHandle Hand
                                            const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
                                            const FGameplayEventData* TriggerEventData)
 {
-	//Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	CachedSpecHandle = Handle;
+    CachedActorInfo = ActorInfo;
+    CachedActivationInfo = ActivationInfo;
 
 	CachedCharacter = Cast<APGCharacterBase>(GetOwningActorFromActorInfo());
 	if (nullptr == CachedCharacter)
@@ -52,7 +54,8 @@ bool UPGAbilitySkill_Roll::ComputeRollDirection()
 	}
 
 	RollingDirection = Character->GetLastMovementInputVector();
-	RollingDirection.Normalize(0.0001);
+	if (RollingDirection.IsNearlyZero()) RollingDirection = Character->GetActorForwardVector();
+    RollingDirection.Normalize(0.0001);
 
 	FRotator TargetRot = UKismetMathLibrary::MakeRotFromX(RollingDirection);
 	CachedMotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(

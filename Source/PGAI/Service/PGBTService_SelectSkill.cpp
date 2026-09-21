@@ -83,7 +83,7 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	
 	// 현재 HP 비율 계산
 	const UPGEnemyStatComponent* StatComp = Enemy->GetEnemyStatComponent();
-	const float CurrentHPRatio = StatComp ? (StatComp->CurrentHealth / StatComp->GetStat(EPGStatType::Health)) : 1.f;
+	const float CurrentHPRatio = StatComp ? StatComp->GetHealthRatio() : 1.f;
 	
 	// 스킬 선택
 	const int32 SelectedSkillID = SelectBestSkill(EnemyData->SkillIdList, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp);
@@ -175,23 +175,9 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 		return ReadySkills[0];
 	}
 
-	// 2단계: 모든 스킬이 쿨타임 중이면, 쿨타임이 가장 짧게 남은 스킬 선택 (무조건 1개 보장)
-	int32 BestSkillID = SkillIDList[0];
-	float MinCooldown = SkillHandler->GetRemainingCooldownByID(BestSkillID);
+	// 금지된 소환이나 쿨타임 중인 스킬을 강제로 선택하지 않는다.
+    return INDEX_NONE;
 
-	for (int32 i = 1; i < SkillIDList.Num(); ++i)
-	{
-		const int32 SkillID = SkillIDList[i];
-		const float RemainingCooldown = SkillHandler->GetRemainingCooldownByID(SkillID);
-		
-		if (RemainingCooldown < MinCooldown)
-		{
-			MinCooldown = RemainingCooldown;
-			BestSkillID = SkillID;
-		}
-	}
-
-	return BestSkillID;
 }
 
 float UPGBTService_SelectSkill::CalculateSkillPriority(
@@ -203,6 +189,10 @@ float UPGBTService_SelectSkill::CalculateSkillPriority(
 	UBlackboardComponent* BlackboardComp,
 	const TSet<EPGSkillType>& AvailableSkillTypes) const
 {
+    // Hard limits must be evaluated before dynamic priority escalation.
+    if (SkillType == EPGSkillType::SummonEnemy && BlackboardComp &&
+        BlackboardComp->GetValueAsInt(SummonCountKey.SelectedKeyName) >= MaxSummonCountPerBattle) return 0.f;
+
 	// SkillHandler에서 Priority 확인
 	if (Enemy)
 	{
@@ -313,7 +303,7 @@ bool UPGBTService_SelectSkill::CheckNeedHealAlly(APGCharacterEnemy* Enemy) const
 		const UPGEnemyStatComponent* StatComp = Ally->GetEnemyStatComponent();
 		if (StatComp)
 		{
-			const float HPRatio = StatComp->CurrentHealth / StatComp->GetStat(EPGStatType::Health);
+			const float HPRatio = StatComp->GetHealthRatio();
 			if (HPRatio <= AllyHealThreshold)
 			{
 				return true; // 회복이 필요한 아군 발견

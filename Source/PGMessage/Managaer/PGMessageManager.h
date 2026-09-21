@@ -72,6 +72,7 @@ private:
     
 public:
 	static UPGMessageManager* Get();
+    static UPGMessageManager* Get(const UObject* Context);
     
 public:
     // USubsystem interface
@@ -94,7 +95,7 @@ public:
             MessageDelegates.Add(Key, MakeShareable(new FPGMessageDelegate()));
         }
         
-        return MessageDelegates[Key]->AddLambda(Callback);
+        return MessageDelegates[Key]->Add(Callback);
     }
     
     /**

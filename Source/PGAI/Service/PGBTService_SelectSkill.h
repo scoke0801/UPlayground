@@ -10,12 +10,13 @@
 /**
  * BT Service: 사용 가능한 스킬 중에서 하나를 선택
  * Enemy 데이터에 설정된 스킬 리스트에서 조건에 맞는 스킬을 선택
- * 스킬 쿨타임을 SkillHandler를 통해 체크하며, 모든 스킬이 쿨타임 중이어도 최소 1개는 선택
+ * 쿨타임과 소환 제한을 만족하는 스킬이 없으면 다음 서비스 갱신까지 대기한다.
  */
 UCLASS()
 class PGAI_API UPGBTService_SelectSkill : public UBTService
 {
 	GENERATED_BODY()
+    friend class FPGSummonBudgetTest;
 
 protected:
 	/** Blackboard - 선택된 스킬 ID 키 */

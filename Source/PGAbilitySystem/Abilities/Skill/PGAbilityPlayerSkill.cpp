@@ -2,6 +2,7 @@
 
 
 #include "PGAbilityPlayerSkill.h"
+#include "PGSkillActivation.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -15,58 +16,30 @@
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-                                      const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-                                      const FGameplayEventData* TriggerEventData)
+    const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	APGCharacterBase* Character = GetCharacter();
-	if (nullptr == Character)
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	FPGSkillHandler* SkillHandler = Character->GetSkillHandler();
-	if (nullptr == SkillHandler || false == SkillHandler->IsCanUseSkill(SlotIndex))
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(SlotIndex));
-	if(nullptr == Row)
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	UAnimMontage* MontageToPlay = nullptr;
-	if (UObject* LoadedObject = Row->MontagePath.TryLoad())
-	{
-		MontageToPlay = Cast<UAnimMontage>(LoadedObject);
-	}
-	if (nullptr == MontageToPlay)
-	{
-		EndAbilitySelf();
-	}
-
-	if (UAbilityTask_PlayMontageAndWait* MontageTask = PlayMontageWait(MontageToPlay))
-	{
-		MontageTask->ReadyForActivation();
-	}
-	SkillHandler->UseSkill(SlotIndex);
-
-	// TODO: Wait 대신 메시지 기반 구조로 변경가능할 지
-	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-		this,
-		PGGamePlayTags::Shared_Event_Hit);
-	if (nullptr != WaitEventTask)
-	{
-		WaitEventTask->EventReceived.AddDynamic(this, &ThisClass::OnGameplayEventReceived);
-
-		WaitEventTask->ReadyForActivation();
-	}
+    Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+    APGCharacterBase* Character = GetCharacter();
+    if (!Character || !Character->GetSkillHandler() || !PGData()) { EndAbilitySelf(); return; }
+    FPGSkillHandler* Handler = Character->GetSkillHandler();
+    const FPGSkillDataRow* Row = PGData()->GetRowData<FPGSkillDataRow>(Handler->GetSkillID(SlotIndex));
+    if (!Row || !Handler->IsCanUseSkill(SlotIndex)) { EndAbilitySelf(); return; }
+    const FPGSkillDataRow Data = *Row;
+    UAnimMontage* Montage = Cast<UAnimMontage>(Data.MontagePath.TryLoad());
+    if (!Montage || !Character->GetMesh()->GetAnimInstance()) { EndAbilitySelf(); return; }
+    UAbilityTask_PlayMontageAndWait* Task = PlayMontageWait(Montage);
+    if (!Task) { EndAbilitySelf(); return; }
+    if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(Character))
+    {
+        Player->FaceAimDirection();
+        Player->SetSkillCancelPolicy(Data.AttackCancelRemainingFraction, Data.DodgeCancelRemainingFraction);
+    }
+    UAbilityTask_WaitGameplayEvent* Wait = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, PGGamePlayTags::Shared_Event_Hit);
+    if (Wait) { Wait->EventReceived.AddDynamic(this, &ThisClass::OnGameplayEventReceived); Wait->ReadyForActivation(); }
+    Task->ReadyForActivation();
+    if (!IsActive()) return;
+    if (!CommitAbility(Handle, ActorInfo, ActivationInfo)) { EndAbilitySelf(); return; }
+    Handler->UseSkill(SlotIndex);
 }
 
 void UPGAbilityPlayerSkill::EndAbility(const FGameplayAbilitySpecHandle Handle,
@@ -89,4 +62,15 @@ void UPGAbilityPlayerSkill::OnGameplayEventReceived(FGameplayEventData Payload)
 			ASC->HandleGameplayEvent(PGGamePlayTags::Shared_Event_HitReact, &Data);
 		}
 	}
+}
+
+bool UPGAbilityPlayerSkill::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+    const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
+{
+    return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags) && PGSkillActivation::IsReady(ActorInfo, SlotIndex);
+}
+UPGAbilityPlayerSkill::UPGAbilityPlayerSkill()
+{
+    InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+    bRetriggerInstancedAbility = true;
 }

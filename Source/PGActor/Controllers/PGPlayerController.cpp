@@ -1,6 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PGPlayerController.h"
+#include "PGUI/Widget/Window/PGUIInventory.h"
+#include "PGUI/Widget/HUD/PGUIMainHUD.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "UnrealClient.h"
+#include "TimerManager.h"
+#include "PGActor/Progression/PGLootDrop.h"
+#include "PGActor/Progression/PGProfileSubsystem.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "EngineUtils.h"
+#include "InputCoreTypes.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Layout/WidgetPath.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
 #include "EnhancedInputComponent.h"
@@ -23,9 +36,10 @@ void APGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HUDWidgetClass)
+	if (IsLocalController())
 	{
-		if (UUserWidget* Widget = CreateWidget(this, HUDWidgetClass))
+		const TSubclassOf<UUserWidget> SelectedHUD = bUseLegacyHUD ? HUDWidgetClass.Get() : UPGUIMainHUD::StaticClass();
+		if (UUserWidget* Widget = SelectedHUD ? CreateWidget(this, SelectedHUD) : nullptr)
 		{
 			Widget->AddToViewport();
 		}	
@@ -53,6 +67,8 @@ void APGPlayerController::BeginPlay()
 void APGPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
+    InputComponent->BindKey(EKeys::I, IE_Pressed, this, &ThisClass::ToggleInventory).bExecuteWhenPaused = true;
+    InputComponent->BindKey(EKeys::E, IE_Pressed, this, &ThisClass::PickupNearest);
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
@@ -87,6 +103,7 @@ void APGPlayerController::Tick(float DeltaTime)
 void APGPlayerController::HandleMouseClick()
 {
 	bLastClickConsumed = false;
+    if (IsMoveInputIgnored() || IsPointerOverUI()) { bLastClickConsumed = true; return; }
 	
 	FVector HitLocation;
 	AActor* ClickedActor = GetActorUnderCursor(HitLocation);
@@ -198,4 +215,64 @@ void APGPlayerController::CheckMouseOver()
 	}
 
 	LastHoveredActor = CurrentHoveredActor;
+}
+
+bool APGPlayerController::IsPointerOverUI() const
+{
+    if (!FSlateApplication::IsInitialized()) return false;
+    FSlateApplication& Slate = FSlateApplication::Get();
+    const FWidgetPath Path = Slate.LocateWindowUnderMouse(Slate.GetCursorPos(), Slate.GetInteractiveTopLevelWindows());
+    for (int32 Index = 0; Index < Path.Widgets.Num(); ++Index)
+    {
+        const FName Type = Path.Widgets[Index].Widget->GetType();
+        if (Type == FName(TEXT("SObjectWidget")) || Type == FName(TEXT("SButton"))) return true;
+    }
+    return false;
+}
+void APGPlayerController::ToggleInventory()
+{
+    if (InventoryWidget)
+    {
+        InventoryWidget->RemoveFromParent(); InventoryWidget = nullptr;
+        SetPause(false);
+        SetIgnoreMoveInput(false); FlushPressedKeys(); return;
+    }
+    auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
+    if (!LocalCharacter || !LocalCharacter->IsGameplayInputAllowed()) return;
+    LocalCharacter->GetPGAbilitySystemComponent()->CancelAllAbilities();
+    LocalCharacter->GetPGAbilitySystemComponent()->ClearBufferedInput();
+    InventoryWidget = CreateWidget<UPGUIInventory>(this);
+    InventoryWidget->SetDesiredSizeInViewport(FVector2D(1040,900));
+    InventoryWidget->SetAnchorsInViewport(FAnchors(.5f,.5f));
+    InventoryWidget->SetAlignmentInViewport(FVector2D(.5f,.5f));
+    InventoryWidget->AddToViewport(90);
+    SetIgnoreMoveInput(true); FlushPressedKeys();
+    SetPause(true);
+}
+void APGPlayerController::PickupNearest()
+{
+    auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
+    if (!LocalCharacter || !LocalCharacter->IsGameplayInputAllowed()) return;
+    APGLootDrop* Nearest = nullptr; double Best = TNumericLimits<double>::Max();
+    for (TActorIterator<APGLootDrop> It(GetWorld()); It; ++It)
+    {
+        const double D = FVector::DistSquared(LocalCharacter->GetActorLocation(), It->GetActorLocation());
+        if (D < Best) { Best = D; Nearest = *It; }
+    }
+    if (Nearest) Nearest->TryPickup(LocalCharacter);
+}
+
+void APGPlayerController::PGHUDCapture()
+{
+#if !UE_BUILD_SHIPPING
+    if (!IsLocalController() || !GetWorld()) return;
+    FTimerHandle CaptureTimer;
+    GetWorldTimerManager().SetTimer(CaptureTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+    {
+        TArray<UUserWidget*> Widgets;
+        UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, Widgets, UPGUIMainHUD::StaticClass(), true);
+        UE_LOG(LogTemp, Display, TEXT("PGMainUI capture: native HUD count=%d"), Widgets.Num());
+        FScreenshotRequest::RequestScreenshot(TEXT("PGMainHUD"), true, true);
+    }), 3.f, false);
+#endif
 }

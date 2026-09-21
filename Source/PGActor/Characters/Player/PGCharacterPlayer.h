@@ -35,7 +35,27 @@ class PGACTOR_API APGCharacterPlayer : public APGCharacterBase
 	GENERATED_BODY()
 
 protected:
-	// 카메라 회전 민감도 설정
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|QuarterView")
+    bool bUseQuarterView = true;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|QuarterView")
+    TObjectPtr<class UPGQuarterViewData> QuarterViewData;
+    FVector LastAimDirection = FVector::ForwardVector;
+    FTimerHandle AimTimer;
+    void UpdateAim();
+    void ConfigureQuarterView();
+public:
+    bool IsGameplayInputAllowed() const;
+    const UDataAsset_InputConfig* GetInputConfig() const { return InputConfigDataAsset; }
+    void FaceAimDirection();
+    bool CanStartSkill(bool bDodge) const;
+    void SetSkillCancelPolicy(float AttackFraction, float DodgeFraction);
+private:
+    bool bSkillWindowOpen = false;
+    float AttackCancelFraction = 0.2f;
+    float DodgeCancelFraction = 0.5f;
+public:
+protected:
+    // 카메라 회전 민감도 설정
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Camera Settings", meta = (ClampMin = "0.1", ClampMax = "3.0"))
 	float MouseSensitivityX = 1.0f;
 
@@ -103,7 +123,8 @@ public:
 	virtual void OnHit(UPGStatComponent* StatComponent, const UPGPawnCombatComponent* const OtherCombatComponent) override;
 	
 public:
-	void StartSkillWindow();
+	virtual void OnHealthChanged() override;
+    void StartSkillWindow();
 	void EndSkillWindow();
 
 	UFUNCTION(BlueprintPure, Category = "PG|Combat")

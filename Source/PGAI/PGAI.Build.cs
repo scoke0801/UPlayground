@@ -7,6 +7,7 @@ public class PGAI : ModuleRules
 	public PGAI(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PublicDependencyModuleNames.AddRange(new string[] { "PGShared" });
         
         // C++ 20 사용 설정
         CppStandard = CppStandardVersion.Cpp20;
@@ -30,7 +31,6 @@ public class PGAI : ModuleRules
 			{
 				"AIModule",
 				
-				"PGShared",
 				"PGData",
 				"PGActor",
 				"PGAbilitySystem",

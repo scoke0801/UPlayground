@@ -6,7 +6,7 @@ public class PGShared : ModuleRules
 {
 	public PGShared(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PrivateDependencyModuleNames.AddRange(new string[] { "AIModule", "AIModule", "AIModule" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "AIModule" });
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         
         // C++ 20 사용 설정
@@ -25,11 +25,5 @@ public class PGShared : ModuleRules
 				"EnhancedInput",
 			}
 		);
-		
-		PublicIncludePathModuleNames.AddRange(
-			new string[]
-			{
-				"PGAbilitySystem"
-			});
 	}
 }

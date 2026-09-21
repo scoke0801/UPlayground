@@ -12,48 +12,17 @@
 
 void UPGPlayerCombatComponent::OnHitTargetActor(AActor* HitActor)
 {
-	// 여러 번 피격해도 괜찮게 보여서 우선 주석처리
-	//if (OverlappedActors.Contains(HitActor))
-	//{
-	//	return;
-	//}
-
-	OverlappedActors.AddUnique(HitActor);
-
-	FGameplayEventData Data;
-	Data.Instigator = GetOwningPawn();
-	Data.Target = HitActor;
-
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-		GetOwningPawn(),
-		PGGamePlayTags::Shared_Event_Hit,
-		Data
-		);
-
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-		GetOwningPawn(),
-		PGGamePlayTags::Player_Event_HitPause,
-		FGameplayEventData()
-	);
+    if (!IsValid(HitActor) || OverlappedActors.Contains(HitActor)) return;
+    OverlappedActors.AddUnique(HitActor);
+    FGameplayEventData Data;
+    Data.Instigator = GetOwningPawn();
+    Data.Target = HitActor;
+    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetOwningPawn(), PGGamePlayTags::Shared_Event_Hit, Data);
 }
 
 void UPGPlayerCombatComponent::OnWeaponPulledFromTargetActor(AActor* InteractedActor)
 {
-	// FGameplayEventData Data;
-	// Data.Instigator = GetOwningPawn();
-	// Data.Target = InteractedActor;
-	//
-	// UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-	// 	GetOwningPawn(),
-	// 	PGGamePlayTags::Shared_Event_Hit,
-	// 	Data
-	// 	);
-
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-		GetOwningPawn(),
-		PGGamePlayTags::Player_Event_HitPause,
-		FGameplayEventData()
-	);
+    // Feedback is emitted only for confirmed damage, not on overlap exit.
 }
 
 APGPlayerWeapon* UPGPlayerCombatComponent::GetPlayerCarriedWeaponByTag(FGameplayTag InWeaponTag) const

@@ -23,10 +23,10 @@ void UPGUIHudPlayerInfo::NativeConstruct()
 	Super::NativeConstruct();
 	
 	// Player 정보 가져와야 한다...
-	StatUpdateHandle = PGMessage()->RegisterDelegate(EPGPlayerMessageType::StatUpdate,
+	StatUpdateHandle = UPGMessageManager::Get(this)->RegisterDelegate(EPGPlayerMessageType::StatUpdate,
 		this, &ThisClass::OnStatUpdate);
 	
-	SpawnedHandle = PGMessage()->RegisterDelegate(EPGPlayerMessageType::Spawned,
+	SpawnedHandle = UPGMessageManager::Get(this)->RegisterDelegate(EPGPlayerMessageType::Spawned,
 		this, &ThisClass::OnPlayerSpawned);
 
 //	CapturePlayerImage();
@@ -36,7 +36,7 @@ void UPGUIHudPlayerInfo::NativeDestruct()
 {
 	Super::NativeDestruct();
 
-	if (UPGMessageManager* MessageManager = PGMessage())
+	if (UPGMessageManager* MessageManager = UPGMessageManager::Get(this))
 	{
 		MessageManager->UnregisterDelegate(EPGPlayerMessageType::StatUpdate, StatUpdateHandle);
 		MessageManager->UnregisterDelegate(EPGPlayerMessageType::Spawned, SpawnedHandle);

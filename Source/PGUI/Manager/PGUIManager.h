@@ -21,6 +21,11 @@ class PGUI_API UPGUIManager : public UGameInstanceSubsystem
     GENERATED_BODY()
 
 private:
+    FDelegateHandle StagePresentationHandle;
+    UPROPERTY() TObjectPtr<class UPGUIWindowRewardSelect> StageWindow;
+    TWeakObjectPtr<AActor> StageOwner;
+    void OnStagePresentation(const class IPGEventData* Event);
+    void CloseStageWindow();
     // 현재 활성화된 UI들
     UPROPERTY()
     TArray<UPGWidgetBase*> ActiveWidgets;
@@ -49,6 +54,7 @@ private:
     
 public:
     static UPGUIManager* Get();
+    static UPGUIManager* Get(const UObject* Context);
     
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
@@ -76,7 +82,7 @@ public:
     void CloseCurrentWindow();
 
     UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|WINDOW")
-    bool IsWindowOpen() const { return CurrentWindow != nullptr; }
+    bool IsWindowOpen() const { return CurrentWindow != nullptr || StageWindow != nullptr; }
 
     UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|WINDOW")
     UPGUIWindow* GetCurrentWindow() const { return CurrentWindow; }

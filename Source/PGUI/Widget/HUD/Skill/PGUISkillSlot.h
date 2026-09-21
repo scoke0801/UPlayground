@@ -43,7 +43,6 @@ protected:
 	EPGSkillSlot SkillSlot;
 	FGameplayTag SkillTag;
 
-	FPGSkillDataRow* CachedSkillData = nullptr;
 	
 	float RemainCoolTime = 0.0f;
 	

@@ -1,159 +1,76 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "PGStatComponent.h"
-
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Stat/PGCharacterStatDataRow.h"
-#include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
-#include "PGActor/Components/Combat/PGPawnCombatComponent.h"
-#include "PGActor/Weapon/PGWeaponBase.h"
+#include "PGData/DataAsset/Combat/PGCombatTuningData.h"
+#include "PGActor/Characters/PGCharacterBase.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGAbilitySystem/PGAtrributeSet.h"
+#include "PGAbilitySystem/Combat/PGCombatMath.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
+UPGAbilitySystemComponent* UPGStatComponent::GetASC() const
+{
+    const APGCharacterBase* Character = Cast<APGCharacterBase>(GetOwner());
+    return Character ? Character->GetPGAbilitySystemComponent() : nullptr;
+}
 void UPGStatComponent::InitData(int32 CharacterTID)
 {
-	// 테이블에서 읽어오는 구조로 나중에 고치고 우선 상수
-
-	if (UPGDataTableManager* Manager = PGData())
-	{
-		if (FPGCharacterStatDataRow* Data = Manager->GetRowData<FPGCharacterStatDataRow>(CharacterTID))
-		{
-			StatMap = Data->Stats;
-		}
-	}
-	if (StatMap.Contains(EPGStatType::Health))
-	{
-		CurrentHealth = StatMap[EPGStatType::Health];
-	}
+    if (PGData())
+        if (const auto* Data = PGData()->GetRowData<FPGCharacterStatDataRow>(CharacterTID)) StatMap = Data->Stats;
+    if (UPGAbilitySystemComponent* ASC = GetASC())
+    {
+        ASC->InitializeCombatStats(StatMap);
+        if (!HealthChangedHandle.IsValid())
+        {
+            HealthChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UPGAtrributeSet::GetCurrentHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
+            MaxHealthChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UPGAtrributeSet::GetMaxHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
+            MovementChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UPGAtrributeSet::GetMovementSpeedAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
+        }
+    }
 }
-
-int32 UPGStatComponent::GetStat(EPGStatType StatType) const
+void UPGStatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (StatMap.Contains(StatType))
-	{
-		return StatMap[StatType];
-	}
-	return 0;
+    if (UPGAbilitySystemComponent* ASC = GetASC())
+    {
+        ASC->GetGameplayAttributeValueChangeDelegate(UPGAtrributeSet::GetCurrentHealthAttribute()).Remove(HealthChangedHandle);
+        ASC->GetGameplayAttributeValueChangeDelegate(UPGAtrributeSet::GetMaxHealthAttribute()).Remove(MaxHealthChangedHandle);
+        ASC->GetGameplayAttributeValueChangeDelegate(UPGAtrributeSet::GetMovementSpeedAttribute()).Remove(MovementChangedHandle);
+    }
+    Super::EndPlay(EndPlayReason);
 }
-
-int32 UPGStatComponent::CalculateDamage(const UPGStatComponent* const OtherStatComponent, OUT EPGDamageType& OutDamageType) const
+void UPGStatComponent::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
-	// 1. 기본 데미지
-	float BaseDamage = OtherStatComponent->GetStat(EPGStatType::Attack);
-    
-	// 2. 방어력 적용 (방어력이 높을수록 데미지 감소)
-	float DefenseReduction = GetStat(EPGStatType::Defense) / (GetStat(EPGStatType::Defense) + 100.0f);
-	float DamageAfterDefense = BaseDamage * (1.0f - DefenseReduction);
-    
-	// 3. 치명타 판정 (0-10000 확률)
-	bool bIsCritical = FMath::RandRange(0.0f, 10000.0f) <= OtherStatComponent->GetStat(EPGStatType::CriticalRate);
-
-	OutDamageType = bIsCritical ? EPGDamageType::Critical : EPGDamageType::Normal;
-	
-	// 4. 최종 데미지 계산
-	float FinalDamage = DamageAfterDefense;
-	if (bIsCritical)
-	{
-		FinalDamage *= (1.5f);
-	}
-    
-	// 5. 최소 데미지 보장 (1 이상)
-	return FMath::Max(1.0f, FinalDamage);
+    if (APGCharacterBase* Character = Cast<APGCharacterBase>(GetOwner()))
+    {
+        Character->OnHealthChanged();
+        if (Data.Attribute == UPGAtrributeSet::GetMovementSpeedAttribute())
+            Character->GetCharacterMovement()->MaxWalkSpeed = GetStat(EPGStatType::MovementSpeed);
+    }
 }
-
-int32 UPGStatComponent::CalculateDamageWithWeapon(const UPGStatComponent* const OtherStatComponent, 
-	const UPGPawnCombatComponent* const OtherCombatComponent, OUT EPGDamageType& OutDamageType) const
+float UPGStatComponent::GetCurrentHealth() const { const auto* ASC = GetASC(); return ASC ? ASC->GetHealth() : 0.f; }
+float UPGStatComponent::GetHealthRatio() const
 {
-	// 1. 기본 공격력 (캐릭터 스탯)
-	float BaseDamage = OtherStatComponent->GetStat(EPGStatType::Attack);
-	
-	// 2. 무기 스탯 추가
-	if (OtherCombatComponent)
-	{
-		if (APGWeaponBase* CurrentWeapon = OtherCombatComponent->GetCharacterCurrentEquippedWeapon())
-		{
-			// 무기의 공격력 추가
-			BaseDamage += CurrentWeapon->GetWeaponStat(EPGStatType::Attack);
-		}
-	}
-    
-	// 3. 방어력 적용 (방어력이 높을수록 데미지 감소)
-	float DefenseReduction = GetStat(EPGStatType::Defense) / (GetStat(EPGStatType::Defense) + 100.0f);
-	float DamageAfterDefense = BaseDamage * (1.0f - DefenseReduction);
-    
-	// 4. 치명타 확률 계산 (캐릭터 + 무기)
-	float CriticalRate = OtherStatComponent->GetStat(EPGStatType::CriticalRate);
-	if (OtherCombatComponent)
-	{
-		if (APGWeaponBase* CurrentWeapon = OtherCombatComponent->GetCharacterCurrentEquippedWeapon())
-		{
-			CriticalRate += CurrentWeapon->GetWeaponStat(EPGStatType::CriticalRate);
-		}
-	}
-	
-	// 5. 치명타 판정 (0-10000 확률)
-	bool bIsCritical = FMath::RandRange(0.0f, 10000.0f) <= CriticalRate;
-
-	OutDamageType = bIsCritical ? EPGDamageType::Critical : EPGDamageType::Normal;
-	
-	// 6. 치명타 데미지 배율 계산 (캐릭터 + 무기)
-	float CriticalMultiplier = 1.5f; // 기본 치명타 배율
-	if (bIsCritical)
-	{
-		// 무기에 치명타 데미지 스탯이 있다면 추가 적용
-		if (OtherCombatComponent)
-		{
-			if (APGWeaponBase* CurrentWeapon = OtherCombatComponent->GetCharacterCurrentEquippedWeapon())
-			{
-				float WeaponCritDamage = CurrentWeapon->GetWeaponStat(EPGStatType::CriticalDamage);
-				if (WeaponCritDamage > 0)
-				{
-					CriticalMultiplier += (WeaponCritDamage / 100.0f); // 퍼센트로 계산
-				}
-			}
-		}
-	}
-	
-	// 7. 최종 데미지 계산
-	float FinalDamage = DamageAfterDefense;
-	if (bIsCritical)
-	{
-		FinalDamage *= CriticalMultiplier;
-	}
-    
-	// 8. 최소 데미지 보장 (1 이상)
-	return FMath::Max(1.0f, FinalDamage);
+    const int32 Maximum = GetStat(EPGStatType::Health);
+    return Maximum > 0 ? FMath::Clamp(GetCurrentHealth() / Maximum, 0.f, 1.f) : 0.f;
 }
-
-int32 UPGStatComponent::CalculateDamageAuto(const UPGStatComponent* const OtherStatComponent, 
-	const UPGPawnCombatComponent* const OtherCombatComponent, OUT EPGDamageType& OutDamageType) const
+int32 UPGStatComponent::GetStat(EPGStatType Type) const
 {
-	// 무기가 있으면 무기 포함 계산, 없으면 기본 계산
-	if (OtherCombatComponent && OtherCombatComponent->GetCharacterCurrentEquippedWeapon())
-	{
-		return CalculateDamageWithWeapon(OtherStatComponent, OtherCombatComponent, OutDamageType);
-	}
-	else
-	{
-		return CalculateDamage(OtherStatComponent, OutDamageType);
-	}
+    if (const auto* ASC = GetASC()) return FMath::RoundToInt(ASC->GetCombatStat(Type));
+    return StatMap.FindRef(Type);
 }
-
-int32 UPGStatComponent::GetTotalAttackPower(const UPGPawnCombatComponent* CombatComponent) const
+int32 UPGStatComponent::CalculateDamage(const UPGStatComponent* Source, EPGDamageType& OutType) const
 {
-	int32 BaseAttack = GetStat(EPGStatType::Attack);
-	
-	if (CombatComponent)
-	{
-		if (APGWeaponBase* CurrentWeapon = CombatComponent->GetCharacterCurrentEquippedWeapon())
-		{
-			BaseAttack += CurrentWeapon->GetWeaponStat(EPGStatType::Attack);
-		}
-	}
-	
-	return BaseAttack;
+    OutType = EPGDamageType::Normal;
+    if (!Source) return 0;
+    const auto* ASC = GetASC();
+    const UPGCombatTuningData* Tuning = ASC && ASC->CombatTuning ? ASC->CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
+    const bool bCritical = FMath::FRand() * 10000.f < FMath::Clamp(Source->GetStat(EPGStatType::CriticalRate), 0, 10000);
+    OutType = bCritical ? EPGDamageType::Critical : EPGDamageType::Normal;
+    return FMath::RoundToInt(PGCombatMath::Damage(Source->GetStat(EPGStatType::Attack), GetStat(EPGStatType::Defense), bCritical,
+        Source->GetStat(EPGStatType::CriticalDamage), Tuning->DefenseConstant, Tuning->BaseCriticalMultiplier, Tuning->MinimumDamage));
 }
-
-int32 UPGStatComponent::CalculateHealAmount() const
-{
-	return GetStat(EPGStatType::HealAmount);
-}
+int32 UPGStatComponent::CalculateDamageWithWeapon(const UPGStatComponent* Source, const UPGPawnCombatComponent* Combat, EPGDamageType& Type) const { return CalculateDamage(Source, Type); }
+int32 UPGStatComponent::CalculateDamageAuto(const UPGStatComponent* Source, const UPGPawnCombatComponent* Combat, EPGDamageType& Type) const { return CalculateDamage(Source, Type); }
+int32 UPGStatComponent::GetTotalAttackPower(const UPGPawnCombatComponent* Combat) const { return GetStat(EPGStatType::Attack); }
+int32 UPGStatComponent::CalculateHealAmount() const { return GetStat(EPGStatType::HealAmount); }
+bool UPGStatComponent::ApplyStatReward(EPGStatType Type, int32 Amount) { auto* ASC = GetASC(); return ASC && ASC->ApplyStatBonus(Type, Amount); }

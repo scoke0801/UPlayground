@@ -20,7 +20,8 @@ class PGAI_API UPGAbilityTask_WaitSpawnEnemy : public UAbilityTask
 	GENERATED_BODY()
 	
 private:
-	FGameplayTag CachedEventTag;
+	bool bSpawnRequested = false;
+    FGameplayTag CachedEventTag;
 	int32 CachedNumToSpawn;
 	FVector CachedSpawnOrigin;
 	float CachedRandomSpawnRadius;

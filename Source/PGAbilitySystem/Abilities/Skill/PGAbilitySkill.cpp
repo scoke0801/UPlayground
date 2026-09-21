@@ -2,6 +2,7 @@
 
 
 #include "PGAbilitySkill.h"
+#include "PGSkillActivation.h"
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
@@ -11,80 +12,28 @@
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 
 void UPGAbilitySkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-                                      const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-                                      const FGameplayEventData* TriggerEventData)
+    const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	APGCharacterBase* Character = Cast<APGCharacterBase>(GetOwningActorFromActorInfo());
-	if (nullptr == Character)
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	FPGSkillHandler* SkillHandler = Character->GetSkillHandler();
-	if (nullptr == SkillHandler || false == SkillHandler->IsCanUseSkill(SlotIndex))
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	// 현재 실행 중인 몽타주의 재생시간이 20% 이상 남았다면 스킬 사용 제한
-	if (USkeletalMeshComponent* MeshComp = Character->GetMesh())
-	{
-		if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
-		{
-			if (UAnimMontage* ActivatedMontage = AnimInstance->GetCurrentActiveMontage())
-			{
-				float CurrentPosition = AnimInstance->Montage_GetPosition(ActivatedMontage);
-				float MontageLength = ActivatedMontage->GetPlayLength();
-				float PlayRate = AnimInstance->Montage_GetPlayRate(ActivatedMontage);
-				
-				if (PlayRate > 0.0f) // 정방향 재생 중인 경우
-				{
-					float RemainingTime = (MontageLength - CurrentPosition) / PlayRate;
-					float TotalTime = MontageLength / PlayRate;
-					float RemainingRatio = RemainingTime / TotalTime;
-					
-					// 남은 재생시간이 20% 이상이면 스킬 사용 제한
-					if (RemainingRatio >= 0.2f)
-					{
-						EndAbilitySelf();
-						return;
-					}
-				}
-			}
-		}
-	}
-	
-	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(SlotIndex));
-	if(nullptr == Row)
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	UAnimMontage* MontageToPlay = nullptr;
-	if (UObject* LoadedObject = Row->MontagePath.TryLoad())
-	{
-		MontageToPlay = Cast<UAnimMontage>(LoadedObject);
-
-		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-	this, NAME_None, MontageToPlay);
-		if (nullptr == MontageTask)
-		{
-			EndAbilitySelf();
-			return;
-		}
-	
-		MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCompleted);
-		MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-		MontageTask->OnBlendOut.AddDynamic(this, &ThisClass::OnMontageCompleted);
-		MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	
-		MontageTask->ReadyForActivation();
-	}
-
-	SkillHandler->UseSkill(SlotIndex);
+    Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+    APGCharacterBase* Character = GetCharacter();
+    if (!Character || !Character->GetSkillHandler() || !PGData()) { EndAbilitySelf(); return; }
+    FPGSkillHandler* Handler = Character->GetSkillHandler();
+    const auto* Row = PGData()->GetRowData<FPGSkillDataRow>(Handler->GetSkillID(SlotIndex));
+    if (!Row || !Handler->IsCanUseSkill(SlotIndex)) { EndAbilitySelf(); return; }
+    const FPGSkillDataRow Data = *Row;
+    UAnimMontage* Montage = Cast<UAnimMontage>(Data.MontagePath.TryLoad());
+    if (!Montage || !Character->GetMesh()->GetAnimInstance()) { EndAbilitySelf(); return; }
+    UAbilityTask_PlayMontageAndWait* Task = PlayMontageWait(Montage);
+    if (!Task) { EndAbilitySelf(); return; }
+    if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(Character))
+        Player->SetSkillCancelPolicy(Data.AttackCancelRemainingFraction, Data.DodgeCancelRemainingFraction);
+    Task->ReadyForActivation();
+    if (!IsActive()) return;
+    if (!CommitAbility(Handle, ActorInfo, ActivationInfo)) { EndAbilitySelf(); return; }
+    Handler->UseSkill(SlotIndex);
+}
+bool UPGAbilitySkill::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+    const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
+{
+    return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags) && PGSkillActivation::IsReady(ActorInfo, SlotIndex);
 }

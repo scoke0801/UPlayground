@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -13,7 +13,7 @@ struct PGDATA_API FPGUIWidgetPathRow : public FTableRowBase
 	
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(SearchKey = "True"))
-	EPGUIWIdgetEnumTypes Key;
+	EPGUIWIdgetEnumTypes Key = {};
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString Desc;
