@@ -1,5 +1,6 @@
 #include "PGUIManager.h"
 #include "PGActor/Manager/PGStagePresentation.h"
+#include "PGActor/Manager/PGStageManager.h"
 #include "PGUI/Widget/Window/PGUIWindowRewardSelect.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
@@ -486,6 +487,7 @@ void UPGUIManager::OnStagePresentation(const IPGEventData* Event)
     StageWindow = CreateWidget<UPGUIWindowRewardSelect>(PC);
     if (!StageWindow) return;
     StageOwner = View.Owner;
+    StageWindow->StageOwner = Cast<APGStageManager>(View.Owner.Get());
     if (!View.Status.IsEmpty()) { StageWindow->SetStatus(View.Status); StageWindow->OnRetry = View.Retry; }
     else
     {

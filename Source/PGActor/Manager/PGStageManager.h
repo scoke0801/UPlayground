@@ -13,7 +13,10 @@ enum class EPGStageState : uint8
     None        UMETA(DisplayName = "None"),
     InProgress  UMETA(DisplayName = "In Progress"),
     RewardPhase UMETA(DisplayName = "Reward Phase"),
-    Completed   UMETA(DisplayName = "Completed"), Failed, Finished
+    Completed   UMETA(DisplayName = "Completed"), Failed, Finished,
+    WaveIntermission UMETA(DisplayName = "Wave Intermission"),
+    BuildPhase UMETA(DisplayName = "Build Phase"),
+    RunPreparation UMETA(DisplayName = "Run Preparation")
 };
 
 
@@ -98,9 +101,18 @@ private:
 	TArray<APGCharacterEnemy*> SpawnedEnemies;
 
 private:
-	float StageStartTime = 0.f;
+	float WaveStartTime = 0.f;
+    int32 CurrentWaveIndex = INDEX_NONE;
+    UPROPERTY(Transient)
+    TArray<FPGStageWave> ActiveWaves;
+    FTimerHandle WaveTimer;
+    void PrepareWave(int32 WaveIndex);
+    void StartWave();
+    void BeginBuildPhase();
+    void FinishBuildPhase();
     int32 SpawnFailureCount = 0;
     bool bRewardCommitted = false;
+    int32 RewardsRemaining = 1;
     FGuid RewardToken;
     TArray<FPGStageReward> OfferedRewards;
     UPROPERTY(Transient)
@@ -120,6 +132,11 @@ private:
       friend class APGGameModeStage;
 
 public:    
+    UFUNCTION(BlueprintCallable, Category="Stage")
+    void ReadyForNextStage();
+    void PrepareRun(int32 StageId);
+    bool IsManualReady() const { return CurrentStageState == EPGStageState::RunPreparation || CurrentStageDataCache.bManualReady; }
+    bool CanReady() const { return CurrentStageState == EPGStageState::RunPreparation || (CurrentStageState == EPGStageState::BuildPhase && bRewardCommitted); }
 	APGStageManager();
 
 protected:
@@ -209,7 +226,7 @@ private:
 	FVector GetSafeSpawnLocation() const;
 	
 	// 스폰 위치 유효성 검증
-	bool IsValidSpawnLocation(const FVector& Location) const;
+	bool IsValidSpawnLocation(const FVector& Location, float CapsuleRadius, float CapsuleHalfHeight) const;
 	
 	// 경사면 각도 검증
 	bool IsValidSlope(const FVector& Location) const;
@@ -241,6 +258,18 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Stage Info")
 	int32 GetSpawnedMonsters() const { return SpawnedMonsters; }
+
+    UFUNCTION(BlueprintPure, Category = "Stage Info")
+    int32 GetCurrentWaveNumber() const { return CurrentWaveIndex + 1; }
+
+    UFUNCTION(BlueprintPure, Category = "Stage Info")
+    int32 GetWaveCount() const { return ActiveWaves.Num(); }
+
+    UFUNCTION(BlueprintPure, Category = "Stage Info")
+    float GetBuildTimeRemaining() const;
+
+    UFUNCTION(BlueprintPure, Category = "Stage Info")
+    float GetWaveTimeRemaining() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Stage Info")
 	FPGStageDataRow GetCurrentStageDataCopy() const;

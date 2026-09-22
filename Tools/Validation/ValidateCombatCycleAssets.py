@@ -23,9 +23,11 @@ cls=unreal.EditorAssetLibrary.load_blueprint_class(OUT+'/BP_EliteWarden')
 assert unreal.get_default_object(cls).get_editor_property('character_tid')==14001
 stages=rows('/Game/DataCenter/DataTables/Stage/DT_StageData')
 for stage in sorted(stages,key=lambda r:r['Id'])[:3]:
-    waves=stage['MonsterSpawnInfos']; assert len(waves)==4
-    assert len([w for w in waves if w['MonsterId']==14001 and w['SpawnCount']==1])==1
-    assert len(set(w['SpawnDelayTime'] for w in waves))==4
+    waves=stage['Waves']; assert len(waves)==4
+    spawns=[spawn for wave in waves for spawn in wave['MonsterSpawnInfos']]
+    assert len([s for s in spawns if s['MonsterId']==14001 and s['SpawnCount']==1])==1
+    assert waves[-1]['MonsterSpawnInfos'][0]['MonsterId']==14001
+    assert stage['BuildDuration']==30.
 catalog=unreal.load_asset('/Game/DataCenter/Progression/DA_PGProgression')
 assert catalog.get_editor_property('beam_material')
 assert len(catalog.get_editor_property('drop_sounds'))==3
@@ -38,7 +40,7 @@ assert all(r['Amount']==0 and r['PerkPercent']>0 and r['PlaystyleDescription'] f
 assert elite['RecoveryDamageBonus']>0
 for stage in sorted(stages,key=lambda r:r['Id'])[:3]:
     assert {r['RewardId'] for r in stage['RewardPool']}=={14101,14102,14103}
-    assert max(w['SpawnDelayTime'] for w in stage['MonsterSpawnInfos'])<=35
+    assert all(w['StartDelay']>=0 for w in stage['Waves'])
 prepared='PGPrepareOnly'  in unreal.SystemLibrary.get_command_line()
 report=dict(result='prepared_in_memory' if prepared else 'passed',stages=3,elite=14001,feedback=['normal','heavy','critical'],items=len(catalog.get_editor_property('items')))
 folder=os.path.join(unreal.Paths.project_saved_dir(),'Automation','CombatCycle'); os.makedirs(folder,exist_ok=True)

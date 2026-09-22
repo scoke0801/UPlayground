@@ -44,13 +44,19 @@ for enemy in enemies.values():
         if skill_id not in skills:
             errors.append(f"Enemy {enemy['EnemyID']}: missing skill {skill_id}")
 for stage in stages.values():
+    waves = stage.get('Waves') or [{'MonsterSpawnInfos': stage['MonsterSpawnInfos'], 'StartDelay': 0.}]
+    spawns = [spawn for wave in waves for spawn in wave['MonsterSpawnInfos']]
+    if any(not wave['MonsterSpawnInfos'] or not math.isfinite(wave['StartDelay']) or wave['StartDelay'] < 0 for wave in waves):
+        errors.append(f"Stage {stage['Id']}: invalid wave")
+    if not math.isfinite(stage['BuildDuration']) or stage['BuildDuration'] < 0:
+        errors.append(f"Stage {stage['Id']}: invalid build duration")
     if stage['MaxSpawnRetries'] <= 0 or stage['SpawnRadius'] < 100 or not math.isfinite(stage['SpawnInterval']):
         errors.append(f"Stage {stage['Id']}: invalid retry/radius/interval")
-    if sum(spawn['SpawnCount'] for spawn in stage['MonsterSpawnInfos']) > 2147483647:
+    if sum(spawn['SpawnCount'] for spawn in spawns) > 2147483647:
         errors.append(f"Stage {stage['Id']}: monster count overflow")
-    if stage['SpawnBatchSize'] <= 0 or stage['SpawnInterval'] < 0 or not stage['MonsterSpawnInfos']:
+    if stage['SpawnBatchSize'] <= 0 or stage['SpawnInterval'] < 0 or not spawns:
         errors.append(f"Stage {stage['Id']}: invalid spawn schedule")
-    for spawn in stage['MonsterSpawnInfos']:
+    for spawn in spawns:
         if spawn['MonsterId'] not in enemies or spawn['SpawnCount'] <= 0 or spawn['SpawnDelayTime'] < 0:
             errors.append(f"Stage {stage['Id']}: invalid spawn {spawn}")
     for reward in stage['RewardPool']:

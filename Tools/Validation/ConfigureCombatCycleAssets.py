@@ -175,9 +175,10 @@ if base_death:
     row=dict(base_death); row.update(Name='PG_EliteWarden',ObjectTID=14001); write_rows(death_path,[r for r in deaths if r['ObjectTID']!=14001]+[row])
 stage_path='/Game/DataCenter/DataTables/Stage/DT_StageData'; stages=load_rows(stage_path)
 for stage_index,stage in enumerate(sorted(stages,key=lambda r:r['Id'])[:3]):
-    stage.update(StageName='파수꾼의 회랑 '+str(stage['Id']),SpawnBatchSize=3,SpawnInterval=1.,NextStageDelay=3.)
+    stage.update(StageName='파수꾼의 회랑 '+str(stage['Id']),SpawnBatchSize=3,SpawnInterval=1.,BuildDuration=30.)
     stage['RewardPool']=[dict(RewardType='Stat',RewardId=14101+i,Weight=1.) for i in range(3)]
     stage['MonsterSpawnInfos']=[dict(MonsterId=base['EnemyID'],SpawnCount=n,SpawnPriority=0,SpawnDelayTime=delay) for n,delay in [(3+stage_index,2.),(4+stage_index,12.),(4+stage_index,22.)]]+[dict(MonsterId=14001,SpawnCount=1,SpawnPriority=1,SpawnDelayTime=32.)]
+    stage['Waves']=[dict(MonsterSpawnInfos=[dict(spawn,SpawnDelayTime=0.)],StartDelay=0. if index==0 else 2.) for index,spawn in enumerate(stage['MonsterSpawnInfos'])]
 write_rows(stage_path,stages)
 unreal.log('PGCombatCycle ' + ('PREPARED; existing asset saves still pending' if PREPARE_ONLY else 'ASSETS COMPLETE') + ' elite_base='+str(base['EnemyID']))
 

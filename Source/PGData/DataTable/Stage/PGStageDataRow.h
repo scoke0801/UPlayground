@@ -25,7 +25,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster Info", meta = (ClampMin = "0"))
 	int32 SpawnPriority = 0;
 
-	// 이 몬스터가 스폰되기 시작하는 시점 (스테이지 시작 후 초 단위)
+	// 이 몬스터가 스폰되기 시작하는 시점 (웨이브 시작 후 초 단위)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster Info", meta = (ClampMin = "0.0"))
 	float SpawnDelayTime = 0.0f;
 
@@ -41,6 +41,19 @@ public:
 	}
 };
 
+
+USTRUCT(BlueprintType)
+struct PGDATA_API FPGStageWave
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+    TArray<FPGMonsterSpawnInfo> MonsterSpawnInfos;
+
+    // 이전 웨이브 전멸 후 대기 시간. 첫 웨이브에는 스테이지 시작부터 적용한다.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave", meta = (ClampMin = "0"))
+    float StartDelay = 2.f;
+};
 
 USTRUCT(BlueprintType)
 struct PGDATA_API FPGStageReward
@@ -84,9 +97,19 @@ public:
 	bool bIsBossStage = false;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage Info", meta = (ClampMin = "0.0"))
-	float NextStageDelay = 3.0f;
+	float NextStageDelay = 3.0f; // Legacy serialized field; BuildDuration replaces it.
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage Info", meta = (ClampMin = "0"))
+    float BuildDuration = 30.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stage Info")
+    bool bManualReady = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Rewards", meta=(ClampMin="1", ClampMax="3"))
+    int32 RewardSelections = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waves")
+    TArray<FPGStageWave> Waves;
 	
-	// 개선된 몬스터 스폰 정보 (몬스터별 수량 지정 가능)
+	// 이전 데이터 호환: Waves가 비어 있을 때 단일 웨이브로 사용한다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster Spawn")
 	TArray<FPGMonsterSpawnInfo> MonsterSpawnInfos;
 
