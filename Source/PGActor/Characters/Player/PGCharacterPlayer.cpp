@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PGCharacterPlayer.h"
@@ -34,10 +34,10 @@
 #include "PGShared/Shared/Enum/PGStatEnumTypes.h"
 #include "PGShared/Shared/Message/Stat/PGStatUpdateEventData.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 #include "PGUI/Component/Base/PGWidgetComponentBase.h"
 #include "PGUI/Manager/PGDamageFloaterManager.h"
-#include "PGUI/Widget/Billboard/PGUIPlayerHpBar.h"
 
 APGCharacterPlayer::APGCharacterPlayer()
 {
@@ -76,13 +76,10 @@ APGCharacterPlayer::APGCharacterPlayer()
 	if (PlayerHpWidgetComponent)
 	{
 		PlayerHpWidgetComponent->SetupAttachment(GetCapsuleComponent());
-		// 캡슐의 Half Height 가져오기
-		float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-
-		FVector BottomPosition = FVector(0.0f, 0.0f, -CapsuleHalfHeight);
-		PlayerHpWidgetComponent->SetRelativeLocation(BottomPosition);
-
-		PlayerHpWidget = Cast<UPGUIPlayerHpBar>(PlayerHpWidgetComponent->GetWidget());
+        // Retain the named subobject for existing Blueprint compatibility.
+        PlayerHpWidgetComponent->SetVisibility(false);
+        PlayerHpWidgetComponent->SetHiddenInGame(true);
+        PlayerHpWidgetComponent->SetComponentTickEnabled(false);
 	}
 	
 	SkillMontageController = CreateDefaultSubobject<UPGSkillMontageController>(TEXT("SkillMontageController"));
@@ -151,6 +148,16 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
     SkillHandler = FPGHandler::Create<FPGPlayerSkillHandler>();
     SkillHandler->SetContext(this);
     if (auto* Profile = UPGProfileSubsystem::Get(this)) Profile->RestorePlayer(this);
+    // Spawned players can BeginPlay before possession; equip after startup abilities are granted.
+    if (!CombatComponent->GetCharacterCurrentEquippedWeapon())
+    {
+        FGameplayAbilitySpecHandle EquipHandle;
+        for (const auto& Spec : AbilitySystemComponent->GetActivatableAbilities())
+            if (Spec.GetDynamicSpecSourceTags().HasTagExact(PGGamePlayTags::InputTag_Equip_Weapon))
+            { EquipHandle = Spec.Handle; break; }
+        if (!EquipHandle.IsValid() || !AbilitySystemComponent->TryActivateAbility(EquipHandle))
+            UE_LOG(LogTemp, Warning, TEXT("Player startup weapon could not be equipped. Check StartUpData."));
+    }
 }
 
 void APGCharacterPlayer::OnHit(UPGStatComponent* Source, const UPGPawnCombatComponent* Combat)
@@ -322,6 +329,7 @@ void APGCharacterPlayer::Input_Zoom(const FInputActionValue& InputActionValue)
 
 void APGCharacterPlayer::Input_AbilityInputPressed(FGameplayTag InInputTag)
 {
+	if (InInputTag == PGGamePlayTags::InputTag_Equip_Weapon || InInputTag == PGGamePlayTags::InputTag_UnEquip_Weapon) return;
 	if (!IsGameplayInputAllowed()) { AbilitySystemComponent->ClearBufferedInput(); return; }
     if (const APGPlayerController* PC = Cast<APGPlayerController>(Controller))
         if (PC->IsPointerOverUI()) return;
@@ -352,19 +360,12 @@ void APGCharacterPlayer::InitUIComponents()
 {
 	if (PlayerHpWidgetComponent)
 	{
-		PlayerHpWidget = Cast<UPGUIPlayerHpBar>(PlayerHpWidgetComponent->GetWidget());
-	}
-	
-	UpdateHpComponent();	
-}
-
-void APGCharacterPlayer::UpdateHpComponent()
-{
-	if (nullptr == PlayerHpWidget)
-	{
-		return;
-	}
-	PlayerHpWidget->SetHpPercent(PlayerStatComponent->GetHealthRatio());
+        // Enforce after Blueprint defaults, including on respawn. Health lives in the HUD.
+        PlayerHpWidgetComponent->SetVisibility(false);
+        PlayerHpWidgetComponent->SetHiddenInGame(true);
+        PlayerHpWidgetComponent->SetWidget(nullptr);
+        PlayerHpWidgetComponent->SetComponentTickEnabled(false);
+    }
 }
 
 void APGCharacterPlayer::OnHealthChanged()
@@ -378,7 +379,6 @@ void APGCharacterPlayer::OnHealthChanged()
         FPGStatUpdateEventData Data(EPGStatType::Health, FMath::RoundToInt(PlayerStatComponent->GetCurrentHealth()), PlayerStatComponent->GetStat(EPGStatType::Health));
         Manager->SendMessage(EPGPlayerMessageType::StatUpdate, &Data);
     }
-    UpdateHpComponent();
 }
 void APGCharacterPlayer::ConfigureQuarterView()
 {
@@ -410,22 +410,40 @@ void APGCharacterPlayer::UpdateAim()
     if (!IsGameplayInputAllowed()) { AbilitySystemComponent->ClearBufferedInput(); return; }
     APGPlayerController* PC = Cast<APGPlayerController>(Controller);
     if (!PC || PC->IsPointerOverUI()) return;
+    // Attacks track the cursor; dodge/hit-reaction montages retain their authored facing.
+    if (bTrackAttackAim || !GetMesh()->GetAnimInstance() || !GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
+        FaceAimDirection();
+    else RefreshCursorAim();
+}
+
+void APGCharacterPlayer::RefreshCursorAim()
+{
+    APGPlayerController* PC = Cast<APGPlayerController>(Controller);
+    if (!bUseQuarterView || !PC || PC->IsPointerOverUI()) return;
     FVector Origin, Direction;
     if (PC->DeprojectMousePositionToWorld(Origin, Direction))
     {
         const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
         FHitResult Hit;
         FCollisionQueryParams Params(SCENE_QUERY_STAT(PGQuarterViewAim), false, this);
+        FVector AimPoint;
         if (GetWorld()->LineTraceSingleByChannel(Hit, Origin, Origin + Direction * Data->AimTraceDistance, Data->AimChannel, Params))
+            AimPoint = Hit.ImpactPoint;
+        else
         {
-            const FVector Aim = (Hit.ImpactPoint - GetActorLocation()).GetSafeNormal2D();
-            if (!Aim.IsNearlyZero()) LastAimDirection = Aim;
+            // Retain aiming over gaps/outside the floor instead of freezing the last direction.
+            if (FMath::IsNearlyZero(Direction.Z)) return;
+            const double Distance = (GetActorLocation().Z - Origin.Z) / Direction.Z;
+            if (Distance < 0.0) return;
+            AimPoint = Origin + Direction * Distance;
         }
+        const FVector Aim = (AimPoint - GetActorLocation()).GetSafeNormal2D();
+        if (!Aim.IsNearlyZero()) LastAimDirection = Aim;
     }
-    if (!GetMesh()->GetAnimInstance() || !GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) FaceAimDirection();
 }
 void APGCharacterPlayer::FaceAimDirection()
 {
+    RefreshCursorAim(); // Also refresh on buffered ability activation, not only the 60 Hz timer.
     if (bUseQuarterView && !LastAimDirection.IsNearlyZero() && !bDeathStarted) SetActorRotation(LastAimDirection.Rotation());
 }
 bool APGCharacterPlayer::CanStartSkill(bool bDodge) const

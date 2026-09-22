@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +7,6 @@
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGCharacterPlayer.generated.h"
 
-class UPGUIPlayerHpBar;
 class UPGWidgetComponentBase;
 struct FGameplayTag;
 class UPGPlayerCombatComponent;
@@ -47,9 +46,12 @@ public:
     bool IsGameplayInputAllowed() const;
     const UDataAsset_InputConfig* GetInputConfig() const { return InputConfigDataAsset; }
     void FaceAimDirection();
+    void SetAttackAimTracking(bool bEnabled) { bTrackAttackAim = bEnabled; }
     bool CanStartSkill(bool bDodge) const;
     void SetSkillCancelPolicy(float AttackFraction, float DodgeFraction);
 private:
+    bool bTrackAttackAim = false;
+    void RefreshCursorAim();
     bool bSkillWindowOpen = false;
     float AttackCancelFraction = 0.2f;
     float DodgeCancelFraction = 0.5f;
@@ -98,8 +100,6 @@ private:
 	UPGWidgetComponentBase* PlayerHpWidgetComponent;
 
 private:
-	UPROPERTY(Transient)
-	UPGUIPlayerHpBar* PlayerHpWidget;
 	
 	UPROPERTY(Transient)
 	bool bIsJump = false;
@@ -159,5 +159,4 @@ private:
 
 private:
 	void InitUIComponents();
-	void UpdateHpComponent();
 };

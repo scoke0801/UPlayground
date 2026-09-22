@@ -38,6 +38,7 @@ public class UPlayground : ModuleRules
             "ModularGameplay", 
             "AnimGraphRuntime", 
             "AIModule",
+            "NavigationSystem",
             
             "PGData",
             "PGAbilitySystem",

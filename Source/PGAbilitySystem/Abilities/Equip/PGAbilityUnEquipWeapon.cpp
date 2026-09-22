@@ -8,12 +8,20 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
 #include "PGActor/Controllers/PGPlayerController.h"
 #include "PGActor/Weapon/PGPlayerWeapon.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
+
+bool UPGAbilityUnEquipWeapon::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+    const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
+{
+    if (ActorInfo && Cast<APGCharacterPlayer>(ActorInfo->AvatarActor.Get())) return false;
+    return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
+}
 
 void UPGAbilityUnEquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                               const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,

@@ -97,6 +97,8 @@ void APGCharacterBase::PlayDeathDissolveVFX(UNiagaraSystem* ToPlayTemplate)
 						FVector::ZeroVector,FRotator::ZeroRotator, EAttachLocation::Type::KeepRelativeOffset,
 						true,true);
 
+    // Rendering may be unavailable (NullRHI/server), or the effect may fail to spawn.
+    if (!IsValid(NiagaraComp)) return;
 
 	UMaterialInstanceDynamic* DynamicMaterial = GetMesh()->CreateDynamicMaterialInstance(0, GetMesh()->GetMaterial(0));
 	if (!DynamicMaterial)

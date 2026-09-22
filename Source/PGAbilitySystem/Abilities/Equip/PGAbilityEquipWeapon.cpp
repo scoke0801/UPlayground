@@ -8,6 +8,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
 #include "PGActor/Controllers/PGPlayerController.h"
 #include "PGActor/Weapon/PGPlayerWeapon.h"
@@ -20,6 +21,13 @@ void UPGAbilityEquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Han
                                             const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+    if (Cast<APGCharacterPlayer>(GetAvatarActorFromActorInfo()))
+    {
+        OnEventReceived(FGameplayEventData());
+        EndAbilitySelf();
+        return;
+    }
 	
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this, NAME_None, MontageToPlay);
@@ -108,7 +116,8 @@ void UPGAbilityEquipWeapon::OnEventReceived(FGameplayEventData Payload)
 	{
 		return;
 	}
-	
+	if (CombatComponent->GetCharacterCurrentEquippedWeapon() == Weapon) return;
+
 	FAttachmentTransformRules Rule(LocationRule, RotationRule, ScaleRule, true);
 	if (Weapon->AttachToComponent(Mesh, Rule, AttachSocketName))
 	{
