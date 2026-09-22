@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -18,8 +18,6 @@ protected:
     virtual TSharedRef<SWidget> RebuildWidget() override;
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
-    UPROPERTY(EditDefaultsOnly, Category="PG|HUD")
-    TObjectPtr<class UTexture2D> PlateTexture;
     UPROPERTY(EditDefaultsOnly, Category="PG|HUD", meta=(ClampMin="0.05", ClampMax="1"))
     float RefreshInterval = .1f;
 private:
@@ -29,14 +27,12 @@ private:
     TSharedRef<SWidget> MakeSkill(int32 Index);
     FTimerHandle RefreshTimer;
     TWeakObjectPtr<class APGStageManager> Stage;
-    FSlateBrush PlateBrush;
     FProgressBarStyle ResourceStyle;
     FSlateBrush SkillBrushes[8];
     UPROPERTY(Transient) TArray<TObjectPtr<UTexture2D>> SkillTextures;
     int32 SkillIds[8] = {-1,-1,-1,-1,-1,-1,-1,-1};
     float Cooldowns[8] = {};
     FText SkillNames[8];
-    FText KeyLabels[8];
     FText Objective;
     FText StageTitle;
     FText HealthText;
@@ -44,4 +40,5 @@ private:
     float HealthRatio = 0.f;
     float RageRatio = 0.f;
     bool bCanAct = false;
+    bool bRogueHUD = false;
 };
