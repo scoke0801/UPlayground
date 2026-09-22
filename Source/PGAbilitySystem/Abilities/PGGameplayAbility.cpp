@@ -57,7 +57,7 @@ void UPGGameplayAbility::OnMontageCompleted()
 UAbilityTask_PlayMontageAndWait* UPGGameplayAbility::PlayMontageWait(UAnimMontage* MontageToPlay)
 {
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-		this, NAME_None, MontageToPlay);
+		this, NAME_None, MontageToPlay, GetCharacter() && GetCharacter()->GetPGAbilitySystemComponent() ? GetCharacter()->GetPGAbilitySystemComponent()->GetFrenzyRate() : 1.f);
 	if (nullptr == MontageTask)
 	{
 		EndAbilitySelf();

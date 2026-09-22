@@ -6,6 +6,8 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
@@ -39,13 +41,18 @@ void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Han
     Task->ReadyForActivation();
     if (!IsActive()) return;
     if (!CommitAbility(Handle, ActorInfo, ActivationInfo)) { EndAbilitySelf(); return; }
+    if (auto* Player = Cast<APGCharacterPlayer>(Character)) Player->SetAttackAimTracking(true);
     Handler->UseSkill(SlotIndex);
+    if (auto* ASC = Character->GetPGAbilitySystemComponent())
+        ASC->SetHeavySkill(SlotIndex >= EPGSkillSlot::SkillSlot_1 && SlotIndex <= EPGSkillSlot::SkillSlot_6);
 }
 
 void UPGAbilityPlayerSkill::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
+    if (auto* Player = Cast<APGCharacterPlayer>(GetCharacter())) Player->SetAttackAimTracking(false);
+	if (auto* Character = GetCharacter()) if (auto* ASC = Character->GetPGAbilitySystemComponent()) ASC->SetHeavySkill(false);
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 

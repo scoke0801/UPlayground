@@ -38,7 +38,7 @@ void APGLootDrop::InitializeItem(const FPGItemInstance& InItem)
     if (!Def) return;
     auto* Widget = CreateWidget<UPGUILootLabel>(GetWorld(), UPGUILootLabel::StaticClass());
     const auto Color = Def->Rarity == EPGItemRarity::Rare ? FLinearColor(1,.65f,.15f) : Def->Rarity == EPGItemRarity::Magic ? FLinearColor(.2f,.65f,1) : FLinearColor(.75f,.8f,.85f);
-    if (Widget) { Widget->Configure(Def->DisplayName, Color, Def->Icon.LoadSynchronous()); Label->SetWidget(Widget); }
+    if (Widget) { Widget->Configure(Def->DisplayName, Color, Def->Icon.LoadSynchronous(), Def->IconPanel); Label->SetWidget(Widget); }
     if (auto* Material = Catalog->BeamMaterial.LoadSynchronous())
     {
         const float Height = FMath::Max(0.f, Catalog->BeamHeights.FindRef(Def->Rarity));

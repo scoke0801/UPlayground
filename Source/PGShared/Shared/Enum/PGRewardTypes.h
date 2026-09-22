@@ -28,6 +28,19 @@ enum class EPGCombatPerk : uint8
     LifeSteal,
     Execution,
     Counter,
+    Bleed,
+    BleedPotency,
+    BleedSpread,
+    BleedBurst,
+    Shockwave,
+    ShockRadius,
+    ShockEcho,
+    ShockExecute,
+    Frenzy,
+    FrenzyDuration,
+    FrenzyLeech,
+    FrenzyGuard,
+    Cooldown,
     Max UMETA(Hidden)
 };
 

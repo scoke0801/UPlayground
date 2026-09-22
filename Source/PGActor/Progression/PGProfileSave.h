@@ -21,4 +21,9 @@ public:
     UPROPERTY(SaveGame) TMap<EPGStatType, int32> RewardBonuses;
     // Additive version-1 field: older saves deserialize with an empty map.
     UPROPERTY(SaveGame) TMap<EPGCombatPerk, int32> CombatPerks;
+    UPROPERTY(SaveGame) TMap<int32, int32> SelectedRewards;
+    UPROPERTY(SaveGame) TMap<int32, int32> StageRewardCounts;
+    UPROPERTY(SaveGame) int32 CompletedRuns = 0;
+    UPROPERTY(SaveGame) int32 BestStage = 0;
+    UPROPERTY(SaveGame) bool bRunEnded = false;
 };

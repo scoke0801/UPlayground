@@ -3,6 +3,9 @@
 
 #include "GameMode/PGGameModeStage.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
+#include "PGData/DataAsset/Progression/PGProgressionData.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Stage/PGStageDataRow.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
@@ -82,9 +85,13 @@ void APGGameModeStage::StartGame()
                 Stage = 1;
             }
         }
-        StageManager->StartStage(Stage);
+        auto* Profile = UPGProfileSubsystem::Get(this);
+        if (Profile && Profile->IsSaveBlocked()) return;
+        if (Profile && Profile->GetCatalog() && Profile->GetCatalog()->bRoguelikeRuns && !FParse::Param(FCommandLine::Get(), TEXT("PGRogueAutoStart")))
+            StageManager->PrepareRun(Stage);
+        else StageManager->StartStage(Stage);
 #if !UE_BUILD_SHIPPING
-        if (auto* Profile = UPGProfileSubsystem::Get(this)) if (Profile->RetryProbeRemaining >= 0)
+        if (Profile && Profile->RetryProbeRemaining >= 0)
         {
             FTimerHandle Timer;
             GetWorldTimerManager().SetTimer(Timer, this, &ThisClass::RunRetryProbe, 0.5f, false);

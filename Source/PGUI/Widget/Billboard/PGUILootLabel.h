@@ -7,11 +7,12 @@ class PGUI_API UPGUILootLabel : public UUserWidget
 {
     GENERATED_BODY()
 public:
-    void Configure(const FText& Name, FLinearColor Color, UTexture2D* Texture);
+    void Configure(const FText& Name, FLinearColor Color, UTexture2D* Texture, int32 Panel = -1);
 protected:
     virtual TSharedRef<SWidget> RebuildWidget() override;
 private:
     FText ItemName;
+    int32 IconPanel = -1;
     FLinearColor GradeColor = FLinearColor::White;
     UPROPERTY(Transient) TObjectPtr<UTexture2D> Icon;
 };

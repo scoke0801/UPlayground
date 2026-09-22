@@ -1,5 +1,11 @@
 # UPlayground 프로젝트 분석 문서
 
+## 2026-09-21 웨이브 스테이지
+
+- `APGStageManager`는 `FPGStageDataRow.Waves`를 순서대로 진행한다. 각 웨이브의 스폰과 적 처리가 모두 끝나면 다음 웨이브로 넘어가고, 마지막 웨이브 완료가 스테이지 클리어다.
+- 클리어 직후 보상 선택과 `BuildDuration` 카운트다운을 시작한다. 보상 선택 후에도 빌드 시간을 유지하고, 종료 시 다음 스테이지를 시작한다. 빌드 중 장비 창은 타이머를 멈추지 않는다.
+- 데이터 호환, 이관 도구, HUD 및 검증은 [웨이브 스테이지 문서](Docs/todo/StageWaves_Implementation_Report.md)를 따른다.
+
 ## 1. 프로젝트 개요
 
 **프로젝트명**: UPlayground  
@@ -552,3 +558,19 @@ LRU 캐시 관리
 
 
 - ?? ??? ??: RewardStatDataRow? Perk/PerkPercent/PlaystyleDescription?? ???????? ??? ????. ASC? ?? ??/??? ??? ?? ??? ????, ProfileSubsystem? ? ?? ?????????? ????. UI? ????? ?? ??? ???. ? ??? ??? ?? ????? ?? ?? ??? ???? ??.
+
+## 2026-09-21 HUD 디자인 개편
+
+- PGUIMainHUD는 금속 프레임을 제거하고 네이비·민트·라벤더의 Slate 벡터 패널과 스킬 카드로 변경했다. 하단 키 안내와 플레이어 발밑 HP 표시를 제거했으며 실제 입력과 GAS/웨이브 연결은 유지한다. 현재 리소스 및 검증은 Docs/todo/MainUI_Implementation_Report.md를 따른다.
+
+## 2026-09-21 스킬 아이콘 재제작
+
+- DT_Skill의 플레이어 모션과 원본 애니메이션 자세를 확인하고 ImageGen으로 아이콘 8종을 제작했다. /Game/UI/SkillIcons에 저장하고 SkillIconPath로 연결한다. 기본공격 3타는 아이콘을 공유한다. 궁극기 115는 몽타주가 비어 있어 임시 콘셉트 아이콘이다. 상세 근거 및 검증은 Docs/todo/SkillIcons_Implementation_Report.md를 따른다.
+
+## 2026-09-21 로그라이크 빌드 MVP
+
+- 기본 실행/에디터 맵은 `/Game/Maps/RogueArena`. 기존 스테이지 지형을 레벨 템플릿 API로 복제하고 카툰풍 석재·민트/라벤더 장식 머티리얼을 제작했다.
+- 시작 준비 → 일반 5구간(각 3웨이브) → 보스 1구간. 2·4구간은 강화 2회, 나머지 일반 구간은 1회로 보스 전 7회 선택한다. `bManualReady` 모드에서는 보상 선택 후 준비 완료로 진행한다. 기존 타이머 모드도 유지한다.
+- `EPGCombatPerk`와 ASC에 출혈·충격파·격분 계열을 연결했다. 전용 강화 12개와 공용 6개, 전설 3개를 데이터로 구성했다. 피해 확정은 GAS를 통하며 추가 피해는 적중 특성을 재귀 발동하지 않는다.
+- `DA_PGProgression.bRoguelikeRuns`가 런 전용 장비·강화 초기화와 별도 `PGProfile_Rogue_*` 저장을 선택한다. 최고 구간·누적 승리·해금은 유지한다. 중단 재개는 체크포인트 구간 시작부터다.
+- 범위, 제작 스크립트, 테스트와 밸런싱 한계는 [MVP 구현 보고서](Docs/todo/RoguelikeMVP_Implementation_Report.md)를 따른다.

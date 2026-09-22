@@ -2,6 +2,8 @@
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGActor/Progression/PGLootDrop.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
+#include "PGData/PGDataTableManager.h"
+#include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
 #include "EngineUtils.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -44,6 +46,17 @@ void UPGUIInventory::Refresh()
         Button(bConfirmRecovery ? TEXT("복구 확인: 유효한 백업이 없으면 빈 프로필로 시작합니다") : TEXT("원본을 보관하고 저장 복구"), [this, Profile](){
             if (bConfirmRecovery) { Profile->RecoverSave(); bConfirmRecovery = false; } else bConfirmRecovery = true;
         });
+    if (Catalog->bRoguelikeRuns)
+    {
+        Rows->AddSlot().AutoHeight().Padding(0,8)[SNew(STextBlock)
+            .Text(FText::FromString(FString::Printf(TEXT("런 기록 · 최고 구간 %d · 승리 %d회\n장비와 강화는 이번 도전에서만 유지됩니다"), Save->BestStage, Save->CompletedRuns)))
+            .ColorAndOpacity(FLinearColor(.6f,.85f,1.f))];
+        for (auto Chosen : Save->SelectedRewards)
+            if (const auto* Reward = PGData()->GetRowData<FPGRewardStatDataRow>(Chosen.Key))
+                Rows->AddSlot().AutoHeight().Padding(0,4)[SNew(STextBlock).AutoWrapText(true)
+                    .Text(FText::FromString(FString::Printf(TEXT("%s ×%d — %s"), *Reward->DisplayName.ToString(), Chosen.Value, *Reward->PlaystyleDescription.ToString())))
+                    .ColorAndOpacity(FLinearColor(.75f,.7f,1.f))];
+    }
     for (auto EquipmentSlot : {EPGEquipmentSlot::Weapon, EPGEquipmentSlot::Accessory})
         Button(EquipmentSlot == EPGEquipmentSlot::Weapon ? TEXT("무기 해제") : TEXT("장신구 해제"), [Profile, EquipmentSlot](){ Profile->Unequip(EquipmentSlot); });
     for (const auto& Item : Save->Items)
@@ -54,6 +67,7 @@ void UPGUIInventory::Refresh()
         const auto* Equipped = Current ? Save->Items.FindByPredicate([&](const auto& I){ return I.Guid == *Current; }) : nullptr;
         FString Label = FString::Printf(TEXT("[%s] %s %s"), Def->Rarity == EPGItemRarity::Rare ? TEXT("희귀") : Def->Rarity == EPGItemRarity::Magic ? TEXT("마법") : TEXT("일반"), *Def->DisplayName.ToString(), Current && *Current == Item.Guid ? TEXT("[장착 중]") : TEXT("[장착]"));
         TSet<EPGStatType> Keys; for (auto P : Item.Options) Keys.Add(P.Key); if (Equipped) for (auto P : Equipped->Options) Keys.Add(P.Key);
+        if (!Def->EffectDescription.IsEmpty()) Label += TEXT("\n") + Def->EffectDescription.ToString();
         for (auto Key : Keys)
         {
             const int32 Value = Item.Options.FindRef(Key); const int32 Delta = Value - (Equipped ? Equipped->Options.FindRef(Key) : 0);

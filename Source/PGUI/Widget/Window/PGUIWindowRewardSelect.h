@@ -13,6 +13,7 @@ class PGUI_API UPGUIWindowRewardSelect : public UPGUIWindow
 public:
     FPGSubmitReward OnSubmit;
     FSimpleDelegate OnRetry;
+    TWeakObjectPtr<class APGStageManager> StageOwner;
     void SetStatus(const FText& Text) { StatusText = Text; bIsStatus = true; }
     void SetRewardId(int StageId);
     void SetChoices(FGuid InToken, const TArray<FPGStageReward>& InChoices);
@@ -29,6 +30,7 @@ private:
     UPROPERTY(Transient)
     TArray<FPGStageReward> Choices;
     UPROPERTY(Transient) TArray<TObjectPtr<class UPGUIRewardCard>> Cards;
+    UPROPERTY(Transient) TObjectPtr<class UTextBlock> BuildCountdown;
     float PresentationTime = 0.f;
     float ConfirmTime = 0.f;
     bool bConfirming = false;

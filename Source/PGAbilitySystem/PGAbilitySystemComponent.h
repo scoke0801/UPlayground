@@ -23,6 +23,7 @@ class PGABILITYSYSTEM_API UPGAbilitySystemComponent : public UAbilitySystemCompo
 
 private:
 	friend class FPGInputBufferTest;
+    friend class FPGRoguelikeCombatTest;
     FDelegateHandle DelegateHandle;
     UPROPERTY()
     TObjectPtr<class UPGAtrributeSet> CombatAttributes;
@@ -30,6 +31,21 @@ private:
     FActiveGameplayEffectHandle ProfileEffect;
     bool bStatsInitialized = false;
     TMap<EPGCombatPerk, int32> CombatPerks;
+    UPROPERTY(Transient) TArray<TObjectPtr<UObject>> PreparedBuildEffects;
+    TWeakObjectPtr<UPGAbilitySystemComponent> BleedSource;
+    FTimerHandle BleedTimer;
+    float BleedDamage = 0.f;
+    int32 BleedRemaining = 0;
+    int32 BleedStacks = 0;
+    int32 FrenzyStacks = 0;
+    double FrenzyUntil = 0.;
+    double NextShockAt = 0.;
+    double NextFrenzyVFXAt = 0.;
+    bool bHeavySkill = false;
+    void TickBleed();
+    void AddBleed(UPGAbilitySystemComponent* Source, float Damage);
+    void Pulse(const FVector& Center, float Damage, float Radius, bool bSpread);
+    void PlayBuildVFX(const TSoftObjectPtr<class UNiagaraSystem>& Effect, const FVector& Location);
     double RecoveryExpiresAt = 0.;
     float RecoveryDamageBonus = 0.f;
     FGameplayTag BufferedInput;
@@ -43,6 +59,9 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 public:
+    float ReceiveProcDamage(UPGAbilitySystemComponent* Source, float Damage);
+    float GetFrenzyRate() const;
+    void SetHeavySkill(bool bHeavy) { bHeavySkill = bHeavy; }
     UPGAbilitySystemComponent();
     virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
     UPROPERTY(EditDefaultsOnly, Category="PG|Combat")

@@ -4,6 +4,7 @@
 #include "Engine/DataTable.h"
 #include "UObject/SoftObjectPath.h"
 #include "PGShared/Shared/Structure/PGInventoryTypes.h"
+#include "PGShared/Shared/Enum/PGRewardTypes.h"
 #include "PGItemDataRow.generated.h"
 
 USTRUCT(BlueprintType)
@@ -17,10 +18,13 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FText DisplayName;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> Icon;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 IconPanel = -1;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) EPGEquipmentSlot Slot = EPGEquipmentSlot::Weapon;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) EPGItemRarity Rarity = EPGItemRarity::Common;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TMap<EPGStatType, int32> BaseOptions;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0")) int32 RollBonus = 0;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0")) float DropWeight = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TMap<EPGCombatPerk, int32> CombatPerks;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) FText EffectDescription;
 
 };

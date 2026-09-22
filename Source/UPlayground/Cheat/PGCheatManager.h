@@ -19,6 +19,7 @@ public:
     UFUNCTION(Exec) void PGStageStatus();
     UFUNCTION(Exec) void PGStartStage(int32 StageId = 1);
     UFUNCTION(Exec) void PGCombatStats();
+    UFUNCTION(Exec) void PGCombatControlsProbe();
     UFUNCTION(Exec) void PGProfileStatus();
     UFUNCTION(Exec) void PGDropItem(int32 ItemId = 3401, int32 Seed = 1234);
     UFUNCTION(Exec) void PGSaveFailure(bool bFail = true);

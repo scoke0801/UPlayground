@@ -20,6 +20,7 @@ class PGACTOR_API APGPlayerController : public APlayerController, public IGeneri
 	GENERATED_BODY()
 public:
     void ToggleInventory();
+    void CloseInventory();
     void PickupNearest();
     // Development capture after streaming and HUD data have settled.
     UFUNCTION(Exec)

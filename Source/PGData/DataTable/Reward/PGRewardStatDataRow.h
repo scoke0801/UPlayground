@@ -37,4 +37,11 @@ public:
     FText PlaystyleDescription;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Reward", meta=(ClampMin="-1", ClampMax="2"))
     int32 IconPanel = -1;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Roguelike")
+    EPGCombatPerk RequiredPerk = EPGCombatPerk::None;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Roguelike")
+    FName BuildFamily;
+    // Zero preserves legacy repeatable rewards.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Roguelike", meta=(ClampMin="0"))
+    int32 MaxSelections = 0;
 };

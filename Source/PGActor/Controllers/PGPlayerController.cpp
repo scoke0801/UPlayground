@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PGPlayerController.h"
+#include "PGActor/Manager/PGStageManager.h"
 #include "PGUI/Widget/Window/PGUIInventory.h"
 #include "PGUI/Widget/HUD/PGUIMainHUD.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
@@ -229,13 +230,19 @@ bool APGPlayerController::IsPointerOverUI() const
     }
     return false;
 }
+void APGPlayerController::CloseInventory()
+{
+    if (!InventoryWidget) return;
+    InventoryWidget->RemoveFromParent(); InventoryWidget = nullptr;
+    SetPause(false);
+    SetIgnoreMoveInput(false); FlushPressedKeys();
+}
+
 void APGPlayerController::ToggleInventory()
 {
     if (InventoryWidget)
     {
-        InventoryWidget->RemoveFromParent(); InventoryWidget = nullptr;
-        SetPause(false);
-        SetIgnoreMoveInput(false); FlushPressedKeys(); return;
+        CloseInventory(); return;
     }
     auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
     if (!LocalCharacter || !LocalCharacter->IsGameplayInputAllowed()) return;
@@ -247,7 +254,10 @@ void APGPlayerController::ToggleInventory()
     InventoryWidget->SetAlignmentInViewport(FVector2D(.5f,.5f));
     InventoryWidget->AddToViewport(90);
     SetIgnoreMoveInput(true); FlushPressedKeys();
-    SetPause(true);
+    bool bBuildPhase = false;
+    for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It)
+          if (It->GetCurrentStageState() == EPGStageState::BuildPhase || It->GetCurrentStageState() == EPGStageState::RunPreparation) { bBuildPhase = true; break; }
+    SetPause(!bBuildPhase);
 }
 void APGPlayerController::PickupNearest()
 {

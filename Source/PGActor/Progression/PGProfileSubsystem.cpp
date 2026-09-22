@@ -25,7 +25,7 @@ FString UPGProfileSubsystem::SlotName(int32 Index) const
     const UWorld* World = GetWorld();
     const FString Prefix = World && World->WorldType == EWorldType::PIE
         ? FString::Printf(TEXT("PGProfile_PIE%d_"), World->GetPackage()->GetPIEInstanceID()) : TEXT("PGProfile_");
-    return Prefix + FString::FromInt(Index);
+    return Prefix + (Catalog && Catalog->bRoguelikeRuns ? TEXT("Rogue_") : TEXT("")) + FString::FromInt(Index);
 }
 void UPGProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -52,6 +52,8 @@ void UPGProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
             if (Row) if (UObject* Asset = Row->MontagePath.TryLoad()) PreparedSkillAssets.AddUnique(Asset);
         }
     LoadProfile();
+    if (!bReadOnly && Catalog->bRoguelikeRuns && (ActiveSlot < 0 || Profile->bRunEnded))
+        if (!BeginNewRun()) bReadOnly = true;
 }
 void UPGProfileSubsystem::LoadProfile()
 {
@@ -141,6 +143,9 @@ bool UPGProfileSubsystem::Validate(const UPGProfileSave* Candidate) const
     for (auto Pair : Candidate->RewardBonuses) if (Pair.Key <= EPGStatType::None || Pair.Key >= EPGStatType::Max || Pair.Value < 0 || Pair.Value > 1000000) return false;
     for (auto Pair : Candidate->CombatPerks)
         if (Pair.Key <= EPGCombatPerk::None || Pair.Key >= EPGCombatPerk::Max || Pair.Value < 0 || Pair.Value > 100) return false;
+    if (Candidate->CompletedRuns < 0 || Candidate->BestStage < 0) return false;
+    for (auto Pair : Candidate->SelectedRewards) if (Pair.Key <= 0 || Pair.Value < 1 || Pair.Value > 100) return false;
+    for (auto Pair : Candidate->StageRewardCounts) if (Pair.Key < 1 || Pair.Value < 1 || Pair.Value > 3) return false;
     return true;
 }
 bool UPGProfileSubsystem::Commit(UPGProfileSave* Candidate)
@@ -182,38 +187,77 @@ bool UPGProfileSubsystem::Discard(FGuid Guid)
 }
 bool UPGProfileSubsystem::SelectBuild(FName Id)
 {
+    if (Catalog && Catalog->bRoguelikeRuns && (Profile->Checkpoint > 1 || !Profile->SelectedRewards.IsEmpty()))
+    { Status = TEXT("검술은 도전 시작 전에 선택할 수 있습니다"); return false; }
     const auto* Build = Catalog ? Catalog->Builds.FindByPredicate([&](const auto& B){ return B.Id == Id; }) : nullptr;
     if (!Build || Profile->ClearedStages < Build->RequiredClears) { Status = TEXT("빌드 해금 조건을 만족하지 못했습니다"); return false; }
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this); Next->BuildId = Id; return Commit(Next);
 }
-bool UPGProfileSubsystem::CommitReward(FGuid Token, int32 NextStage, EPGStatType Stat, int32 Amount, EPGCombatPerk Perk, int32 PerkPercent)
+bool UPGProfileSubsystem::CommitReward(FGuid Token, int32 NextStage, EPGStatType Stat, int32 Amount, EPGCombatPerk Perk, int32 PerkPercent, int32 RewardId, bool bAdvance)
 {
-    if (!Token.IsValid() || Token == Profile->LastReward || NextStage <= 1 || Amount < 0) return false;
+    if (!Token.IsValid() || Token == Profile->LastReward || NextStage <= 1 || Amount < 0 || Amount > 100000 || Profile->StageRewardCounts.FindRef(NextStage - 1) >= 3) return false;
     if (PerkPercent < 0 || PerkPercent > 100 || Perk >= EPGCombatPerk::Max || (Perk == EPGCombatPerk::None && PerkPercent != 0)) return false;
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
     if (Perk != EPGCombatPerk::None) Next->CombatPerks.FindOrAdd(Perk) = FMath::Min(100, Next->CombatPerks.FindRef(Perk) + PerkPercent);
-    Next->LastReward = Token; Next->Checkpoint = NextStage; ++Next->ClearedStages;
+    Next->LastReward = Token;
+    ++Next->StageRewardCounts.FindOrAdd(NextStage - 1);
+    if (bAdvance) { Next->Checkpoint = NextStage; ++Next->ClearedStages; }
+    if (RewardId > 0) ++Next->SelectedRewards.FindOrAdd(RewardId);
     if (Amount > 0) Next->RewardBonuses.FindOrAdd(Stat) += Amount;
     return Commit(Next);
 }
 bool UPGProfileSubsystem::BeginNewRun()
 {
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
-    Next->Checkpoint = 1; Next->RewardBonuses.Reset(); Next->CombatPerks.Reset(); Next->LastReward.Invalidate(); return Commit(Next);
+    Next->Checkpoint = 1; Next->RewardBonuses.Reset(); Next->CombatPerks.Reset(); Next->LastReward.Invalidate();
+    Next->SelectedRewards.Reset(); Next->bRunEnded = false;
+    Next->StageRewardCounts.Reset();
+    if (Catalog && Catalog->bRoguelikeRuns)
+    {
+        Next->Items.Reset(); Next->Equipment.Reset();
+        for (int32 Id : Catalog->StartingItems)
+            if (const auto* Def = Catalog->FindItem(Id))
+            {
+                FPGItemInstance Item; Item.Guid = FGuid::NewGuid(); Item.DefinitionId = Id; Item.Options = Def->BaseOptions;
+                Next->Items.Add(Item); Next->Equipment.Add(Def->Slot, Item.Guid);
+            }
+    }
+    return Commit(Next);
+}
+bool UPGProfileSubsystem::EndRun(bool bVictory, int32 Stage)
+{
+    if (!Catalog || !Catalog->bRoguelikeRuns || Profile->bRunEnded) return true;
+    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
+    Next->bRunEnded = true; Next->BestStage = FMath::Max(Next->BestStage, Stage);
+    if (bVictory) ++Next->CompletedRuns;
+    return Commit(Next);
+}
+int32 UPGProfileSubsystem::GetEffectivePerk(EPGCombatPerk Perk) const
+{
+    int32 Value = Profile ? Profile->CombatPerks.FindRef(Perk) : 0;
+    if (Profile && Catalog) for (const auto& Item : Profile->Items)
+        if (const auto* Def = Catalog->FindItem(Item.DefinitionId))
+            if (Profile->Equipment.FindRef(Def->Slot) == Item.Guid) Value += Def->CombatPerks.FindRef(Perk);
+    return FMath::Clamp(Value,0,100);
 }
 bool UPGProfileSubsystem::RestorePlayer(APGCharacterPlayer* Player)
 {
     if (!Catalog || !Player || !Player->GetSkillHandler() || !Player->GetPGAbilitySystemComponent()) return false;
     auto* ASC = Player->GetPGAbilitySystemComponent();
     TMap<EPGStatType, int32> Bonuses = Profile->RewardBonuses;
+    TMap<EPGCombatPerk, int32> Perks = Profile->CombatPerks;
     for (const auto& Item : Profile->Items)
     {
         const auto* Def = Catalog->FindItem(Item.DefinitionId);
         const auto* Equipped = Def ? Profile->Equipment.Find(Def->Slot) : nullptr;
-        if (Equipped && *Equipped == Item.Guid) for (auto Pair : Item.Options) Bonuses.FindOrAdd(Pair.Key) += Pair.Value;
+        if (Equipped && *Equipped == Item.Guid)
+        {
+            for (auto Pair : Item.Options) Bonuses.FindOrAdd(Pair.Key) += Pair.Value;
+            for (auto Pair : Def->CombatPerks) Perks.FindOrAdd(Pair.Key) += Pair.Value;
+        }
     }
     ASC->SetProfileBonuses(Bonuses);
-    ASC->SetCombatPerks(Profile->CombatPerks);
+    ASC->SetCombatPerks(Perks);
     const auto* Build = Catalog->Builds.FindByPredicate([&](const auto& B){ return B.Id == Profile->BuildId && B.RequiredClears <= Profile->ClearedStages; });
     if (!Build) { Build = &Catalog->Builds[0]; Status = TEXT("이전 빌드 ID를 찾지 못해 기본 빌드를 적용했습니다"); }
     auto* Handler = Player->GetSkillHandler();
@@ -229,7 +273,7 @@ bool UPGProfileSubsystem::RestorePlayer(APGCharacterPlayer* Player)
         }
         Skill = Handler->GetSkillData(Entry.Slot);
         const auto* Row = GetGameInstance()->GetSubsystem<UPGDataTableManager>()->GetRowData<FPGSkillDataRow>(Entry.SkillId);
-        if (Skill && Row) Skill->CoolTime = (Entry.CooldownSeconds >= 0.f ? Entry.CooldownSeconds : Row->SkillCoolTime) * Entry.CooldownScale;
+        if (Skill && Row) Skill->CoolTime = (Entry.CooldownSeconds >= 0.f ? Entry.CooldownSeconds : Row->SkillCoolTime) * Entry.CooldownScale * (1.f - FMath::Min(50, Perks.FindRef(EPGCombatPerk::Cooldown)) * .01f);
     }
     TArray<EPGSkillSlot> Remove;
     for (auto Pair : Handler->GetAllSkillData()) if (!Build->Skills.ContainsByPredicate([&](const auto& E){ return E.Slot == Pair.Key; })) Remove.Add(Pair.Key);

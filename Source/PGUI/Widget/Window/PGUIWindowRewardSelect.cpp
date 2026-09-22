@@ -1,4 +1,5 @@
 #include "PGUIWindowRewardSelect.h"
+#include "PGActor/Manager/PGStageManager.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/VerticalBox.h"
@@ -38,11 +39,17 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::RebuildWidget()
         Hint->SetText(NSLOCTEXT("PG", "BoonHint", "선택한 효과는 이번 런 동안 누적됩니다 · 정예의 푸른 빈틈을 노리세요"));
         Hint->SetJustification(ETextJustify::Center); Hint->SetColorAndOpacity(FLinearColor(.6f,.65f,.72f));
         auto HintFont = Hint->GetFont(); HintFont.Size = 15; Hint->SetFont(HintFont); List->AddChildToVerticalBox(Hint)->SetPadding(FMargin(0,12));
+        if (!bIsStatus)
+        {
+            BuildCountdown = WidgetTree->ConstructWidget<UTextBlock>();
+            BuildCountdown->SetJustification(ETextJustify::Center);
+            List->AddChild(BuildCountdown);
+        }
         auto* Row = WidgetTree->ConstructWidget<UHorizontalBox>(); List->AddChild(Row);
         const int32 Count = bIsStatus ? 1 : FMath::Max(1, Choices.Num());
         for (int32 Index = 0; Index < Count; ++Index)
         {
-            FText Name = bIsStatus ? NSLOCTEXT("PG", "RestartRun", "체크포인트에서 다시 시작") : NSLOCTEXT("PG", "ContinueStage", "다음 구간으로");
+            FText Name = bIsStatus ? NSLOCTEXT("PG", "RestartRunRogue", "다시 도전하기") : NSLOCTEXT("PG", "ContinueBuild", "빌드 준비하기");
             FText Desc = NSLOCTEXT("PG", "ContinueHint", "준비되면 선택하세요");
             EPGRewardGrade Grade = EPGRewardGrade::Normal;
             UTexture2D* Icon = nullptr;
@@ -58,6 +65,8 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::RebuildWidget()
                         Desc = FText::Format(NSLOCTEXT("PG", "RewardDelta", "{0} → {1}\n+{2}"), FText::AsNumber(Before), FText::AsNumber(Before + Reward->Amount), FText::AsNumber(Reward->Amount));
                     }
                     else Desc = FText::Format(NSLOCTEXT("PG", "RewardAmount", "+{0}"), FText::AsNumber(Reward->Amount));
+                    if (!Reward->PlaystyleDescription.IsEmpty() && Reward->Perk == EPGCombatPerk::None)
+                        Desc = FText::Format(NSLOCTEXT("PG", "RewardExplained", "{0}\n\n{1}"), Reward->PlaystyleDescription, Desc);
                     if (Reward->Perk != EPGCombatPerk::None)
                     {
                         const auto* Profile = UPGProfileSubsystem::Get(this);
@@ -78,6 +87,10 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::RebuildWidget()
 void UPGUIWindowRewardSelect::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
     Super::NativeTick(Geometry, DeltaTime);
+    if (BuildCountdown && StageOwner.IsValid())
+        BuildCountdown->SetText(StageOwner->IsManualReady() ? NSLOCTEXT("PG", "ManualBuild", "강화 선택 → 장비 정비 → 우측 준비 완료") :
+            FText::Format(NSLOCTEXT("PG", "BuildCountdown", "빌드 시간 {0}초 · 시간 종료 시 첫 번째 보상 자동 선택"),
+            FText::AsNumber(FMath::CeilToInt(StageOwner->GetBuildTimeRemaining()))));
     PresentationTime += DeltaTime;
     if (bConfirming)
     {

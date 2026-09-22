@@ -2,6 +2,17 @@
 
 
 #include "Cheat/PGCheatManager.h"
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "NavigationSystem.h"
+#include "NavigationPath.h"
+#include "NavMesh/RecastNavMesh.h"
+#include "NavMesh/NavMeshBoundsVolume.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Components/Combat/PGPlayerCombatComponent.h"
+#include "PGActor/Weapon/PGWeaponBase.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGActor/Progression/PGLootDrop.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
@@ -79,7 +90,58 @@ void UPGCheatManager::PGStageStatus()
 {
 #if !UE_BUILD_SHIPPING
     for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It)
-        UE_LOG(LogTemp, Display, TEXT("PG Stage=%d State=%d Remaining=%d Spawned=%d"), It->GetCurrentStageId(), static_cast<int32>(It->GetCurrentStageState()), It->GetRemainingMonsters(), It->GetSpawnedMonsters());
+        UE_LOG(LogTemp, Display, TEXT("PG Stage=%d State=%d Wave=%d/%d Remaining=%d Spawned=%d BuildRemaining=%.1f"), It->GetCurrentStageId(), static_cast<int32>(It->GetCurrentStageState()), It->GetCurrentWaveNumber(), It->GetWaveCount(), It->GetRemainingMonsters(), It->GetSpawnedMonsters(), It->GetBuildTimeRemaining());
+#endif
+}
+
+void UPGCheatManager::PGCombatControlsProbe()
+{
+#if !UE_BUILD_SHIPPING
+    FString Profile;
+    if (!FParse::Value(FCommandLine::Get(), TEXT("PGTestProfile="), Profile)) return;
+    for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It) It->StartStage(1);
+    for (const float Delay : {2.f, 8.f, 16.f})
+    {
+        FTimerHandle Timer;
+        GetWorld()->GetTimerManager().SetTimer(Timer, FTimerDelegate::CreateWeakLambda(this, [this, Delay]()
+        {
+            auto* Player = Cast<APGCharacterPlayer>(GetOuterAPlayerController()->GetPawn());
+            if (!Player) return;
+            auto* ASC = Player->GetPGAbilitySystemComponent();
+            ASC->SetNumericAttributeBase(UPGAtrributeSet::GetMaxHealthAttribute(), 1000000.f);
+            ASC->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(), 1000000.f);
+            auto* Weapon = Player->GetPlayerCombatComponent()->GetCharacterCurrentEquippedWeapon();
+            UE_LOG(LogTemp, Display, TEXT("PGControls t=%.0f player=%s weapon=%s socket=%s unequip=%d"), Delay,
+                *Player->GetActorLocation().ToString(), *GetNameSafe(Weapon),
+                Weapon ? *Weapon->GetRootComponent()->GetAttachSocketName().ToString() : TEXT("None"),
+                ASC->TryActivateAbilityByTag(PGGamePlayTags::Player_Ability_UnEquip_Weapon));
+            auto* Nav = UNavigationSystemV1::GetCurrent(GetWorld());
+            FNavLocation Projected;
+            UE_LOG(LogTemp, Display, TEXT("PGControls nav=%d building=%d playerProjection=%d"), !!Nav,
+                UNavigationSystemV1::IsNavigationBeingBuilt(this),
+                Nav && Nav->ProjectPointToNavigation(Player->GetActorLocation(), Projected, FVector(500.f)));
+            for (TActorIterator<ARecastNavMesh> It(GetWorld()); It; ++It)
+                UE_LOG(LogTemp, Display, TEXT("PGControls recast=%s generation=%d tiles=%d bounds=%s"), *It->GetName(),
+                    static_cast<int32>(It->GetRuntimeGenerationMode()), It->GetNavMeshTilesCount(), *It->GetNavMeshBounds().ToString());
+            for (TActorIterator<ANavMeshBoundsVolume> It(GetWorld()); It; ++It)
+                UE_LOG(LogTemp, Display, TEXT("PGControls navVolume=%s bounds=%s"), *It->GetName(), *It->GetComponentsBoundingBox(true).ToString());
+            for (const auto& Spec : ASC->GetActivatableAbilities())
+                UE_LOG(LogTemp, Display, TEXT("PGControls ability=%s tags=%s"), *GetNameSafe(Spec.Ability), *Spec.Ability->GetAssetTags().ToString());
+            for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It)
+            {
+                auto* AI = Cast<AAIController>(It->GetController());
+                auto* BB = AI ? AI->GetBlackboardComponent() : nullptr;
+                auto* Path = Nav ? UNavigationSystemV1::FindPathToActorSynchronously(this, It->GetActorLocation(), Player, 50.f, AI) : nullptr;
+                UE_LOG(LogTemp, Display, TEXT("PGControls enemy=%s pos=%s speed=%.0f max=%.0f mode=%d move=%d target=%s skill=%d dist=%.0f nav=%d path=%d partial=%d"),
+                    *It->GetName(), *It->GetActorLocation().ToString(), It->GetVelocity().Size2D(), It->GetCharacterMovement()->MaxWalkSpeed,
+                    static_cast<int32>(It->GetCharacterMovement()->MovementMode), AI ? static_cast<int32>(AI->GetMoveStatus()) : -1,
+                    BB ? *GetNameSafe(BB->GetValueAsObject(TEXT("TargetActor"))) : TEXT("None"), BB ? BB->GetValueAsInt(TEXT("SelectedSkillID")) : 0,
+                    FVector::Dist2D(It->GetActorLocation(), Player->GetActorLocation()), Nav && Nav->GetDefaultNavDataInstance(),
+                    Path && Path->IsValid(), Path && Path->IsPartial());
+            }
+            if (Delay >= 16.f && FParse::Param(FCommandLine::Get(), TEXT("PGControlsExit"))) FPlatformMisc::RequestExit(false);
+        }), Delay, false);
+    }
 #endif
 }
 void UPGCheatManager::PGStartStage(int32 StageId)
@@ -156,7 +218,7 @@ void UPGCheatManager::PGFarmingSmoke()
         for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It)
             It->GetPGAbilitySystemComponent()->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(), 0.f);
         for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It)
-            if (It->CurrentStageState == EPGStageState::RewardPhase) bReward = It->CommitReward(It->RewardToken, It->OfferedRewards.IsEmpty() ? INDEX_NONE : 0);
+            if (It->CurrentStageState == EPGStageState::BuildPhase) bReward = It->CommitReward(It->RewardToken, It->OfferedRewards.IsEmpty() ? INDEX_NONE : 0);
         float BaseCooldown = 0.f, GrownCooldown = 0.f;
         bool bGrowth = false;
         if (auto* Character = Cast<APGCharacterBase>(Pawn))
@@ -234,7 +296,7 @@ void UPGCheatManager::TickCombatCycleProbe()
     APGStageManager* Stage = nullptr;
     for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It) { Stage = *It; break; }
     auto* Character = Cast<APGCharacterBase>(GetOuterAPlayerController()->GetPawn());
-    if (!Stage || !Character || ++CycleProbeTicks > 100)
+    if (!Stage || !Character || ++CycleProbeTicks > 600)
     {
         UE_LOG(LogTemp, Error, TEXT("PGCombatCycle TIMEOUT rewards=%d"), CycleProbeRewards);
         GetWorld()->GetTimerManager().ClearTimer(CombatCycleTimer); return;
@@ -244,14 +306,14 @@ void UPGCheatManager::TickCombatCycleProbe()
     ASC->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(), 1000000);
     if (Stage->CurrentStageState == EPGStageState::InProgress)
     {
-        Stage->StageStartTime = GetWorld()->GetTimeSeconds() - 100;
+        Stage->WaveStartTime = GetWorld()->GetTimeSeconds() - 100;
         if (++CycleProbeWait < 6) return;
         const auto Enemies = Stage->SpawnedEnemies;
         for (auto* Enemy : Enemies)
             if (IsValid(Enemy)) { Enemy->GetPGAbilitySystemComponent()->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(), 0); static_cast<APGCharacterBase*>(Enemy)->OnHealthChanged(); }
         CycleProbeWait = 0;
     }
-    else if (Stage->CurrentStageState == EPGStageState::RewardPhase)
+    else if (Stage->CurrentStageState == EPGStageState::BuildPhase && !Stage->bRewardCommitted)
     {
         if (++CycleProbeWait == 1) { GetOuterAPlayerController()->ConsoleCommand(TEXT("Shot SHOWUI")); PGDropItem(3401, 14); return; }
         if (CycleProbeWait < 3) return;
@@ -265,16 +327,17 @@ void UPGCheatManager::TickCombatCycleProbe()
         UPGUIWindowRewardSelect* ActiveWindow = nullptr;
         for (auto* Widget : Windows)
             if (auto* Window = Cast<UPGUIWindowRewardSelect>(Widget); Window && Window->IsInViewport() && Window->Token == Stage->RewardToken) { ActiveWindow = Window; break; }
-        if (ActiveWindow) ActiveWindow->BeginChoice(Choice);
+        if (ActiveWindow && !FParse::Param(FCommandLine::Get(), TEXT("NullRHI"))) ActiveWindow->BeginChoice(Choice);
         else if (!Stage->CommitReward(Stage->RewardToken, Stage->OfferedRewards.IsEmpty() ? INDEX_NONE : Choice)) UE_LOG(LogTemp, Error, TEXT("PGCombatCycle reward rejected"));
         ++CycleProbeRewards; CycleProbeWait=0;
     }
-    else if (Stage->CurrentStageState == EPGStageState::Completed && CycleProbeBeforeDamage > 0)
+    else if (Stage->CurrentStageState == EPGStageState::BuildPhase && Stage->bRewardCommitted && CycleProbeBeforeDamage > 0)
     {
         const float After = PGMeasureCycleDamage(GetWorld(), ASC);
         UE_LOG(LogTemp, Display, TEXT("PGCombatCycle damage %.2f -> %.2f growth=%d"),CycleProbeBeforeDamage,After,After > CycleProbeBeforeDamage);
         UE_LOG(LogTemp, Display, TEXT("PGCombatCycle perks leech=%d execution=%d counter=%d"), ASC->GetPerkPercent(EPGCombatPerk::LifeSteal), ASC->GetPerkPercent(EPGCombatPerk::Execution), ASC->GetPerkPercent(EPGCombatPerk::Counter));
-        CycleProbeBeforeDamage=0;
+          CycleProbeBeforeDamage=0;
+          if (Stage->IsManualReady()) Stage->ReadyForNextStage();
     }
     else if (Stage->CurrentStageState == EPGStageState::Finished)
     {
