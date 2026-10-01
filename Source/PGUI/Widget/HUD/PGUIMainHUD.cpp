@@ -1,5 +1,7 @@
 ﻿#include "PGUIMainHUD.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
+#include "PGData/DataTable/Skill/PGEnemyDataRow.h"
 #include "PGActor/Controllers/PGPlayerController.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGActor/Manager/PGStageManager.h"
@@ -119,6 +121,18 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
         Skills->AddSlot().AutoWidth().Padding(Index == 7 ? 14.f : Index == 0 ? 0.f : 6.f,0,0,0)[MakeSkill(Index)];
     return SNew(SSafeZone).Visibility(EVisibility::SelfHitTestInvisible)
     [SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
+        + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,28)
+        [SNew(SBox).WidthOverride(450)
+            .Visibility_Lambda([this](){return bShowBoss ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
+            [SNew(SBorder).BorderImage(&PGMainHUD::Panel).Padding(18)
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+                    [SNew(STextBlock).Text_Lambda([this](){return BossTitle;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(PGMainHUD::Text)]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,8)
+                    [SNew(SBox).HeightOverride(9)[SNew(SProgressBar).Style(&ResourceStyle).Percent_Lambda([this](){return BossHealth;})
+                        .FillColorAndOpacity(FLinearColor(.85f,.2f,.35f))]]
+                    + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+                    [SNew(STextBlock).Text_Lambda([this](){return BossStatus;}).ColorAndOpacity(PGMainHUD::Lavender).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))]]]]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(32,28)
         [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).BorderImage(&PGMainHUD::Panel).Padding(FMargin(20,16))
             [SNew(SVerticalBox)
@@ -242,4 +256,20 @@ void UPGUIMainHUD::Refresh()
         default: break;
     }
     Objective=FText::FromString(Goal);
+    if (!Boss.IsValid() && Stage.IsValid() && Stage->GetCurrentStageId() == 6)
+        for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It)
+            if (const auto* Row = PGData()->GetRowData<FPGEnemyDataRow>(It->GetCharacterTID()); Row && Row->Role == EPGEnemyRole::Boss)
+            { Boss = *It; BossTitle = FText::FromName(Row->EnemyName); break; }
+    bShowBoss = Boss.IsValid() && Stage.IsValid() && Stage->GetCurrentStageId() == 6;
+    if (bShowBoss)
+    {
+        const auto* BossASC = Boss->GetPGAbilitySystemComponent();
+        BossHealth = BossASC->GetHealth() / FMath::Max(1.f, BossASC->GetCombatStat(EPGStatType::Health));
+        FString State = Boss->bPatternRecovering ? TEXT("빈틈 · 반격 기회") : Boss->bPatternActive ? TEXT("위험 · 공격 예고") : TEXT("다음 공격 준비");
+        if (Boss->ActivePatternID > 0 && !Boss->bPatternRecovering)
+            if (const auto* Pattern = PGData()->GetRowData<FPGSkillDataRow>(Boss->ActivePatternID)) State = Pattern->Desc;
+        if (GetWorld()->GetTimeSeconds() < Boss->PhaseTransitionUntil) State = TEXT("황혼 각성 · 2페이즈");
+        if (BossHealth <= 0) State = TEXT("황혼의 기사 격파");
+        BossStatus = FText::FromString(FString::Printf(TEXT("%d페이즈  ·  %s"), Boss->BossPhase, *State));
+    }
 }

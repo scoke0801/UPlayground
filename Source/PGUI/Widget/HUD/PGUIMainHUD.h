@@ -27,6 +27,11 @@ private:
     TSharedRef<SWidget> MakeSkill(int32 Index);
     FTimerHandle RefreshTimer;
     TWeakObjectPtr<class APGStageManager> Stage;
+    TWeakObjectPtr<class APGCharacterEnemy> Boss;
+    float BossHealth = 0.f;
+    bool bShowBoss = false;
+    FText BossTitle;
+    FText BossStatus;
     FProgressBarStyle ResourceStyle;
     FSlateBrush SkillBrushes[8];
     UPROPERTY(Transient) TArray<TObjectPtr<UTexture2D>> SkillTextures;
