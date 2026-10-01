@@ -99,6 +99,8 @@ void UPGCheatManager::PGCombatControlsProbe()
 #if !UE_BUILD_SHIPPING
     FString Profile;
     if (!FParse::Value(FCommandLine::Get(), TEXT("PGTestProfile="), Profile)) return;
+    auto* ProfileSystem = UPGProfileSubsystem::Get(this);
+    if (!ProfileSystem || !ProfileSystem->MarkRunAssisted()) return;
     for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It) It->StartStage(1);
     for (const float Delay : {2.f, 8.f, 16.f})
     {
@@ -139,6 +141,7 @@ void UPGCheatManager::PGCombatControlsProbe()
                     FVector::Dist2D(It->GetActorLocation(), Player->GetActorLocation()), Nav && Nav->GetDefaultNavDataInstance(),
                     Path && Path->IsValid(), Path && Path->IsPartial());
             }
+            if (Delay == 8.f && FParse::Param(FCommandLine::Get(), TEXT("PGCaptureProbe"))) GetOuterAPlayerController()->ConsoleCommand(TEXT("Shot SHOWUI"));
             if (Delay >= 16.f && FParse::Param(FCommandLine::Get(), TEXT("PGControlsExit"))) FPlatformMisc::RequestExit(false);
         }), Delay, false);
     }
@@ -198,6 +201,8 @@ void UPGCheatManager::PGFarmingSmoke()
     // Explicit isolated profile is mandatory: this automation must not change the player's save.
     FString ProfileName;
     if (!FParse::Value(FCommandLine::Get(), TEXT("PGTestProfile="), ProfileName)) return;
+    auto* ProfileSystem = UPGProfileSubsystem::Get(this);
+    if (!ProfileSystem || !ProfileSystem->MarkRunAssisted()) return;
     FTimerHandle Timer;
     GetWorld()->GetTimerManager().SetTimer(Timer, FTimerDelegate::CreateWeakLambda(this, [this]()
     {
@@ -243,6 +248,8 @@ void UPGCheatManager::PGFarmingSmoke()
 void UPGCheatManager::PGStress(int32 EnemyCount, int32 DropCount)
 {
 #if !UE_BUILD_SHIPPING
+    auto* ProfileSystem = UPGProfileSubsystem::Get(this);
+    if (!ProfileSystem || !ProfileSystem->MarkRunAssisted()) return;
     EnemyCount = FMath::Clamp(EnemyCount, 0, 200); DropCount = FMath::Clamp(DropCount, 0, 200);
     APGStageManager* Stage = nullptr;
     for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It) { Stage = *It; break; }
@@ -274,6 +281,8 @@ void UPGCheatManager::PGCombatCycleSmoke()
 #if !UE_BUILD_SHIPPING
     FString Profile;
     if (!FParse::Value(FCommandLine::Get(), TEXT("PGTestProfile="), Profile)) return;
+    auto* ProfileSystem = UPGProfileSubsystem::Get(this);
+    if (!ProfileSystem || !ProfileSystem->MarkRunAssisted()) return;
     CycleProbeTicks = CycleProbeRewards = CycleProbeWait = 0;
     GetWorld()->GetTimerManager().SetTimer(CombatCycleTimer, this, &ThisClass::TickCombatCycleProbe, 1.f, true, 3.f);
 #endif

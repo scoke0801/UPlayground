@@ -26,6 +26,10 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Seed reproduces options"), First.Options.FindRef(EPGStatType::Attack), Second.Options.FindRef(EPGStatType::Attack));
     TestTrue(TEXT("Unique identities"), First.Guid != Second.Guid);
     System->bInjectSaveFailure = true;
+    TestFalse(TEXT("Legacy seed migration fails atomically"), System->EnsureRunSeed());
+    TestEqual(TEXT("Failed migration preserves unseeded save"), System->Profile->RunSeed, 0);
+    TestFalse(TEXT("Failed assisted marker is not committed"), System->MarkRunAssisted());
+    TestFalse(TEXT("Failed marker preserves normal run"), System->Profile->bAssistedRun);
     TestFalse(TEXT("Failed save rejects pickup"), System->TryPickup(First));
     TestEqual(TEXT("Failed save leaves inventory intact"), System->Profile->Items.Num(), 0);
     System->Profile->Items.Add(First);
@@ -57,10 +61,17 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
         Restored->Version = 1; const FPGItemInstance Duplicate = Restored->Items[0]; Restored->Items.Add(Duplicate); TestFalse(TEXT("Duplicate identities invalid"), System->Validate(Restored));
     }
     System->bInjectSaveFailure = false;
+    TestTrue(TEXT("Legacy seed migration commits"), System->EnsureRunSeed());
+    const int32 MigratedSeed = System->Profile->RunSeed;
+    TestTrue(TEXT("Migrated seed is nonzero"), MigratedSeed > 0);
+    TestTrue(TEXT("Assisted status commits before cheats"), System->MarkRunAssisted());
     TestTrue(TEXT("Perk reward commits"), System->CommitReward(FGuid::NewGuid(), 2, EPGStatType::Attack, 0, EPGCombatPerk::Counter, 65));
     System->LoadProfile();
+    TestEqual(TEXT("Run seed survives disk reload"), System->Profile->RunSeed, MigratedSeed);
+    TestTrue(TEXT("Assisted survives disk reload"), System->Profile->bAssistedRun);
     TestEqual(TEXT("Perk restored from disk"), System->Profile->CombatPerks.FindRef(EPGCombatPerk::Counter), 65);
     TestTrue(TEXT("New run commits"), System->BeginNewRun());
+    TestFalse(TEXT("New unassisted run resets marker"), System->Profile->bAssistedRun);
     TestEqual(TEXT("New run removes all combat perks"), System->Profile->CombatPerks.Num(), 0);
     System->Profile->Equipment.Reset();
     System->Catalog->bRoguelikeRuns = true;

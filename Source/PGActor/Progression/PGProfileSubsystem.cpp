@@ -1,4 +1,5 @@
 #include "PGProfileSubsystem.h"
+#include "PGRunTelemetrySubsystem.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
@@ -54,6 +55,7 @@ void UPGProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     LoadProfile();
     if (!bReadOnly && Catalog->bRoguelikeRuns && (ActiveSlot < 0 || Profile->bRunEnded))
         if (!BeginNewRun()) bReadOnly = true;
+    if (!bReadOnly && !EnsureRunSeed()) bReadOnly = true;
 }
 void UPGProfileSubsystem::LoadProfile()
 {
@@ -143,7 +145,7 @@ bool UPGProfileSubsystem::Validate(const UPGProfileSave* Candidate) const
     for (auto Pair : Candidate->RewardBonuses) if (Pair.Key <= EPGStatType::None || Pair.Key >= EPGStatType::Max || Pair.Value < 0 || Pair.Value > 1000000) return false;
     for (auto Pair : Candidate->CombatPerks)
         if (Pair.Key <= EPGCombatPerk::None || Pair.Key >= EPGCombatPerk::Max || Pair.Value < 0 || Pair.Value > 100) return false;
-    if (Candidate->CompletedRuns < 0 || Candidate->BestStage < 0) return false;
+    if (Candidate->CompletedRuns < 0 || Candidate->BestStage < 0 || Candidate->RunSeed < 0) return false;
     for (auto Pair : Candidate->SelectedRewards) if (Pair.Key <= 0 || Pair.Value < 1 || Pair.Value > 100) return false;
     for (auto Pair : Candidate->StageRewardCounts) if (Pair.Key < 1 || Pair.Value < 1 || Pair.Value > 3) return false;
     return true;
@@ -212,6 +214,15 @@ bool UPGProfileSubsystem::BeginNewRun()
     Next->Checkpoint = 1; Next->RewardBonuses.Reset(); Next->CombatPerks.Reset(); Next->LastReward.Invalidate();
     Next->SelectedRewards.Reset(); Next->bRunEnded = false;
     Next->StageRewardCounts.Reset();
+    Next->RunSeed = FMath::RandRange(1, MAX_int32);
+    Next->bAssistedRun = false;
+#if !UE_BUILD_SHIPPING
+    // Fixed seeds only affect explicitly isolated QA profiles, never ordinary saves.
+    int32 FixedSeed = 0;
+    if (!TestSlotPrefix.IsEmpty() && FParse::Value(FCommandLine::Get(), TEXT("PGRunSeed="), FixedSeed) && FixedSeed > 0)
+        Next->RunSeed = FixedSeed;
+    Next->bAssistedRun = RetryProbeRemaining >= 0;
+#endif
     if (Catalog && Catalog->bRoguelikeRuns)
     {
         Next->Items.Reset(); Next->Equipment.Reset();
@@ -223,6 +234,26 @@ bool UPGProfileSubsystem::BeginNewRun()
             }
     }
     return Commit(Next);
+}
+bool UPGProfileSubsystem::EnsureRunSeed()
+{
+    if (!Profile || bReadOnly) return false;
+    if (Profile->RunSeed > 0) return true;
+    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
+    Next->RunSeed = FMath::RandRange(1, MAX_int32);
+    return Commit(Next);
+}
+bool UPGProfileSubsystem::MarkRunAssisted()
+{
+    if (!Profile || bReadOnly) return false;
+    if (!Profile->bAssistedRun)
+    {
+        auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
+        Next->bAssistedRun = true;
+        if (!Commit(Next)) return false;
+    }
+    if (auto* Telemetry = UPGRunTelemetrySubsystem::Get(this)) Telemetry->MarkAssisted();
+    return true;
 }
 bool UPGProfileSubsystem::EndRun(bool bVictory, int32 Stage)
 {

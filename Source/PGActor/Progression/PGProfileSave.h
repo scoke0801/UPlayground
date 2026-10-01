@@ -26,4 +26,7 @@ public:
     UPROPERTY(SaveGame) int32 CompletedRuns = 0;
     UPROPERTY(SaveGame) int32 BestStage = 0;
     UPROPERTY(SaveGame) bool bRunEnded = false;
+    // Additive v1 migration: 0 means an older save; assign and commit before play.
+    UPROPERTY(SaveGame) int32 RunSeed = 0;
+    UPROPERTY(SaveGame) bool bAssistedRun = false;
 };

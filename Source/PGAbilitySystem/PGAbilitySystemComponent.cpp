@@ -14,6 +14,7 @@
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
+#include "PGActor/Progression/PGRunTelemetrySubsystem.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayStatusTags.h"
 
@@ -222,8 +223,15 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     Modifier.ModifierOp = EGameplayModOp::Additive;
     Modifier.ModifierMagnitude = FScalableFloat(Damage);
     Effect->Modifiers.Add(Modifier);
+    auto* Telemetry = UPGRunTelemetrySubsystem::Get(this);
+    const int32 TelemetrySample = Telemetry ? Telemetry->GetSampleIndex() : INDEX_NONE;
     ApplyGameplayEffectToSelf(Effect, 1.f, Source->MakeEffectContext());
     const float Applied = FMath::Max(0.f, Before - GetHealth());
+    const bool bPlayerSource = Cast<APGCharacterPlayer>(Source->GetAvatarActor()) != nullptr;
+    const bool bPlayerTarget = Cast<APGCharacterPlayer>(GetAvatarActor()) != nullptr;
+    if (Telemetry && ((bPlayerSource && Cast<APGCharacterEnemy>(GetAvatarActor())) ||
+        (bPlayerTarget && Cast<APGCharacterEnemy>(Source->GetAvatarActor()))))
+        Telemetry->RecordDamage(TelemetrySample, Applied, bPlayerSource, bPlayerTarget, false);
     // Overkill is excluded, so a nearly dead target cannot provide a full-hit heal.
     if (Source != this) Source->RestoreHealth(Applied * Source->GetPerkPercent(EPGCombatPerk::LifeSteal) * .01f);
     if (Applied > 0 && Source != this && Cast<APGCharacterPlayer>(Source->GetAvatarActor()) && Cast<APGCharacterEnemy>(GetAvatarActor()))

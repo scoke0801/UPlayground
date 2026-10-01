@@ -37,7 +37,7 @@ public class PGActor : ModuleRules
 				"PGMessage",
 				"PGUI", 
 				"Niagara",
-				"NavigationSystem", "Slate", "SlateCore", "InputCore"
+				"NavigationSystem", "Slate", "SlateCore", "InputCore", "Json"
 			});
 	}
 }

@@ -24,6 +24,8 @@ public:
     bool EndRun(bool bVictory, int32 Stage);
     int32 GetEffectivePerk(EPGCombatPerk Perk) const;
     bool BeginNewRun();
+    bool EnsureRunSeed();
+    bool MarkRunAssisted();
     bool RecoverSave();
     bool IsSaveBlocked() const { return bReadOnly; }
     bool RestorePlayer(APGCharacterPlayer* Player);

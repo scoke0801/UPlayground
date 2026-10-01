@@ -3,6 +3,7 @@
 #include "PGData/DataAsset/Combat/PGCombatTuningData.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Progression/PGRunTelemetrySubsystem.h"
 #include "GameplayEffect.h"
 #include "TimerManager.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -20,9 +21,17 @@ float UPGAbilitySystemComponent::ReceiveProcDamage(UPGAbilitySystemComponent* So
     Modifier.ModifierOp = EGameplayModOp::Additive;
     Modifier.ModifierMagnitude = FScalableFloat(Damage);
     Effect->Modifiers.Add(Modifier);
+    auto* Telemetry = UPGRunTelemetrySubsystem::Get(this);
+    const int32 TelemetrySample = Telemetry ? Telemetry->GetSampleIndex() : INDEX_NONE;
     ApplyGameplayEffectToSelf(Effect, 1.f, Source->MakeEffectContext());
+    const float Applied = FMath::Max(0.f, Before - GetHealth());
+    const bool bPlayerSource = Cast<APGCharacterPlayer>(Source->GetAvatarActor()) != nullptr;
+    const bool bPlayerTarget = Cast<APGCharacterPlayer>(GetAvatarActor()) != nullptr;
+    if (Telemetry && ((bPlayerSource && Cast<APGCharacterEnemy>(GetAvatarActor())) ||
+        (bPlayerTarget && Cast<APGCharacterEnemy>(Source->GetAvatarActor()))))
+        Telemetry->RecordDamage(TelemetrySample, Applied, bPlayerSource, bPlayerTarget, true);
     // Secondary damage deliberately bypasses all on-hit procs (no recursive explosions).
-    return FMath::Max(0.f, Before - GetHealth());
+    return Applied;
 }
 
 void UPGAbilitySystemComponent::AddBleed(UPGAbilitySystemComponent* Source, float Damage)

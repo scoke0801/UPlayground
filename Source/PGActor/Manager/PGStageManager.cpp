@@ -1,5 +1,7 @@
 #include "PGStageManager.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
+#include "PGActor/Progression/PGRunTelemetrySubsystem.h"
+#include "PGShared/Shared/Structure/PGRunRandom.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "Engine/Engine.h"
 #include "PGData/Validation/PGStageValidation.h"
@@ -25,6 +27,11 @@
 #include "PGShared/Shared/Enum/PGUIWIdgetEnumTypes.h"
 #include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 #include "PGStagePresentation.h"
+#include "DrawDebugHelpers.h"
+#include "HAL/IConsoleManager.h"
+
+static TAutoConsoleVariable<int32> CVarPGSpawnDebug(TEXT("pg.Stage.SpawnDebug"), 0,
+    TEXT("Draw and log rejected spawn candidates with their failure reason."));
 
 
 APGStageManager::APGStageManager()
@@ -35,16 +42,6 @@ APGStageManager::APGStageManager()
 void APGStageManager::BeginPlay()
 {
     Super::BeginPlay();
-    // Duplicated arena maps may contain a Recast actor without any serialized tiles.
-    // Request the first dynamic build after world initialization, before queued spawns.
-    GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-    {
-        if (auto* Nav = UNavigationSystemV1::GetCurrent(GetWorld()))
-            if (const auto* Recast = Cast<ARecastNavMesh>(Nav->GetDefaultNavDataInstance()))
-                if (Recast->GetRuntimeGenerationMode() == ERuntimeGenerationType::Dynamic &&
-                    !Recast->GetNavMeshBounds().IsValid)
-                    Nav->Build();
-    }));
     if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
     {
         OnActorDiedHandle = Manager->RegisterDelegate(EPGSharedMessageType::OnDied, this, &ThisClass::OnActorDied);
@@ -118,6 +115,13 @@ void APGStageManager::StartStage(int32 StageId)
         PreparedEnemyClasses.AddUnique(Class);
     }
       CurrentStageId = StageId;
+    if (auto* Profile = UPGProfileSubsystem::Get(this))
+    {
+        if (!Profile->EnsureRunSeed()) { FailStage(TEXT("런 시드 저장 실패")); return; }
+        RunSeed = Profile->GetProfile()->RunSeed;
+        if (auto* Telemetry = UPGRunTelemetrySubsystem::Get(this))
+            Telemetry->StartStage(RunSeed, StageId, Profile->GetProfile()->bAssistedRun);
+    }
     SpawnFailureCount = 0;
     SpawnedMonsters = 0;
     PrepareWave(0);
@@ -133,6 +137,7 @@ void APGStageManager::PrepareWave(int32 WaveIndex)
 {
     GetWorldTimerManager().ClearTimer(SpawnTimer);
     CurrentWaveIndex = WaveIndex;
+    SpawnRandom.Initialize(PGRunRandom::Seed(RunSeed, CurrentStageId, WaveIndex, 1));
     CurrentStageState = EPGStageState::WaveIntermission;
     RemainingMonsters = 0;
     for (const auto& Spawn : ActiveWaves[WaveIndex].MonsterSpawnInfos) RemainingMonsters += Spawn.SpawnCount;
@@ -146,12 +151,33 @@ void APGStageManager::PrepareWave(int32 WaveIndex)
 void APGStageManager::StartWave()
 {
     if (CurrentStageState != EPGStageState::WaveIntermission) return;
+    PrepareNavigationForWave();
     CurrentStageState = EPGStageState::InProgress;
     WaveStartTime = GetWorld()->GetTimeSeconds();
+    if (auto* Telemetry = UPGRunTelemetrySubsystem::Get(this)) Telemetry->StartWave();
     SpawnFailureCount = 0;
     UE_LOG(LogTemp, Log, TEXT("PGWave started stage=%d wave=%d/%d remaining=%d"), CurrentStageId, GetCurrentWaveNumber(), GetWaveCount(), RemainingMonsters);
     GetWorldTimerManager().SetTimer(SpawnTimer, this, &ThisClass::SpawnEnemyBatch,
         FMath::Max(0.01f, CurrentStageDataCache.SpawnInterval), true, 0.f);
+}
+
+void APGStageManager::PrepareNavigationForWave()
+{
+    // StartStage clears this actor's timers. A BeginPlay next-tick callback was
+    // therefore cancelled by auto-start, leaving duplicated maps with no tiles.
+    // Resolve the empty dynamic mesh before the spawn timer, in PIE and -game.
+    // Existing baked meshes are never rebuilt; retries and collision rules stay intact.
+    if (auto* Nav = UNavigationSystemV1::GetCurrent(GetWorld()))
+        if (const auto* Recast = Cast<ARecastNavMesh>(Nav->GetDefaultNavDataInstance()))
+            if (Recast->GetRuntimeGenerationMode() == ERuntimeGenerationType::Dynamic &&
+                !Recast->GetNavMeshBounds().IsValid)
+            {
+                const double Started = FPlatformTime::Seconds();
+                Nav->Build();
+                UE_LOG(LogTemp, Log, TEXT("PGSpawn navigation world=%s type=%d registeredBounds=%d ready=%d building=%d elapsedMs=%.2f"),
+                    *GetWorld()->GetName(), int32(GetWorld()->WorldType), Nav->GetNavigationBounds().Num(),
+                    Recast->GetNavMeshBounds().IsValid, Nav->IsNavigationBuildInProgress(), (FPlatformTime::Seconds() - Started) * 1000.);
+            }
 }
 
 bool APGStageManager::LoadStageData(int32 StageId)
@@ -214,8 +240,11 @@ void APGStageManager::SpawnEnemyBatch()
         APGCharacterEnemy* Enemy = SpawnSingleEnemy(MonsterId);
         if (!Enemy)
         {
+            UE_LOG(LogTemp, Warning, TEXT("PGSpawn retry stage=%d wave=%d enemy=%d retry=%d/%d reason=%s location=%s"),
+                CurrentStageId, GetCurrentWaveNumber(), MonsterId, SpawnFailureCount + 1, CurrentStageDataCache.MaxSpawnRetries,
+                PGSpawnFailureName(LastSpawnFailure), *LastSpawnLocation.ToString());
             if (++SpawnFailureCount >= CurrentStageDataCache.MaxSpawnRetries)
-                FailStage(FString::Printf(TEXT("Spawn retries exhausted: %d"), MonsterId));
+                FailStage(FString::Printf(TEXT("Spawn retries exhausted: %d (%s)"), MonsterId, PGSpawnFailureName(LastSpawnFailure)));
             break;
         }
         SpawnFailureCount = 0;
@@ -232,6 +261,8 @@ void APGStageManager::SpawnEnemyBatch()
 
 APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
 {
+    LastSpawnFailure = EPGSpawnFailure::Asset;
+    LastSpawnLocation = FVector::ZeroVector;
 	UPGDataTableManager* Manager = PGData();
 	if (nullptr == Manager)
 	{
@@ -261,11 +292,13 @@ APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
 	for (int32 Attempt = 0; Attempt < 5; ++Attempt)
 	{
 		SpawnLocation = GetSafeSpawnLocation() + FVector(0.f, 0.f, CapsuleHalfHeight + 2.f);
-		if (IsValidSpawnLocation(SpawnLocation, CapsuleRadius, CapsuleHalfHeight))
+        LastSpawnLocation = SpawnLocation;
+		if (IsValidSpawnLocation(SpawnLocation, CapsuleRadius, CapsuleHalfHeight, LastSpawnFailure))
 		{
 			bFoundValidLocation = true;
 			break;
 		}
+        LogSpawnFailure(EnemyId, Attempt + 1, LastSpawnFailure, SpawnLocation);
 	}
 	
 	// Keep the queued enemy for retry instead of spawning outside the navigable arena.
@@ -281,13 +314,10 @@ APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::DontSpawnIfColliding;
 	
 	APGCharacterEnemy* SpawnedEnemy = GetWorld()->SpawnActor<APGCharacterEnemy>(
-		EnemyData->ActorClass.LoadSynchronous(), SpawnLocation, SpawnRotation, SpawnParams);
+		EnemyClass, SpawnLocation, SpawnRotation, SpawnParams);
 	
-	if (SpawnedEnemy)
-	{
-		// 델리게이트 호출
-		// Registration and notification happen atomically in SpawnEnemyBatch.
-	}
+    LastSpawnFailure = SpawnedEnemy ? EPGSpawnFailure::None : EPGSpawnFailure::ActorSpawn;
+    if (!SpawnedEnemy) LogSpawnFailure(EnemyId, 0, LastSpawnFailure, SpawnLocation);
 	
 	return SpawnedEnemy;
 }
@@ -310,8 +340,8 @@ FVector APGStageManager::GetRandomSpawnLocation() const
 	}
 	
 	// 랜덤 원형 위치 생성
-	float RandomAngle = FMath::RandRange(0.0f, 360.0f);
-	float RandomRadius = FMath::RandRange(CurrentStageDataCache.SpawnRadius * 0.7f, CurrentStageDataCache.SpawnRadius);
+	float RandomAngle = SpawnRandom.FRandRange(0.0f, 360.0f);
+	float RandomRadius = SpawnRandom.FRandRange(CurrentStageDataCache.SpawnRadius * 0.7f, CurrentStageDataCache.SpawnRadius);
 	
 	FVector RandomOffset = FVector(
 		FMath::Cos(FMath::DegreesToRadians(RandomAngle)) * RandomRadius,
@@ -344,8 +374,8 @@ FVector APGStageManager::GetSafeSpawnLocation() const
 	}
 	
 	// 랜덤 원형 위치 생성
-	float RandomAngle = FMath::RandRange(0.0f, 360.0f);
-	float RandomRadius = FMath::RandRange(CurrentStageDataCache.SpawnRadius * 0.7f, CurrentStageDataCache.SpawnRadius);
+	float RandomAngle = SpawnRandom.FRandRange(0.0f, 360.0f);
+	float RandomRadius = SpawnRandom.FRandRange(CurrentStageDataCache.SpawnRadius * 0.7f, CurrentStageDataCache.SpawnRadius);
 	
 	FVector RandomOffset = FVector(
 		FMath::Cos(FMath::DegreesToRadians(RandomAngle)) * RandomRadius,
@@ -387,31 +417,34 @@ FVector APGStageManager::GetSafeSpawnLocation() const
 	return TargetLocation;
 }
 
-bool APGStageManager::IsValidSpawnLocation(const FVector& Location, float CapsuleRadius, float CapsuleHalfHeight) const
+bool APGStageManager::IsValidSpawnLocation(const FVector& Location, float CapsuleRadius, float CapsuleHalfHeight, EPGSpawnFailure& OutFailure) const
 {
+	OutFailure = EPGSpawnFailure::None;
 	// 1. 경사면 각도 체크
-	if (!IsValidSlope(Location))
+	if (!IsValidSlope(Location, OutFailure))
 	{
 		return false;
 	}
 	
 	// 2. 내비게이션 메시 체크
 	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
-	if (!NavSys) return false;
+	if (!NavSys) { OutFailure = EPGSpawnFailure::NavigationSystem; return false; }
+	if (!NavSys->GetDefaultNavDataInstance()) { OutFailure = EPGSpawnFailure::NavigationData; return false; }
 	if (NavSys)
 	{
 		FNavLocation NavLocation;
 		if (!NavSys->ProjectPointToNavigation(Location, NavLocation, FVector(100.0f, 100.0f, 200.0f)))
 		{
+			OutFailure = EPGSpawnFailure::NavigationProjection;
 			return false;
 		}
 	}
 
     APawn* Player = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
-    if (!Player) return false;
+    if (!Player) { OutFailure = EPGSpawnFailure::Player; return false; }
     UNavigationPath* Path = UNavigationSystemV1::FindPathToActorSynchronously(
         GetWorld(), Location, Player, 50.f);
-    if (!Path || !Path->IsValid() || Path->IsPartial()) return false;
+    if (!Path || !Path->IsValid() || Path->IsPartial()) { OutFailure = EPGSpawnFailure::Path; return false; }
 	
 	// 3. 충돌 체크 (캐릭터 크기의 캡슐로 체크)
 	FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight);
@@ -421,6 +454,7 @@ bool APGStageManager::IsValidSpawnLocation(const FVector& Location, float Capsul
 	if (GetWorld()->OverlapBlockingTestByChannel(
 		Location, FQuat::Identity, ECC_Pawn, CapsuleShape, QueryParams))
 	{
+		OutFailure = EPGSpawnFailure::Capsule;
 		return false;
 	}
 	
@@ -432,6 +466,7 @@ bool APGStageManager::IsValidSpawnLocation(const FVector& Location, float Capsul
 		
 		if (DistanceToPlayer < MinDistanceFromPlayer)
 		{
+			OutFailure = EPGSpawnFailure::PlayerDistance;
 			return false;
 		}
 	}
@@ -439,8 +474,14 @@ bool APGStageManager::IsValidSpawnLocation(const FVector& Location, float Capsul
 	return true;
 }
 
-bool APGStageManager::IsValidSlope(const FVector& Location) const
+bool APGStageManager::IsValidSlope(const FVector& Location, EPGSpawnFailure& OutFailure) const
 {
+    FHitResult Ground;
+    FCollisionObjectQueryParams GroundObjects;
+    GroundObjects.AddObjectTypesToQuery(ECC_WorldStatic);
+    GroundObjects.AddObjectTypesToQuery(ECC_WorldDynamic);
+    if (!GetWorld()->LineTraceSingleByObjectType(Ground, Location + FVector(0,0,50), Location - FVector(0,0,1000), GroundObjects))
+    { OutFailure = EPGSpawnFailure::Ground; return false; }
 	// 여러 방향으로 레이캐스트하여 경사면 체크
 	TArray<FVector> CheckDirections = {
 		FVector(1, 0, 0),   // 동쪽
@@ -462,16 +503,33 @@ bool APGStageManager::IsValidSlope(const FVector& Location) const
 		if (GetWorld()->LineTraceSingleByChannel(HitResult, StartPos, EndPos, ECC_WorldStatic))
 		{
 			FVector SurfaceNormal = HitResult.Normal;
-			float SlopeAngle = FMath::RadiansToDegrees(FMath::Acos(SurfaceNormal.Z));
+			float SlopeAngle = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(SurfaceNormal.Z, -1., 1.)));
 			
 			if (SlopeAngle > MaxSlopeAngle)
 			{
+				OutFailure = EPGSpawnFailure::Slope;
 				return false; // 너무 가파른 경사
 			}
 		}
 	}
 	
 	return true;
+}
+
+void APGStageManager::LogSpawnFailure(int32 EnemyId, int32 Attempt, EPGSpawnFailure Reason, const FVector& Location) const
+{
+    auto* Nav = UNavigationSystemV1::GetCurrent(GetWorld());
+    const auto* Recast = Nav ? Cast<ARecastNavMesh>(Nav->GetDefaultNavDataInstance()) : nullptr;
+    UE_LOG(LogTemp, Log, TEXT("PGSpawn rejected stage=%d wave=%d enemy=%d attempt=%d retry=%d/%d reason=%s location=%s world=%s type=%d nav=%s bounds=%s building=%d runtime=%d"),
+        CurrentStageId, GetCurrentWaveNumber(), EnemyId, Attempt, SpawnFailureCount + 1, CurrentStageDataCache.MaxSpawnRetries,
+        PGSpawnFailureName(Reason), *Location.ToString(), *GetWorld()->GetName(), int32(GetWorld()->WorldType), *GetNameSafe(Recast),
+        Recast ? *Recast->GetNavMeshBounds().ToString() : TEXT("none"), Nav && Nav->IsNavigationBuildInProgress(),
+        Recast ? int32(Recast->GetRuntimeGenerationMode()) : -1);
+    if (CVarPGSpawnDebug.GetValueOnGameThread())
+    {
+        DrawDebugPoint(GetWorld(), Location, 15.f, FColor::Red, false, 5.f);
+        DrawDebugString(GetWorld(), Location, FString::Printf(TEXT("%d: %s (%d)"), EnemyId, PGSpawnFailureName(Reason), Attempt), nullptr, FColor::Red, 5.f);
+    }
 }
 
 void APGStageManager::OnEnemyKilled(APGCharacterEnemy* KilledEnemy)
@@ -515,11 +573,14 @@ void APGStageManager::ShowRewardSelection()
                   if (const auto* Previous = PGData()->GetRowData<FPGRewardStatDataRow>(Chosen.Key))
                       if (Previous->BuildFamily == Reward->BuildFamily) { Entry.Weight *= 2.f; break; }
           }
+    const auto* RewardProfile = UPGProfileSubsystem::Get(this);
+    const int32 ChoiceNumber = RewardProfile ? RewardProfile->GetProfile()->StageRewardCounts.FindRef(CurrentStageId) : 0;
+    FRandomStream RewardRandom(PGRunRandom::Seed(RunSeed, CurrentStageId, 0, 2, ChoiceNumber));
     while (Pool.Num() > 0 && OfferedRewards.Num() < 3)
     {
         float TotalWeight = 0.f;
         for (const auto& Reward : Pool) TotalWeight += Reward.Weight;
-        float Roll = FMath::FRand() * TotalWeight;
+        float Roll = RewardRandom.FRand() * TotalWeight;
         int32 Selected = Pool.Num() - 1;
         for (int32 Index = 0; Index < Pool.Num(); ++Index)
         {
@@ -634,6 +695,7 @@ FPGStageDataRow APGStageManager::GetCurrentStageDataCopy() const
 
 void APGStageManager::FailStage(const FString& Reason)
 {
+    if (auto* Telemetry = UPGRunTelemetrySubsystem::Get(this)) Telemetry->EndStage(Reason);
     CurrentStageState = EPGStageState::Failed;
     GetWorldTimerManager().ClearAllTimersForObject(this);
     RewardToken.Invalidate();
@@ -654,6 +716,7 @@ void APGStageManager::CheckStageComplete()
 {
     if (CurrentStageState == EPGStageState::InProgress && RemainingMonsters == 0 && MonsterSpawnQueue.IsEmpty() && SpawnedEnemies.IsEmpty())
     {
+        if (auto* Telemetry = UPGRunTelemetrySubsystem::Get(this)) Telemetry->EndWave();
         GetWorldTimerManager().ClearTimer(SpawnTimer);
         if (ActiveWaves.IsValidIndex(CurrentWaveIndex + 1)) PrepareWave(CurrentWaveIndex + 1);
         else BeginBuildPhase();
@@ -662,6 +725,7 @@ void APGStageManager::CheckStageComplete()
 
 void APGStageManager::BeginBuildPhase()
 {
+    if (auto* Telemetry = UPGRunTelemetrySubsystem::Get(this)) Telemetry->EndStage(TEXT("Cleared"));
     if (CurrentStageDataCache.bIsBossStage && CurrentStageDataCache.bManualReady && CurrentStageDataCache.RewardPool.IsEmpty())
     {
         OnAllMonstersKilled.Broadcast(); OnStageCompleted.Broadcast(CurrentStageId);
@@ -737,6 +801,9 @@ bool APGStageManager::CommitReward(FGuid Token, int32 Choice)
     }
     else if (Perk != EPGCombatPerk::None) return false;
     else if (RewardAmount > 0 && !Player->GetStatComponent()->ApplyStatReward(RewardStat, RewardAmount)) return false;
+    const int32 RewardId = OfferedRewards.IsValidIndex(Choice) ? OfferedRewards[Choice].RewardId : 0;
+    if (auto* Telemetry = UPGRunTelemetrySubsystem::Get(this)) Telemetry->RecordReward(RewardId);
+    UE_LOG(LogTemp, Log, TEXT("PGRun reward stage=%d seed=%d id=%d"), CurrentStageId, RunSeed, RewardId);
     if (--RewardsRemaining > 0)
     {
         RewardToken.Invalidate();

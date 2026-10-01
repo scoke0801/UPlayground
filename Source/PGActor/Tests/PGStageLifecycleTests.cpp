@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "Components/BoxComponent.h"
 #include "PGActor/Manager/PGStageManager.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 
@@ -11,6 +12,16 @@ bool FPGStageLifecycleTest::RunTest(const FString& Parameters)
     const UWorld::InitializationValues Init = UWorld::InitializationValues().AllowAudioPlayback(false).CreatePhysicsScene(true).CreateNavigation(false).CreateAISystem(false);
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false, NAME_None, nullptr, true, ERHIFeatureLevel::Num, &Init);
     APGStageManager* Stage = World->SpawnActor<APGStageManager>();
+    EPGSpawnFailure Failure = EPGSpawnFailure::None;
+    TestFalse(TEXT("No floor cannot be a safe spawn"), Stage->IsValidSpawnLocation(FVector(0,0,100), 40.f, 80.f, Failure));
+    TestTrue(TEXT("No floor is diagnosed separately"), Failure == EPGSpawnFailure::Ground);
+    AActor* Floor = World->SpawnActor<AActor>();
+    UBoxComponent* Box = NewObject<UBoxComponent>(Floor);
+    Floor->SetRootComponent(Box); Floor->AddInstanceComponent(Box);
+    Box->SetBoxExtent(FVector(1000,1000,50)); Box->SetCollisionProfileName(TEXT("BlockAll"));
+    Box->RegisterComponent(); Floor->SetActorLocation(FVector(0,0,-50));
+    TestFalse(TEXT("Floor without navigation still rejects spawn"), Stage->IsValidSpawnLocation(FVector(0,0,100), 40.f, 80.f, Failure));
+    TestTrue(TEXT("Missing navigation is diagnosed separately"), Failure == EPGSpawnFailure::NavigationSystem);
     APGCharacterEnemy* Enemy = World->SpawnActor<APGCharacterEnemy>();
     Stage->CurrentStageState = EPGStageState::InProgress;
     Stage->RemainingMonsters = 2;

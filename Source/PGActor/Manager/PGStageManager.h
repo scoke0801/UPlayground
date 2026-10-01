@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Engine/TimerHandle.h"
+#include "PGSpawnDiagnostics.h"
 #include "PGData/DataTable/Stage/PGStageDataRow.h"
 #include "PGShared/Shared/Message/Base/PGMessageEventDataBase.h"
 #include "PGStageManager.generated.h"
@@ -111,6 +112,12 @@ private:
     void BeginBuildPhase();
     void FinishBuildPhase();
     int32 SpawnFailureCount = 0;
+    EPGSpawnFailure LastSpawnFailure = EPGSpawnFailure::None;
+    FVector LastSpawnLocation = FVector::ZeroVector;
+    int32 RunSeed = 1;
+    mutable FRandomStream SpawnRandom;
+    void LogSpawnFailure(int32 EnemyId, int32 Attempt, EPGSpawnFailure Reason, const FVector& Location) const;
+    void PrepareNavigationForWave();
     bool bRewardCommitted = false;
     int32 RewardsRemaining = 1;
     FGuid RewardToken;
@@ -226,10 +233,10 @@ private:
 	FVector GetSafeSpawnLocation() const;
 	
 	// 스폰 위치 유효성 검증
-	bool IsValidSpawnLocation(const FVector& Location, float CapsuleRadius, float CapsuleHalfHeight) const;
+	bool IsValidSpawnLocation(const FVector& Location, float CapsuleRadius, float CapsuleHalfHeight, EPGSpawnFailure& OutFailure) const;
 	
 	// 경사면 각도 검증
-	bool IsValidSlope(const FVector& Location) const;
+	bool IsValidSlope(const FVector& Location, EPGSpawnFailure& OutFailure) const;
 	
 	// 보상 UI 표시
 	void ShowRewardSelection();
