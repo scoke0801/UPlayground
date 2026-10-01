@@ -2,6 +2,7 @@
 
 
 #include "PGCharacterEnemy.h"
+#include "Kismet/GameplayStatics.h"
 #include "PGActor/Progression/PGLootDrop.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 
@@ -9,6 +10,10 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Components/BoxComponent.h"
+#include "Components/DecalComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Animation/AnimMontage.h"
+#include "Sound/SoundBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Engine/AssetManager.h"
@@ -142,6 +147,12 @@ void APGCharacterEnemy::BeginPlay()
 			{
 				EPGSkillSlot SkillSlot = static_cast<EPGSkillSlot>(Index++);
 				SkillHandler->AddSkill(SkillSlot, SkillId);
+
+                // Hold presentation references for the enemy lifetime; no first-use loads during impact.
+                for (const FSoftObjectPath& Path : {SkillIDataRow->TelegraphMaterial.ToSoftObjectPath(),
+                    SkillIDataRow->ElitePresentationMontage.ToSoftObjectPath(), SkillIDataRow->SlamVFX.ToSoftObjectPath(),
+                    SkillIDataRow->AttackSound.ToSoftObjectPath(), SkillIDataRow->ProjectileClass.ToSoftObjectPath()})
+                    if (auto* Asset = Path.TryLoad()) PreparedPatternAssets.AddUnique(Asset);
 			}
 		}
 	}
@@ -444,5 +455,75 @@ void APGCharacterEnemy::OnHealthChanged()
     const bool bWasDead = bDeathStarted;
     Super::OnHealthChanged();
     UpdateHpBar();
+    if (bDeathStarted) SetGuarding(false);
+    if (auto* Tables = UPGDataTableManager::Get(this); !bDeathStarted && BossPhase == 1 && Tables)
+    {
+        const auto* Row = Tables->GetRowData<FPGEnemyDataRow>(CharacterTID);
+        if (Row && Row->Role == EPGEnemyRole::Boss && EnemyStatComponent->GetHealthRatio() <= Row->PhaseTwoHealthRatio)
+        {
+            BossPhase = 2; // Set before cancellation/callbacks: one transition even on large hits.
+            AbilitySystemComponent->CancelAbilities();
+            PhaseTransitionUntil = GetWorld()->GetTimeSeconds() + FMath::Clamp(Row->PhaseTransitionSeconds, 0.f, 5.f);
+            if (auto* VFX = Row->PhaseVFX.LoadSynchronous()) UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, GetActorLocation());
+            if (auto* Sound = Row->PhaseSound.LoadSynchronous()) UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation());
+            UE_LOG(LogTemp, Log, TEXT("PGBoss Phase=2 health=%.1f"), AbilitySystemComponent->GetHealth());
+        }
+    }
     if (!bWasDead && bDeathStarted) { APGLootDrop::SpawnForEnemy(this); NotifyStageManagerOnDeath(); }
+}
+
+float APGCharacterEnemy::GetDirectionalDamageScale(const AActor* Attacker) const
+{
+    if (!bGuarding || bPatternRecovering || !Attacker) return 1.f;
+    auto* Tables = UPGDataTableManager::Get(this);
+    const auto* Row = Tables ? Tables->GetRowData<FPGEnemyDataRow>(CharacterTID) : nullptr;
+    if (!Row || Row->Role != EPGEnemyRole::Guardian) return 1.f;
+    const FVector Direction = (Attacker->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+    return !Direction.IsNearlyZero() && FVector::DotProduct(GetActorForwardVector(), Direction) >= FMath::Cos(FMath::DegreesToRadians(FMath::Clamp(Row->GuardHalfAngle, 0.f, 180.f)))
+        ? 1.f - FMath::Clamp(Row->GuardReduction, 0.f, .95f) : 1.f;
+}
+
+void APGCharacterEnemy::ClearPatternHitboxes()
+{
+    for (auto* Box : {LeftHandCollisionBox, RightHandCollisionBox, LeftFootCollisionBox, RightFootCollisionBox, TailCollisionBox})
+        if (Box) Box->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    if (APGWeaponBase* Weapon = CombatComponent ? CombatComponent->GetCharacterCurrentEquippedWeapon() : nullptr)
+        if (auto* Box = Weapon->GetWeaponCollisionBox()) Box->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void APGCharacterEnemy::SetGuarding(bool bEnabled)
+{
+    bGuarding = bEnabled;
+    if (!bEnabled)
+    {
+        if (GuardDecal) GuardDecal->SetVisibility(false);
+        return;
+    }
+    auto* Tables = UPGDataTableManager::Get(this);
+    const auto* Row = Tables ? Tables->GetRowData<FPGEnemyDataRow>(CharacterTID) : nullptr;
+    if (!Row || Row->Role != EPGEnemyRole::Guardian || Row->SkillIdList.IsEmpty()) return;
+    const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(Row->SkillIdList[0]);
+    if (!GuardDecal && Skill && Skill->TelegraphMaterial.IsValid())
+    {
+        GuardDecal = NewObject<UDecalComponent>(this);
+        GuardDecal->SetupAttachment(GetRootComponent());
+        GuardDecal->DecalSize = FVector(120.f, 120.f, 120.f);
+        GuardDecal->SetDecalMaterial(Skill->TelegraphMaterial.Get());
+        GuardDecal->RegisterComponent();
+        GuardDecal->CreateDynamicMaterialInstance();
+    }
+    if (!GuardDecal) return;
+    const FVector Ground = GetActorLocation() - FVector(0,0,GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+    GuardDecal->SetWorldLocationAndRotation(Ground, FRotator(-90,0,0));
+    GuardDecal->SetVisibility(true);
+    if (auto* Material = Cast<UMaterialInstanceDynamic>(GuardDecal->GetDecalMaterial()))
+    {
+        const FVector Forward = GetActorForwardVector();
+        Material->SetVectorParameterValue(TEXT("Center"), FLinearColor(Ground.X,Ground.Y,Ground.Z));
+        Material->SetVectorParameterValue(TEXT("Forward"), FLinearColor(Forward.X,Forward.Y,0));
+        Material->SetVectorParameterValue(TEXT("GradeColor"), FLinearColor(.12f,.35f,1.2f));
+        Material->SetScalarParameterValue(TEXT("Shape"), 1.f);
+        Material->SetScalarParameterValue(TEXT("Radius"), 120.f);
+        Material->SetScalarParameterValue(TEXT("CosAngle"), FMath::Cos(FMath::DegreesToRadians(Row->GuardHalfAngle)));
+    }
 }

@@ -7,6 +7,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "LevelInstance/LevelInstanceTypes.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
 
 void UPGAbilityHitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -109,6 +110,9 @@ UAnimMontage* UPGAbilityHitReact::GetMontageToPlay() const
 
 void UPGAbilityHitReact::FaceToAttacker(const AActor* Attacker)
 {
+
+    // Taking a hit must not rotate a committed warning or snap a guardian's shield to its attacker.
+    if (const auto* Enemy = Cast<APGCharacterEnemy>(GetOwningActorFromActorInfo()); Enemy && (Enemy->bPatternActive || Enemy->bGuarding)) return;
 	if (nullptr == Attacker || false == FaceToTarget)
 	{
 		return;

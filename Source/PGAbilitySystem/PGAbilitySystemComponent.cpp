@@ -210,6 +210,7 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     float Damage = PGCombatMath::Damage(Source->GetCombatStat(EPGStatType::Attack), GetCombatStat(EPGStatType::Defense),
         bCritical, Source->GetCombatStat(EPGStatType::CriticalDamage), Tuning->DefenseConstant, Tuning->BaseCriticalMultiplier, Tuning->MinimumDamage);
     const float Before = GetHealth();
+    if (const auto* Guard = Cast<APGCharacterEnemy>(GetAvatarActor())) Damage *= Guard->GetDirectionalDamageScale(Source->GetAvatarActor());
     const auto* SourceTuning = Source->CombatTuning ? Source->CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
     float Bonus = 0.f;
     if (Before <= GetCombatStat(EPGStatType::Health) * FMath::Clamp(SourceTuning->ExecutionHealthThreshold, 0.f, 1.f))

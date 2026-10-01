@@ -19,5 +19,6 @@ public:
 	virtual void OnHitTargetActor(AActor* HitActor) override;
 
 protected:
+	virtual void ToggleWeaponCollisionBoxCollision(bool bShouldEnable) override;
 	virtual void ToggleBodyCollisionBoxCollision(bool bShouldEnable, EPGToggleDamageType ToggleDamage) override;
 };

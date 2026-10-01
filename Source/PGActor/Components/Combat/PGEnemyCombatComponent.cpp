@@ -8,6 +8,12 @@
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
+void UPGEnemyCombatComponent::ToggleWeaponCollisionBoxCollision(bool bShouldEnable)
+{
+    if (const auto* Enemy = GetOwningPawn<APGCharacterEnemy>(); Enemy && Enemy->bPatternActive) return;
+    if (GetCharacterCurrentEquippedWeapon()) Super::ToggleWeaponCollisionBoxCollision(bShouldEnable);
+}
+
 void UPGEnemyCombatComponent::OnHitTargetActor(AActor* HitActor)
 {
     // The elite disk owns the only hit during its windup/strike/recovery sequence.
@@ -36,6 +42,8 @@ void UPGEnemyCombatComponent::ToggleBodyCollisionBoxCollision(bool bShouldEnable
 	{
 		return;
 	}
+
+    if (bShouldEnable && OwningEnemyCharacter->bPatternActive) return;
 	
 	switch (ToggleDamage)
 	{

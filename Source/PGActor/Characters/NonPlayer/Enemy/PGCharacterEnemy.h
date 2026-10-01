@@ -68,6 +68,10 @@ protected:
 	
 private:
 	UPROPERTY(Transient)
+	TObjectPtr<class UDecalComponent> GuardDecal;
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UObject>> PreparedPatternAssets;
+	UPROPERTY(Transient)
 	UPGUIEnemyNamePlate* EnemyNamePlate;
 
 	/** Dissolve 효과 지속 시간 */
@@ -84,6 +88,20 @@ private:
 
 public:
 	APGCharacterEnemy();
+    // A role controller selects an exact ID; the ability consumes it without rerolling.
+    int32 RequestedSkillID = 0;
+    int32 BossPhase = 1;
+    double PhaseTransitionUntil = 0;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Pattern")
+    bool bPatternActive = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Pattern")
+    bool bPatternRecovering = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Pattern")
+    bool bGuarding = false;
+    int32 ActivePatternID = 0;
+    float GetDirectionalDamageScale(const AActor* Attacker) const;
+    void ClearPatternHitboxes();
+    void SetGuarding(bool bEnabled);
 	
 protected:
 	virtual void BeginPlay() override;
