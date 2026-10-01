@@ -574,3 +574,23 @@ LRU 캐시 관리
 - `EPGCombatPerk`와 ASC에 출혈·충격파·격분 계열을 연결했다. 전용 강화 12개와 공용 6개, 전설 3개를 데이터로 구성했다. 피해 확정은 GAS를 통하며 추가 피해는 적중 특성을 재귀 발동하지 않는다.
 - `DA_PGProgression.bRoguelikeRuns`가 런 전용 장비·강화 초기화와 별도 `PGProfile_Rogue_*` 저장을 선택한다. 최고 구간·누적 승리·해금은 유지한다. 중단 재개는 체크포인트 구간 시작부터다.
 - 범위, 제작 스크립트, 테스트와 밸런싱 한계는 [MVP 구현 보고서](Docs/todo/RoguelikeMVP_Implementation_Report.md)를 따른다.
+
+## 2026-09-30 자동 QA
+
+- `Tools/Validation/RunQA.ps1 -Suite full`은 에디터 빌드, PG 자동 테스트, MVP 에셋 검사, 독립 실행 런 진행, 사망/재시작 20회를 순차 실행한다. `quick`은 빌드·자동 테스트·에셋 검사다.
+- 실행마다 `Saved/QA`의 고유 디렉터리에 JSON/Markdown 보고서와 로그를 저장하고 테스트 프로필을 분리한다. 자동 처치 기반 진행 검사는 실제 조작·밸런스·화면 품질 검증과 구분한다.
+- 최초 QA에서 빌드·자동 테스트 12개·에셋 검사·재시작 20회는 통과했으나, 독립 RogueArena 실행은 1구간 적 15101 스폰 실패로 중단됐다. 전체 결과는 FAIL이다. 재현 조건, 근거와 남은 범위는 [자동 QA 문서](Docs/todo/16_automated_qa.md)를 따른다.
+
+## 2026-09-30 콘텐츠 0단계 진행
+
+- RogueArena 자동 시작이 내비게이션 초기화 타이머를 취소하던 문제를 수정했다. `APGStageManager`가 웨이브 스폰 전에 빈 Dynamic NavMesh를 준비하고, 스폰 실패 조건을 분리해 기록한다.
+- `PGProfileSubsystem`은 런 시드와 Assisted 상태를 저장 트랜잭션으로 관리한다. `PGRunTelemetrySubsystem`은 구간별 실제 피해·전투 시간·확정 보상을 `Saved/RunTelemetry`에 기록한다. 스폰과 보상 난수 스트림은 분리한다.
+- 수정 후 전체 QA는 경고 포함 통과: PG 테스트 13개, 16웨이브·7선택·6구간, 사망/재시작 20회. 렌더링 독립 실행과 영어 지정 PIE의 스폰·이동도 확인했다. 기본 한국어 PIE의 엔진 smoke test 오류는 별도 실패로 보존한다.
+- 실제 입력 검증은 Computer Use 연결 오류로 미완료이며 적 역할·보스·신규 강화 단계는 아직 구현하지 않았다. 단계별 완료 판정과 근거는 [콘텐츠 구현 계획](Docs/todo/17_content_implementation_plan.md)의 실행 기록을 따른다.
+
+## 2026-09-30 콘텐츠 1단계 진행
+
+- 일반 적 3종·정예 2종에 `PGAI/PGRoleAIController`를 연결했다. 거리 유지/제한된 후퇴, 정면 방어와 회복 시 해제, 돌진 강타, 순차 위험 구역을 데이터로 구분한다. 일반 5구간은 기존 웨이브별 적 수를 유지하며 역할 조합을 변경했다.
+- `PGSkillDataRow`의 공통 범위·예고·조준 확정·이동·회복 데이터를 `PGEnemyAbilityAttack`의 판정과 예고 재질에 함께 사용한다. `PGPatternProjectile`은 조준된 사격과 단일 적중을 처리한다. 취소·사망 시 타이머/충돌/예고 정리와 무효 데이터 차단을 추가했다.
+- `ConfigureContentMilestone.py -PGContentStep=1`은 해당 ID와 BP/테이블만 백업 후 이관한다. `ValidateContentMilestone.py`는 기존 RunQA의 에셋 검사에 포함된다. `RunContentPresentation.py`는 다섯 역할의 예고/회복을 격리 렌더링하며 직접 입력을 사용하지 않는다.
+- 전체 QA는 PG 테스트 15개, 16웨이브·7선택·6구간, 사망/재시작 20회를 통과했다. 직접 조작 수용 검증·밀집 전투 표현은 남아 있다. 보스 코드 초안은 보존했으나 2단계 데이터 전환 및 3단계 신규 강화는 아직 적용하지 않았다. 최신 상태와 근거는 [콘텐츠 구현 계획](Docs/todo/17_content_implementation_plan.md#2026-09-30-1단계-구현-진행)을 따른다.
