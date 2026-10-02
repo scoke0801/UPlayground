@@ -41,6 +41,15 @@ enum class EPGCombatPerk : uint8
     FrenzyLeech,
     FrenzyGuard,
     Cooldown,
+    BleedRecast,
+    ShockFracture,
+    FrenzyAfterimage,
     Max UMETA(Hidden)
+};
+
+// Secondary damage carries its origin, but never re-enters direct-hit reactions.
+enum class EPGDamageCause : uint8
+{
+    External, BleedTick, BleedBurst, Shockwave, ShockEcho, FrenzyAfterimage
 };
 

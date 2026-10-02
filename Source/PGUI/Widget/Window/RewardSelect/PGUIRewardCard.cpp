@@ -22,7 +22,7 @@ TSharedRef<SWidget> UPGUIRewardCard::RebuildWidget()
     if (!WidgetTree->RootWidget)
     {
         auto* Size = WidgetTree->ConstructWidget<USizeBox>();
-        Size->SetWidthOverride(300); Size->SetHeightOverride(550); WidgetTree->RootWidget = Size;
+        Size->SetWidthOverride(300); Size->SetHeightOverride(600); WidgetTree->RootWidget = Size;
         Frame = WidgetTree->ConstructWidget<UBorder>(); Frame->SetPadding(FMargin(1.5f)); Frame->SetBrushColor(GradeColor); Size->SetContent(Frame);
         Button = WidgetTree->ConstructWidget<UButton>(); Frame->SetContent(Button);
         Button->SetBackgroundColor(FLinearColor(.035f,.04f,.055f));
@@ -31,7 +31,7 @@ TSharedRef<SWidget> UPGUIRewardCard::RebuildWidget()
         auto* Eyebrow = WidgetTree->ConstructWidget<UTextBlock>();
         Eyebrow->SetText(NSLOCTEXT("PG", "RunBoon", "런 특성")); Eyebrow->SetColorAndOpacity(GradeColor);
         auto SmallFont = Eyebrow->GetFont(); SmallFont.Size = 12; Eyebrow->SetFont(SmallFont); Eyebrow->SetJustification(ETextJustify::Center); List->AddChild(Eyebrow);
-        auto* PictureSize = WidgetTree->ConstructWidget<USizeBox>(); PictureSize->SetWidthOverride(250); PictureSize->SetHeightOverride(250);
+        auto* PictureSize = WidgetTree->ConstructWidget<USizeBox>(); PictureSize->SetWidthOverride(180); PictureSize->SetHeightOverride(180);
         auto* Picture = WidgetTree->ConstructWidget<UImage>(); Picture->SetBrushFromTexture(Icon);
         if (IconPanel >= 0 && IconPanel < 3)
         {
@@ -42,7 +42,7 @@ TSharedRef<SWidget> UPGUIRewardCard::RebuildWidget()
         PictureSize->SetContent(Picture);
         List->AddChildToVerticalBox(PictureSize)->SetHorizontalAlignment(HAlign_Center);
         auto* Name = WidgetTree->ConstructWidget<UTextBlock>(); Name->SetText(Title); Name->SetJustification(ETextJustify::Center); Name->SetColorAndOpacity(GradeColor); Name->SetAutoWrapText(true); auto NameFont = Name->GetFont(); NameFont.Size = 24; Name->SetFont(NameFont); List->AddChildToVerticalBox(Name)->SetPadding(FMargin(0,10,0,12));
-        auto* Desc = WidgetTree->ConstructWidget<UTextBlock>(); Desc->SetText(Description); Desc->SetJustification(ETextJustify::Center); Desc->SetAutoWrapText(true); auto DescFont = Desc->GetFont(); DescFont.Size = 16; Desc->SetFont(DescFont); Desc->SetColorAndOpacity(FLinearColor(.8f,.82f,.86f)); List->AddChild(Desc);
+        auto* Desc = WidgetTree->ConstructWidget<UTextBlock>(); Desc->SetText(Description); Desc->SetJustification(ETextJustify::Center); Desc->SetAutoWrapText(true); auto DescFont = Desc->GetFont(); DescFont.Size = 14; Desc->SetFont(DescFont); Desc->SetColorAndOpacity(FLinearColor(.8f,.82f,.86f)); List->AddChild(Desc);
         Button->OnClicked.AddDynamic(this, &ThisClass::Clicked);
         Button->OnHovered.AddDynamic(this, &ThisClass::Hovered);
         Button->OnUnhovered.AddDynamic(this, &ThisClass::Unhovered);

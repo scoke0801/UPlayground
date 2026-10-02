@@ -159,6 +159,19 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
             .Visibility_Lambda([this](){ return Stage.IsValid() && Stage->IsManualReady() && Stage->CanReady() ? EVisibility::Visible : EVisibility::Collapsed; })
             .OnClicked_Lambda([this](){ if (Stage.IsValid()) Stage->ReadyForNextStage(); return FReply::Handled(); })
             [SNew(STextBlock).Text(FText::FromString(TEXT("준비 완료 →"))).ColorAndOpacity(PGMainHUD::Mint)]]
+        + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center).Padding(32,100,0,0)
+        [SNew(SBox).WidthOverride(285).Visibility_Lambda([this](){return bRogueHUD ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
+            [SNew(SBorder).BorderImage(&PGMainHUD::Panel).Padding(14)
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight()
+                    [SNew(STextBlock).Text_Lambda([this](){return BuildSummary;}).WrapTextAt(255)
+                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(PGMainHUD::Text)]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,10,0,0)
+                    [SNew(STextBlock).Text_Lambda([this](){return BuildStatus;}).WrapTextAt(255)
+                        .Font(FCoreStyle::GetDefaultFontStyle("Regular",12)).ColorAndOpacity(PGMainHUD::Muted)]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)
+                    [SNew(STextBlock).Text_Lambda([this](){return BuildProc;}).WrapTextAt(255)
+                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(PGMainHUD::Mint)]]]]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(24,0,24,30)
         [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
             [SNew(SVerticalBox)
@@ -225,9 +238,34 @@ void UPGUIMainHUD::Refresh()
     bRogueHUD = Profile && Profile->GetCatalog() && Profile->GetCatalog()->bRoguelikeRuns;
     if (bRogueHUD && ASC)
     {
-        const float Bonus = ASC->GetFrenzyRate()-1.f;
-        RageRatio=FMath::Clamp(Bonus/.5f,0.f,1.f);
-        RageText=FText::FromString(FString::Printf(TEXT("공격 속도 +%.0f%%"),Bonus*100.f));
+        const auto State = ASC->GetBuildCombatState();
+        RageRatio = State.FrenzyMaxStacks > 0 ? float(State.FrenzyStacks)/State.FrenzyMaxStacks : 0;
+        RageText = FText::FromString(FString::Printf(TEXT("%d/%d · %.1f초"),State.FrenzyStacks,State.FrenzyMaxStacks,State.FrenzySeconds));
+        TArray<FString> Summary;
+        const EPGCombatPerk Roots[] = {EPGCombatPerk::Bleed, EPGCombatPerk::Shockwave, EPGCombatPerk::Frenzy};
+        const EPGCombatPerk Cores[] = {EPGCombatPerk::BleedRecast, EPGCombatPerk::ShockFracture, EPGCombatPerk::FrenzyAfterimage};
+        const TCHAR* Names[] = {TEXT("출혈"),TEXT("충격파"),TEXT("격분")};
+        for (int32 I=0; I<3; ++I)
+        {
+            int32 Branches = 0;
+            for (int32 Offset=1; Offset<=3; ++Offset) if (ASC->GetPerkPercent(EPGCombatPerk(uint8(Roots[I])+Offset)) > 0) ++Branches;
+            if (ASC->GetPerkPercent(Roots[I]) > 0)
+                Summary.Add(FString::Printf(TEXT("%s · 전용 %d/3 · %s"),Names[I],Branches,ASC->GetPerkPercent(Cores[I])>0 ? TEXT("핵심 획득") : TEXT("성장 중")));
+        }
+        BuildSummary = FText::FromString(Summary.IsEmpty() ? TEXT("현재 빌드\n강화를 선택해 계열을 완성하세요") : TEXT("현재 빌드 · 장착 효과 포함\n") + FString::Join(Summary,TEXT("\n")));
+        FString Status = State.TargetName.IsEmpty() ? TEXT("최근 적중 대상 없음") : State.TargetName;
+        if (State.BleedStacks > 0) Status += FString::Printf(TEXT("\n출혈 %d중첩 · %.1f초"),State.BleedStacks,State.BleedSeconds);
+        if (ASC->GetPerkPercent(EPGCombatPerk::ShockFracture) > 0 && !State.TargetName.IsEmpty())
+            Status += State.WeaknessSeconds > 0 ? FString::Printf(TEXT("\n방어 약화 · %.1f초"),State.WeaknessSeconds) : FString::Printf(TEXT("\n공명 적중 %d/%d"),State.ShockHits,State.ShockHitsRequired);
+        if (State.FrenzyStacks > 0)
+            Status += FString::Printf(TEXT("\n격분 공격 속도 +%.0f%%"),(ASC->GetFrenzyRate()-1.f)*100);
+        BuildStatus = FText::FromString(Status);
+        TArray<FString> Procs;
+        if (State.bShockProc) Procs.Add(TEXT("충격파 발동"));
+        if (State.bRefundProc) Procs.Add(TEXT("핏빛 순환 · 쿨다운 반환"));
+        if (State.bAfterimageProc) Procs.Add(TEXT("격분의 잔상 · 중첩 소비"));
+        if (State.FrenzyStacks == State.FrenzyMaxStacks && ASC->GetPerkPercent(EPGCombatPerk::FrenzyAfterimage)>0) Procs.Add(TEXT("잔상 준비 · 회피로 발동"));
+        BuildProc = FText::FromString(FString::Join(Procs,TEXT("\n")));
     }
     for(int32 Index=0;Index<8;++Index)
     {

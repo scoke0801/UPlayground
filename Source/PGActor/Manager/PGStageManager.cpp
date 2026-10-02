@@ -1,4 +1,5 @@
 #include "PGStageManager.h"
+#include "PGData/DataTable/Reward/PGRewardSelection.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGActor/Progression/PGRunTelemetrySubsystem.h"
 #include "PGShared/Shared/Structure/PGRunRandom.h"
@@ -565,10 +566,7 @@ void APGStageManager::ShowRewardSelection()
         {
             const auto* Reward = PGData()->GetRowData<FPGRewardStatDataRow>(Entry.RewardId);
               if (!Reward) return true;
-              const auto* Save = Profile->GetProfile();
-              return (Reward->RequiredPerk != EPGCombatPerk::None && Profile->GetEffectivePerk(Reward->RequiredPerk) <= 0)
-                  || (Reward->MaxSelections > 0 && Save->SelectedRewards.FindRef(Reward->StatId) >= Reward->MaxSelections)
-                  || (Reward->Amount == 0 && Reward->Perk != EPGCombatPerk::None && Save->CombatPerks.FindRef(Reward->Perk) >= 100);
+              return !Profile->IsRewardEligible(*Reward);
           });
       if (const auto* Profile = UPGProfileSubsystem::Get(this))
           for (auto& Entry : Pool)
@@ -582,20 +580,8 @@ void APGStageManager::ShowRewardSelection()
     const auto* RewardProfile = UPGProfileSubsystem::Get(this);
     const int32 ChoiceNumber = RewardProfile ? RewardProfile->GetProfile()->StageRewardCounts.FindRef(CurrentStageId) : 0;
     FRandomStream RewardRandom(PGRunRandom::Seed(RunSeed, CurrentStageId, 0, 2, ChoiceNumber));
-    while (Pool.Num() > 0 && OfferedRewards.Num() < 3)
-    {
-        float TotalWeight = 0.f;
-        for (const auto& Reward : Pool) TotalWeight += Reward.Weight;
-        float Roll = RewardRandom.FRand() * TotalWeight;
-        int32 Selected = Pool.Num() - 1;
-        for (int32 Index = 0; Index < Pool.Num(); ++Index)
-        {
-            Roll -= Pool[Index].Weight;
-            if (Roll <= 0.f) { Selected = Index; break; }
-        }
-        OfferedRewards.Add(Pool[Selected]);
-        Pool.RemoveAt(Selected);
-    }
+    OfferedRewards = PGRewardSelection::Draw(MoveTemp(Pool), CurrentStageDataCache.bReserveKeystoneChoice,
+        [this](int32 Id) { const auto* Row = PGData()->GetRowData<FPGRewardStatDataRow>(Id); return Row && Row->bKeystone; }, RewardRandom);
     RewardToken = FGuid::NewGuid();
     for (const auto& Reward : CurrentStageDataCache.RewardPool)
         UE_LOG(LogTemp, Log, TEXT("PGReward pool stage=%d id=%d weight=%.2f"), CurrentStageId, Reward.RewardId, Reward.Weight);

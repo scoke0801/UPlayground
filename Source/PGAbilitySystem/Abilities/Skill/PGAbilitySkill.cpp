@@ -3,6 +3,7 @@
 
 #include "PGAbilitySkill.h"
 #include "PGSkillActivation.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
@@ -31,6 +32,8 @@ void UPGAbilitySkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     if (!IsActive()) return;
     if (!CommitAbility(Handle, ActorInfo, ActivationInfo)) { EndAbilitySelf(); return; }
     Handler->UseSkill(SlotIndex);
+    if (SlotIndex == EPGSkillSlot::SkillSlot_Roll)
+        if (auto* ASC = Character->GetPGAbilitySystemComponent()) ASC->OnDodgeCommitted();
 }
 bool UPGAbilitySkill::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
     const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const

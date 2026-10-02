@@ -47,6 +47,9 @@ private:
     FText StageTitle;
     FText HealthText;
     FText RageText;
+    FText BuildSummary;
+    FText BuildStatus;
+    FText BuildProc;
     float HealthRatio = 0.f;
     float RageRatio = 0.f;
     bool bCanAct = false;

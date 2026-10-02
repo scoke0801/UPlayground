@@ -32,6 +32,15 @@ bool FPGSkillData::IsOnCooldown() const
 	return CoolTime + LastSkillUsedTime > FPlatformTime::Seconds();
 }
 
+float FPGSkillHandler::RefundRemainingCooldown(EPGSkillSlot Slot, float Fraction)
+{
+    auto* Data = GetSkillData(Slot);
+    if (!Data || !FMath::IsFinite(Fraction)) return 0.f;
+    const float Refund = Data->GetRemainingCooldown() * FMath::Clamp(Fraction, 0.f, 1.f);
+    Data->LastSkillUsedTime -= Refund;
+    return Refund;
+}
+
 float FPGSkillData::GetRemainingCooldown() const
 {
 	const double CurrentTime = FPlatformTime::Seconds();

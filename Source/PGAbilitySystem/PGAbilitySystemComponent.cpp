@@ -37,6 +37,7 @@ void UPGAbilitySystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason
 {
     ClearBufferedInput();
     if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(BleedTimer);
+    if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(ShockEchoTimer);
     if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
         Manager->UnregisterDelegate(EPGUIMessageType::ClickSkillButton, DelegateHandle);
     Super::EndPlay(EndPlayReason);
@@ -207,7 +208,7 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     const UPGCombatTuningData* Tuning = CombatTuning ? CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
     const bool bCritical = FMath::FRand() * 10000.f < FMath::Clamp(Source->GetCombatStat(EPGStatType::CriticalRate), 0.f, 10000.f);
     OutType = bCritical ? EPGDamageType::Critical : EPGDamageType::Normal;
-    float Damage = PGCombatMath::Damage(Source->GetCombatStat(EPGStatType::Attack), GetCombatStat(EPGStatType::Defense),
+    float Damage = PGCombatMath::Damage(Source->GetCombatStat(EPGStatType::Attack), GetEffectiveDefense(),
         bCritical, Source->GetCombatStat(EPGStatType::CriticalDamage), Tuning->DefenseConstant, Tuning->BaseCriticalMultiplier, Tuning->MinimumDamage);
     const float Before = GetHealth();
     if (const auto* Guard = Cast<APGCharacterEnemy>(GetAvatarActor())) Damage *= Guard->GetDirectionalDamageScale(Source->GetAvatarActor());
@@ -238,6 +239,7 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     if (Applied > 0 && Source != this && Cast<APGCharacterPlayer>(Source->GetAvatarActor()) && Cast<APGCharacterEnemy>(GetAvatarActor()))
     {
         const double Now = GetWorld()->GetTimeSeconds();
+        Source->LastBuildTarget = this;
         if (Source->GetPerkPercent(EPGCombatPerk::Frenzy) > 0)
         {
             if (Now > Source->FrenzyUntil) Source->FrenzyStacks = 0;
@@ -246,30 +248,33 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
             Source->RestoreHealth(Applied * Source->GetPerkPercent(EPGCombatPerk::FrenzyLeech) * .01f);
             if (Now >= Source->NextFrenzyVFXAt) { Source->NextFrenzyVFXAt = Now + 1.; Source->PlayBuildVFX(SourceTuning->FrenzyVFX, Source->GetAvatarActor()->GetActorLocation()); }
         }
-        const bool bWasBleeding = BleedRemaining > 0;
+        const bool bWasBleeding = BleedRemaining > 0 && BleedSource == Source && BleedSourceGeneration == Source->BleedGeneration;
+        const float SpreadDamage = BleedDamage;
         if (GetHealth() > 0 && Source->bHeavySkill && bWasBleeding && Source->GetPerkPercent(EPGCombatPerk::BleedBurst) > 0)
         {
             const float Burst = BleedDamage * BleedRemaining * Source->GetPerkPercent(EPGCombatPerk::BleedBurst) * .01f;
             BleedRemaining = 0; BleedStacks = 0;
-            ReceiveProcDamage(Source, Burst);
+            GetWorld()->GetTimerManager().ClearTimer(BleedTimer);
+            ReceiveProcDamage(Source, Burst, EPGDamageCause::BleedBurst);
         }
         if (GetHealth() > 0 && Source->GetPerkPercent(EPGCombatPerk::Bleed) > 0)
             AddBleed(Source, Damage * Source->GetPerkPercent(EPGCombatPerk::Bleed) * .01f);
         if (GetHealth() <= 0 && bWasBleeding && Source->GetPerkPercent(EPGCombatPerk::BleedSpread) > 0)
-            Source->Pulse(GetAvatarActor()->GetActorLocation(), Damage * .2f, SourceTuning->ProcRadius, true);
+            Source->Pulse(GetAvatarActor()->GetActorLocation(), SpreadDamage * Source->GetPerkPercent(EPGCombatPerk::BleedSpread) * .01f, SourceTuning->ProcRadius, true);
         if (Source->bHeavySkill && Source->GetPerkPercent(EPGCombatPerk::Shockwave) > 0 && Now >= Source->NextShockAt)
         {
             Source->NextShockAt = Now + FMath::Max(.1f, SourceTuning->ShockCooldown);
+            Source->ShockProcUntil = Now + SourceTuning->BuildProcDisplaySeconds;
             const FVector Center = GetAvatarActor()->GetActorLocation();
             const float Radius = SourceTuning->ProcRadius * (1.f + Source->GetPerkPercent(EPGCombatPerk::ShockRadius) * .01f);
             const float Power = Damage * Source->GetPerkPercent(EPGCombatPerk::Shockwave) * .01f;
             Source->Pulse(Center, Power, Radius, false);
             if (Source->GetPerkPercent(EPGCombatPerk::ShockEcho) > 0)
             {
-                FTimerHandle Echo;
                 const float EchoPower = Power * Source->GetPerkPercent(EPGCombatPerk::ShockEcho) * .01f;
-                GetWorld()->GetTimerManager().SetTimer(Echo, FTimerDelegate::CreateWeakLambda(Source, [Source, Center, EchoPower, Radius]()
-                { if (Source->GetHealth() > 0) Source->Pulse(Center, EchoPower, Radius, false); }), .3f, false);
+                GetWorld()->GetTimerManager().SetTimer(Source->ShockEchoTimer, FTimerDelegate::CreateWeakLambda(Source, [Source, Center, EchoPower, Radius]()
+                { if (Source->GetHealth() > 0 && Source->GetPerkPercent(EPGCombatPerk::Shockwave) > 0 && Source->GetPerkPercent(EPGCombatPerk::ShockEcho) > 0)
+                    Source->Pulse(Center, EchoPower, Radius, false, EPGDamageCause::ShockEcho); }), .3f, false);
             }
         }
     }
@@ -277,12 +282,18 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
 }
 void UPGAbilitySystemComponent::SetCombatPerks(const TMap<EPGCombatPerk, int32>& Perks)
 {
+    if ((GetPerkPercent(EPGCombatPerk::Shockwave)>0 && Perks.FindRef(EPGCombatPerk::Shockwave)<=0) ||
+        (GetPerkPercent(EPGCombatPerk::ShockFracture)>0 && Perks.FindRef(EPGCombatPerk::ShockFracture)<=0)) ++ShockGeneration;
+    if (GetPerkPercent(EPGCombatPerk::Bleed)>0 && Perks.FindRef(EPGCombatPerk::Bleed)<=0) ++BleedGeneration;
     if (CombatTuning && PreparedBuildEffects.IsEmpty())
-        for (const auto& Asset : {CombatTuning->BleedVFX, CombatTuning->ShockVFX, CombatTuning->FrenzyVFX})
+        for (const auto& Asset : {CombatTuning->BleedVFX, CombatTuning->ShockVFX, CombatTuning->FrenzyVFX, CombatTuning->AfterimageVFX})
             if (auto* Loaded = Asset.LoadSynchronous()) PreparedBuildEffects.Add(Loaded);
     CombatPerks.Reset();
     for (auto Pair : Perks)
         if (Pair.Key > EPGCombatPerk::None && Pair.Key < EPGCombatPerk::Max) CombatPerks.Add(Pair.Key, FMath::Clamp(Pair.Value, 0, 100));
+    if (GetPerkPercent(EPGCombatPerk::Frenzy) <= 0) { FrenzyStacks = 0; FrenzyUntil = 0; }
+    if (GetPerkPercent(EPGCombatPerk::Shockwave) <= 0 || GetPerkPercent(EPGCombatPerk::ShockEcho) <= 0)
+        if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(ShockEchoTimer);
 }
 int32 UPGAbilitySystemComponent::GetPerkPercent(EPGCombatPerk Perk) const { return CombatPerks.FindRef(Perk); }
 void UPGAbilitySystemComponent::OpenRecoveryWindow(float Duration, float Bonus)

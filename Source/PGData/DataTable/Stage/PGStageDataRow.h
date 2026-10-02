@@ -105,6 +105,9 @@ public:
     bool bManualReady = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Rewards", meta=(ClampMin="1", ClampMax="3"))
     int32 RewardSelections = 1;
+    // Reserve one of the existing three cards for an eligible keystone.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Rewards")
+    bool bReserveKeystoneChoice = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waves")
     TArray<FPGStageWave> Waves;

@@ -44,7 +44,7 @@ void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Han
     if (auto* Player = Cast<APGCharacterPlayer>(Character)) Player->SetAttackAimTracking(true);
     Handler->UseSkill(SlotIndex);
     if (auto* ASC = Character->GetPGAbilitySystemComponent())
-        ASC->SetHeavySkill(SlotIndex >= EPGSkillSlot::SkillSlot_1 && SlotIndex <= EPGSkillSlot::SkillSlot_6);
+        ASC->BeginCombatSkill(SlotIndex);
 }
 
 void UPGAbilityPlayerSkill::EndAbility(const FGameplayAbilitySpecHandle Handle,

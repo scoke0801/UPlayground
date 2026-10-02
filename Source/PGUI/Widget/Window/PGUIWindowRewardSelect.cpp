@@ -1,4 +1,7 @@
 #include "PGUIWindowRewardSelect.h"
+#include "PGData/DataTable/Reward/PGRewardText.h"
+#include "PGData/DataAsset/Combat/PGCombatTuningData.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGActor/Manager/PGStageManager.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
@@ -63,6 +66,8 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::RebuildWidget()
                     {
                         const int32 Before = Player->GetStatComponent()->GetStat(Reward->StatType);
                         Desc = FText::Format(NSLOCTEXT("PG", "RewardDelta", "{0} → {1}\n+{2}"), FText::AsNumber(Before), FText::AsNumber(Before + Reward->Amount), FText::AsNumber(Reward->Amount));
+                        if (Reward->StatType == EPGStatType::CriticalRate)
+                            Desc = FText::FromString(FString::Printf(TEXT("치명타 확률 %.1f%% → %.1f%%\n+%.1f%%p"),Before*.01f,FMath::Min(10000,Before+Reward->Amount)*.01f,Reward->Amount*.01f));
                     }
                     else Desc = FText::Format(NSLOCTEXT("PG", "RewardAmount", "+{0}"), FText::AsNumber(Reward->Amount));
                     if (!Reward->PlaystyleDescription.IsEmpty() && Reward->Perk == EPGCombatPerk::None)
@@ -70,10 +75,21 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::RebuildWidget()
                     if (Reward->Perk != EPGCombatPerk::None)
                     {
                         const auto* Profile = UPGProfileSubsystem::Get(this);
-                        const int32 Before = Profile ? Profile->GetProfile()->CombatPerks.FindRef(Reward->Perk) : 0;
-                        Desc = FText::Format(NSLOCTEXT("PG", "PerkDelta", "{0}\n\n효과 {1}% → {2}%"), Reward->PlaystyleDescription,
-                            FText::AsNumber(Before), FText::AsNumber(FMath::Min(100, Before + Reward->PerkPercent)));
+                        const int32 Before = Profile ? Profile->GetEffectivePerk(Reward->Perk) : 0;
+                        const auto* ASC = Player ? Player->GetPGAbilitySystemComponent() : nullptr;
+                        const auto* Tuning = ASC && ASC->CombatTuning ? ASC->CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
+                        const int32 EffectCap = Reward->Perk == EPGCombatPerk::Cooldown ? 50 : Reward->Perk == EPGCombatPerk::FrenzyGuard ? 60 : 100;
+                        const int32 EffectiveBefore = FMath::Min(EffectCap, Before);
+                        const int32 EffectiveAfter = FMath::Min(EffectCap, Before + Reward->PerkPercent);
+                        const FString Change = Reward->bKeystone ? TEXT("미획득 → 핵심 강화 획득") :
+                            FString::Printf(TEXT("%s %d%% → %d%%"), *PGRewardText::PerkName(Reward->Perk), EffectiveBefore, EffectiveAfter);
+                        Desc = FText::FromString(PGRewardText::Effect(Reward->Perk, EffectiveAfter, *Tuning) + TEXT("\n\n") + Change);
+
                     }
+                    const auto* Profile = UPGProfileSubsystem::Get(this);
+                    const int32 Chosen = Profile ? Profile->GetProfile()->SelectedRewards.FindRef(Reward->StatId) : 0;
+                    const FString Limit = Reward->MaxSelections > 0 ? FString::Printf(TEXT("선택 %d/%d회"),Chosen,Reward->MaxSelections) : TEXT("반복 선택 가능");
+                    Desc = FText::FromString(Desc.ToString() + TEXT("\n\n") + PGRewardText::Requirements(*Reward) + TEXT("\n") + Limit);
                 }
             auto* Card = CreateWidget<UPGUIRewardCard>(GetOwningPlayer(), UPGUIRewardCard::StaticClass());
             Card->Configure(Index, Name, Desc, Grade, Icon, IconPanel);

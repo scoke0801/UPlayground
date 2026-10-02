@@ -10,6 +10,8 @@
 #include "PGShared/Shared/Enum/PGStatEnumTypes.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "PGShared/Shared/Enum/PGRewardTypes.h"
+#include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
+#include "PGShared/Shared/Message/Combat/PGBuildCombatState.h"
 #include "PGAbilitySystemComponent.generated.h"
 
 /**
@@ -24,6 +26,7 @@ class PGABILITYSYSTEM_API UPGAbilitySystemComponent : public UAbilitySystemCompo
 private:
 	friend class FPGInputBufferTest;
     friend class FPGRoguelikeCombatTest;
+    friend class FPGBuildKeystoneCombatTest;
     FDelegateHandle DelegateHandle;
     UPROPERTY()
     TObjectPtr<class UPGAtrributeSet> CombatAttributes;
@@ -42,9 +45,27 @@ private:
     double NextShockAt = 0.;
     double NextFrenzyVFXAt = 0.;
     bool bHeavySkill = false;
+    bool bRefundUsed = false;
+    EPGSkillSlot ActiveCombatSlot = EPGSkillSlot::NormalAttack;
+    TWeakObjectPtr<UPGAbilitySystemComponent> LastBuildTarget;
+    TWeakObjectPtr<UPGAbilitySystemComponent> ShockSource;
+    uint32 ShockGeneration = 0;
+    uint32 ShockSourceGeneration = 0;
+    uint32 BleedGeneration = 0;
+    uint32 BleedSourceGeneration = 0;
+    int32 ShockHits = 0;
+    double ShockStackUntil = 0.;
+    double WeaknessUntil = 0.;
+    double ShockProcUntil = 0.;
+    double RefundProcUntil = 0.;
+    double AfterimageProcUntil = 0.;
+    FTimerHandle ShockEchoTimer;
+    void RegisterShockHit(UPGAbilitySystemComponent* Source);
+    bool HasShockWeakness() const;
+    float GetEffectiveDefense() const;
     void TickBleed();
-    void AddBleed(UPGAbilitySystemComponent* Source, float Damage);
-    void Pulse(const FVector& Center, float Damage, float Radius, bool bSpread);
+    void AddBleed(UPGAbilitySystemComponent* Source, float Damage, bool bSnapshot = false);
+    void Pulse(const FVector& Center, float Damage, float Radius, bool bSpread, EPGDamageCause Cause = EPGDamageCause::Shockwave);
     void PlayBuildVFX(const TSoftObjectPtr<class UNiagaraSystem>& Effect, const FVector& Location);
     double RecoveryExpiresAt = 0.;
     float RecoveryDamageBonus = 0.f;
@@ -59,9 +80,12 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 public:
-    float ReceiveProcDamage(UPGAbilitySystemComponent* Source, float Damage);
+    float ReceiveProcDamage(UPGAbilitySystemComponent* Source, float Damage, EPGDamageCause Cause = EPGDamageCause::External);
     float GetFrenzyRate() const;
     void SetHeavySkill(bool bHeavy) { bHeavySkill = bHeavy; }
+    void BeginCombatSkill(EPGSkillSlot Slot);
+    void OnDodgeCommitted();
+    FPGBuildCombatState GetBuildCombatState() const;
     UPGAbilitySystemComponent();
     virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
     UPROPERTY(EditDefaultsOnly, Category="PG|Combat")

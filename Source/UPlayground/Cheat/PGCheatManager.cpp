@@ -20,18 +20,21 @@
 #include "PGActor/Controllers/PGPlayerController.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
+#include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGAbilitySystem/PGAtrributeSet.h"
 #include "TimerManager.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
+#include "PGAI/PGRoleAIController.h"
 
 #include "PGCheatComponent.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "PGUI/Widget/Window/PGUIWindowRewardSelect.h"
 #include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
 #include "EngineUtils.h"
+#include "Engine/GameViewportClient.h"
 #include "PGActor/Manager/PGStageManager.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
@@ -178,6 +181,125 @@ void UPGCheatManager::PGBossDamage(float Amount)
             UE_LOG(LogTemp, Display, TEXT("PGBoss Probe damage=%.1f health=%.1f phase=%d transition=%d"),
                 Damage, It->GetPGAbilitySystemComponent()->GetHealth(), It->BossPhase, It->IsBossTransitioning());
         }
+#endif
+}
+
+void UPGCheatManager::PGBuildScenario(FString Family, bool bCore)
+{
+#if !UE_BUILD_SHIPPING
+    FString Slot;
+    if (!FParse::Value(FCommandLine::Get(),TEXT("PGTestProfile="),Slot) || Slot.IsEmpty()) return;
+    const int32 Index = Family.Equals(TEXT("Bleed"),ESearchCase::IgnoreCase) ? 0 : Family.Equals(TEXT("Shock"),ESearchCase::IgnoreCase) ? 1 : Family.Equals(TEXT("Frenzy"),ESearchCase::IgnoreCase) ? 2 : -1;
+    auto* Profile=UPGProfileSubsystem::Get(this);
+    auto* Player=Cast<APGCharacterPlayer>(GetOuterAPlayerController()->GetPawn());
+    auto* Tables=UPGDataTableManager::Get(this);
+    if (Index<0 || !Profile || !Player || !Tables) return;
+    const int32 Root=15000+Index*4;
+    TArray<int32> Rewards={Root,Root+(Index==0 ? 3 : 2)};
+    if (bCore) Rewards.Add(15018+Index);
+    if (!Profile->ConfigureBuildScenario(Rewards)) return;
+    for(TActorIterator<APGStageManager> It(GetWorld());It;++It)
+    {
+        It->CurrentStageState=EPGStageState::None;
+        It->GetWorldTimerManager().ClearAllTimersForObject(*It);
+        It->CloseRewardWindow();
+        It->ClearAllEnemies();
+        It->MonsterSpawnQueue.Reset(); It->ActiveWaves.Reset(); It->CurrentWaveIndex=INDEX_NONE;
+        It->RemainingMonsters=0; It->RewardToken.Invalidate(); It->bRewardCommitted=false;
+        It->PrepareRun(1);
+        It->CurrentStageState=EPGStageState::InProgress;
+        break;
+    }
+    TArray<AActor*> Old;
+    for(TActorIterator<APGCharacterEnemy> It(GetWorld());It;++It) if(It->ActorHasTag(TEXT("PGBuildScenario"))) Old.Add(*It);
+    for(auto* Actor:Old) Actor->Destroy();
+    auto* ASC=Player->GetPGAbilitySystemComponent();
+    ASC->CancelAbilities();
+    ASC->SetCombatPerks({}); Profile->RestorePlayer(Player);
+    for (const auto& Pair : Player->GetSkillHandler()->GetAllSkillData())
+        Player->GetSkillHandler()->GetSkillData(Pair.Key)->LastSkillUsedTime=0.;
+    ASC->SetNumericAttributeBase(UPGAtrributeSet::GetAttackPowerAttribute(),100.f);
+    ASC->SetNumericAttributeBase(UPGAtrributeSet::GetCriticalRateAttribute(),0.f);
+    // Weapon modifiers remain separate from the profile. Normalize evaluated stats for comparison.
+    ASC->SetNumericAttributeBase(UPGAtrributeSet::GetAttackPowerAttribute(),200.f-ASC->GetCombatStat(EPGStatType::Attack));
+    ASC->SetNumericAttributeBase(UPGAtrributeSet::GetCriticalRateAttribute(),-ASC->GetCombatStat(EPGStatType::CriticalRate));
+    ASC->RestoreHealth(ASC->GetCombatStat(EPGStatType::Health));
+    if(BuildScenarioWorld != GetWorld()) { BuildScenarioWorld=GetWorld(); BuildScenarioOrigin=Player->GetActorLocation(); }
+    Player->SetActorLocation(BuildScenarioOrigin,false,nullptr,ETeleportType::TeleportPhysics);
+    Player->SetActorRotation(FRotator::ZeroRotator);
+    const auto* Row=Tables->GetRowData<FPGEnemyDataRow>(15101);
+    UClass* Class=Row ? Row->ActorClass.LoadSynchronous() : nullptr;
+    if (!Class) return;
+    for(int32 I=0;I<3;++I)
+    {
+        FActorSpawnParameters Params; Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        auto* Enemy=GetWorld()->SpawnActor<APGCharacterEnemy>(Class,Player->GetActorLocation()+FVector(170,(I-1)*100,0),FRotator(0,180,0),Params);
+        if(!Enemy) continue;
+        Enemy->Tags.Add(TEXT("PGBuildScenario"));
+        if(auto* AI=Cast<APGRoleAIController>(Enemy->GetController())) AI->SetCombatThinkingEnabled(false);
+        Enemy->GetPGAbilitySystemComponent()->SetNumericAttributeBase(UPGAtrributeSet::GetMaxHealthAttribute(),10000.f);
+        Enemy->GetPGAbilitySystemComponent()->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(),10000.f);
+        Enemy->GetPGAbilitySystemComponent()->SetNumericAttributeBase(UPGAtrributeSet::GetDefensePowerAttribute(),100.f);
+    }
+    UE_LOG(LogTemp,Display,TEXT("PGBuildScenario family=%s core=%d targets=3 assisted=1"),*Family,bCore);
+    PGCombatStats();
+#endif
+}
+
+void UPGCheatManager::PGBuildProbe(FString Action)
+{
+#if !UE_BUILD_SHIPPING
+    FString Slot;
+    if (!FParse::Value(FCommandLine::Get(),TEXT("PGTestProfile="),Slot)) return;
+    auto* Profile=UPGProfileSubsystem::Get(this);
+    auto* Player=Cast<APGCharacterPlayer>(GetOuterAPlayerController()->GetPawn());
+    if (!Profile || !Player || !Profile->MarkRunAssisted()) return;
+    auto* Source=Player->GetPGAbilitySystemComponent();
+    TArray<UPGAbilitySystemComponent*> Targets;
+    for(TActorIterator<APGCharacterEnemy> It(GetWorld());It;++It)
+        if(It->ActorHasTag(TEXT("PGBuildScenario")) && It->GetPGAbilitySystemComponent()->GetHealth()>0) Targets.Add(It->GetPGAbilitySystemComponent());
+    EPGDamageType Type;
+    if(Action==TEXT("hit")) { Source->BeginCombatSkill(EPGSkillSlot::NormalAttack); for(auto* Target:Targets) Target->ReceiveCombatHit(Source,Type); }
+    if(Action==TEXT("heavy"))
+    {
+        if(auto* Skill=Player->GetSkillHandler()->GetSkillData(EPGSkillSlot::SkillSlot_1)) { Skill->CoolTime=10; Skill->LastSkillUsedTime=FPlatformTime::Seconds(); }
+        Source->BeginCombatSkill(EPGSkillSlot::SkillSlot_1);
+        for(auto* Target:Targets) Target->ReceiveCombatHit(Source,Type);
+        Source->SetHeavySkill(false);
+    }
+    if(Action==TEXT("burst_setup")) for(auto* Target:Targets) Target->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(),65.f);
+    if(Action==TEXT("dodge")) Source->OnDodgeCommitted();
+    if(Action==TEXT("roll"))
+    {
+        const auto* Viewport=GetWorld()->GetGameViewport();
+        const auto* Roll=Player->GetSkillHandler()->GetSkillData(EPGSkillSlot::SkillSlot_Roll);
+        UE_LOG(LogTemp,Display,TEXT("PGBuildRoll allowed=%d control=%d moveIgnored=%d focus=%d cooldown=%.2f"),
+            Player->IsGameplayInputAllowed(),Player->GetIsCacControl(),GetOuterAPlayerController()->IsMoveInputIgnored(),
+            Viewport && Viewport->Viewport && Viewport->Viewport->HasFocus(),Roll ? Roll->GetRemainingCooldown() : -1);
+        for (const auto& Spec : Source->GetActivatableAbilities())
+            if(Spec.GetDynamicSpecSourceTags().HasTagExact(PGGamePlayTags::InputTag_Roll))
+                UE_LOG(LogTemp,Display,TEXT("PGBuildRoll ability=%s active=%d"),*GetNameSafe(Spec.Ability),Spec.IsActive());
+        Source->OnAbilityInputPressed(PGGamePlayTags::InputTag_Roll);
+        Source->OnAbilityInputReleased(PGGamePlayTags::InputTag_Roll);
+    }
+    const auto State=Source->GetBuildCombatState();
+    UE_LOG(LogTemp,Display,TEXT("PGBuildProbe action=%s targets=%d bleed=%d frenzy=%d shock=%d weak=%.2f refund=%d afterimage=%d cooldown=%.2f"),
+        *Action,Targets.Num(),State.BleedStacks,State.FrenzyStacks,State.ShockHits,State.WeaknessSeconds,State.bRefundProc,State.bAfterimageProc,
+        Player->GetSkillHandler()->GetSkillData(EPGSkillSlot::SkillSlot_1) ? Player->GetSkillHandler()->GetSkillData(EPGSkillSlot::SkillSlot_1)->GetRemainingCooldown() : 0);
+#endif
+}
+
+void UPGCheatManager::PGBuildCards()
+{
+#if !UE_BUILD_SHIPPING
+    FString Slot;
+    if (!FParse::Value(FCommandLine::Get(),TEXT("PGTestProfile="),Slot)) return;
+    for(TActorIterator<APGStageManager> It(GetWorld());It;++It)
+    {
+        if(auto* Tables=UPGDataTableManager::Get(this)) if(const auto* Row=Tables->GetRowData<FPGStageDataRow>(4))
+        { It->CurrentStageDataCache=*Row; It->CurrentStageId=4; It->CurrentStageState=EPGStageState::BuildPhase; It->RewardsRemaining=2; It->ShowRewardSelection(); }
+        break;
+    }
 #endif
 }
 

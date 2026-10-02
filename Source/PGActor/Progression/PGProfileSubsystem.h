@@ -23,9 +23,11 @@ public:
     bool CommitReward(FGuid Token, int32 NextStage, EPGStatType Stat, int32 Amount, EPGCombatPerk Perk = EPGCombatPerk::None, int32 PerkPercent = 0, int32 RewardId = 0, bool bAdvance = true);
     bool EndRun(bool bVictory, int32 Stage);
     int32 GetEffectivePerk(EPGCombatPerk Perk) const;
+    bool IsRewardEligible(const struct FPGRewardStatDataRow& Reward) const;
     bool BeginNewRun();
     bool EnsureRunSeed();
     bool MarkRunAssisted();
+    bool ConfigureBuildScenario(const TArray<int32>& RewardIds);
     bool RecoverSave();
     bool IsSaveBlocked() const { return bReadOnly; }
     bool RestorePlayer(APGCharacterPlayer* Player);

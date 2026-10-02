@@ -44,4 +44,18 @@ public:
     // Zero preserves legacy repeatable rewards.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Roguelike", meta=(ClampMin="0"))
     int32 MaxSelections = 0;
+    // RequiredPerk remains an additional AND condition for existing assets.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Roguelike")
+    TArray<EPGCombatPerk> RequiredPerks;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Roguelike")
+    TArray<EPGCombatPerk> RequiredAnyPerks;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Roguelike")
+    bool bKeystone = false;
+
+    bool MeetsRequirements(TFunctionRef<int32(EPGCombatPerk)> GetPerk) const
+    {
+        if (RequiredPerk != EPGCombatPerk::None && GetPerk(RequiredPerk) <= 0) return false;
+        for (const auto Required : RequiredPerks) if (GetPerk(Required) <= 0) return false;
+        return RequiredAnyPerks.IsEmpty() || RequiredAnyPerks.ContainsByPredicate([&](EPGCombatPerk Required) { return GetPerk(Required) > 0; });
+    }
 };

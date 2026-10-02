@@ -4,6 +4,7 @@
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGProfileTest, "PG.Progression.TransactionsAndSerialization", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FPGProfileTest::RunTest(const FString& Parameters)
@@ -45,6 +46,18 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Failed perk save rejected"), System->CommitReward(FGuid::NewGuid(), 2, EPGStatType::Attack, 0, EPGCombatPerk::Counter, 65));
     TestEqual(TEXT("Failed perk save leaves modifiers intact"), System->Profile->CombatPerks.Num(), 0);
     System->Profile->CombatPerks.Add(EPGCombatPerk::LifeSteal, 8);
+    FPGRewardStatDataRow Core;
+    Core.StatId=15019; Core.Perk=EPGCombatPerk::ShockFracture; Core.bKeystone=true; Core.MaxSelections=1;
+    Core.RequiredPerk=EPGCombatPerk::Shockwave; Core.RequiredAnyPerks={EPGCombatPerk::ShockEcho,EPGCombatPerk::ShockRadius};
+    TestFalse(TEXT("Core filtered when build is missing"),System->IsRewardEligible(Core));
+    System->Catalog->Items[0].CombatPerks={{EPGCombatPerk::Shockwave,40},{EPGCombatPerk::ShockEcho,65}};
+    TestTrue(TEXT("Equipped root and branch satisfy same reward condition"),System->IsRewardEligible(Core));
+    System->Profile->Equipment.Reset();
+    TestFalse(TEXT("Unequipping immediately invalidates core offer"),System->IsRewardEligible(Core));
+    System->Profile->Equipment.Add(EPGEquipmentSlot::Weapon,First.Guid);
+    System->Profile->CombatPerks.Add(EPGCombatPerk::ShockFracture,1);
+    System->Profile->SelectedRewards.Add(15019,1);
+    TestFalse(TEXT("Core duplicate selection blocked"),System->IsRewardEligible(Core));
     TArray<uint8> Bytes;
     TestTrue(TEXT("Save serializes"), UGameplayStatics::SaveGameToMemory(System->Profile, Bytes));
     auto* Restored = Cast<UPGProfileSave>(UGameplayStatics::LoadGameFromMemory(Bytes));
@@ -52,6 +65,8 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     if (Restored)
     {
         TestEqual(TEXT("Combat perk survives serialization"), Restored->CombatPerks.FindRef(EPGCombatPerk::LifeSteal), 8);
+        TestEqual(TEXT("Core effect survives serialization"),Restored->CombatPerks.FindRef(EPGCombatPerk::ShockFracture),1);
+        TestEqual(TEXT("Core selection limit survives serialization"),Restored->SelectedRewards.FindRef(15019),1);
         TestEqual(TEXT("GUID preserved"), Restored->Items[0].Guid, First.Guid);
         TestEqual(TEXT("Rolled stats preserved"), Restored->Items[0].Options.FindRef(EPGStatType::Attack), First.Options.FindRef(EPGStatType::Attack));
         TestEqual(TEXT("Equipment preserved"), Restored->Equipment.FindRef(EPGEquipmentSlot::Weapon), First.Guid);

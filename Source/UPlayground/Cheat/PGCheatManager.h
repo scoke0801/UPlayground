@@ -21,6 +21,9 @@ public:
     UFUNCTION(Exec) void PGCombatStats();
     /** Assisted GAS damage for threshold/death timing probes. */
     UFUNCTION(Exec) void PGBossDamage(float Amount = 15000.f);
+    UFUNCTION(Exec) void PGBuildScenario(FString Family = TEXT("Bleed"), bool bCore = true);
+    UFUNCTION(Exec) void PGBuildProbe(FString Action = TEXT("status"));
+    UFUNCTION(Exec) void PGBuildCards();
     UFUNCTION(Exec) void PGCombatControlsProbe();
     UFUNCTION(Exec) void PGProfileStatus();
     UFUNCTION(Exec) void PGDropItem(int32 ItemId = 3401, int32 Seed = 1234);
@@ -34,6 +37,8 @@ protected:
 	TArray<TSoftObjectPtr<UPGCheatComponent>> _components;
 
 private:
+    TWeakObjectPtr<UWorld> BuildScenarioWorld;
+    FVector BuildScenarioOrigin = FVector::ZeroVector;
     FTimerHandle CombatCycleTimer;
     int32 CycleProbeTicks = 0;
     int32 CycleProbeRewards = 0;

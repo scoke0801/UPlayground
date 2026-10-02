@@ -4,6 +4,10 @@
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
+#include "PGData/DataTable/Reward/PGRewardText.h"
+#include "PGData/DataAsset/Combat/PGCombatTuningData.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "EngineUtils.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -53,9 +57,16 @@ void UPGUIInventory::Refresh()
             .ColorAndOpacity(FLinearColor(.6f,.85f,1.f))];
         for (auto Chosen : Save->SelectedRewards)
             if (const auto* Reward = PGData()->GetRowData<FPGRewardStatDataRow>(Chosen.Key))
+            {
+                const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+                const auto* ASC=Player ? Player->GetPGAbilitySystemComponent() : nullptr;
+                const auto* Tuning=ASC && ASC->CombatTuning ? ASC->CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
+                const FString Effect=Reward->Perk==EPGCombatPerk::None ? Reward->PlaystyleDescription.ToString() :
+                    PGRewardText::Effect(Reward->Perk,Profile->GetEffectivePerk(Reward->Perk),*Tuning);
                 Rows->AddSlot().AutoHeight().Padding(0,4)[SNew(STextBlock).AutoWrapText(true)
-                    .Text(FText::FromString(FString::Printf(TEXT("%s ×%d — %s"), *Reward->DisplayName.ToString(), Chosen.Value, *Reward->PlaystyleDescription.ToString())))
+                    .Text(FText::FromString(FString::Printf(TEXT("%s ×%d · %s"), *Reward->DisplayName.ToString(), Chosen.Value, *Effect)))
                     .ColorAndOpacity(FLinearColor(.75f,.7f,1.f))];
+            }
     }
     for (auto EquipmentSlot : {EPGEquipmentSlot::Weapon, EPGEquipmentSlot::Accessory})
         Button(EquipmentSlot == EPGEquipmentSlot::Weapon ? TEXT("무기 해제") : TEXT("장신구 해제"), [Profile, EquipmentSlot](){ Profile->Unequip(EquipmentSlot); });

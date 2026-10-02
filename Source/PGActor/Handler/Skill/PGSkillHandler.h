@@ -18,7 +18,7 @@ struct PGACTOR_API FPGSkillData
 public:
 	PGSkillId SkillId = 0;				// 스킬 ID
 	
-	float LastSkillUsedTime = 0.0f;	// 마지막 스킬 사용 시간, 쿨타임 계산 용
+	double LastSkillUsedTime = 0.0;	// Platform clock needs double precision for long-running sessions.
 	float CoolTime = 0.0f;
 
 	EPGSkillType SkillType;
@@ -67,6 +67,7 @@ public:
 
 	// 스킬 ID로 남은 쿨타임 조회
 	float GetRemainingCooldownByID(int32 SkillID) const;
+    float RefundRemainingCooldown(EPGSkillSlot Slot, float Fraction);
 
 	// 스킬 ID로 Priority 조회
 	int32 GetPriorityByID(int32 SkillID) const;

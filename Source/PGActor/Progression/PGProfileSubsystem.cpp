@@ -3,6 +3,7 @@
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
@@ -199,6 +200,13 @@ bool UPGProfileSubsystem::CommitReward(FGuid Token, int32 NextStage, EPGStatType
 {
     if (!Token.IsValid() || Token == Profile->LastReward || NextStage <= 1 || Amount < 0 || Amount > 100000 || Profile->StageRewardCounts.FindRef(NextStage - 1) >= 3) return false;
     if (PerkPercent < 0 || PerkPercent > 100 || Perk >= EPGCombatPerk::Max || (Perk == EPGCombatPerk::None && PerkPercent != 0)) return false;
+    if (RewardId > 0)
+    {
+        auto* Tables = GetGameInstance()->GetSubsystem<UPGDataTableManager>();
+        const auto* Reward = Tables ? Tables->GetRowData<FPGRewardStatDataRow>(RewardId) : nullptr;
+        if (!Reward || !IsRewardEligible(*Reward) || Reward->StatType != Stat || Reward->Amount != Amount ||
+            Reward->Perk != Perk || Reward->PerkPercent != PerkPercent) return false;
+    }
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
     if (Perk != EPGCombatPerk::None) Next->CombatPerks.FindOrAdd(Perk) = FMath::Min(100, Next->CombatPerks.FindRef(Perk) + PerkPercent);
     Next->LastReward = Token;
@@ -271,6 +279,36 @@ int32 UPGProfileSubsystem::GetEffectivePerk(EPGCombatPerk Perk) const
             if (Profile->Equipment.FindRef(Def->Slot) == Item.Guid) Value += Def->CombatPerks.FindRef(Perk);
     return FMath::Clamp(Value,0,100);
 }
+bool UPGProfileSubsystem::IsRewardEligible(const FPGRewardStatDataRow& Reward) const
+{
+    return Profile && Reward.MeetsRequirements([this](EPGCombatPerk Perk) { return GetEffectivePerk(Perk); }) &&
+        (Reward.MaxSelections <= 0 || Profile->SelectedRewards.FindRef(Reward.StatId) < Reward.MaxSelections) &&
+        (!Reward.bKeystone || Profile->SelectedRewards.FindRef(Reward.StatId) == 0) &&
+        !(Reward.Amount == 0 && Reward.Perk != EPGCombatPerk::None && Profile->CombatPerks.FindRef(Reward.Perk) >= 100);
+}
+bool UPGProfileSubsystem::ConfigureBuildScenario(const TArray<int32>& RewardIds)
+{
+#if !UE_BUILD_SHIPPING
+    FString TestProfile;
+    if (!FParse::Value(FCommandLine::Get(),TEXT("PGTestProfile="),TestProfile) || TestProfile.IsEmpty() || !MarkRunAssisted()) return false;
+    auto* Tables = GetGameInstance()->GetSubsystem<UPGDataTableManager>();
+    if (!Tables) return false;
+    auto* Next = DuplicateObject<UPGProfileSave>(Profile,this);
+    Next->CombatPerks.Reset(); Next->SelectedRewards.Reset(); Next->RewardBonuses.Reset();
+    Next->Equipment.Reset(); Next->StageRewardCounts.Reset(); Next->LastReward.Invalidate();
+    Next->Checkpoint=1; Next->bRunEnded=false;
+    for (int32 Id : RewardIds)
+    {
+        const auto* Row = Tables->GetRowData<FPGRewardStatDataRow>(Id);
+        if (!Row || Next->SelectedRewards.Contains(Id) || !Row->MeetsRequirements([&](EPGCombatPerk Perk){return Next->CombatPerks.FindRef(Perk);})) return false;
+        Next->CombatPerks.FindOrAdd(Row->Perk) += Row->PerkPercent;
+        Next->SelectedRewards.Add(Id,1);
+    }
+    return Commit(Next);
+#else
+    return false;
+#endif
+}
 bool UPGProfileSubsystem::RestorePlayer(APGCharacterPlayer* Player)
 {
     if (!Catalog || !Player || !Player->GetSkillHandler() || !Player->GetPGAbilitySystemComponent()) return false;
@@ -298,7 +336,7 @@ bool UPGProfileSubsystem::RestorePlayer(APGCharacterPlayer* Player)
         auto* Skill = Handler->GetSkillData(Entry.Slot);
         if (!Skill || Skill->SkillId != Entry.SkillId)
         {
-            const float LastUse = Skill ? Skill->LastSkillUsedTime : 0.f;
+            const double LastUse = Skill ? Skill->LastSkillUsedTime : 0.;
             Handler->RemoveSkill(Entry.Slot); Handler->AddSkill(Entry.Slot, Entry.SkillId);
             if (auto* Replacement = Handler->GetSkillData(Entry.Slot)) Replacement->LastSkillUsedTime = LastUse;
         }
