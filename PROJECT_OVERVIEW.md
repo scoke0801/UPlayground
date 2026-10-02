@@ -6,6 +6,12 @@
 - 클리어 직후 보상 선택과 `BuildDuration` 카운트다운을 시작한다. 보상 선택 후에도 빌드 시간을 유지하고, 종료 시 다음 스테이지를 시작한다. 빌드 중 장비 창은 타이머를 멈추지 않는다.
 - 데이터 호환, 이관 도구, HUD 및 검증은 [웨이브 스테이지 문서](Docs/todo/StageWaves_Implementation_Report.md)를 따른다.
 
+## 2026-10-01 콘텐츠 3단계
+
+- 핵심 강화 `BleedRecast / ShockFracture / FrenzyAfterimage`와 효과별 `PGCombatTuningData` 수치를 추가했다. 직접/추가 피해 원인을 구분하고 기존 GAS 경로로 피해를 확정한다.
+- 보상 조건은 기존 RequiredPerk와 복수 AND/OR 조건을 함께 읽으며 장착 효과를 포함한다. 4·5구간의 데이터 정책으로 기존 세 카드 중 한 자리를 유효 핵심 강화에 배정한다. 총 21개 강화·7회 선택이다.
+- 빌드 HUD, 튜닝 기반 카드/장비 창 설명, 테스트 프로필 전용 고정 비교 시나리오를 추가했다. 구현·검증·직접 조작 잔여 기준은 [콘텐츠 계획 3단계 기록](Docs/todo/17_content_implementation_plan.md#2026-10-01-3단계-빌드-완성-강화-구현)을 따른다.
+
 ## 1. 프로젝트 개요
 
 **프로젝트명**: UPlayground  
@@ -594,3 +600,9 @@ LRU 캐시 관리
 - `PGSkillDataRow`의 공통 범위·예고·조준 확정·이동·회복 데이터를 `PGEnemyAbilityAttack`의 판정과 예고 재질에 함께 사용한다. `PGPatternProjectile`은 조준된 사격과 단일 적중을 처리한다. 취소·사망 시 타이머/충돌/예고 정리와 무효 데이터 차단을 추가했다.
 - `ConfigureContentMilestone.py -PGContentStep=1`은 해당 ID와 BP/테이블만 백업 후 이관한다. `ValidateContentMilestone.py`는 기존 RunQA의 에셋 검사에 포함된다. `RunContentPresentation.py`는 다섯 역할의 예고/회복을 격리 렌더링하며 직접 입력을 사용하지 않는다.
 - 전체 QA는 PG 테스트 15개, 16웨이브·7선택·6구간, 사망/재시작 20회를 통과했다. 직접 조작 수용 검증·밀집 전투 표현은 남아 있다. 보스 코드 초안은 보존했으나 2단계 데이터 전환 및 3단계 신규 강화는 아직 적용하지 않았다. 최신 상태와 근거는 [콘텐츠 구현 계획](Docs/todo/17_content_implementation_plan.md#2026-09-30-1단계-구현-진행)을 따른다.
+
+## 2026-10-01 콘텐츠 2단계 진행
+
+- 황혼의 기사(15106)에 횡베기·돌진 강타·황혼 파동과 HP 50% 기준 2페이즈를 연결했다. `PGEnemyDataRow`는 전환 시간·2페이즈 공격 순서·전환/격파 표현을, `PGSkillDataRow`는 공통 범위·타이밍을 소유한다.
+- 보스 상태는 `PGShared`의 스냅샷과 `PGMessage`를 통해 메인 HUD에 전달한다. 공격 중 전환·사망 시 기존 판정을 취소하고, 승리 기록은 즉시 저장한 뒤 격파 표시 시간이 끝나면 결과 창을 연다.
+- 보스 전용 이관은 `ConfigureContentMilestone.py -PGContentStep=2`, 렌더링 검사는 `RunBossPresentation.py`다. 일반 적/웨이브의 기존 튜닝을 보존한다. 구현·검증 근거와 미완료 직접 플레이 기준은 [콘텐츠 계획의 2단계 기록](Docs/todo/17_content_implementation_plan.md#2026-10-01-2단계-보스전-구현-진행)을 따른다. 3단계 신규 강화는 아직 미구현이다.

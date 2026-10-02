@@ -129,3 +129,35 @@ cycle은 고정 시드 `173001`을 사용하고 현재 실행의 기록 파일�
 ```
 
 이 검사는 저장하지 않은 임시 적을 PIE에 만들고 실제 GAS 스킬을 발동하여 상태 10개, 새 캡처 10장, 정상 종료를 요구한다. 종료 코드/엔진 오류/누락은 실패로 남긴다. 실행별 테스트 프로필, Assisted 표시와 `-culture=en`을 사용한다. 직접 입력, 자유 이동 AI의 전술, 빌드 밸런스와 패키지 검증을 대신하지 않는다. 결과와 남은 수용 기준은 [콘텐츠 계획의 1단계 실행 기록](17_content_implementation_plan.md#2026-09-30-1단계-구현-진행)을 따른다.
+
+## 2026-10-01 콘텐츠 2단계 회귀 검사
+
+보스 데이터 schema 2를 기존 에셋 검사에 추가했다. `PG.Content.BossPhaseLifecycle`과 `PG.Content.BossAttackSelection`이 큰 피해·재진입·공격 취소·치명 피해·2페이즈 조합을 검사하며, `PG.Stage.Lifecycle`은 격파 후 결과 표시 지연과 새 런 준비 시 타이머 취소도 확인한다.
+
+최종 전체 실행 `Saved/QA/20261001T133944Z_4e35d90f/report.json`은 **PASS_WITH_WARNINGS**다. 빌드, PG 자동 테스트 17개(일반 14·경고 포함 3), 저장된 에셋, 16웨이브·7선택·6구간, 사망/재시작 20회와 정상 상태 21회를 통과했다. GameplayCue 검색 경로, 격리 테스트의 시작 장비, 기존 네임플레이트 직렬화 경고는 보고서에 보존한다.
+
+최신 빌드에서 다른 QA와 겹치지 않게 보스 화면 검사를 실행한다.
+
+```powershell
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\ThirdParty\Python3\Win64\python.exe' -B Tools/Validation/RunBossPresentation.py
+```
+
+검사는 실제 6구간 보스의 세 공격 예고/회복, 전환, 격파, 결과 창, 재생성을 관찰하고 1280×720 현재 실행 캡처 10장을 요구한다. 체력 보정과 GAS 피해 치트를 쓰므로 `assisted=true`, `direct_input=false`다. 전환 전 파동 차단, 전환 중 공격 차단, AI의 돌진→횡베기→파동 조합, 격파 뒤 추가 판정 없음, 재생성 시 1페이즈 복귀를 함께 검사한다. 자동 통과 뒤에도 캡처의 화면 내용은 직접 검토한다. 첫 시각 검토 실패와 수정, 최종 근거는 [콘텐츠 계획의 2단계 기록](17_content_implementation_plan.md#2026-10-01-2단계-보스전-구현-진행)을 따른다.
+
+이 검사는 직접 조작 공략, 세 빌드 밸런스, 사운드 청취, 패키지·장시간 성능 검증을 대체하지 않는다. 화면 테스트는 `-nosound`로 실행하며 음향 에셋 참조 유효성만 별도 검사한다.
+
+## 2026-10-01 콘텐츠 3단계 회귀 검사
+
+기존 MVP 에셋 검사에 `ValidateBuildKeystones.py`를 연결했다. 강화 21개, 신규 세 핵심의 선행 조건·선택 제한·아이콘 참조, 4·5구간의 핵심 후보 예약과 기존 7회 선택, 유효한 전투 튜닝을 검사한다. 기존 적/보스의 content schema 2와 강화의 build schema 3은 별도로 기록한다.
+
+`PG.Content.BuildRewardRules`, `PG.Content.BuildKeystoneCombat`과 확장한 프로필 검사는 조건·시드·예약 추첨·중복 차단·튜닝 설명·추가 피해 원인·반환 횟수·실제 적 충돌 채널·약화 만료·격분 소비·장비 원복·신규 강화 직렬화를 다룬다. 전체 QA `Saved/QA/20261001T143712Z_bee5a527/report.json`은 **PASS_WITH_WARNINGS**이며, 자동 테스트 19개(일반 15·경고 포함 4), 21개 강화 에셋, 16웨이브·7선택·6구간, 사망/재시작 20회와 정상 상태 21회를 통과했다. 보강한 출혈 경계 검사를 포함한 quick QA `20261001T144624Z_0fabbc12`도 동일하게 통과했다.
+
+최신 빌드에서 다른 QA와 겹치지 않게 세 계열의 화면 비교를 실행한다.
+
+```powershell
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\ThirdParty\Python3\Win64\python.exe' -B Tools/Validation/RunBuildPresentation.py
+```
+
+검사는 테스트 프로필 전용 `PGBuildScenario`로 같은 위치에 정지 표적 3개를 배치한다. 핵심 카드 3장면, 세 계열의 강화 전후 6장면, 출혈 중첩 1장면의 새 1280×720 캡처와 상태 로그·정상 종료를 요구한다. 출혈 처치 반환과 방어 약화는 합성 직접 적중 이벤트를 사용하며, 격분의 잔상은 실제 ASC 회피 스킬 활성화 경로로 확인한다. `assisted=true`, `direct_input=false`, `synthetic_hits=true`다. 시나리오 전환 때 보상 창·기존 적·스킬 쿨다운과 플레이어 위치를 정리한다.
+
+직접 입력, 세 빌드의 보스 공략 시간·조작감·난이도, 사운드 청취를 대신하지 않는다. 캡처는 자동 통과 뒤에도 시각 검토한다. 초기 FAIL 이력과 최종 화면 검증 근거는 [콘텐츠 계획 3단계 기록](17_content_implementation_plan.md#2026-10-01-3단계-빌드-완성-강화-구현)에 남긴다.
