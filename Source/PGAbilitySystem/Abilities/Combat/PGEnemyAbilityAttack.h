@@ -14,6 +14,7 @@ class PGABILITYSYSTEM_API UPGEnemyAbilityAttack : public UPGEnemyGameplayAbility
 {
 	GENERATED_BODY()
     friend class FPGAttackPatternLifecycleTest;
+    friend class FPGBossPhaseLifecycleTest;
 
 public:
     UPGEnemyAbilityAttack();

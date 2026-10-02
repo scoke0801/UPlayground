@@ -27,7 +27,7 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     EliteData = Row;
     bElitePattern = Enemy->bPatternActive = Enemy->bPerformingHeavyAttack = true;
     Enemy->ActivePatternID = Row.SkillID;
-    Enemy->bPatternRecovering = false;
+    Enemy->bPatternRecovering = Enemy->bPatternStriking = false;
     Enemy->ClearPatternHitboxes();
     PatternTarget = UGameplayStatics::GetPlayerPawn(this, 0);
     PatternOrigin = Enemy->GetActorLocation();
@@ -51,6 +51,7 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &ThisClass::UpdatePattern, .02f, true);
     GetWorld()->GetTimerManager().SetTimer(PatternTimer, this, &ThisClass::StrikeElitePattern, FMath::Max(.05f, Row.TelegraphDuration), false);
     UE_LOG(LogTemp, Log, TEXT("PGPattern Windup skill=%d pattern=%d"), Row.SkillID, int32(Row.Pattern));
+    Enemy->PublishBossPresentation();
 }
 
 void UPGEnemyAbilityAttack::UpdateAim()
@@ -173,7 +174,8 @@ void UPGEnemyAbilityAttack::StrikeElitePattern()
     if (Telegraph) { Telegraph->DestroyComponent(); Telegraph = nullptr; }
     if (!bStriking)
     {
-        bStriking = true;
+        bStriking = Enemy->bPatternStriking = true;
+        Enemy->PublishBossPresentation();
         if (auto* Anim = Enemy->GetMesh()->GetAnimInstance())
             if (auto* Montage = EliteData.ElitePresentationMontage.Get()) Anim->Montage_Resume(Montage);
         if (auto* Sound = EliteData.AttackSound.LoadSynchronous()) UGameplayStatics::PlaySoundAtLocation(this, Sound, Enemy->GetActorLocation());
@@ -236,6 +238,7 @@ void UPGEnemyAbilityAttack::BeginRecovery()
     FVector Floor = Enemy->GetActorLocation(); Floor.Z = PatternOrigin.Z;
     ShowTelegraph(Floor, false, true);
     GetWorld()->GetTimerManager().SetTimer(PatternTimer, this, &ThisClass::FinishElitePattern, FMath::Max(.05f, EliteData.RecoveryDuration), false);
+    Enemy->PublishBossPresentation();
 }
 void UPGEnemyAbilityAttack::FinishElitePattern() { EndAbility(CachedSpecHandle, CachedActorInfo, CachedActivationInfo, true, false); }
 void UPGEnemyAbilityAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* Info,
@@ -253,9 +256,10 @@ void UPGEnemyAbilityAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, 
                 if (auto* Montage = EliteData.ElitePresentationMontage.Get()) Anim->Montage_Stop(.1f, Montage);
             Enemy->ClearPatternHitboxes();
             Enemy->GetPGAbilitySystemComponent()->CloseRecoveryWindow();
-            Enemy->bPatternActive = Enemy->bPatternRecovering = Enemy->bPerformingHeavyAttack = false;
+            Enemy->bPatternActive = Enemy->bPatternRecovering = Enemy->bPatternStriking = Enemy->bPerformingHeavyAttack = false;
             Enemy->ActivePatternID = 0;
             if (Enemy->GetPGAbilitySystemComponent()->GetHealth() > 0) Enemy->GetCharacterMovement()->SetMovementMode(static_cast<EMovementMode>(SavedMovementMode));
+            Enemy->PublishBossPresentation();
         }
         PatternTarget.Reset();
         bElitePattern = bTravelling = bStriking = false;

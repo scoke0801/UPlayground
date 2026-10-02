@@ -1,5 +1,8 @@
 ﻿#include "PGUIMainHUD.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGMessage/Managaer/PGMessageManager.h"
+#include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGShared/Shared/Message/Combat/PGBossPresentation.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
 #include "PGActor/Controllers/PGPlayerController.h"
@@ -132,7 +135,7 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
                     [SNew(SBox).HeightOverride(9)[SNew(SProgressBar).Style(&ResourceStyle).Percent_Lambda([this](){return BossHealth;})
                         .FillColorAndOpacity(FLinearColor(.85f,.2f,.35f))]]
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-                    [SNew(STextBlock).Text_Lambda([this](){return BossStatus;}).ColorAndOpacity(PGMainHUD::Lavender).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))]]]]
+                    [SNew(STextBlock).Text_Lambda([this](){return BossStatus;}).ColorAndOpacity_Lambda([this](){return BossStatusColor;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))]]]]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(32,28)
         [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).BorderImage(&PGMainHUD::Panel).Padding(FMargin(20,16))
             [SNew(SVerticalBox)
@@ -172,6 +175,9 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
 void UPGUIMainHUD::NativeConstruct()
 {
     Super::NativeConstruct();
+    if (auto* Messages = UPGMessageManager::Get(this))
+        BossPresentationHandle = Messages->RegisterDelegate(EPGUIMessageType::BossPresentation, this, &ThisClass::OnBossPresentation);
+    for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It) It->PublishBossPresentation();
     SetVisibility(ESlateVisibility::SelfHitTestInvisible);
     Refresh();
     GetWorld()->GetTimerManager().SetTimer(RefreshTimer,this,&ThisClass::Refresh,FMath::Max(.05f,RefreshInterval),true);
@@ -179,6 +185,9 @@ void UPGUIMainHUD::NativeConstruct()
 void UPGUIMainHUD::NativeDestruct()
 {
     if(GetWorld()) GetWorld()->GetTimerManager().ClearTimer(RefreshTimer);
+    if (auto* Messages = UPGMessageManager::Get(this)) Messages->UnregisterDelegate(EPGUIMessageType::BossPresentation, BossPresentationHandle);
+    Boss.Reset();
+    bShowBoss = bBossDefeated = false;
     Stage.Reset();
     Super::NativeDestruct();
 }
@@ -256,20 +265,45 @@ void UPGUIMainHUD::Refresh()
         default: break;
     }
     Objective=FText::FromString(Goal);
-    if (!Boss.IsValid() && Stage.IsValid() && Stage->GetCurrentStageId() == 6)
-        for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It)
-            if (const auto* Row = PGData()->GetRowData<FPGEnemyDataRow>(It->GetCharacterTID()); Row && Row->Role == EPGEnemyRole::Boss)
-            { Boss = *It; BossTitle = FText::FromName(Row->EnemyName); break; }
-    bShowBoss = Boss.IsValid() && Stage.IsValid() && Stage->GetCurrentStageId() == 6;
-    if (bShowBoss)
+    if (bBossDefeated && GetWorld()->GetTimeSeconds() >= BossDefeatUntil) bShowBoss = false;
+    if (!Boss.IsValid() && !bBossDefeated) bShowBoss = false;
+    if (Stage.IsValid() && (Stage->GetCurrentStageState() == EPGStageState::RunPreparation || Stage->GetCurrentStageState() == EPGStageState::Failed))
     {
-        const auto* BossASC = Boss->GetPGAbilitySystemComponent();
-        BossHealth = BossASC->GetHealth() / FMath::Max(1.f, BossASC->GetCombatStat(EPGStatType::Health));
-        FString State = Boss->bPatternRecovering ? TEXT("빈틈 · 반격 기회") : Boss->bPatternActive ? TEXT("위험 · 공격 예고") : TEXT("다음 공격 준비");
-        if (Boss->ActivePatternID > 0 && !Boss->bPatternRecovering)
-            if (const auto* Pattern = PGData()->GetRowData<FPGSkillDataRow>(Boss->ActivePatternID)) State = Pattern->Desc;
-        if (GetWorld()->GetTimeSeconds() < Boss->PhaseTransitionUntil) State = TEXT("황혼 각성 · 2페이즈");
-        if (BossHealth <= 0) State = TEXT("황혼의 기사 격파");
-        BossStatus = FText::FromString(FString::Printf(TEXT("%d페이즈  ·  %s"), Boss->BossPhase, *State));
+        bShowBoss = false;
+        bBossDefeated = false;
+        Boss.Reset();
     }
+}
+
+void UPGUIMainHUD::OnBossPresentation(const IPGEventData* Event)
+{
+    if (!Event || !GetWorld()) return;
+    const auto& View = *static_cast<const FPGSharedBossPresentation*>(Event);
+    if (View.State == EPGBossCombatState::Hidden)
+    {
+        if (Boss == View.Owner && !bBossDefeated) { Boss.Reset(); bShowBoss = false; }
+        return;
+    }
+    if (!View.Owner.IsValid() || View.Owner->GetWorld() != GetWorld()) return;
+    if (Boss != View.Owner) bBossDefeated = false;
+    Boss = View.Owner;
+    BossTitle = View.Name;
+    BossHealth = View.HealthRatio;
+    bShowBoss = true;
+    FString Status;
+    BossStatusColor = PGMainHUD::Lavender;
+    switch (View.State)
+    {
+    case EPGBossCombatState::Windup: Status = TEXT("위험 예고 · ") + View.Attack.ToString(); BossStatusColor = FLinearColor(1.f,.5f,.2f); break;
+    case EPGBossCombatState::Attacking: Status = TEXT("공격 중 · ") + View.Attack.ToString(); BossStatusColor = FLinearColor(1.f,.3f,.3f); break;
+    case EPGBossCombatState::Recovery: Status = TEXT("빈틈 · 반격 기회"); BossStatusColor = PGMainHUD::Mint; break;
+    case EPGBossCombatState::Transition: Status = TEXT("황혼 각성 · 공격 조합 변경"); break;
+    case EPGBossCombatState::Defeated:
+        Status = TEXT("황혼의 기사 격파"); BossStatusColor = PGMainHUD::Mint;
+        if (!bBossDefeated) BossDefeatUntil = GetWorld()->GetTimeSeconds() + View.DefeatDisplaySeconds;
+        bBossDefeated = true;
+        break;
+    default: Status = TEXT("다음 공격 준비"); break;
+    }
+    BossStatus = FText::FromString(FString::Printf(TEXT("%d페이즈  ·  %s"), View.Phase, *Status));
 }

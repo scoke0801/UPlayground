@@ -37,7 +37,7 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	// 스킬 결정해서 대상 스킬 Ability를 활성화할 수 있어야한다.
 	APGCharacterEnemy* Character = GetEnemyCharacterFromActorInfo();
-	if (nullptr == Character)
+	if (nullptr == Character || Character->IsBossTransitioning() || Character->GetPGAbilitySystemComponent()->GetHealth() <= 0)
 	{
 		EndAbilitySelf();
 		return;
@@ -82,7 +82,7 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
     auto* Tables = UPGDataTableManager::Get(this);
 	FPGSkillDataRow* Row = Tables ? Tables->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(SelectedSkillSlot)) : nullptr;
-	if(nullptr == Row)
+	if(nullptr == Row || Row->MinimumBossPhase > Character->BossPhase)
 	{
 		EndAbilitySelf();
 		return;

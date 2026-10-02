@@ -92,6 +92,15 @@ bool FPGStageLifecycleTest::RunTest(const FString& Parameters)
     Stage->PrepareRun(1);
     TestTrue(TEXT("Starting loadout preparation can launch"),Stage->CanReady());
     TestEqual(TEXT("Preparation does not spawn combat"),Stage->CurrentStageState,EPGStageState::RunPreparation);
+    Stage->CurrentStageState = EPGStageState::Completed;
+    Stage->BossDefeatPresentationUntil = World->GetTimeSeconds() + 3.f;
+    Stage->GoToNextStage();
+    TestEqual(TEXT("Victory is immediate while defeat is presented"), Stage->CurrentStageState, EPGStageState::Finished);
+    TestTrue(TEXT("Result window waits for boss feedback"), World->GetTimerManager().IsTimerActive(Stage->BossResultTimer));
+    Stage->PrepareRun(1);
+    TestFalse(TEXT("Preparing a new run cancels delayed old results"), World->GetTimerManager().IsTimerActive(Stage->BossResultTimer));
+    Stage->ShowRunResult();
+    TestEqual(TEXT("Stale results cannot change the new run"), Stage->CurrentStageState, EPGStageState::RunPreparation);
     World->DestroyWorld(false);
     return true;
 }

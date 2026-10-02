@@ -19,6 +19,8 @@ void APGRoleAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
     PreviousSkill = 0;
+    SequencePhase = 1;
+    SequenceCursor = 0;
     NextDecision = RetreatUntil = NextRetreatAt = 0;
     SetCombatThinkingEnabled(true);
 }
@@ -49,7 +51,7 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
     auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
     auto* Tables = UPGDataTableManager::Get(this);
     if (!Enemy || !Tables || Enemy->bPatternActive || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
-        GetWorld()->GetTimeSeconds() < Enemy->PhaseTransitionUntil) return false;
+        Enemy->IsBossTransitioning()) return false;
     const auto* Data = Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID());
     const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(SkillID);
     if (!Data || !Data->SkillIdList.Contains(SkillID) || !Skill || Skill->MinimumBossPhase > Enemy->BossPhase ||
@@ -65,7 +67,32 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
     StopMovement();
     const bool bActivated = Spec && ASC->TryActivateAbility(Spec->Handle);
     Enemy->RequestedSkillID = 0;
+    if (bActivated && Enemy->bPatternActive)
+    {
+        PreviousSkill = SkillID;
+        if (Enemy->BossPhase >= 2 && !Data->PhaseTwoSkillSequence.IsEmpty())
+        {
+            SequencePhase = Enemy->BossPhase;
+            const int32 Index = Data->PhaseTwoSkillSequence.Find(SkillID);
+            if (Index != INDEX_NONE) SequenceCursor = (Index + 1) % Data->PhaseTwoSkillSequence.Num();
+        }
+    }
     return bActivated && Enemy->bPatternActive;
+}
+
+int32 APGRoleAIController::SelectSkill(const FPGEnemyDataRow& Data, const TArray<int32>& Candidates, int32 Phase)
+{
+    if (SequencePhase != Phase) { SequencePhase = Phase; SequenceCursor = 0; }
+    if (Candidates.IsEmpty()) return 0;
+    if (Data.Role == EPGEnemyRole::Boss && Phase >= 2 && !Data.PhaseTwoSkillSequence.IsEmpty())
+        for (int32 Offset = 0; Offset < Data.PhaseTwoSkillSequence.Num(); ++Offset)
+        {
+            const int32 ID = Data.PhaseTwoSkillSequence[(SequenceCursor + Offset) % Data.PhaseTwoSkillSequence.Num()];
+            if (Candidates.Contains(ID)) return ID;
+        }
+    TArray<int32> Choices = Candidates;
+    if (Choices.Num() > 1) Choices.Remove(PreviousSkill);
+    return Choices[FMath::RandHelper(Choices.Num())];
 }
 void APGRoleAIController::Think()
 {
@@ -80,7 +107,7 @@ void APGRoleAIController::Think()
                 Enemy->GetPGAbilitySystemComponent()->CancelAbilityHandle(Spec->Handle);
         return; // Keep the decision timer alive: a replacement player can be acquired later.
     }
-    if (Enemy->bPatternActive || GetWorld()->GetTimeSeconds() < Enemy->PhaseTransitionUntil) { StopMovement(); return; }
+    if (Enemy->bPatternActive || Enemy->IsBossTransitioning()) { StopMovement(); return; }
     if (BrainComponent && BrainComponent->IsRunning()) BrainComponent->StopLogic(TEXT("Data-driven role controller"));
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
@@ -130,9 +157,7 @@ void APGRoleAIController::Think()
     }
     if (!Candidates.IsEmpty())
     {
-        if (Candidates.Num() > 1) Candidates.Remove(PreviousSkill);
-        const int32 ID = Candidates[FMath::RandHelper(Candidates.Num())];
-        if (TryExecuteSkill(ID)) PreviousSkill = ID;
+        TryExecuteSkill(SelectSkill(*Data, Candidates, Enemy->BossPhase));
         NextDecision = Now + .25;
     }
     else

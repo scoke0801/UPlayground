@@ -21,6 +21,7 @@ UCLASS()
 class PGACTOR_API APGCharacterEnemy : public APGCharacterBase, public IPGClickableInterface
 {
 	GENERATED_BODY()
+    friend class FPGBossPhaseLifecycleTest;
 
 protected:
 	/** 컴뱃 컴포넌트 */
@@ -90,12 +91,19 @@ public:
 	APGCharacterEnemy();
     // A role controller selects an exact ID; the ability consumes it without rerolling.
     int32 RequestedSkillID = 0;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Boss")
     int32 BossPhase = 1;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Boss")
     double PhaseTransitionUntil = 0;
+    UFUNCTION(BlueprintPure, Category="PG|Boss")
+    bool IsBossTransitioning() const;
+    void PublishBossPresentation(bool bHidePresentation = false) const;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Pattern")
     bool bPatternActive = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Pattern")
     bool bPatternRecovering = false;
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Pattern")
+    bool bPatternStriking = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Pattern")
     bool bGuarding = false;
     int32 ActivePatternID = 0;
@@ -105,6 +113,7 @@ public:
 	
 protected:
 	virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 
 	virtual void PossessedBy(AController* NewController) override;
 
@@ -145,6 +154,10 @@ public:
 	virtual bool IsClickable_Implementation() const override;
 	
 private:
+    FTimerHandle BossTransitionTimer;
+    bool bBossPresentationClosed = false;
+    bool TryBeginBossPhase(const struct FPGEnemyDataRow& Row);
+    void FinishBossTransition();
 	void InitEnemyStartUpData();
 	void InitUIComponents();
 	

@@ -8,6 +8,7 @@ UCLASS()
 class PGAI_API APGRoleAIController : public AAIController
 {
     GENERATED_BODY()
+    friend class FPGBossSelectionTest;
 public:
     APGRoleAIController();
     // Also used by isolated content QA without destroying the team-owning controller.
@@ -20,6 +21,9 @@ protected:
     virtual void OnUnPossess() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:
+    int32 SelectSkill(const struct FPGEnemyDataRow& Data, const TArray<int32>& Candidates, int32 Phase);
+    int32 SequencePhase = 1;
+    int32 SequenceCursor = 0;
     void Think();
     FTimerHandle ThinkTimer;
     int32 PreviousSkill = 0;

@@ -27,6 +27,7 @@
 #include "PGShared/Shared/Enum/PGUIWIdgetEnumTypes.h"
 #include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 #include "PGStagePresentation.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "DrawDebugHelpers.h"
 #include "HAL/IConsoleManager.h"
 
@@ -53,6 +54,7 @@ void APGStageManager::BeginPlay()
 void APGStageManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     CurrentStageState = EPGStageState::None;
+    BossDefeatPresentationUntil = 0;
     GetWorldTimerManager().ClearAllTimersForObject(this);
     CloseRewardWindow();
     if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
@@ -536,6 +538,10 @@ void APGStageManager::OnEnemyKilled(APGCharacterEnemy* KilledEnemy)
 {
     if (CurrentStageState != EPGStageState::InProgress || !KilledEnemy || SpawnedEnemies.Remove(KilledEnemy) == 0) return;
     KilledEnemy->OnDestroyed.RemoveDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
+    if (KilledEnemy->GetPGAbilitySystemComponent()->GetHealth() <= 0)
+        if (auto* Tables = UPGDataTableManager::Get(this))
+            if (const auto* Row = Tables->GetRowData<FPGEnemyDataRow>(KilledEnemy->GetCharacterTID()); Row && Row->Role == EPGEnemyRole::Boss)
+                BossDefeatPresentationUntil = GetWorld()->GetTimeSeconds() + FMath::Clamp(Row->DefeatDisplaySeconds, 0.f, 10.f);
     RemainingMonsters = FMath::Max(0, RemainingMonsters - 1);
     OnMonsterCountChanged.Broadcast(RemainingMonsters);
     CheckStageComplete();
@@ -616,10 +622,19 @@ void APGStageManager::GoToNextStage()
           if (auto* Profile = UPGProfileSubsystem::Get(this))
               if (!Profile->EndRun(true, CurrentStageId)) { FailStage(TEXT("클리어 기록 저장 실패. 다시 시도해 주세요.")); return; }
         OnRunFinished.Broadcast();
-        const auto* Profile = UPGProfileSubsystem::Get(this);
-        ShowStageStatus(FText::FromString(FString::Printf(TEXT("시련 돌파!\n완료 구간 %d · 선택한 강화 %d종\n장비와 강화는 새 도전에서 초기화됩니다"),
-            CurrentStageId, Profile ? Profile->GetProfile()->SelectedRewards.Num() : 0)));
+        // Victory is already committed. Leave the boss defeat visible before covering gameplay with results.
+        const float Delay = FMath::Max(0.f, float(BossDefeatPresentationUntil - GetWorld()->GetTimeSeconds()));
+        if (Delay > 0.f) GetWorldTimerManager().SetTimer(BossResultTimer, this, &ThisClass::ShowRunResult, Delay, false);
+        else ShowRunResult();
     }
+}
+
+void APGStageManager::ShowRunResult()
+{
+    if (CurrentStageState != EPGStageState::Finished) return;
+    const auto* Profile = UPGProfileSubsystem::Get(this);
+    ShowStageStatus(FText::FromString(FString::Printf(TEXT("시련 돌파!\n완료 구간 %d · 선택한 강화 %d종\n장비와 강화는 새 도전에서 초기화됩니다"),
+        CurrentStageId, Profile ? Profile->GetProfile()->SelectedRewards.Num() : 0)));
 }
 
 void APGStageManager::StartNextStageAfterDelay()
@@ -748,6 +763,8 @@ void APGStageManager::ReadyForNextStage()
 }
 void APGStageManager::PrepareRun(int32 StageId)
 {
+    GetWorldTimerManager().ClearTimer(BossResultTimer);
+    BossDefeatPresentationUntil = 0;
     CurrentStageId = StageId;
     CurrentStageState = EPGStageState::RunPreparation;
 }

@@ -134,6 +134,9 @@ private:
     void OnPlayerDied(const IPGEventData* Data);
     void ShowStageStatus(const FText& Text);
     void RestartRun();
+    void ShowRunResult();
+    FTimerHandle BossResultTimer;
+    double BossDefeatPresentationUntil = 0;
       friend class FPGStageLifecycleTest;
       friend class UPGCheatManager;
       friend class APGGameModeStage;

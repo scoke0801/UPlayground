@@ -2,6 +2,9 @@
 
 
 #include "PGCharacterEnemy.h"
+#include "AIController.h"
+#include "PGAbilitySystem/Abilities/Combat/PGEnemyAbilityAttack.h"
+#include "PGShared/Shared/Message/Combat/PGBossPresentation.h"
 #include "Kismet/GameplayStatics.h"
 #include "PGActor/Progression/PGLootDrop.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
@@ -155,6 +158,10 @@ void APGCharacterEnemy::BeginPlay()
                     if (auto* Asset = Path.TryLoad()) PreparedPatternAssets.AddUnique(Asset);
 			}
 		}
+        if (EnemyData->Role == EPGEnemyRole::Boss)
+            for (const FSoftObjectPath& Path : {EnemyData->PhaseVFX.ToSoftObjectPath(), EnemyData->PhaseSound.ToSoftObjectPath(),
+                EnemyData->DefeatVFX.ToSoftObjectPath(), EnemyData->DefeatSound.ToSoftObjectPath()})
+                if (auto* Asset = Path.TryLoad()) PreparedPatternAssets.AddUnique(Asset);
 	}
 
 	LeftHandCollisionBox->IgnoreActorWhenMoving(this, true);
@@ -166,6 +173,15 @@ void APGCharacterEnemy::BeginPlay()
 	InitUIComponents();
 	
 	UpdateHpBar();
+    PublishBossPresentation();
+}
+
+void APGCharacterEnemy::EndPlay(const EEndPlayReason::Type Reason)
+{
+    GetWorldTimerManager().ClearTimer(BossTransitionTimer);
+    PublishBossPresentation(true);
+    bBossPresentationClosed = true;
+    Super::EndPlay(Reason);
 }
 
 void APGCharacterEnemy::PossessedBy(AController* NewController)
@@ -455,21 +471,83 @@ void APGCharacterEnemy::OnHealthChanged()
     const bool bWasDead = bDeathStarted;
     Super::OnHealthChanged();
     UpdateHpBar();
-    if (bDeathStarted) SetGuarding(false);
-    if (auto* Tables = UPGDataTableManager::Get(this); !bDeathStarted && BossPhase == 1 && Tables)
+    if (bDeathStarted)
+    {
+        SetGuarding(false);
+        GetWorldTimerManager().ClearTimer(BossTransitionTimer);
+        PhaseTransitionUntil = 0;
+    }
+    if (auto* Tables = UPGDataTableManager::Get(this))
     {
         const auto* Row = Tables->GetRowData<FPGEnemyDataRow>(CharacterTID);
-        if (Row && Row->Role == EPGEnemyRole::Boss && EnemyStatComponent->GetHealthRatio() <= Row->PhaseTwoHealthRatio)
+        if (Row && Row->Role == EPGEnemyRole::Boss)
         {
-            BossPhase = 2; // Set before cancellation/callbacks: one transition even on large hits.
-            AbilitySystemComponent->CancelAbilities();
-            PhaseTransitionUntil = GetWorld()->GetTimeSeconds() + FMath::Clamp(Row->PhaseTransitionSeconds, 0.f, 5.f);
-            if (auto* VFX = Row->PhaseVFX.LoadSynchronous()) UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, GetActorLocation());
-            if (auto* Sound = Row->PhaseSound.LoadSynchronous()) UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation());
-            UE_LOG(LogTemp, Log, TEXT("PGBoss Phase=2 health=%.1f"), AbilitySystemComponent->GetHealth());
+            TryBeginBossPhase(*Row);
+            if (!bWasDead && bDeathStarted)
+            {
+                if (auto* VFX = Row->DefeatVFX.Get()) UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, GetActorLocation());
+                if (auto* Sound = Row->DefeatSound.Get()) UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation());
+                UE_LOG(LogTemp, Log, TEXT("PGBoss Defeated phase=%d"), BossPhase);
+            }
         }
     }
+    PublishBossPresentation(); // Publish defeat before stage completion can destroy the actor.
     if (!bWasDead && bDeathStarted) { APGLootDrop::SpawnForEnemy(this); NotifyStageManagerOnDeath(); }
+}
+
+bool APGCharacterEnemy::IsBossTransitioning() const
+{
+    return GetWorld() && GetWorld()->GetTimeSeconds() < PhaseTransitionUntil && AbilitySystemComponent->GetHealth() > 0;
+}
+
+bool APGCharacterEnemy::TryBeginBossPhase(const FPGEnemyDataRow& Row)
+{
+    const float Health = AbilitySystemComponent->GetHealth();
+    const float MaxHealth = AbilitySystemComponent->GetCombatStat(EPGStatType::Health);
+    if (Row.Role != EPGEnemyRole::Boss || bDeathStarted || Health <= 0 || MaxHealth <= 0 || BossPhase != 1 ||
+        !FMath::IsFinite(Row.PhaseTwoHealthRatio) || Health / MaxHealth > FMath::Clamp(Row.PhaseTwoHealthRatio, .01f, .99f)) return false;
+    // Set both gates before cancellation: a callback must not start a new attack in this transition.
+    BossPhase = 2;
+    const float Duration = FMath::IsFinite(Row.PhaseTransitionSeconds) ? FMath::Clamp(Row.PhaseTransitionSeconds, 0.f, 5.f) : 1.2f;
+    PhaseTransitionUntil = GetWorld()->GetTimeSeconds() + Duration;
+    RequestedSkillID = 0;
+    if (const auto* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(UPGEnemyAbilityAttack::StaticClass()))
+        AbilitySystemComponent->CancelAbilityHandle(Spec->Handle);
+    ClearPatternHitboxes();
+    if (auto* AI = Cast<AAIController>(GetController())) AI->StopMovement();
+    GetCharacterMovement()->StopMovementImmediately();
+    if (Duration > 0.f) GetWorldTimerManager().SetTimer(BossTransitionTimer, this, &ThisClass::FinishBossTransition, Duration, false);
+    if (auto* VFX = Row.PhaseVFX.Get()) UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, GetActorLocation());
+    if (auto* Sound = Row.PhaseSound.Get()) UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation());
+    UE_LOG(LogTemp, Log, TEXT("PGBoss Phase=2 health=%.1f duration=%.2f"), Health, Duration);
+    return true;
+}
+
+void APGCharacterEnemy::FinishBossTransition()
+{
+    PhaseTransitionUntil = 0;
+    PublishBossPresentation();
+}
+
+void APGCharacterEnemy::PublishBossPresentation(bool bHidePresentation) const
+{
+    if (bBossPresentationClosed) return;
+    auto* Tables = UPGDataTableManager::Get(this);
+    const auto* Row = Tables ? Tables->GetRowData<FPGEnemyDataRow>(CharacterTID) : nullptr;
+    auto* Messages = UPGMessageManager::Get(this);
+    if (!Row || Row->Role != EPGEnemyRole::Boss || !Messages || !AbilitySystemComponent) return;
+    FPGSharedBossPresentation View;
+    View.Owner = const_cast<APGCharacterEnemy*>(this);
+    View.Name = FText::FromName(Row->EnemyName);
+    View.HealthRatio = FMath::Clamp(AbilitySystemComponent->GetHealth() / FMath::Max(1.f, AbilitySystemComponent->GetCombatStat(EPGStatType::Health)), 0.f, 1.f);
+    View.Phase = BossPhase;
+    View.DefeatDisplaySeconds = FMath::Clamp(Row->DefeatDisplaySeconds, 0.f, 10.f);
+    View.State = bHidePresentation ? EPGBossCombatState::Hidden : View.HealthRatio <= 0 ? EPGBossCombatState::Defeated :
+        IsBossTransitioning() ? EPGBossCombatState::Transition : bPatternRecovering ? EPGBossCombatState::Recovery :
+        bPatternStriking ? EPGBossCombatState::Attacking : bPatternActive ? EPGBossCombatState::Windup : EPGBossCombatState::Preparing;
+    if (ActivePatternID > 0)
+        if (const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ActivePatternID)) View.Attack = FText::FromString(Skill->Desc);
+    Messages->SendMessage(EPGUIMessageType::BossPresentation, &View);
 }
 
 float APGCharacterEnemy::GetDirectionalDamageScale(const AActor* Attacker) const

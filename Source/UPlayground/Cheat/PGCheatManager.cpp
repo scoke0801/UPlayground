@@ -164,6 +164,23 @@ void UPGCheatManager::PGCombatStats()
 #endif
 }
 
+void UPGCheatManager::PGBossDamage(float Amount)
+{
+#if !UE_BUILD_SHIPPING
+    auto* Profile = UPGProfileSubsystem::Get(this);
+    auto* Player = Cast<APGCharacterBase>(GetOuterAPlayerController()->GetPawn());
+    auto* Tables = UPGDataTableManager::Get(this);
+    if (!Player || !Tables || !FMath::IsFinite(Amount) || Amount <= 0 || !Profile || !Profile->MarkRunAssisted()) return;
+    for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It)
+        if (const auto* Row = Tables->GetRowData<FPGEnemyDataRow>(It->GetCharacterTID()); Row && Row->Role == EPGEnemyRole::Boss)
+        {
+            const float Damage = It->GetPGAbilitySystemComponent()->ReceiveProcDamage(Player->GetPGAbilitySystemComponent(), Amount);
+            UE_LOG(LogTemp, Display, TEXT("PGBoss Probe damage=%.1f health=%.1f phase=%d transition=%d"),
+                Damage, It->GetPGAbilitySystemComponent()->GetHealth(), It->BossPhase, It->IsBossTransitioning());
+        }
+#endif
+}
+
 void UPGCheatManager::PGProfileStatus()
 {
 #if !UE_BUILD_SHIPPING

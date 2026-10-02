@@ -19,6 +19,8 @@ public:
     UFUNCTION(Exec) void PGStageStatus();
     UFUNCTION(Exec) void PGStartStage(int32 StageId = 1);
     UFUNCTION(Exec) void PGCombatStats();
+    /** Assisted GAS damage for threshold/death timing probes. */
+    UFUNCTION(Exec) void PGBossDamage(float Amount = 15000.f);
     UFUNCTION(Exec) void PGCombatControlsProbe();
     UFUNCTION(Exec) void PGProfileStatus();
     UFUNCTION(Exec) void PGDropItem(int32 ItemId = 3401, int32 Seed = 1234);

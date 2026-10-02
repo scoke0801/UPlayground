@@ -21,13 +21,18 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category="PG|HUD", meta=(ClampMin="0.05", ClampMax="1"))
     float RefreshInterval = .1f;
 private:
+    void OnBossPresentation(const class IPGEventData* Event);
+    FDelegateHandle BossPresentationHandle;
+    double BossDefeatUntil = 0;
+    bool bBossDefeated = false;
+    FLinearColor BossStatusColor = FLinearColor::White;
     void Refresh();
     FReply ActivateSlot(int32 Index);
     TSharedRef<SWidget> MakeResource(bool bHealth);
     TSharedRef<SWidget> MakeSkill(int32 Index);
     FTimerHandle RefreshTimer;
     TWeakObjectPtr<class APGStageManager> Stage;
-    TWeakObjectPtr<class APGCharacterEnemy> Boss;
+    TWeakObjectPtr<AActor> Boss;
     float BossHealth = 0.f;
     bool bShowBoss = false;
     FText BossTitle;

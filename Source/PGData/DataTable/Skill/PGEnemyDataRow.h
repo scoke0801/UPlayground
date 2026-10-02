@@ -46,8 +46,17 @@ public:
     float PhaseTwoHealthRatio = .5f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin="0", ClampMax="5"))
     float PhaseTransitionSeconds = 1.2f;
+    // Prefer this ordered combination in phase two; unavailable attacks are skipped.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss")
+    TArray<int32> PhaseTwoSkillSequence;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss")
     TSoftObjectPtr<class UNiagaraSystem> PhaseVFX;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss")
     TSoftObjectPtr<class USoundBase> PhaseSound;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss")
+    TSoftObjectPtr<class UNiagaraSystem> DefeatVFX;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss")
+    TSoftObjectPtr<class USoundBase> DefeatSound;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin="0", ClampMax="10"))
+    float DefeatDisplaySeconds = 3.f;
 };
