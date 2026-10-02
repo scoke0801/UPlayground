@@ -83,6 +83,8 @@ enemy_path = '/Game/DataCenter/DataTables/Actor/DT_Enemy'
 skill_path = '/Game/DataCenter/DataTables/Skill/DT_Skill'
 stage_path = '/Game/DataCenter/DataTables/Stage/DT_StageData'
 enemies, skills, stages = rows(enemy_path), rows(skill_path), rows(stage_path)
+original_enemies, original_skills = copy.deepcopy(enemies), copy.deepcopy(skills)
+target_enemies = set(range(15101, 15106)) if STEP == 1 else {15106}
 base = copy.deepcopy(next(r for r in skills if r['SkillID']==15104))
 definitions = [
     (15101,'추격자의 베기','Sweep',.45,180,.5,2,220),
@@ -91,8 +93,9 @@ definitions = [
     (15104,'분쇄자의 돌진 강타','ChargeSlam',1.1,260,1.7,5,850),
     (15105,'파수꾼의 위험 지대','HazardSequence',1.2,200,1.5,6,1000),
 ]
-if STEP >= 2:
-    definitions += [(15106,'황혼 횡베기','Sweep',.9,460,1.15,3,480),
+if STEP == 2:
+    assert all(r.get('Role', 'Legacy') != 'Legacy' for r in enemies if r['EnemyID'] in range(15101,15106)), 'Apply step 1 first'
+    definitions = [(15106,'황혼 횡베기','Sweep',.9,460,1.15,3,480),
                     (15107,'황혼 돌진 강타','ChargeSlam',1.25,350,1.8,6,1000),
                     (15108,'황혼 파동','HazardSequence',1.3,250,1.6,7,1200)]
 for sid,title,pattern,windup,radius,recovery,cooldown,reach in definitions:
@@ -109,12 +112,16 @@ for sid,title,pattern,windup,radius,recovery,cooldown,reach in definitions:
     skills=[r for r in skills if r['SkillID']!=sid]+[row]
 for row in enemies:
     eid=row['EnemyID']
-    if eid not in range(15101,15107 if STEP>=2 else 15106): continue
+    if eid not in target_enemies: continue
     row.update(Role={15101:'Chaser',15102:'Shooter',15103:'Guardian',15104:'Crusher',15105:'Warden',15106:'Boss'}[eid],
                PreferredDistance=700 if eid==15102 else 0,DistanceTolerance=120,GuardHalfAngle=70,GuardReduction=.7,
                TurnSpeed=95 if eid==15103 else 240,RetreatDistance=350,RetreatSeconds=.6,RetreatCooldown=1.2,
                SkillIdList=[15106,15107,15108] if eid==15106 else [eid],PhaseTwoHealthRatio=.5,PhaseTransitionSeconds=1.2,
                PhaseVFX='/Game/DataCenter/CombatCycle/NS_ImpactCritical.NS_ImpactCritical',PhaseSound='/Game/DataCenter/CombatCycle/S_Rare.S_Rare')
+    if eid == 15106:
+        row.update(PhaseTwoSkillSequence=[15108,15107,15106],
+                   DefeatVFX='/Game/DataCenter/CombatCycle/NS_ImpactCritical.NS_ImpactCritical',
+                   DefeatSound='/Game/DataCenter/CombatCycle/S_Rare.S_Rare',DefeatDisplaySeconds=3.)
 
 # Keep the previous per-wave totals, changing composition rather than increasing combat load.
 packs = {
@@ -124,7 +131,7 @@ packs = {
  4:[[(15101,5),(15102,3)],[(15103,5),(15102,3),(15101,1)],[(15103,4),(15102,2),(15105,1)]],
  5:[[(15101,4),(15102,3),(15103,2)],[(15103,4),(15102,4),(15101,2)],[(15103,2),(15102,2),(15104,1),(15105,1)]]}
 for stage in stages:
-    if stage['Id'] not in packs: continue
+    if STEP != 1 or stage['Id'] not in packs: continue
     assert len(stage['Waves']) == len(packs[stage['Id']]), stage['Id']
     for wave,pack in zip(stage['Waves'],packs[stage['Id']]):
         total=sum(s['SpawnCount'] for s in wave['MonsterSpawnInfos'])
@@ -132,7 +139,7 @@ for stage in stages:
         wave['MonsterSpawnInfos']=[dict(MonsterId=eid,SpawnCount=n,SpawnPriority=0,SpawnDelayTime=0.) for eid,n in pack]
 # Validate all compositions before saving any existing table or blueprint.
 for row in enemies:
-    if row['EnemyID'] not in range(15101,15107 if STEP>=2 else 15106): continue
+    if row['EnemyID'] not in target_enemies: continue
     bp_path=row['ActorClass'].split('.')[0]
     preserve(bp_path)
     bp=unreal.load_asset(bp_path)
@@ -140,5 +147,9 @@ for row in enemies:
     assert bp and cls, bp_path
     unreal.get_default_object(cls).set_editor_property('ai_controller_class',unreal.PGRoleAIController)
     save(bp)
-write(skill_path,skills); write(enemy_path,enemies); write(stage_path,stages)
+target_skills = {definition[0] for definition in definitions}
+assert [r for r in enemies if r['EnemyID'] not in target_enemies] == [r for r in original_enemies if r['EnemyID'] not in target_enemies]
+assert [r for r in skills if r['SkillID'] not in target_skills] == [r for r in original_skills if r['SkillID'] not in target_skills]
+write(skill_path,skills); write(enemy_path,enemies)
+if STEP == 1: write(stage_path,stages)
 unreal.log('PGContent MIGRATION PASS step='+str(STEP))

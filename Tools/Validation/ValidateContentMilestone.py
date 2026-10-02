@@ -39,5 +39,32 @@ def validate_content_milestone(enemies, skills, stages):
     assert wave_ids(1) == {15101, 15102}
     assert {15103, 15104} <= wave_ids(2) and 15105 not in wave_ids(2)
     assert 15105 in wave_ids(4) and set(roles) == wave_ids(5)
-    unreal.log('PGContent VALIDATION PASS ' + json.dumps(dict(schema=1, roles=5, waves=15, wave_counts=expected)))
-    return 1
+    schema = 1
+    boss = enemies[15106]
+    if boss.get('Role') == 'Boss':
+        schema = 2
+        assert boss['SkillIdList'] == [15106,15107,15108]
+        assert boss['PhaseTwoSkillSequence'] == [15108,15107,15106]
+        assert 0 < boss['PhaseTwoHealthRatio'] < 1 and 0 <= boss['PhaseTransitionSeconds'] <= 5
+        assert 0 < boss['DefeatDisplaySeconds'] <= 10
+        for field in ('PhaseVFX','PhaseSound','DefeatVFX','DefeatSound'):
+            assert unreal.load_asset(boss[field]), field
+        cls = unreal.load_class(None, boss['ActorClass'])
+        assert unreal.get_default_object(cls).get_editor_property('ai_controller_class') == unreal.PGRoleAIController.static_class()
+        for sid, pattern in ((15106,'Sweep'), (15107,'ChargeSlam'), (15108,'HazardSequence')):
+            skill = skills[sid]
+            assert skill['Pattern'] == pattern and skill['MinimumBossPhase'] == (2 if sid == 15108 else 1), sid
+            for field in ('TelegraphDuration','TelegraphRadius','RecoveryDuration','SkillCoolTime','TravelSpeed',
+                          'TravelDistance','LineHalfWidth','LandingTelegraphSeconds','SkillRange'):
+                assert math.isfinite(skill[field]) and skill[field] > 0, (sid,field)
+            assert 0 <= skill['AimTrackingSeconds'] < skill['TelegraphDuration']
+            assert 0 < skill['HalfAngleDegrees'] <= 180 and 1 <= skill['HazardCount'] <= 8
+            assert skill['HazardInterval'] >= .1 and skill['HazardSpacing'] >= 0
+            for field in ('TelegraphMaterial','ElitePresentationMontage','SlamVFX','AttackSound'):
+                assert unreal.load_asset(skill[field]), (sid,field)
+        assert by_id[6]['bIsBossStage'] and len(by_id[6]['Waves']) == 1
+        assert [(s['MonsterId'], s['SpawnCount']) for s in by_id[6]['Waves'][0]['MonsterSpawnInfos']] == [(15106,1)]
+    else:
+        assert 15107 not in skills and 15108 not in skills, 'Partial boss migration'
+    unreal.log('PGContent VALIDATION PASS ' + json.dumps(dict(schema=schema, roles=5, boss_attacks=3 if schema==2 else 0, waves=15, wave_counts=expected)))
+    return schema
