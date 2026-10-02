@@ -3,6 +3,7 @@ import unreal, json, os
 import sys
 sys.path.insert(0, os.path.join(unreal.Paths.project_dir(), 'Tools/Validation'))
 from ValidateContentMilestone import validate_content_milestone
+from ValidateBuildKeystones import validate_build_keystones
 assert unreal.EditorAssetLibrary.does_asset_exist('/Game/Maps/RogueArena')
 def rows(path):
     asset=unreal.load_asset(path); assert asset,path
@@ -50,8 +51,9 @@ player=unreal.get_default_object(unreal.EditorAssetLibrary.load_blueprint_class(
 tuning=player.get_editor_property('ability_system_component').get_editor_property('combat_tuning')
 assert tuning
 for prop in ['bleed_vfx','shock_vfx','frenzy_vfx']: assert tuning.get_editor_property(prop)
-result=dict(status='PASS',stages=6,reward_choices=7,rewards=18,build_branches=3,legendary_items=3,normal_enemies=3,elites=2,bosses=1)
+result=dict(status='PASS',stages=6,reward_choices=7,rewards=21,build_branches=3,legendary_items=3,normal_enemies=3,elites=2,bosses=1)
 result['content_schema'] = validate_content_milestone(enemies, skills, stages)
+result['build_schema'] = validate_build_keystones(rewards, stages, tuning)
 dest=os.path.join(unreal.Paths.project_saved_dir(),'RoguelikeMVP','validation.json')
 with open(dest,'w',encoding='utf-8') as f: json.dump(result,f,indent=2)
 unreal.log('PGRogue VALIDATION PASS '+json.dumps(result))
