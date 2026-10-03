@@ -19,7 +19,7 @@ TSharedRef<SWidget> UPGUILootLabel::RebuildWidget()
     {
         auto Brush = Image->GetBrush(); Brush.SetUVRegion(FBox2f(FVector2f(IconPanel / 3.f,0),FVector2f((IconPanel+1) / 3.f,1))); Image->SetBrush(Brush);
     }
-    auto* Text = WidgetTree->ConstructWidget<UTextBlock>(); Text->SetText(FText::Format(NSLOCTEXT("PG", "LootLabel", "{0}  [E]"), ItemName)); Text->SetColorAndOpacity(GradeColor);
+    auto* Text = WidgetTree->ConstructWidget<UTextBlock>(); Text->SetText(ItemName); Text->SetColorAndOpacity(GradeColor);
     auto Font = Text->GetFont(); Font.Size = 15; Text->SetFont(Font); Row->AddChildToHorizontalBox(Text)->SetPadding(FMargin(6,0));
     return Super::RebuildWidget();
 }

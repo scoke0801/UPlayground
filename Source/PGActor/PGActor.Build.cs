@@ -11,6 +11,8 @@ public class PGActor : ModuleRules
 
 		// Preserve existing cross-module references during the UE 5.8 migration.
 		CircularlyReferencedDependentModules.AddRange(new string[] { "PGUI" });
+        if (Target.Configuration != UnrealTargetConfiguration.Shipping)
+            PrivateDependencyModuleNames.Add("AudioMixer"); // Isolated UI audio capture probe.
         
         // C++ 20 사용 설정
         CppStandard = CppStandardVersion.Cpp20;

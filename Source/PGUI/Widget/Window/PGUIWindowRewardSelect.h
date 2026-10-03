@@ -1,7 +1,9 @@
-#pragma once
+﻿#pragma once
 #include "CoreMinimal.h"
 #include "PGUIWindow.h"
 #include "PGData/DataTable/Stage/PGStageDataRow.h"
+#include "PGShared/Shared/Structure/PGRunResultView.h"
+#include "Styling/SlateBrush.h"
 #include "PGUIWindowRewardSelect.generated.h"
 
 DECLARE_DELEGATE_RetVal_TwoParams(bool, FPGSubmitReward, FGuid, int32);
@@ -14,29 +16,40 @@ public:
     FPGSubmitReward OnSubmit;
     FSimpleDelegate OnRetry;
     TWeakObjectPtr<class APGStageManager> StageOwner;
-    void SetStatus(const FText& Text) { StatusText = Text; bIsStatus = true; }
+    void SetStatus(const FText& Text, const FText& Action = FText()) { StatusText = Text; StatusAction = Action; bIsStatus = true; }
+    void SetResult(const FPGRunResultView& View) { Result = View; bIsStatus = bIsResult = true; }
     void SetRewardId(int StageId);
     void SetChoices(FGuid InToken, const TArray<FPGStageReward>& InChoices);
-    UFUNCTION(BlueprintCallable, Category="PG|Reward")
-    bool SubmitChoice(int32 Index);
+    UFUNCTION(BlueprintCallable, Category="PG|Reward") bool SubmitChoice(int32 Index);
 protected:
     virtual TSharedRef<SWidget> RebuildWidget() override;
+    virtual void NativeConstruct() override;
+    virtual void NativeDestruct() override;
     virtual void NativeTick(const FGeometry& Geometry, float DeltaTime) override;
+    virtual FReply NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;
+    virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 private:
     friend class UPGCheatManager;
+    friend class APGPlayerController;
     FGuid Token;
     bool bIsStatus = false;
-    FText StatusText;
-    UPROPERTY(Transient)
-    TArray<FPGStageReward> Choices;
+    bool bIsResult = false;
+    bool bSubmitting = false;
+    FText StatusText, StatusAction, Feedback;
+    FPGRunResultView Result;
+    TSharedPtr<class SBox> Frame;
+    TSharedPtr<class SBorder> ResultBody;
+    FSlateBrush LootBrush;
+    UPROPERTY(Transient) TObjectPtr<UTexture2D> LootIcon;
+    UPROPERTY(Transient) TArray<FPGStageReward> Choices;
     UPROPERTY(Transient) TArray<TObjectPtr<class UPGUIRewardCard>> Cards;
-    UPROPERTY(Transient) TObjectPtr<class UTextBlock> BuildCountdown;
     float PresentationTime = 0.f;
     float ConfirmTime = 0.f;
     bool bConfirming = false;
     int32 PendingIndex = INDEX_NONE;
     void BeginChoice(int32 Index);
-    UFUNCTION() void SelectFirst();
-    UFUNCTION() void SelectSecond();
-    UFUNCTION() void SelectThird();
+    void RetryRun();
+    TSharedRef<SWidget> MakeChoices();
+    TSharedRef<SWidget> MakeResult();
+    FText CountdownText() const;
 };

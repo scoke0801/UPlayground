@@ -1,6 +1,8 @@
 #include "PGUIManager.h"
 #include "PGActor/Manager/PGStagePresentation.h"
 #include "PGActor/Manager/PGStageManager.h"
+#include "PGActor/Controllers/PGPlayerController.h"
+#include "Framework/Application/SlateApplication.h"
 #include "PGUI/Widget/Window/PGUIWindowRewardSelect.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
@@ -39,6 +41,8 @@ void UPGUIManager::Deinitialize()
     CloseStageWindow();
     if (auto* Messages = GetGameInstance()->GetSubsystem<UPGMessageManager>()) Messages->UnregisterDelegate(EPGUIMessageType::StagePresentation, StagePresentationHandle);
     CloseAllUI();
+    ModalInputLayers.Empty();
+    ApplyModalInput();
     if (WeakThis.Get() == this) WeakThis.Reset();
     Super::Deinitialize();
 }
@@ -466,14 +470,9 @@ UPGUIManager* UPGUIManager::Get(const UObject* Context)
 void UPGUIManager::CloseStageWindow()
 {
     if (!StageWindow) return;
-    APlayerController* PC = StageWindow->GetOwningPlayer();
+    ReleaseModalInput(StageWindow);
     StageWindow->OnSubmit.Unbind(); StageWindow->OnRetry.Unbind(); StageWindow->RemoveFromParent(); StageWindow = nullptr;
     StageOwner.Reset();
-    if (PC)
-    {
-        PC->SetIgnoreMoveInput(false);
-        FInputModeGameAndUI Input; Input.SetHideCursorDuringCapture(false); PC->SetInputMode(Input); PC->FlushPressedKeys();
-    }
 }
 void UPGUIManager::OnStagePresentation(const IPGEventData* Event)
 {
@@ -481,6 +480,7 @@ void UPGUIManager::OnStagePresentation(const IPGEventData* Event)
     const auto& View = *static_cast<const FPGStagePresentation*>(Event);
     if (!View.Owner.IsValid() || View.Owner->GetWorld() != GetWorld()) return;
     if (View.bClose) { if (StageOwner == View.Owner) CloseStageWindow(); return; }
+    if (auto* PC = Cast<APGPlayerController>(GetFirstPlayerController())) PC->CloseInventory();
     CloseStageWindow();
     APlayerController* PC = GetFirstPlayerController();
     if (!PC || !PC->IsLocalController()) return;
@@ -488,7 +488,8 @@ void UPGUIManager::OnStagePresentation(const IPGEventData* Event)
     if (!StageWindow) return;
     StageOwner = View.Owner;
     StageWindow->StageOwner = Cast<APGStageManager>(View.Owner.Get());
-    if (!View.Status.IsEmpty()) { StageWindow->SetStatus(View.Status); StageWindow->OnRetry = View.Retry; }
+    if (View.bRunResult) { StageWindow->SetResult(View.Result); StageWindow->OnRetry = View.Retry; }
+    else if (!View.Status.IsEmpty()) { StageWindow->SetStatus(View.Status, View.ActionLabel); StageWindow->OnRetry = View.Retry; }
     else
     {
         const FPGStageSubmit Submit = View.Submit;
@@ -496,6 +497,66 @@ void UPGUIManager::OnStagePresentation(const IPGEventData* Event)
         StageWindow->SetChoices(View.Token, View.Choices);
     }
     StageWindow->AddToViewport(100);
-    FInputModeUIOnly Input; Input.SetWidgetToFocus(StageWindow->TakeWidget());
-    PC->SetIgnoreMoveInput(true); PC->SetInputMode(Input); PC->FlushPressedKeys();
+    AcquireModalInput(StageWindow, false);
+}
+
+void UPGUIManager::AcquireModalInput(UUserWidget* Widget, bool bPauseWorld)
+{
+    APlayerController* PC = Widget ? Widget->GetOwningPlayer() : nullptr;
+    if (!PC || !PC->IsLocalController()) return;
+    if (ModalPlayer.IsValid() && ModalPlayer != PC)
+    {
+        ModalInputLayers.Empty();
+        ApplyModalInput();
+    }
+    if (!ModalPlayer.IsValid())
+    {
+        ModalPlayer = PC;
+        bWasPausedBeforeModal = PC->IsPaused();
+        bWasCursorVisible = PC->bShowMouseCursor;
+        PC->SetIgnoreMoveInput(true);
+        bModalMoveLock = true;
+    }
+    ModalInputLayers.RemoveAll([Widget](const auto& Layer){ return !Layer.Widget.IsValid() || Layer.Widget == Widget; });
+    ModalInputLayers.Add({Widget, bPauseWorld});
+    ApplyModalInput();
+}
+
+void UPGUIManager::ReleaseModalInput(UUserWidget* Widget)
+{
+    const int32 Removed = ModalInputLayers.RemoveAll([Widget](const auto& Layer){ return !Layer.Widget.IsValid() || Layer.Widget == Widget; });
+    if (Removed) ApplyModalInput();
+}
+
+void UPGUIManager::ApplyModalInput()
+{
+    APlayerController* PC = ModalPlayer.Get();
+    ModalInputLayers.RemoveAll([](const auto& Layer){ return !Layer.Widget.IsValid(); });
+    if (!PC) { ModalInputLayers.Empty(); ModalPlayer.Reset(); bModalMoveLock = bPausedByModal = false; return; }
+    PC->FlushPressedKeys();
+    if (!ModalInputLayers.IsEmpty())
+    {
+        const auto& Top = ModalInputLayers.Last();
+        const bool bWantPause = bWasPausedBeforeModal || Top.bPauseWorld;
+        if (bWantPause && !PC->IsPaused()) bPausedByModal = PC->SetPause(true);
+        else if (!bWantPause && bPausedByModal) { PC->SetPause(false); bPausedByModal = false; }
+        FInputModeUIOnly Input;
+        Input.SetWidgetToFocus(Top.Widget->TakeWidget());
+        Input.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        PC->bShowMouseCursor = true;
+        PC->SetInputMode(Input);
+    }
+    else
+    {
+        if (bPausedByModal && !bWasPausedBeforeModal) PC->SetPause(false);
+        if (bModalMoveLock) PC->SetIgnoreMoveInput(false);
+        PC->bShowMouseCursor = bWasCursorVisible;
+        FInputModeGameAndUI Input;
+        Input.SetHideCursorDuringCapture(false);
+        Input.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        PC->SetInputMode(Input);
+        if (FSlateApplication::IsInitialized()) FSlateApplication::Get().SetAllUserFocusToGameViewport();
+        ModalPlayer.Reset();
+        bModalMoveLock = bPausedByModal = false;
+    }
 }

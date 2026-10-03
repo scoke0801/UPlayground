@@ -19,6 +19,20 @@ bool FPGRewardPresentationTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Retry succeeds"),Window->SubmitChoice(INDEX_NONE));
     TestFalse(TEXT("Repeated input cannot pay twice"),Window->SubmitChoice(INDEX_NONE));
     TestEqual(TEXT("Exactly two grant attempts"),Calls,2);
+    FPGStageReward Choice;
+    Window->SetChoices(Token,{Choice,Choice,Choice});
+    TestFalse(TEXT("Negative choice rejected before consumer"),Window->SubmitChoice(INDEX_NONE));
+    TestFalse(TEXT("Out of bounds choice rejected before consumer"),Window->SubmitChoice(3));
+    TestEqual(TEXT("Invalid choices never invoke grant"),Calls,2);
+    Window->OnSubmit.BindLambda([&](FGuid, int32 Index)
+    {
+        ++Calls;
+        TestEqual(TEXT("Valid index reaches consumer"),Index,1);
+        TestFalse(TEXT("Reentrant input cannot grant twice"),Window->SubmitChoice(1));
+        return true;
+    });
+    TestTrue(TEXT("Valid selection succeeds"),Window->SubmitChoice(1));
+    TestEqual(TEXT("Exactly one non-reentrant grant"),Calls,3);
     return true;
 }
 #endif

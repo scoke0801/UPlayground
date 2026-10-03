@@ -8,7 +8,7 @@ public class PGUI : ModuleRules
 	{
 		PrivateDependencyModuleNames.AddRange(new string[] { "Paper2D", "PGActor", "PGMessage", "PGAbilitySystem", "GameplayAbilities", "EnhancedInput" });
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PublicDependencyModuleNames.AddRange(new string[] { "PGShared", "PGData" });
+        PublicDependencyModuleNames.AddRange(new string[] { "PGShared", "PGData", "DeveloperSettings" });
 
 		// C++ 20 사용 설정
 		CppStandard = CppStandardVersion.Cpp20;

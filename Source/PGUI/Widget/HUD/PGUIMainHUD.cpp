@@ -1,4 +1,5 @@
-﻿#include "PGUIMainHUD.h"
+#include "PGUIMainHUD.h"
+#include "PGUI/Style/PGUIStyle.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
@@ -36,17 +37,6 @@
 
 namespace PGMainHUD
 {
-    const FLinearColor Mint(.32f, .91f, .72f);
-    const FLinearColor Lavender(.63f, .57f, 1.f);
-    const FLinearColor Text(.93f, .96f, 1.f);
-    const FLinearColor Muted(.55f, .64f, .75f);
-    const FSlateRoundedBoxBrush Panel(FLinearColor(.016f, .025f, .047f, .92f), 12.f, FLinearColor(.25f, .34f, .46f, .5f), 1.f);
-    const FSlateRoundedBoxBrush Card(FLinearColor(.035f, .052f, .085f, .96f), 10.f, FLinearColor(.28f, .38f, .49f, .7f), 1.f);
-    const FSlateRoundedBoxBrush Hover(FLinearColor(.065f, .13f, .16f), 10.f, Mint, 1.5f);
-    const FSlateRoundedBoxBrush Pressed(FLinearColor(.025f, .075f, .09f), 10.f, Mint, 2.f);
-    const FSlateRoundedBoxBrush Cooldown(FLinearColor(.008f, .012f, .03f, .78f), 8.f);
-    const FButtonStyle Button = FButtonStyle().SetNormal(Card).SetHovered(Hover).SetPressed(Pressed)
-        .SetDisabled(Card).SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));
     EPGSkillSlot Slot(int32 Index) { return Index == 7 ? EPGSkillSlot::SkillSlot_Roll : static_cast<EPGSkillSlot>(Index); }
     FGameplayTag Tag(int32 Index)
     {
@@ -73,35 +63,35 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeResource(bool bHealth)
         [SNew(SHorizontalBox)
             + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
             [SNew(STextBlock).Text_Lambda([this,bHealth](){return FText::FromString(bHealth ? TEXT("생명력") : bRogueHUD ? TEXT("격분") : TEXT("분노"));})
-                .ColorAndOpacity(bHealth ? PGMainHUD::Mint : PGMainHUD::Lavender).Font(FCoreStyle::GetDefaultFontStyle("Bold",11))]
+                .ColorAndOpacity(bHealth ? FPGUIStyle::Get().Mint : FPGUIStyle::Get().Lavender).Font(FCoreStyle::GetDefaultFontStyle("Bold",11))]
             + SHorizontalBox::Slot().FillWidth(1).HAlign(HAlign_Right)
-            [SNew(STextBlock).ColorAndOpacity(PGMainHUD::Text).Font(FCoreStyle::GetDefaultFontStyle("Bold",13))
+            [SNew(STextBlock).ColorAndOpacity(FPGUIStyle::Get().Text).Font(FCoreStyle::GetDefaultFontStyle("Bold",13))
                 .Text_Lambda([this,bHealth](){return bHealth ? HealthText : RageText;})]]
         + SVerticalBox::Slot().AutoHeight()
         [SNew(SBox).HeightOverride(6)
             [SNew(SProgressBar).Style(&ResourceStyle).BorderPadding(FVector2D::ZeroVector)
                 .FillColorAndOpacity_Lambda([this,bHealth]()
-                {return bHealth ? (HealthRatio <= .25f ? FLinearColor(1.f,.22f,.28f) : PGMainHUD::Mint) : PGMainHUD::Lavender;})
+                {return bHealth ? (HealthRatio <= .25f ? FLinearColor(1.f,.22f,.28f) : FPGUIStyle::Get().Mint) : FPGUIStyle::Get().Lavender;})
                 .Percent_Lambda([this,bHealth](){return bHealth ? HealthRatio : RageRatio;})]]
     ];
 }
 
 TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
 {
-    const FLinearColor Accent = Index == 7 ? PGMainHUD::Lavender : PGMainHUD::Mint;
+    const FLinearColor Accent = Index == 7 ? FPGUIStyle::Get().Lavender : FPGUIStyle::Get().Mint;
     return SNew(SBox).WidthOverride(62).HeightOverride(64)
     .Visibility_Lambda([this,Index](){return SkillIds[Index] > 0 ? EVisibility::Visible : EVisibility::Collapsed;})
-    [SNew(SButton).ButtonStyle(&PGMainHUD::Button).IsFocusable(false).ContentPadding(3)
+    [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(3)
         .IsEnabled_Lambda([this,Index](){return bCanAct && SkillIds[Index] > 0 && Cooldowns[Index] <= 0.f;})
         .ToolTipText_Lambda([this,Index](){return SkillNames[Index];})
         .OnClicked_Lambda([this,Index](){return ActivateSlot(Index);})
         [SNew(SOverlay)
             + SOverlay::Slot().Padding(1,1,1,5)[SNew(SImage).Image(&SkillBrushes[Index])]
             + SOverlay::Slot()
-            [SNew(SBorder).BorderImage(&PGMainHUD::Cooldown)
+            [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Cooldown)
                 .Visibility_Lambda([this,Index](){return Cooldowns[Index] > 0.f ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})]
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(PGMainHUD::Text)
+            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(FPGUIStyle::Get().Text)
                 .ShadowOffset(FVector2D(0,1)).Text_Lambda([this,Index]()
                 {
                     if(Cooldowns[Index]>0.f) return FText::FromString(FString::Printf(TEXT("%.1f"),Cooldowns[Index]));
@@ -127,56 +117,56 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,28)
         [SNew(SBox).WidthOverride(450)
             .Visibility_Lambda([this](){return bShowBoss ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
-            [SNew(SBorder).BorderImage(&PGMainHUD::Panel).Padding(18)
+            [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Panel).Padding(18)
                 [SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-                    [SNew(STextBlock).Text_Lambda([this](){return BossTitle;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(PGMainHUD::Text)]
+                    [SNew(STextBlock).Text_Lambda([this](){return BossTitle;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(FPGUIStyle::Get().Text)]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,8)
                     [SNew(SBox).HeightOverride(9)[SNew(SProgressBar).Style(&ResourceStyle).Percent_Lambda([this](){return BossHealth;})
                         .FillColorAndOpacity(FLinearColor(.85f,.2f,.35f))]]
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
                     [SNew(STextBlock).Text_Lambda([this](){return BossStatus;}).ColorAndOpacity_Lambda([this](){return BossStatusColor;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))]]]]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(32,28)
-        [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).BorderImage(&PGMainHUD::Panel).Padding(FMargin(20,16))
+        [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).BorderImage(&FPGUIStyle::Get().Panel).Padding(FMargin(20,16))
             [SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight()
                 [SNew(STextBlock).Text(FText::FromString(TEXT("T R I A L  /  시련")))
-                    .Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(PGMainHUD::Mint)]
+                    .Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(FPGUIStyle::Get().Mint)]
                 + SVerticalBox::Slot().AutoHeight().Padding(0,6,0,8)
-                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",25)).ColorAndOpacity(PGMainHUD::Text)
+                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",25)).ColorAndOpacity(FPGUIStyle::Get().Text)
                     .Text_Lambda([this](){return StageTitle;})]
                 + SVerticalBox::Slot().AutoHeight()
-                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular",12)).ColorAndOpacity(PGMainHUD::Muted)
+                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular",12)).ColorAndOpacity(FPGUIStyle::Get().Muted)
                     .WrapTextAt(340).Text_Lambda([this](){return Objective;})]
             ]]
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(32,28)
-        [SNew(SButton).ButtonStyle(&PGMainHUD::Button).IsFocusable(false).ContentPadding(FMargin(20,13))
+        [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(FMargin(20,13))
             .OnClicked_Lambda([this](){if(auto* PC=Cast<APGPlayerController>(GetOwningPlayer())) PC->ToggleInventory(); return FReply::Handled();})
             [SNew(STextBlock).Text(FText::FromString(TEXT("장비 · 빌드"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))
-                .ColorAndOpacity(PGMainHUD::Text)]]
+                .ColorAndOpacity(FPGUIStyle::Get().Text)]]
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(32,92)
-        [SNew(SButton).ButtonStyle(&PGMainHUD::Button).IsFocusable(false).ContentPadding(FMargin(20,13))
+        [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(FMargin(20,13))
             .Visibility_Lambda([this](){ return Stage.IsValid() && Stage->IsManualReady() && Stage->CanReady() ? EVisibility::Visible : EVisibility::Collapsed; })
             .OnClicked_Lambda([this](){ if (Stage.IsValid()) Stage->ReadyForNextStage(); return FReply::Handled(); })
-            [SNew(STextBlock).Text(FText::FromString(TEXT("준비 완료 →"))).ColorAndOpacity(PGMainHUD::Mint)]]
+            [SNew(STextBlock).Text(FText::FromString(TEXT("준비 완료 →"))).ColorAndOpacity(FPGUIStyle::Get().Mint)]]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center).Padding(32,100,0,0)
         [SNew(SBox).WidthOverride(285).Visibility_Lambda([this](){return bRogueHUD ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
-            [SNew(SBorder).BorderImage(&PGMainHUD::Panel).Padding(14)
+            [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Panel).Padding(14)
                 [SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight()
                     [SNew(STextBlock).Text_Lambda([this](){return BuildSummary;}).WrapTextAt(255)
-                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(PGMainHUD::Text)]
+                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(FPGUIStyle::Get().Text)]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,10,0,0)
                     [SNew(STextBlock).Text_Lambda([this](){return BuildStatus;}).WrapTextAt(255)
-                        .Font(FCoreStyle::GetDefaultFontStyle("Regular",12)).ColorAndOpacity(PGMainHUD::Muted)]
+                        .Font(FCoreStyle::GetDefaultFontStyle("Regular",12)).ColorAndOpacity(FPGUIStyle::Get().Muted)]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)
                     [SNew(STextBlock).Text_Lambda([this](){return BuildProc;}).WrapTextAt(255)
-                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(PGMainHUD::Mint)]]]]
+                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(FPGUIStyle::Get().Mint)]]]]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(24,0,24,30)
         [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
             [SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,10)
-                [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).BorderImage(&PGMainHUD::Panel).Padding(FMargin(18,12))
+                [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).BorderImage(&FPGUIStyle::Get().Panel).Padding(FMargin(18,12))
                     [SNew(SHorizontalBox)
                         + SHorizontalBox::Slot().AutoWidth()[MakeResource(true)]
                         + SHorizontalBox::Slot().AutoWidth().Padding(30,0,0,0)[MakeResource(false)]]]
@@ -329,15 +319,15 @@ void UPGUIMainHUD::OnBossPresentation(const IPGEventData* Event)
     BossHealth = View.HealthRatio;
     bShowBoss = true;
     FString Status;
-    BossStatusColor = PGMainHUD::Lavender;
+    BossStatusColor = FPGUIStyle::Get().Lavender;
     switch (View.State)
     {
     case EPGBossCombatState::Windup: Status = TEXT("위험 예고 · ") + View.Attack.ToString(); BossStatusColor = FLinearColor(1.f,.5f,.2f); break;
     case EPGBossCombatState::Attacking: Status = TEXT("공격 중 · ") + View.Attack.ToString(); BossStatusColor = FLinearColor(1.f,.3f,.3f); break;
-    case EPGBossCombatState::Recovery: Status = TEXT("빈틈 · 반격 기회"); BossStatusColor = PGMainHUD::Mint; break;
+    case EPGBossCombatState::Recovery: Status = TEXT("빈틈 · 반격 기회"); BossStatusColor = FPGUIStyle::Get().Mint; break;
     case EPGBossCombatState::Transition: Status = TEXT("황혼 각성 · 공격 조합 변경"); break;
     case EPGBossCombatState::Defeated:
-        Status = TEXT("황혼의 기사 격파"); BossStatusColor = PGMainHUD::Mint;
+        Status = TEXT("황혼의 기사 격파"); BossStatusColor = FPGUIStyle::Get().Mint;
         if (!bBossDefeated) BossDefeatUntil = GetWorld()->GetTimeSeconds() + View.DefeatDisplaySeconds;
         bBossDefeated = true;
         break;

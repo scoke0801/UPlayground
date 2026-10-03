@@ -21,6 +21,18 @@ class PGUI_API UPGUIManager : public UGameInstanceSubsystem
     GENERATED_BODY()
 
 private:
+    struct FModalInputLayer
+    {
+        TWeakObjectPtr<UUserWidget> Widget;
+        bool bPauseWorld = false;
+    };
+    TArray<FModalInputLayer> ModalInputLayers;
+    TWeakObjectPtr<APlayerController> ModalPlayer;
+    bool bModalMoveLock = false;
+    bool bPausedByModal = false;
+    bool bWasPausedBeforeModal = false;
+    bool bWasCursorVisible = true;
+    void ApplyModalInput();
     FDelegateHandle StagePresentationHandle;
     UPROPERTY() TObjectPtr<class UPGUIWindowRewardSelect> StageWindow;
     TWeakObjectPtr<AActor> StageOwner;
@@ -55,6 +67,9 @@ private:
 public:
     static UPGUIManager* Get();
     static UPGUIManager* Get(const UObject* Context);
+    // Native inventory and stage screens share one input owner and balanced move lock.
+    void AcquireModalInput(UUserWidget* Widget, bool bPauseWorld);
+    void ReleaseModalInput(UUserWidget* Widget);
     
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
@@ -82,7 +97,7 @@ public:
     void CloseCurrentWindow();
 
     UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|WINDOW")
-    bool IsWindowOpen() const { return CurrentWindow != nullptr || StageWindow != nullptr; }
+    bool IsWindowOpen() const { return CurrentWindow != nullptr || StageWindow != nullptr || !ModalInputLayers.IsEmpty(); }
 
     UFUNCTION(BlueprintCallable, Category = "PG|UI Manager|WINDOW")
     UPGUIWindow* GetCurrentWindow() const { return CurrentWindow; }
