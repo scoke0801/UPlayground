@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "mesh": "SM_PG_CrystalBolt",
+  "material": "M_PG_CrystalBolt",
+  "fbx": "SM_PG_CrystalBolt.fbx",
+  "forward": "+X",
+  "unit": "metres",
+  "bounds_m": [
+    [
+      -0.2199999988079071,
+      -0.10999999940395355,
+      -0.10999999940395355
+    ],
+    [
+      0.2199999988079071,
+      0.10999999940395355,
+      0.10999999940395355
+    ]
+  ],
+  "triangles": 304,
+  "vertices": 168,
+  "material_slots": 1,
+  "vertex_color": "RGB=base colour, A=emission mask",
+  "roughness": 0.38,
+  "metallic": 0.25,
+  "emission": 1.4,
+  "runtime_class": "/Script/PGActor.PGPatternProjectile",
+  "skill_id": 15102
+}

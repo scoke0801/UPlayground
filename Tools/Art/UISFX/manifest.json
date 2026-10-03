@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "sample_rate": 48000,
+  "channels": 2,
+  "bits": 16,
+  "seed_family": 8100,
+  "provenance": "Original procedural synthesis. No external samples or music.",
+  "sound_class_volume": 0.8,
+  "preview_platform_headroom_db": -3.0,
+  "asset_directory": "/Game/DataCenter/Audio/UI",
+  "sounds": [
+    {
+      "name": "S_PG_UI_RewardOpen",
+      "filename": "S_PG_UI_RewardOpen.wav",
+      "volume": 0.85,
+      "description": "Soft ascending D5-A5-D6 glass reveal; 70 ms steps match card stagger.",
+      "sha256": "356e8fda37957ce4dbd0fd96ec2d51d663cb647efb747cf411a43c7ae68abc13",
+      "duration": 0.82,
+      "peak_dbfs": -8.0,
+      "rms_dbfs": -21.427,
+      "dc": 7.535577789554751e-06,
+      "stereo_correlation": 0.9818,
+      "mono_loss_db": -0.046,
+      "clipped_samples": 0,
+      "endpoints": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "S_PG_UI_RewardConfirm",
+      "filename": "S_PG_UI_RewardConfirm.wav",
+      "volume": 0.9,
+      "description": "Dry tactile latch, immediate attack; acknowledges selection, not successful saving.",
+      "sha256": "bda84ae319063d0d57284ce1d9ae14be789e04e847525f4244a6f8a564459b5e",
+      "duration": 0.32,
+      "peak_dbfs": -8.0,
+      "rms_dbfs": -23.774,
+      "dc": 3.611842791239421e-05,
+      "stereo_correlation": 0.9995,
+      "mono_loss_db": -0.001,
+      "clipped_samples": 0,
+      "endpoints": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "S_PG_UI_Victory",
+      "filename": "S_PG_UI_Victory.wav",
+      "volume": 0.85,
+      "description": "D major rising resolution, warm low body and restrained crystalline tail.",
+      "sha256": "d3e1a5a1aabad1edf5341899fa19985494a7e362a2f8df0ed4b0438b97dfed82",
+      "duration": 2.4,
+      "peak_dbfs": -6.0,
+      "rms_dbfs": -22.998,
+      "dc": 6.36895497639974e-06,
+      "stereo_correlation": 0.9812,
+      "mono_loss_db": -0.042,
+      "clipped_samples": 0,
+      "endpoints": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "preview_order": [
+    "S_PG_UI_RewardOpen",
+    "S_PG_UI_RewardConfirm",
+    "S_PG_UI_Victory"
+  ]
+}

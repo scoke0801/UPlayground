@@ -1,0 +1,20 @@
+{
+  "sample_rate": 30,
+  "guard_hand": [24, 26, 110],
+  "guard_elbow_pole": [65, -15, 112],
+  "guard_shield_center": [24, 40, 99],
+  "guard_shield_rotation": [0, 90, 0],
+  "recovery_shield_center": [41, 21, 72],
+  "recovery_shield_rotation": [-28, 120, -20],
+  "slam_source": "Anim_Attack_Sword_1",
+  "slam_impact_fraction": 0.48,
+  "slam_keys": [
+    {"time": 0.0, "right_hand": [-38, 3, 99], "left_hand": [24, 26, 110], "lean": 0},
+    {"time": 0.28, "right_hand": [-32, -8, 154], "left_hand": [23, 29, 116], "lean": -7},
+    {"time": 0.40, "right_hand": [-28, -9, 160], "left_hand": [23, 29, 116], "lean": -10},
+    {"time": 0.48, "right_hand": [-24, 38, 96], "left_hand": [35, 16, 96], "lean": 14},
+    {"time": 0.60, "right_hand": [-25, 33, 90], "left_hand": [38, 10, 90], "lean": 12},
+    {"time": 0.82, "right_hand": [-37, 12, 93], "left_hand": [30, 17, 99], "lean": 5},
+    {"time": 1.0, "right_hand": [-38, 3, 99], "left_hand": [24, 26, 110], "lean": 0}
+  ]
+}

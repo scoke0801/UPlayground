@@ -1,0 +1,233 @@
+{
+  "schema": 1,
+  "materials": {
+    "Slate": [
+      [
+        0.105,
+        0.135,
+        0.175
+      ],
+      0.88,
+      0.02,
+      0
+    ],
+    "SlateLight": [
+      [
+        0.145,
+        0.173,
+        0.205
+      ],
+      0.85,
+      0.02,
+      0
+    ],
+    "SlateDark": [
+      [
+        0.078,
+        0.098,
+        0.125
+      ],
+      0.91,
+      0.02,
+      0
+    ],
+    "Basalt": [
+      [
+        0.055,
+        0.069,
+        0.09
+      ],
+      0.86,
+      0.02,
+      0
+    ],
+    "EdgeStone": [
+      [
+        0.19,
+        0.215,
+        0.24
+      ],
+      0.77,
+      0.03,
+      0
+    ],
+    "Bronze": [
+      [
+        0.23,
+        0.145,
+        0.068
+      ],
+      0.46,
+      0.72,
+      0
+    ],
+    "Inlay": [
+      [
+        0.12,
+        0.14,
+        0.15
+      ],
+      0.69,
+      0.32,
+      0
+    ],
+    "Mint": [
+      [
+        0.035,
+        0.34,
+        0.24
+      ],
+      0.23,
+      0.18,
+      0.55
+    ],
+    "MintLight": [
+      [
+        0.16,
+        0.64,
+        0.49
+      ],
+      0.19,
+      0.08,
+      0.9
+    ],
+    "Violet": [
+      [
+        0.2,
+        0.075,
+        0.39
+      ],
+      0.23,
+      0.18,
+      0.55
+    ],
+    "VioletLight": [
+      [
+        0.43,
+        0.22,
+        0.72
+      ],
+      0.19,
+      0.08,
+      0.9
+    ]
+  },
+  "meshes": {
+    "SM_PG_ArenaFloor": {
+      "file": "SM_PG_ArenaFloor.fbx",
+      "slots": [
+        "M_PGEnv_Basalt",
+        "M_PGEnv_SlateLight",
+        "M_PGEnv_SlateDark",
+        "M_PGEnv_Slate",
+        "M_PGEnv_Bronze",
+        "M_PGEnv_Inlay"
+      ],
+      "triangles": 37788,
+      "vertices": 20512,
+      "bounds_m": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0,
+          1.0049999952316284
+        ]
+      ]
+    },
+    "SM_PG_ArenaRampart": {
+      "file": "SM_PG_ArenaRampart.fbx",
+      "slots": [
+        "M_PGEnv_Basalt",
+        "M_PGEnv_SlateDark",
+        "M_PGEnv_Slate",
+        "M_PGEnv_EdgeStone",
+        "M_PGEnv_Bronze",
+        "M_PGEnv_Mint"
+      ],
+      "triangles": 21180,
+      "vertices": 11296,
+      "bounds_m": [
+        [
+          0.0,
+          -0.001500000013038516,
+          0.0
+        ],
+        [
+          1.0,
+          1.0015000104904175,
+          1.0
+        ]
+      ]
+    },
+    "SM_PG_CrystalPlinth": {
+      "file": "SM_PG_CrystalPlinth.fbx",
+      "slots": [
+        "M_PGEnv_SlateDark",
+        "M_PGEnv_EdgeStone",
+        "M_PGEnv_Bronze",
+        "M_PGEnv_Basalt"
+      ],
+      "triangles": 848,
+      "vertices": 448,
+      "bounds_m": [
+        [
+          -0.4829629063606262,
+          -0.4829629063606262,
+          -0.5
+        ],
+        [
+          0.4829629063606262,
+          0.4829629063606262,
+          0.5
+        ]
+      ]
+    },
+    "SM_PG_CrystalCluster": {
+      "file": "SM_PG_CrystalCluster.fbx",
+      "slots": [
+        "M_PGEnv_Mint",
+        "M_PGEnv_MintLight",
+        "M_PGEnv_Bronze"
+      ],
+      "triangles": 180,
+      "vertices": 100,
+      "bounds_m": [
+        [
+          -0.4285595417022705,
+          -0.42046183347702026,
+          -0.5
+        ],
+        [
+          0.42046183347702026,
+          0.42046183347702026,
+          0.4961538314819336
+        ]
+      ]
+    },
+    "SM_PG_RuneSeal": {
+      "file": "SM_PG_RuneSeal.fbx",
+      "slots": [
+        "M_PGEnv_Bronze",
+        "M_PGEnv_MintLight"
+      ],
+      "triangles": 736,
+      "vertices": 512,
+      "bounds_m": [
+        [
+          -0.7072559595108032,
+          -0.7072559595108032,
+          0.006000000052154064
+        ],
+        [
+          0.7072559595108032,
+          0.7072559595108032,
+          0.017999999225139618
+        ]
+      ]
+    }
+  }
+}
