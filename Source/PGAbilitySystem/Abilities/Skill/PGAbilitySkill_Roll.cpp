@@ -7,6 +7,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
 
 void UPGAbilitySkill_Roll::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                            const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
@@ -53,7 +54,8 @@ bool UPGAbilitySkill_Roll::ComputeRollDirection()
 		return false;
 	}
 
-	RollingDirection = Character->GetLastMovementInputVector();
+    auto* Player = Cast<APGCharacterPlayer>(Character);
+    RollingDirection = Player ? Player->GetDodgeDirection() : Character->GetLastMovementInputVector();
 	if (RollingDirection.IsNearlyZero()) RollingDirection = Character->GetActorForwardVector();
     RollingDirection.Normalize(0.0001);
 

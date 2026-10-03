@@ -14,8 +14,14 @@ class PGACTOR_API FPGPlayerSkillHandler : public FPGSkillHandler
 	using Super = FPGSkillHandler;
 	
 private:
+	friend class FPGComboSequenceTest;
 	int32 ComboCount = 0;
 	EPGSkillSlot LastUsedSlot = EPGSkillSlot::NormalAttack;
+    PGSkillId ComboBaseSkill = INVALID_SKILL_ID;
+    double ComboExpiresAt = 0.;
+    double GetComboTime() const;
+    int32 GetComboIndex(EPGSkillSlot Slot, const struct FPGSkillDataRow& BaseSkill, double Now) const;
+    void AdvanceCombo(EPGSkillSlot Slot, const struct FPGSkillDataRow& BaseSkill, double Now, float MontageSeconds);
 	
 public:
 	virtual ~FPGPlayerSkillHandler() = default;

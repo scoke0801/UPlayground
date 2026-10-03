@@ -7,6 +7,7 @@ class PGDATA_API UPGQuarterViewData : public UDataAsset
 {
     GENERATED_BODY()
 public:
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Dodge") bool bDodgeFollowsMovement = true;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FRotator Rotation = FRotator(-55.f, -45.f, 0.f);
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="100")) float Distance = 1200.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="100")) float MinDistance = 700.f;

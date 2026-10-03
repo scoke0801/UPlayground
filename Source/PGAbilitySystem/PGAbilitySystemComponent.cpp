@@ -48,7 +48,8 @@ void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInpu
     if (!InInputTag.IsValid() || HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead)) return;
     if (const APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetAvatarActor()))
         if (!Player->IsGameplayInputAllowed()) { ClearBufferedInput(); return; }
-    ClearBufferedInput();
+    ClearBufferedInput(false);
+    if (InInputTag == PGGamePlayTags::InputTag_Skill_Normal) bNormalAttackHeld = true;
     if (TryInput(InInputTag)) return;
     // Toggle actions must never turn on later after an unrelated state change.
     if (InputBufferSeconds <= 0.f || InInputTag.MatchesTag(PGGamePlayTags::InputTag_Toggleable)) return;
@@ -59,6 +60,7 @@ void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInpu
 
 void UPGAbilitySystemComponent::OnAbilityInputReleased(const FGameplayTag& InInputTag)
 {
+    if (InInputTag == PGGamePlayTags::InputTag_Skill_Normal) bNormalAttackHeld = false;
 	if (InInputTag == BufferedInput && InInputTag.MatchesTag(PGGamePlayTags::InputTag_MustBeHeld)) ClearBufferedInput();
     if (false == InInputTag.IsValid() ||
 		false == InInputTag.MatchesTag(PGGamePlayTags::InputTag_MustBeHeld))
@@ -386,8 +388,22 @@ bool UPGAbilitySystemComponent::TryInput(const FGameplayTag& Tag)
     }
     return false;
 }
-void UPGAbilitySystemComponent::ClearBufferedInput()
+void UPGAbilitySystemComponent::OnAbilityInputHeld(const FGameplayTag& InInputTag)
 {
+    if (InInputTag != PGGamePlayTags::InputTag_Skill_Normal || !bNormalAttackHeld || !bRepeatNormalAttackWhileHeld) return;
+    const APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetAvatarActor());
+    if (HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead) || (Player && !Player->IsGameplayInputAllowed()))
+    {
+        ClearBufferedInput();
+        return;
+    }
+    // A deliberate skill/dodge request gets the next opening. Holding attack never replaces it
+    // or extends its lifetime, and never queues another swing after the button is released.
+    if (!BufferedInput.IsValid()) TryInput(InInputTag);
+}
+void UPGAbilitySystemComponent::ClearBufferedInput(bool bClearHeldInput)
+{
+    if (bClearHeldInput) bNormalAttackHeld = false;
     BufferedInput = FGameplayTag();
     BufferExpiresAt = 0.;
     if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(InputBufferTimer);
@@ -395,13 +411,12 @@ void UPGAbilitySystemComponent::ClearBufferedInput()
 void UPGAbilitySystemComponent::RetryBufferedInput()
 {
     const APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetAvatarActor());
-    if (!BufferedInput.IsValid() || FPlatformTime::Seconds() > BufferExpiresAt ||
-        HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead) || (Player && !Player->IsGameplayInputAllowed()))
+    if (HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead) || (Player && !Player->IsGameplayInputAllowed()))
     {
         ClearBufferedInput();
         return;
     }
-    if (TryInput(BufferedInput)) ClearBufferedInput();
+    if (!BufferedInput.IsValid() || FPlatformTime::Seconds() > BufferExpiresAt || TryInput(BufferedInput)) ClearBufferedInput(false);
 }
 void UPGAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
 {

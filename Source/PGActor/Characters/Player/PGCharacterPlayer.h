@@ -46,10 +46,14 @@ public:
     bool IsGameplayInputAllowed() const;
     const UDataAsset_InputConfig* GetInputConfig() const { return InputConfigDataAsset; }
     void FaceAimDirection();
+    void FaceDodgeDirection();
+    FVector GetDodgeDirection();
     void SetAttackAimTracking(bool bEnabled) { bTrackAttackAim = bEnabled; }
     bool CanStartSkill(bool bDodge) const;
     void SetSkillCancelPolicy(float AttackFraction, float DodgeFraction);
 private:
+    friend class FPGDodgeDirectionTest;
+    FVector MoveInputDirection = FVector::ZeroVector;
     bool bTrackAttackAim = false;
     void RefreshCursorAim();
     bool bSkillWindowOpen = false;
@@ -151,10 +155,12 @@ public:
 
 private:
 	void Input_Move(const FInputActionValue& InputActionValue);
+    void Input_MoveReleased(const FInputActionValue& InputActionValue);
 	void Input_Look(const FInputActionValue& InputActionValue);
 	void Input_Zoom(const FInputActionValue& InputActionValue);
 	
 	void Input_AbilityInputPressed(FGameplayTag InInputTag);
+    void Input_AbilityInputHeld(FGameplayTag InInputTag);
 	void input_AbilityInputReleased(FGameplayTag InInputTag);
 
 private:

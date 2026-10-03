@@ -70,6 +70,7 @@ private:
     double RecoveryExpiresAt = 0.;
     float RecoveryDamageBonus = 0.f;
     FGameplayTag BufferedInput;
+    bool bNormalAttackHeld = false;
     double BufferExpiresAt = 0.;
     FTimerHandle InputBufferTimer;
     bool TryInput(const FGameplayTag& Tag);
@@ -92,6 +93,8 @@ public:
     TObjectPtr<class UPGCombatTuningData> CombatTuning;
     UPROPERTY(EditDefaultsOnly, Category="PG|Input", meta=(ClampMin="0", ClampMax="0.5"))
     float InputBufferSeconds = 0.12f;
+    UPROPERTY(EditDefaultsOnly, Category="PG|Input")
+    bool bRepeatNormalAttackWhileHeld = true;
     void InitializeCombatStats(const TMap<EPGStatType, int32>& Stats);
     static FGameplayAttribute AttributeForStat(EPGStatType Type);
     float GetCombatStat(EPGStatType Type) const;
@@ -106,7 +109,8 @@ public:
     bool ApplyStatBonus(EPGStatType Type, float Amount);
     void SetProfileBonuses(const TMap<EPGStatType, int32>& Bonuses);
     void SetEquipmentBonuses(const TMap<EPGStatType, int32>& Bonuses);
-    void ClearBufferedInput();
+    void ClearBufferedInput(bool bClearHeldInput = true);
+    void OnAbilityInputHeld(const FGameplayTag& InInputTag);
     virtual int32 HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData* Payload) override;
 	/**
 	 * 어빌리티 입력이 눌렸을 때 호출되는 함수

@@ -43,7 +43,7 @@ public:
 	 */
 	template<class UserObject, typename CallbackFunc>
 	void BindAbilityInputAction(const UDataAsset_InputConfig* InInputConfig, UserObject* ContextObject,
-		CallbackFunc InputPressedFunc, CallbackFunc InputReleasedFunc);
+		CallbackFunc InputPressedFunc, CallbackFunc InputReleasedFunc, CallbackFunc InputHeldFunc);
 
 
 };
@@ -62,7 +62,7 @@ void UPGInputComponent::BindNativeInputAction(const UDataAsset_InputConfig* InIn
 
 template <class UserObject, typename CallbackFunc>
 void UPGInputComponent::BindAbilityInputAction(const UDataAsset_InputConfig* InInputConfig, UserObject* ContextObject,
-	CallbackFunc InputPressedFunc, CallbackFunc InputReleasedFunc)
+	CallbackFunc InputPressedFunc, CallbackFunc InputReleasedFunc, CallbackFunc InputHeldFunc)
 {
 	checkf(InInputConfig, TEXT("Input Config data Asset is null"));
 
@@ -74,6 +74,7 @@ void UPGInputComponent::BindAbilityInputAction(const UDataAsset_InputConfig* InI
 		}
 
 		BindAction(AbilityInputActionConfig.InputAction, ETriggerEvent::Started, ContextObject, InputPressedFunc, AbilityInputActionConfig.InputTag);
+        BindAction(AbilityInputActionConfig.InputAction, ETriggerEvent::Triggered, ContextObject, InputHeldFunc, AbilityInputActionConfig.InputTag);
 		BindAction(AbilityInputActionConfig.InputAction, ETriggerEvent::Completed, ContextObject, InputReleasedFunc, AbilityInputActionConfig.InputTag);
         BindAction(AbilityInputActionConfig.InputAction, ETriggerEvent::Canceled, ContextObject, InputReleasedFunc, AbilityInputActionConfig.InputTag);
 	

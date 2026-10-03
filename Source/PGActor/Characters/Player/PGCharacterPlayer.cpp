@@ -122,13 +122,17 @@ void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Move,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Move);
+    PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Move,
+        ETriggerEvent::Completed, this, &ThisClass::Input_MoveReleased);
+    PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Move,
+        ETriggerEvent::Canceled, this, &ThisClass::Input_MoveReleased);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Look,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Look);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Zoom,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Zoom);
 
 	PgInputComponent->BindAbilityInputAction(InputConfigDataAsset, this,
-		&ThisClass::Input_AbilityInputPressed, &ThisClass::input_AbilityInputReleased);
+		&ThisClass::Input_AbilityInputPressed, &ThisClass::input_AbilityInputReleased, &ThisClass::Input_AbilityInputHeld);
 }
 
 void APGCharacterPlayer::PossessedBy(AController* NewController)
@@ -256,6 +260,7 @@ void APGCharacterPlayer::CheckAllMeshesLoaded()
 
 void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 {
+    MoveInputDirection = FVector::ZeroVector;
 	if (!IsGameplayInputAllowed())
 	{
 		return;
@@ -272,6 +277,7 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 		const FVector ForwardDirection = YawRotation.RotateVector(FVector::ForwardVector);
 		const FVector RightDirection = YawRotation.RotateVector(FVector::RightVector);
 		const FVector MovementDirection = (ForwardDirection * MovementVector.Y + RightDirection * MovementVector.X).GetSafeNormal();
+        MoveInputDirection = MovementDirection;
         
 		AddMovementInput(MovementDirection, 1.0f);
         
@@ -280,6 +286,11 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 		const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, GetWorld()->GetDeltaSeconds(), 8.0f);
 		if (!bUseQuarterView) SetActorRotation(NewRotation);
 	}
+}
+
+void APGCharacterPlayer::Input_MoveReleased(const FInputActionValue& InputActionValue)
+{
+    MoveInputDirection = FVector::ZeroVector;
 }
 
 void APGCharacterPlayer::Input_Look(const FInputActionValue& InputActionValue)
@@ -333,8 +344,19 @@ void APGCharacterPlayer::Input_AbilityInputPressed(FGameplayTag InInputTag)
 	if (!IsGameplayInputAllowed()) { AbilitySystemComponent->ClearBufferedInput(); return; }
     if (const APGPlayerController* PC = Cast<APGPlayerController>(Controller))
         if (PC->IsPointerOverUI()) return;
-    FaceAimDirection();
     AbilitySystemComponent->OnAbilityInputPressed(InInputTag);
+}
+
+void APGCharacterPlayer::Input_AbilityInputHeld(FGameplayTag InInputTag)
+{
+    if (InInputTag != PGGamePlayTags::InputTag_Skill_Normal) return;
+    const auto* PC = Cast<APGPlayerController>(Controller);
+    if (!IsGameplayInputAllowed() || (PC && PC->IsPointerOverUI()))
+    {
+        AbilitySystemComponent->ClearBufferedInput();
+        return;
+    }
+    AbilitySystemComponent->OnAbilityInputHeld(InInputTag);
 }
 
 void APGCharacterPlayer::input_AbilityInputReleased(FGameplayTag InInputTag)
@@ -407,7 +429,7 @@ bool APGCharacterPlayer::IsGameplayInputAllowed() const
 }
 void APGCharacterPlayer::UpdateAim()
 {
-    if (!IsGameplayInputAllowed()) { AbilitySystemComponent->ClearBufferedInput(); return; }
+    if (!IsGameplayInputAllowed()) { MoveInputDirection = FVector::ZeroVector; AbilitySystemComponent->ClearBufferedInput(); return; }
     APGPlayerController* PC = Cast<APGPlayerController>(Controller);
     if (!PC || PC->IsPointerOverUI()) return;
     // Attacks track the cursor; dodge/hit-reaction montages retain their authored facing.
@@ -445,6 +467,17 @@ void APGCharacterPlayer::FaceAimDirection()
 {
     RefreshCursorAim(); // Also refresh on buffered ability activation, not only the 60 Hz timer.
     if (bUseQuarterView && !LastAimDirection.IsNearlyZero() && !bDeathStarted) SetActorRotation(LastAimDirection.Rotation());
+}
+void APGCharacterPlayer::FaceDodgeDirection()
+{
+    if (!bDeathStarted) SetActorRotation(GetDodgeDirection().Rotation());
+}
+FVector APGCharacterPlayer::GetDodgeDirection()
+{
+    const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
+    if (Data->bDodgeFollowsMovement && !MoveInputDirection.IsNearlyZero()) return MoveInputDirection.GetSafeNormal2D();
+    RefreshCursorAim();
+    return bUseQuarterView ? LastAimDirection.GetSafeNormal2D() : GetActorForwardVector();
 }
 bool APGCharacterPlayer::CanStartSkill(bool bDodge) const
 {

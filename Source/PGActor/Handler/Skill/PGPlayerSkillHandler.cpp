@@ -2,6 +2,10 @@
 
 
 #include "PGPlayerSkillHandler.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
+#include "Engine/World.h"
+#include "PGActor/Characters/PGCharacterBase.h"
 
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
@@ -9,30 +13,43 @@
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
 #include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 
+double FPGPlayerSkillHandler::GetComboTime() const
+{
+    const UWorld* World = Context.IsValid() ? Context->GetWorld() : nullptr;
+    return World ? World->GetTimeSeconds() : FPlatformTime::Seconds();
+}
+
+int32 FPGPlayerSkillHandler::GetComboIndex(EPGSkillSlot Slot, const FPGSkillDataRow& BaseSkill, double Now) const
+{
+    return Slot == LastUsedSlot && BaseSkill.SkillID == ComboBaseSkill && Now <= ComboExpiresAt &&
+        BaseSkill.ChainSkillIdList.IsValidIndex(ComboCount - 1) ? ComboCount : 0;
+}
+
+void FPGPlayerSkillHandler::AdvanceCombo(EPGSkillSlot Slot, const FPGSkillDataRow& BaseSkill, double Now, float MontageSeconds)
+{
+    const int32 Current = GetComboIndex(Slot, BaseSkill, Now);
+    ComboCount = Current < BaseSkill.ChainSkillIdList.Num() ? Current + 1 : 0;
+    ComboBaseSkill = BaseSkill.SkillID;
+    LastUsedSlot = Slot;
+    ComboExpiresAt = Now + FMath::Max(0.f, MontageSeconds) + FMath::Clamp(BaseSkill.ComboResetSeconds, 0.f, 2.f);
+}
+
 void FPGPlayerSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 {
-	PGSkillId SkillId = Super::GetSkillID(InSlotId);
-	
     UPGDataTableManager* Manager = UPGDataTableManager::Get(Context.Get());
     if (!Manager) return;
-	if (FPGSkillDataRow* SkillData = Manager->GetRowData<FPGSkillDataRow>(SkillId))
-	{
-		if ( 0 < SkillData->ChainSkillIdList.Num() &&
-			ComboCount < SkillData->ChainSkillIdList.Num())
-		{
-			++ComboCount;
-		}
-		else
-		{
-			ComboCount = 0;
-		}
-	}
-	else
-	{
-		ComboCount = 0;
-	}
-
-	LastUsedSlot = InSlotId;
+    const PGSkillId SkillId = GetSkillID(InSlotId);
+    if (const auto* BaseSkill = Manager->GetRowData<FPGSkillDataRow>(Super::GetSkillID(InSlotId)))
+    {
+        float MontageSeconds = 0.f;
+        const auto* Character = Cast<APGCharacterBase>(Context.Get());
+        const auto* Anim = Character && Character->GetMesh() ? Character->GetMesh()->GetAnimInstance() : nullptr;
+        if (const auto* Montage = Anim ? Anim->GetCurrentActiveMontage() : nullptr)
+            MontageSeconds = FMath::Max(0.f, Montage->GetPlayLength() - Anim->Montage_GetPosition(Montage)) /
+                FMath::Max(.01f, FMath::Abs(Anim->Montage_GetPlayRate(Montage)));
+        AdvanceCombo(InSlotId, *BaseSkill, GetComboTime(), MontageSeconds);
+    }
+    else ComboCount = 0;
 
 	if (FPGSkillData* Data = SkillDataMap.Find(InSlotId))
 	{
@@ -56,9 +73,10 @@ PGSkillId FPGPlayerSkillHandler::GetSkillID(const EPGSkillSlot InSlotId)
     if (!Manager) return SkillId;
 	if (FPGSkillDataRow* SkillData = Manager->GetRowData<FPGSkillDataRow>(SkillId))
 	{
-		if (0 < ComboCount && SkillData->ChainSkillIdList.IsValidIndex(ComboCount - 1))
+        const int32 Index = GetComboIndex(InSlotId, *SkillData, GetComboTime());
+		if (Index > 0)
 		{
-			return SkillData->ChainSkillIdList[ComboCount - 1];
+			return SkillData->ChainSkillIdList[Index - 1];
 		}
 	}
 

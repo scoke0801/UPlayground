@@ -27,7 +27,10 @@ void UPGAbilitySkill::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     UAbilityTask_PlayMontageAndWait* Task = PlayMontageWait(Montage);
     if (!Task) { EndAbilitySelf(); return; }
     if (APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(Character))
+    {
+        if (SlotIndex == EPGSkillSlot::SkillSlot_Roll) Player->FaceDodgeDirection();
         Player->SetSkillCancelPolicy(Data.AttackCancelRemainingFraction, Data.DodgeCancelRemainingFraction);
+    }
     Task->ReadyForActivation();
     if (!IsActive()) return;
     if (!CommitAbility(Handle, ActorInfo, ActivationInfo)) { EndAbilitySelf(); return; }

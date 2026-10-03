@@ -99,6 +99,44 @@ bool FPGInputBufferTest::RunTest(const FString& Parameters)
     ASC->AddLooseGameplayTag(PGGamePlayTags::Shared_Status_Dead);
     ASC->RetryBufferedInput();
     TestFalse(TEXT("Death discards buffered input"), ASC->BufferedInput.IsValid());
+    ASC->RemoveLooseGameplayTag(PGGamePlayTags::Shared_Status_Dead);
+
+    ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Normal);
+    ASC->CancelAbilityHandle(Handle);
+    ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
+    TestTrue(TEXT("Holding attack starts the next available swing"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+    ASC->OnAbilityInputReleased(PGGamePlayTags::InputTag_Skill_Normal);
+    TestTrue(TEXT("Release preserves the already committed swing"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+    ASC->CancelAbilityHandle(Handle);
+    ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
+    TestFalse(TEXT("Release prevents another swing"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+
+    ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Normal);
+    ASC->CancelAbilityHandle(Handle);
+    ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Roll);
+    const double DodgeExpiry = ASC->BufferExpiresAt;
+    for (int32 Frame = 0; Frame < 30; ++Frame) ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
+    TestFalse(TEXT("Held attack cannot steal a buffered dodge opening"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+    TestEqual(TEXT("Holding attack does not refresh the dodge buffer"), ASC->BufferExpiresAt, DodgeExpiry);
+    FGameplayAbilitySpec DodgeSpec(UGameplayAbility::StaticClass());
+    DodgeSpec.GetDynamicSpecSourceTags().AddTag(PGGamePlayTags::InputTag_Roll);
+    const auto DodgeHandle = ASC->GiveAbility(DodgeSpec);
+    ASC->RetryBufferedInput();
+    TestTrue(TEXT("Buffered dodge activates first"), ASC->FindAbilitySpecFromHandle(DodgeHandle)->IsActive());
+    ASC->CancelAbilityHandle(DodgeHandle);
+    ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Roll);
+    TestFalse(TEXT("Dodge does not repeat while held"), ASC->FindAbilitySpecFromHandle(DodgeHandle)->IsActive());
+    ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
+    TestTrue(TEXT("Attack can resume after the deliberate input is consumed"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+    ASC->CancelAbilityHandle(Handle);
+    ASC->ClearBufferedInput(); // Shared UI, focus-loss, profile and death cleanup.
+    ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
+    TestFalse(TEXT("Input cleanup requires a fresh press to resume"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+    ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Normal);
+    ASC->CancelAbilityHandle(Handle);
+    ASC->bRepeatNormalAttackWhileHeld = false;
+    ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
+    TestFalse(TEXT("Repeat can be disabled in player data"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
     World->DestroyWorld(false);
     return true;
 }
