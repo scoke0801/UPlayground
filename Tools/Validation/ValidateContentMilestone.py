@@ -5,6 +5,7 @@ import unreal
 
 
 def validate_content_milestone(enemies, skills, stages):
+    variety = unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/CombatVariety/M_PGCombatVarietyBounds')
     roles = {15101: ('Chaser', 'Sweep'), 15102: ('Shooter', 'AimedProjectile'),
              15103: ('Guardian', 'Sweep'), 15104: ('Crusher', 'ChargeSlam'),
              15105: ('Warden', 'HazardSequence')}
@@ -13,7 +14,8 @@ def validate_content_milestone(enemies, skills, stages):
         return 0  # Legacy assets remain valid until the explicit migration is applied.
     for eid, (role, pattern) in roles.items():
         enemy, skill = enemies[eid], skills[eid]
-        assert enemy['Role'] == role and enemy['SkillIdList'] == [eid], eid
+        expected_kit = [eid, eid+10] + ([15116] if eid == 15104 else []) if variety else [eid]
+        assert enemy['Role'] == role and enemy['SkillIdList'] == expected_kit, eid
         assert skill['Pattern'] == pattern and skill['MinimumBossPhase'] == 1, eid
         for name in ('TelegraphDuration', 'TelegraphRadius', 'RecoveryDuration', 'TravelSpeed',
                      'TravelDistance', 'LineHalfWidth', 'LandingTelegraphSeconds', 'SkillRange'):
@@ -43,8 +45,8 @@ def validate_content_milestone(enemies, skills, stages):
     boss = enemies[15106]
     if boss.get('Role') == 'Boss':
         schema = 2
-        assert boss['SkillIdList'] == [15106,15107,15108]
-        assert boss['PhaseTwoSkillSequence'] == [15108,15107,15106]
+        assert boss['SkillIdList'] == [15106,15107,15108] + ([15109] if variety else [])
+        assert boss['PhaseTwoSkillSequence'] == [15108,15107,15106] + ([15109] if variety else [])
         assert 0 < boss['PhaseTwoHealthRatio'] < 1 and 0 <= boss['PhaseTransitionSeconds'] <= 5
         assert 0 < boss['DefeatDisplaySeconds'] <= 10
         for field in ('PhaseVFX','PhaseSound','DefeatVFX','DefeatSound'):
@@ -66,5 +68,9 @@ def validate_content_milestone(enemies, skills, stages):
         assert [(s['MonsterId'], s['SpawnCount']) for s in by_id[6]['Waves'][0]['MonsterSpawnInfos']] == [(15106,1)]
     else:
         assert 15107 not in skills and 15108 not in skills, 'Partial boss migration'
-    unreal.log('PGContent VALIDATION PASS ' + json.dumps(dict(schema=schema, roles=5, boss_attacks=3 if schema==2 else 0, waves=15, wave_counts=expected)))
+    if variety:
+        from ValidateCombatVariety import validate_combat_variety
+        validate_combat_variety(enemies, skills)
+        schema = 3
+    unreal.log('PGContent VALIDATION PASS ' + json.dumps(dict(schema=schema, roles=5, boss_attacks=4 if variety else 3 if schema==2 else 0, waves=15, wave_counts=expected)))
     return schema

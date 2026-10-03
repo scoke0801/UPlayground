@@ -73,6 +73,22 @@ def check_cycle(log):
     return problems
 
 
+def check_loot_cycle(log):
+    """Version 1 authored encounter counts: four elites and one final boss."""
+    rolls = re.findall(r'PGLoot rolled enemy=(\d+) pool=(\S+) seed=(-?\d+) item=(\d+) guid=([0-9A-Fa-f]+) result=([01])', log)
+    problems = []
+    guaranteed = Counter(int(row[0]) for row in rolls if int(row[0]) >= 15104)
+    if guaranteed != Counter({15104: 2, 15105: 2, 15106: 1}):
+        problems.append(f'Guaranteed loot count mismatch: {dict(guaranteed)}')
+    if len({row[4] for row in rolls}) != len(rolls):
+        problems.append('Duplicate loot identity spawned')
+    boss = [row for row in rolls if row[0] == '15106']
+    committed = re.findall(r'PGLoot boss committed item=(\d+) guid=([0-9A-Fa-f]+) wins=(\d+)', log)
+    if len(boss) != 1 or boss[0][5] != '1' or len(committed) != 1 or committed[0][:2] != (boss[0][3], boss[0][4]) or committed[0][2] != '1':
+        problems.append('Boss loot and victory were not committed exactly once together')
+    return problems
+
+
 def check_retry(log):
     rows = re.findall(r"PGRetryProbe remaining=(\d+) healthy=(\d+) failures=(\d+)", log)
     expected = [(str(n), "1", "0") for n in range(20, -1, -1)]
@@ -275,7 +291,7 @@ def main():
         return [], []
 
     def cycle_result(log):
-        problems = check_cycle(log)
+        problems = check_cycle(log) + check_loot_cycle(log)
         paths = set(re.findall(r"PGRun stage=\d+ seed=\d+ assisted=\d telemetry=(.+)", log))
         if len(paths) != 1:
             return problems + ["Missing unique current-cycle telemetry file"], []

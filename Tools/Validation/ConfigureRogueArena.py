@@ -37,6 +37,12 @@ if not unreal.EditorAssetLibrary.does_asset_exist(MAP):
 else: assert level.load_level(MAP)
 actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 assert any(a.get_components_by_class(unreal.StaticMeshComponent) for a in actors.get_all_level_actors()), 'Template geometry was not loaded'
+assert not any(
+    comp.get_editor_property('static_mesh') and
+    comp.get_editor_property('static_mesh').get_path_name().startswith('/Game/Environment/RogueArena/')
+    for actor in actors.get_all_level_actors()
+    for comp in actor.get_components_by_class(unreal.StaticMeshComponent)
+), 'RogueArena already uses the Blender environment kit. Use ReplaceRogueEnvironment.py to update it; this prototype builder would restore temporary geometry.'
 inventory=[]
 for actor in actors.get_all_level_actors():
     if actor.get_actor_label().startswith('RogueDecor_'): actors.destroy_actor(actor); continue

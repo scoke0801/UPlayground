@@ -1,9 +1,20 @@
 """Guard against false-positive QA reports; does not launch Unreal."""
 import unittest
-from RunQA import check_automation, check_cycle, check_retry, check_telemetry, unexpected_errors
+from RunQA import check_automation, check_cycle, check_loot_cycle, check_retry, check_telemetry, unexpected_errors
 
 
 class QAEvidenceTests(unittest.TestCase):
+    def test_loot_requires_guaranteed_drops_and_atomic_boss_result(self):
+        rows = [f'PGLoot rolled enemy={eid} pool=Rogue.Test seed=1 item=15004 guid={index:032X} result={int(eid == 15106)}'
+                for index, eid in enumerate((15104, 15105, 15104, 15105, 15106), 1)]
+        rows.append(f'PGLoot boss committed item=15004 guid={5:032X} wins=1')
+        complete = '\n'.join(rows)
+        self.assertEqual(check_loot_cycle(complete), [])
+        self.assertTrue(check_loot_cycle('\n'.join(rows[:-1])))
+        self.assertTrue(check_loot_cycle('\n'.join(rows[1:])))
+        self.assertTrue(check_loot_cycle(complete + '\n' + rows[0]))
+        self.assertTrue(check_loot_cycle(complete.replace('wins=1', 'wins=2')))
+
     def test_telemetry_requires_assisted_commits_and_finite_samples(self):
         rows = [dict(stage=stage, run_seed=173001, assisted=True, outcome="Cleared",
                      selected_rewards=[15000] * count, combat_seconds=10,

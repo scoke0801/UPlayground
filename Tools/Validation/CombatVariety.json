@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "enemy_kits": {
+    "15101": [15101, 15111],
+    "15102": [15102, 15112],
+    "15103": [15103, 15113],
+    "15104": [15104, 15114, 15116],
+    "15105": [15105, 15115],
+    "15106": [15106, 15107, 15108, 15109]
+  },
+  "boss_sequence": [15108, 15107, 15106, 15109],
+  "existing": {
+    "15101": {"AttackPressureCost": 1, "SelectionWeight": 2.0},
+    "15102": {"SkillType": "Projectile", "AttackPressureCost": 1, "SelectionWeight": 2.0},
+    "15103": {"AttackPressureCost": 1, "SelectionWeight": 2.0},
+    "15104": {"MinimumActivationRange": 300.0, "AttackPressureCost": 2, "SelectionWeight": 2.0},
+    "15105": {"SkillType": "AreaOfEffect", "AttackPressureCost": 2, "SelectionWeight": 2.0},
+    "15106": {"AttackPressureCost": 3},
+    "15107": {"MinimumActivationRange": 300.0, "AttackPressureCost": 3},
+    "15108": {"SkillType": "AreaOfEffect", "AttackPressureCost": 3}
+  },
+  "new_skills": [
+    {"base": 15101, "SkillID": 15111, "Desc": "추격자의 꿰뚫기", "Pattern": "Thrust", "SkillType": "Melee", "TelegraphDuration": 0.7, "AimTrackingSeconds": 0.15, "RecoveryDuration": 0.85, "SkillCoolTime": 4, "SkillRange": 340.0, "MinimumActivationRange": 190.0, "TravelDistance": 340.0, "LineHalfWidth": 45.0, "SelectionWeight": 1.0, "AttackPressureCost": 1, "bHeavyImpactFeedback": false},
+    {"base": 15102, "SkillID": 15112, "Desc": "별빛 삼연 사격", "Pattern": "AimedProjectile", "SkillType": "Projectile", "TelegraphDuration": 1.1, "AimTrackingSeconds": 0.25, "RecoveryDuration": 1.0, "SkillCoolTime": 6, "SkillRange": 900.0, "MinimumActivationRange": 320.0, "TravelDistance": 1200.0, "TravelSpeed": 800.0, "LineHalfWidth": 18.0, "ProjectileCount": 3, "ProjectileSpreadHalfAngle": 22.0, "SelectionWeight": 1.0, "AttackPressureCost": 2, "bHeavyImpactFeedback": false},
+    {"base": 15103, "SkillID": 15113, "Desc": "수호자의 방패 찌르기", "Pattern": "Thrust", "SkillType": "Melee", "TelegraphDuration": 0.95, "AimTrackingSeconds": 0.18, "RecoveryDuration": 1.45, "SkillCoolTime": 5, "SkillRange": 450.0, "MinimumActivationRange": 260.0, "TravelDistance": 450.0, "LineHalfWidth": 65.0, "SelectionWeight": 1.0, "AttackPressureCost": 1, "bHeavyImpactFeedback": false},
+    {"base": 15104, "SkillID": 15114, "Desc": "분쇄자의 균열 고리", "Pattern": "RingBurst", "SkillType": "AreaOfEffect", "TelegraphDuration": 1.1, "AimTrackingSeconds": 0.0, "RecoveryDuration": 1.5, "RecoveryDamageBonus": 0.5, "SkillCoolTime": 5, "SkillRange": 430.0, "MinimumActivationRange": 190.0, "TelegraphRadius": 430.0, "InnerSafeRadius": 160.0, "SelectionWeight": 1.0, "AttackPressureCost": 2, "ImpactVFXScale": 0.4},
+    {"base": 15105, "SkillID": 15115, "Desc": "파수꾼의 봉쇄 고리", "Pattern": "RingBurst", "SkillType": "AreaOfEffect", "TelegraphDuration": 1.15, "AimTrackingSeconds": 0.0, "RecoveryDuration": 1.4, "RecoveryDamageBonus": 0.5, "SkillCoolTime": 5, "SkillRange": 480.0, "MinimumActivationRange": 200.0, "TelegraphRadius": 480.0, "InnerSafeRadius": 170.0, "SelectionWeight": 1.0, "AttackPressureCost": 2, "ImpactVFXScale": 0.3},
+    {"base": 15104, "SkillID": 15116, "Desc": "분쇄자의 내려찍기", "Pattern": "Sweep", "SkillType": "Melee", "TelegraphDuration": 0.85, "AimTrackingSeconds": 0.15, "RecoveryDuration": 1.2, "SkillCoolTime": 3, "SkillRange": 240.0, "MinimumActivationRange": 0.0, "TelegraphRadius": 240.0, "HalfAngleDegrees": 55.0, "SelectionWeight": 1.0, "AttackPressureCost": 2},
+    {"base": 15106, "SkillID": 15109, "Desc": "황혼의 일식", "Pattern": "RingBurst", "SkillType": "AreaOfEffect", "MinimumBossPhase": 2, "TelegraphDuration": 1.4, "AimTrackingSeconds": 0.0, "RecoveryDuration": 2.0, "RecoveryDamageBonus": 0.6, "SkillCoolTime": 8, "SkillRange": 650.0, "MinimumActivationRange": 260.0, "TelegraphRadius": 650.0, "InnerSafeRadius": 220.0, "SelectionWeight": 1.0, "AttackPressureCost": 3, "ImpactVFXScale": 0.5}
+  ]
+}
