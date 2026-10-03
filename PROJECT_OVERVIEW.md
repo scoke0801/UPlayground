@@ -1,5 +1,40 @@
 # UPlayground 프로젝트 분석 문서
 
+## 2026-10-03 몬스터 스킬 다양화
+
+- 아레나 6종에 찌르기·삼연 사격·고리 공격·근접 내려찍기 7개를 추가해 총 15개 공격을 구성했다. `PGSkillDataRow`의 최소 거리·선택 가중치·압박 비용과 기존 페이즈·쿨다운을 사용한다. 기존 BT도 공통 공격·소환 Ability에 정확한 SkillID를 전달한다.
+- `PGAI/PGCombatDirectorSubsystem`은 대상별 동시 공격 비용과 예고 시작 간격을 제한하며 대기 순서를 유지한다. `PGEnemyAttackPattern`은 공유 범위로 예고·판정을 계산하고, 삼연 사격은 대상당 한 번만 적중한다. 보스 2페이즈에 안쪽이 안전한 고리와 긴 반격 시간을 추가했다.
+- 원본·이관은 `CombatVariety.json` / `ConfigureCombatVariety.py`, 에셋 검사는 기존 RunQA의 content schema 3, 렌더링 검사는 `RunCombatVarietyPresentation.py`다. 설계 자료, 적용 범위, 검증 결과 및 후속 폴리싱은 [몬스터 다양화 보고서](Docs/todo/CombatVariety_Implementation_Report.md)를 따른다.
+
+## 2026-10-03 전투 입력·콤보
+
+- 기본 공격을 누르는 동안 기존 취소 창에서 연계하며, 예약된 스킬·회피가 우선한다. `IA_Skill_Normal`의 단발 트리거 제거와 저장을 완료했다. UI·포커스·사망 시 누름 상태를 지운다. 회피는 현재 이동 입력 방향을 우선하고 정지 시 커서 방향을 사용한다.
+- 콤보는 슬롯·기본 스킬·월드 시간으로 제한한다. 몽타주 길이·재생 속도와 `DT_Skill.ComboResetSeconds`로 연계 시간을 조정한다. 조작 설정 및 검증 범위는 [전투 조작 보고서](Docs/todo/CombatControls_Implementation_Report.md)를 따른다.
+
+## 2026-10-03 UI 전용 SFX
+
+- 보상 열기·선택·승리의 전용 SoundWave 3종을 `PGUIStyleSettings`에 연결했다. `/Game/DataCenter/Audio/UI`에서 UI 볼륨·버스·동시 발음을 관리한다. 저장 대기와 일반 실패에는 보상/승리음을 재생하지 않는다.
+- 원본 합성 및 미리듣기는 `Tools/Art/UISFX`, 에셋 가져오기·검증은 `ConfigureUISFX.py` / `ValidateUISFX.py` / `RunUISFX.py`다. 사양과 검증 근거는 [SFX 구현 보고서](Docs/todo/UISFX_Implementation_Report.md)에 기록한다.
+
+## 2026-10-03 보상·결과·전리품 UI
+
+- 보상 카드는 공통 테마·가변 화면 크기·고정 선택 버튼을 사용하며 데이터의 빌드 계열과 실제 유효 특성에 따른 연관 표시를 제공한다. 결과 화면은 전리품 카드·누적 강화 내역·저장 대기/완료를 구분한다. `FPGRunResultView`는 표시 전용이며 저장 및 지급 권한은 기존 Profile/Stage에 유지한다.
+- `PGUILootOverlay`는 라벨을 중앙에서 제한 배치하며 E 입력과 같은 획득 대상에만 안내를 붙인다. 기존 월드 드랍의 개별 위젯 생성을 중지하고 등장 궤적·희귀도 빔은 유지한다. 레이아웃·표현 설정과 검증 범위는 [메인 UI 보고서](Docs/todo/MainUI_Implementation_Report.md)의 보상·결과·전리품 기록을 따른다.
+
+## 2026-10-03 철갑 수호자 표현·전용 모션
+
+- 적 `15103`은 `PGEnemyPresentationData`와 `PGEnemyPresentationComponent`로 전용 방패·견갑, 방어/회복 자세, 예고 발광과 짧은 소리를 사용한다. 기존 GAS 피해·방어·회복 수치와 드랍/웨이브 데이터는 유지한다.
+- 스킬별 몽타주 동기화와 이펙트 크기·강타 피드백 선택을 추가했다. 부착물은 충돌 없이 동작하며 취소·사망 시 표현을 정리한다.
+- 후속 작업으로 전용 대기·걷기·달리기·강타 시퀀스와 `ABP_PGGuardian`을 15103에 연결했다. 기존 발동작 위에 방패 팔과 강타 상체 자세를 제작 시 계산해 저장하며 런타임 IK는 추가하지 않는다. `GuardianMotion.json`·`ConfigureGuardianMotion.py`로 재생성하고 기존 에셋 검사에서 연결·발 접지·타격 자세를 확인한다.
+- `RunGuardianSoak.py`는 격리 프로필의 기본/밀집/복귀 조합에서 20분 렌더링 부하와 마스터 오디오를 계측한다. 직접 조작·내비게이션·패키지 성능 검증과 구분한다. 이 검사에서 발견한 무기 잔존 문제를 `PGPawnCombatComponent::EndPlay`의 보유 무기 정리로 수정하고 회귀 검사를 추가했다. 최종 성능·음량 판정과 측정 한계는 아래 보고서를 따른다.
+- 원본 아트는 `Tools/Art/Guardian`, 런타임 에셋은 `/Game/Art/Guardian` 및 `/Game/DataCenter/Guardian`에 있다. 적용 범위, 재생성 도구와 검증은 [수호자 보고서](Docs/todo/GuardianPresentation_Implementation_Report.md)를 따른다.
+
+## 2026-10-03 장비 UI 고도화 1차
+
+- `UPGUIInventory`는 장착 정보·가방 그리드·아이템 비교를 제공하고 강화/검술·근처 전리품을 탭으로 분리한다. 선택과 장착은 별도 동작이며 가변 화면 크기와 영역별 스크롤을 사용한다.
+- `PGUI/Style`의 공통 테마를 메인 HUD와 장비 화면이 공유한다. 장비/스테이지 화면의 입력·일시정지·포커스는 `UPGUIManager`에서 함께 관리한다. 프로필 저장 확정 이벤트로 열린 장비 화면을 갱신한다.
+- 구현 범위와 검증 도구는 [메인 UI 보고서](Docs/todo/MainUI_Implementation_Report.md)의 2026-10-03 기록을 따른다.
+
 ## 2026-09-21 웨이브 스테이지
 
 - `APGStageManager`는 `FPGStageDataRow.Waves`를 순서대로 진행한다. 각 웨이브의 스폰과 적 처리가 모두 끝나면 다음 웨이브로 넘어가고, 마지막 웨이브 완료가 스테이지 클리어다.
@@ -11,6 +46,13 @@
 - 핵심 강화 `BleedRecast / ShockFracture / FrenzyAfterimage`와 효과별 `PGCombatTuningData` 수치를 추가했다. 직접/추가 피해 원인을 구분하고 기존 GAS 경로로 피해를 확정한다.
 - 보상 조건은 기존 RequiredPerk와 복수 AND/OR 조건을 함께 읽으며 장착 효과를 포함한다. 4·5구간의 데이터 정책으로 기존 세 카드 중 한 자리를 유효 핵심 강화에 배정한다. 총 21개 강화·7회 선택이다.
 - 빌드 HUD, 튜닝 기반 카드/장비 창 설명, 테스트 프로필 전용 고정 비교 시나리오를 추가했다. 구현·검증·직접 조작 잔여 기준은 [콘텐츠 계획 3단계 기록](Docs/todo/17_content_implementation_plan.md#2026-10-01-3단계-빌드-완성-강화-구현)을 따른다.
+
+## 2026-10-03 콘텐츠 4단계: 드랍 기반
+
+- `PGProgressionData.DropPools`와 적 행의 `DropPoolId`로 일반 역할 3종·정예 2종·보스의 풀을 연결한다. 정예·보스는 일반 확률을 대체하는 장비 1개를 확정하며, 빈 풀 ID는 기존 전역 드랍 설정을 사용한다.
+- 스테이지 드랍 수치는 런 시드·구간·웨이브·적 ID·해당 적의 스폰 순번으로 결정한다. 저장된 `RunId`와 획득 GUID 기록으로 체크포인트 재실행/버리기 후 중복 획득을 막는다. 소환 적은 드랍하지 않는다.
+- 보스 전리품은 가방과 별도의 런 결과 슬롯에 승리와 함께 저장한다. 새 프로세스에서도 결과를 먼저 표시하고 사용자가 새 도전을 시작할 때 초기화한다. 저장 실패 시 결과 화면에서 저장을 재시도한다.
+- 이관은 `ConfigureLootPools.py`, 에셋 검사는 기존 RunQA의 `ValidateLootPools.py` 경로다. 적용 범위·검증과 4단계 잔여 작업은 [콘텐츠 구현 계획](Docs/todo/17_content_implementation_plan.md)의 2026-10-03 기록을 따른다.
 
 ## 1. 프로젝트 개요
 
@@ -175,6 +217,7 @@ PGActor/
 - `PGProjectileManager`: 전역 투사체 관리자
 - `PGProjectilePool`: 타입별 풀 관리
 - `PGPooledProjectile`: 풀링된 투사체
+- `PGPatternProjectile`: 적의 별빛 조준 사격(15102)은 Blender 임시 모델 `/Game/Art/Projectiles/SM_PG_CrystalBolt`를 사용한다. +X 전방·44×22×22cm·304삼각형·단일 버텍스 컬러 머티리얼이며 기존 Box 충돌과 스킬 수치를 유지한다. 원본/FBX는 `Tools/Art/Projectiles`, 재임포트·연결 검사는 `Tools/Validation/ReplaceProjectileModel.py`, 실제 발사 화면 검사는 `Tools/Validation/PreviewProjectilePIE.py`에 있다. 임포트 후 에디터를 빌드하고 `-PGValidateProjectile`로 연결을 검사한다.
 
 ---
 
@@ -406,7 +449,7 @@ LRU 캐시 관리
 - `FeatureDevMap`: 기능 테스트 맵
 - `StageDevMap`: 스테이지 진행 테스트 맵
 
-기본 시작 맵은 Config/DefaultEngine.ini의 EmptyDevMap이다. StageDevMap의 BP/GameMode 설정은 실행 검증 결과와 함께 관리한다.
+기본 게임·에디터 시작 맵은 `Config/DefaultEngine.ini`의 `RogueArena`다. 2026-10-02 Blender 환경 키트로 임시 바닥·벽·장식 30개를 교체했으며, 원본은 `Tools/Art/RogueEnvironment`, UE 에셋은 `/Game/Environment/RogueArena`에 있다. StageDevMap의 BP/GameMode 설정은 실행 검증 결과와 함께 관리한다.
 
 ---
 

@@ -51,3 +51,13 @@
 ## 최종 확인
 
 지형·조명·시작 캐릭터와 4개 스킬 슬롯, 격분 표시를 렌더링에서 확인했다. 최초 복제 실험의 월드 파티션 액터 누락은 `NewLevelFromTemplate` 방식으로 해결했으며 사용하지 않는 실험 맵은 `Saved/Backups/RoguelikeMVP/DiscardedPrototype`으로 옮겼다. 사용자 에디터 종료 후 장비 아이콘 패널까지 저장했다. 최종 아레나 장식은 플레이어 시작점이 아닌 바닥 중심에 정렬했다.
+
+## 2026-10-02 임시 환경 모델 교체
+
+- RogueArena의 바닥 1개, 벽 5개, 받침대·크리스털·띠 장식 각 8개를 Blender에서 제작한 5종 메시로 교체했다. 석재 타일과 중앙 문양, 부벽과 금속 장식이 있는 성벽, 단차 받침대, 크리스털 군집, 수평 룬 장식으로 구성한다. 민트·보라색은 기존 배치 규칙을 유지한다.
+- 기존 액터 63개의 식별자와 위치를 보존했다. 바닥·벽의 충돌 지오메트리와 트레이스 정책은 기존 `SM_Cube`에서 복사하고 직렬화 데이터 일치 여부를 검사했다. 거의 같은 위치에 겹친 `SM_Cube20/21` 중 20은 충돌을 유지하고 렌더링만 숨겼다. 표시되는 환경 액터는 29개다.
+- 기존 제작기에서 비충돌을 의도했던 24개 장식이 저장된 맵에서는 BlockAll이었던 점을 확인하여 `NoCollision` 프로파일로 저장했다. 띠 장식 8개는 같은 위치에서 수평 룬으로 교체했다. 캐릭터, 전투 데이터, 조명은 변경하지 않았다.
+- Blender 원본·FBX 5개·팔레트/메시 명세·제작 스크립트는 `Tools/Art/RogueEnvironment`에, 메시 5개와 머티리얼 11개는 `/Game/Environment/RogueArena`에 있다. UV0는 미터 단위의 평면 투영이며 현재 동적 조명용이다. 베이크용 라이트맵 UV와 개별 LOD는 포함하지 않는다.
+- `ReplaceRogueEnvironment.py`는 기본적으로 가져오기와 단위/피벗/충돌 검증을 수행하고, `-PGApplyEnvironment`를 추가하면 원본 맵과 월드 파티션 외부 액터를 백업한 뒤 교체·저장한다. `-PGUseImportedEnvironment`는 FBX 재가져오기를 생략한다. 기존 `ConfigureRogueArena.py`는 새 환경 키트가 연결된 맵의 임시 모델 복원을 차단한다.
+- 원본 백업: `Saved/Backups/RogueEnvironment/20261002T141147211849Z`. 교체 내역: `Saved/RogueEnvironment/replacement.json`. `ValidateRogueEnvironment.py` 재로드 검사: 30개 교체, 액터 식별자·충돌 보존, 표시 중인 임시 메시 0개로 PASS(`Saved/RogueEnvironment/validation.json`).
+- 렌더링 독립 실행 내비게이션 검사: `Saved/QA/20261002T141323Z_c5ac4fc3_navigation/report.json` PASS. 2·8·16초의 내비게이션 준비/플레이어 투영과 적의 완전한 이동 경로를 확인했다. 체력 보정을 사용한 자동 검사이며 직접 조작 검증은 아니다. 실제 전투 렌더는 `Tools/Art/RogueEnvironment/Preview_Unreal.png`, Blender 전체 조감도는 `Preview_Blender.png`다.
