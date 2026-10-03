@@ -29,4 +29,9 @@ public:
     // Additive v1 migration: 0 means an older save; assign and commit before play.
     UPROPERTY(SaveGame) int32 RunSeed = 0;
     UPROPERTY(SaveGame) bool bAssistedRun = false;
+    // Additive v1 fields. Old saves get a committed identity before spawning loot.
+    UPROPERTY(SaveGame) FGuid RunId;
+    UPROPERTY(SaveGame) TSet<FGuid> ClaimedLoot;
+    // Run-only result slot: independent of bag capacity, committed with victory.
+    UPROPERTY(SaveGame) FPGItemInstance BossReward;
 };

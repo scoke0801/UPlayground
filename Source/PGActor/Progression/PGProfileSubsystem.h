@@ -31,21 +31,28 @@ public:
     bool RecoverSave();
     bool IsSaveBlocked() const { return bReadOnly; }
     bool RestorePlayer(APGCharacterPlayer* Player);
-    bool RollDrop(FRandomStream& Random, FPGItemInstance& Out) const;
+    bool RollDrop(FRandomStream& Random, FPGItemInstance& Out, FName PoolId = NAME_None) const;
+    bool HasClaimedLoot(FGuid Guid) const;
+    bool QueueBossReward(const FPGItemInstance& Item);
+    const FPGItemInstance& GetPendingBossReward() const { return PendingBossReward; }
     bool Validate(const UPGProfileSave* Candidate) const;
     bool ValidateCatalog(FString& Error) const;
     FString Status;
+    // UI observes only committed snapshots; failed writes never announce a change.
+    FSimpleMulticastDelegate OnProfileChanged;
     bool bInjectSaveFailure = false;
     int32 RetryProbeRemaining = -1;
     int32 RetryProbeFailures = 0;
 private:
     friend class FPGProfileTest;
+    friend class FPGLootTransactionTest;
     UPROPERTY() TObjectPtr<UPGProfileSave> Profile;
     UPROPERTY() TObjectPtr<UPGProgressionData> Catalog;
     bool bReadOnly = false;
     int32 ActiveSlot = -1;
     FString TestSlotPrefix;
     UPROPERTY() TArray<TObjectPtr<UObject>> PreparedSkillAssets;
+    UPROPERTY(Transient) FPGItemInstance PendingBossReward;
     bool Commit(UPGProfileSave* Candidate);
     void LoadProfile();
     void RefreshPlayer();

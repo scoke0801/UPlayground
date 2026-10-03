@@ -116,6 +116,7 @@ private:
     FVector LastSpawnLocation = FVector::ZeroVector;
     int32 RunSeed = 1;
     mutable FRandomStream SpawnRandom;
+    TMap<int32, int32> WaveLootOrdinals;
     void LogSpawnFailure(int32 EnemyId, int32 Attempt, EPGSpawnFailure Reason, const FVector& Location) const;
     void PrepareNavigationForWave();
     bool bRewardCommitted = false;
@@ -137,14 +138,17 @@ private:
     void ShowRunResult();
     FTimerHandle BossResultTimer;
     double BossDefeatPresentationUntil = 0;
+    bool bVictorySavePending = false;
       friend class FPGStageLifecycleTest;
       friend class UPGCheatManager;
+      friend class APGPlayerController;
       friend class APGGameModeStage;
 
 public:    
     UFUNCTION(BlueprintCallable, Category="Stage")
     void ReadyForNextStage();
     void PrepareRun(int32 StageId);
+    void RestoreRunResult();
     bool IsManualReady() const { return CurrentStageState == EPGStageState::RunPreparation || CurrentStageDataCache.bManualReady; }
     bool CanReady() const { return CurrentStageState == EPGStageState::RunPreparation || (CurrentStageState == EPGStageState::BuildPhase && bRewardCommitted); }
 	APGStageManager();

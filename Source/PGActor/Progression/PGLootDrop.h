@@ -12,7 +12,9 @@ public:
     void InitializeItem(const FPGItemInstance& InItem);
     bool TryPickup(APawn* Player);
     const FPGItemInstance& GetItem() const { return Item; }
-    static void SpawnForEnemy(AActor* Enemy);
+    FVector GetLabelLocation() const;
+    static APGLootDrop* FindNearestPickup(const APawn* Player);
+    static void SpawnForEnemy(class APGCharacterEnemy* Enemy);
     virtual void Tick(float DeltaSeconds) override;
 private:
     UPROPERTY() TObjectPtr<class UWidgetComponent> Label;

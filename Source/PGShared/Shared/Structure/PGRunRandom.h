@@ -11,4 +11,15 @@ inline int32 Seed(int32 RunSeed, int32 Stage, int32 Wave, uint32 Channel, int32 
         Hash = (Hash ^ Value) * 16777619u;
     return int32(Hash & 0x7fffffffu);
 }
+
+inline int32 LootSeed(int32 RunSeed, int32 Stage, int32 Wave, int32 EnemyId, int32 Ordinal)
+{
+    return Seed(Seed(RunSeed, Stage, Wave, 3, EnemyId), Stage, Wave, 4, Ordinal);
+}
+
+inline FGuid LootGuid(const FGuid& RunId, int32 Stage, int32 Wave, int32 EnemyId, int32 Ordinal)
+{
+    return FGuid::NewDeterministicGuid(FString::Printf(TEXT("PG/Loot/%s/%d/%d/%d/%d"),
+        *RunId.ToString(), Stage, Wave, EnemyId, Ordinal));
+}
 }

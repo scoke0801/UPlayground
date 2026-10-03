@@ -87,6 +87,11 @@ void APGGameModeStage::StartGame()
         }
         auto* Profile = UPGProfileSubsystem::Get(this);
         if (Profile && Profile->IsSaveBlocked()) return;
+        if (Profile && Profile->GetProfile()->bRunEnded && Profile->GetProfile()->BossReward.Guid.IsValid())
+        {
+            StageManager->RestoreRunResult();
+            return;
+        }
         if (Profile && Profile->GetCatalog() && Profile->GetCatalog()->bRoguelikeRuns && !FParse::Param(FCommandLine::Get(), TEXT("PGRogueAutoStart")))
             StageManager->PrepareRun(Stage);
         else StageManager->StartStage(Stage);

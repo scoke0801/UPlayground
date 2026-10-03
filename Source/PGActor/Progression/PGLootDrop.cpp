@@ -2,7 +2,8 @@
 #include "PGProfileSubsystem.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "Components/WidgetComponent.h"
-#include "PGUI/Widget/Billboard/PGUILootLabel.h"
+#include "PGUI/Style/PGUIStyle.h"
+#include "EngineUtils.h"
 #include "NiagaraComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -11,6 +12,9 @@
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
+#include "PGData/PGDataTableManager.h"
+#include "PGData/DataTable/Skill/PGEnemyDataRow.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
 
 APGLootDrop::APGLootDrop()
@@ -22,6 +26,8 @@ APGLootDrop::APGLootDrop()
     Label->SetupAttachment(GetRootComponent()); Label->SetWidgetSpace(EWidgetSpace::Screen);
     Label->SetDrawAtDesiredSize(true); Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     Label->SetTickWhenOffscreen(false); Label->SetRelativeLocation(FVector(0,0,32));
+    // Retained for old component serialization. A single screen overlay now places all labels.
+    Label->SetVisibility(false); Label->SetComponentTickEnabled(false);
     Beam = CreateDefaultSubobject<UNiagaraComponent>(TEXT("RarityBeam"));
     Beam->SetupAttachment(GetRootComponent()); Beam->SetAutoActivate(false);
     BeamMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LootBeam"));
@@ -36,9 +42,7 @@ void APGLootDrop::InitializeItem(const FPGItemInstance& InItem)
     const auto* Catalog = Profile ? Profile->GetCatalog() : nullptr;
     const auto* Def = Catalog ? Catalog->FindItem(Item.DefinitionId) : nullptr;
     if (!Def) return;
-    auto* Widget = CreateWidget<UPGUILootLabel>(GetWorld(), UPGUILootLabel::StaticClass());
-    const auto Color = Def->Rarity == EPGItemRarity::Rare ? FLinearColor(1,.65f,.15f) : Def->Rarity == EPGItemRarity::Magic ? FLinearColor(.2f,.65f,1) : FLinearColor(.75f,.8f,.85f);
-    if (Widget) { Widget->Configure(Def->DisplayName, Color, Def->Icon.LoadSynchronous(), Def->IconPanel); Label->SetWidget(Widget); }
+    const auto Color = FPGUIStyle::Get().RarityColor(Def->Rarity);
     if (auto* Material = Catalog->BeamMaterial.LoadSynchronous())
     {
         const float Height = FMath::Max(0.f, Catalog->BeamHeights.FindRef(Def->Rarity));
@@ -61,7 +65,8 @@ void APGLootDrop::Tick(float DeltaSeconds)
     const float Alpha = FMath::Clamp(ArcElapsed / ArcDuration, 0.f, 1.f);
     Label->SetRelativeLocation(FVector(40.f * FMath::Sin(PI * Alpha), 0, 32.f + 4.f * ArcHeight * Alpha * (1-Alpha)));
     if (Alpha >= 1.f) SetActorTickEnabled(false);
-}bool APGLootDrop::TryPickup(APawn* Player)
+}
+bool APGLootDrop::TryPickup(APawn* Player)
 {
     auto* Profile = UPGProfileSubsystem::Get(this);
     auto* Character = Cast<APGCharacterPlayer>(Player);
@@ -71,18 +76,59 @@ void APGLootDrop::Tick(float DeltaSeconds)
     if (!Profile->TryPickup(Item)) { bClaimed = false; return false; }
     Destroy(); return true;
 }
-void APGLootDrop::SpawnForEnemy(AActor* Enemy)
+void APGLootDrop::SpawnForEnemy(APGCharacterEnemy* Enemy)
 {
+    if (!IsValid(Enemy) || Enemy->bLootResolved || !Enemy->bCanDropLoot) return;
     auto* Profile = UPGProfileSubsystem::Get(Enemy);
-    if (!Profile) return;
-    FRandomStream Random(FMath::Rand());
+    auto* Tables = UPGDataTableManager::Get(Enemy);
+    const auto* Row = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
+    if (!Profile || !Row || !Profile->GetProfile()->RunId.IsValid()) return;
+    Enemy->bLootResolved = true;
+    if (!Enemy->LootGuid.IsValid())
+    {
+        // Legacy placed/dev enemies use their actor path; staged encounters use authored ordinals.
+        Enemy->LootGuid = FGuid::NewDeterministicGuid(Profile->GetProfile()->RunId.ToString() + Enemy->GetPathName());
+        Enemy->LootSeed = int32(FCrc::StrCrc32(*Enemy->GetPathName()) ^ uint32(Profile->GetProfile()->RunSeed));
+    }
+    if (Profile->HasClaimedLoot(Enemy->LootGuid)) return;
+    FRandomStream Random(Enemy->LootSeed);
     FPGItemInstance Item;
-    if (!Profile->RollDrop(Random, Item)) return;
+    if (!Profile->RollDrop(Random, Item, Row->DropPoolId)) return;
+    Item.Guid = Enemy->LootGuid;
+    const bool bResultReward = Row->Role == EPGEnemyRole::Boss && Profile->GetCatalog()->bRoguelikeRuns;
+    UE_LOG(LogTemp, Log, TEXT("PGLoot rolled enemy=%d pool=%s seed=%d item=%d guid=%s result=%d"),
+        Enemy->GetCharacterTID(), *Row->DropPoolId.ToString(), Enemy->LootSeed, Item.DefinitionId, *Item.Guid.ToString(), bResultReward);
+    if (bResultReward)
+    {
+        if (!Profile->QueueBossReward(Item)) UE_LOG(LogTemp, Error, TEXT("PGLoot boss reward could not be queued"));
+        return;
+    }
     FVector Location = Enemy->GetActorLocation();
     FHitResult Hit;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(PGLootGround), false, Enemy);
     if (Enemy->GetWorld()->LineTraceSingleByChannel(Hit, Location, Location - FVector(0,0,500), ECC_WorldStatic, Params)) Location = Hit.ImpactPoint + FVector(0,0,30);
     auto* Drop = Enemy->GetWorld()->SpawnActor<APGLootDrop>(Location, FRotator::ZeroRotator);
     if (Drop) Drop->InitializeItem(Item);
+    else { Enemy->bLootResolved = false; UE_LOG(LogTemp, Error, TEXT("PGLoot actor spawn failed: %s"), *Item.Guid.ToString()); }
+}
+FVector APGLootDrop::GetLabelLocation() const
+{
+    return Label->GetComponentLocation();
+}
+APGLootDrop* APGLootDrop::FindNearestPickup(const APawn* Player)
+{
+    const auto* Profile = UPGProfileSubsystem::Get(Player);
+    const auto* Catalog = Profile ? Profile->GetCatalog() : nullptr;
+    if (!Player || !Catalog) return nullptr;
+    APGLootDrop* Nearest = nullptr;
+    double Best = FMath::Square(Catalog->PickupRadius);
+    for (TActorIterator<APGLootDrop> It(Player->GetWorld()); It; ++It)
+    {
+        if (It->bClaimed || !It->Item.Guid.IsValid() || !Catalog->FindItem(It->Item.DefinitionId)) continue;
+        const double Distance = FVector::DistSquared(Player->GetActorLocation(),It->GetActorLocation());
+        if (Distance < Best || (Distance == Best && (!Nearest || It->Item.Guid < Nearest->Item.Guid)))
+        { Best = Distance; Nearest = *It; }
+    }
+    return Nearest;
 }
 

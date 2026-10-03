@@ -6,6 +6,25 @@
 #include "PGProgressionData.generated.h"
 
 USTRUCT(BlueprintType)
+struct PGDATA_API FPGDropPoolEntry
+{
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere) int32 ItemId = 0;
+    UPROPERTY(EditAnywhere, meta=(ClampMin="0")) float Weight = 1.f;
+};
+
+USTRUCT(BlueprintType)
+struct PGDATA_API FPGDropPool
+{
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere) FName Id;
+    UPROPERTY(EditAnywhere, meta=(ClampMin="0", ClampMax="1")) float DropChance = .08f;
+    // One guaranteed item replaces the chance roll; it never adds a second drop.
+    UPROPERTY(EditAnywhere) bool bGuaranteed = false;
+    UPROPERTY(EditAnywhere) TArray<FPGDropPoolEntry> Entries;
+};
+
+USTRUCT(BlueprintType)
 struct PGDATA_API FPGLoadoutEntry
 {
     GENERATED_BODY()
@@ -41,6 +60,9 @@ public:
     UPROPERTY(EditAnywhere) float PickupRadius = 250.f;
     UPROPERTY(EditAnywhere, meta=(ClampMin="0", ClampMax="1")) float DropChance = 0.75f;
     UPROPERTY(EditAnywhere) TArray<FPGItemDataRow> Items;
+    // Empty enemy pool IDs retain the legacy global chance and item weights.
+    UPROPERTY(EditAnywhere, Category="Loot") TArray<FPGDropPool> DropPools;
     UPROPERTY(EditAnywhere) TArray<FPGBuildDefinition> Builds;
     const FPGItemDataRow* FindItem(int32 Id) const { return Items.FindByPredicate([Id](const auto& I){ return I.Id == Id; }); }
+    const FPGDropPool* FindDropPool(FName Id) const { return DropPools.FindByPredicate([Id](const auto& Pool){ return Pool.Id == Id; }); }
 };

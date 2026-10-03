@@ -1,4 +1,4 @@
-#include "PGStageManager.h"
+﻿#include "PGStageManager.h"
 #include "PGData/DataTable/Reward/PGRewardSelection.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGActor/Progression/PGRunTelemetrySubsystem.h"
@@ -72,6 +72,7 @@ void APGStageManager::StartStage(int32 StageId)
     if (StageId == -1) StageId = CurrentStageId + 1;
     CurrentStageState = EPGStageState::None;
     GetWorldTimerManager().ClearAllTimersForObject(this);
+    bVictorySavePending = false;
     CloseRewardWindow();
     RewardToken.Invalidate();
     bRewardCommitted = false;
@@ -116,6 +117,12 @@ void APGStageManager::StartStage(int32 StageId)
             return;
         }
         PreparedEnemyClasses.AddUnique(Class);
+        const auto* Profile = UPGProfileSubsystem::Get(this);
+        if (!Enemy->DropPoolId.IsNone() && (!Profile || !Profile->GetCatalog() || !Profile->GetCatalog()->FindDropPool(Enemy->DropPoolId)))
+        {
+            FailStage(FString::Printf(TEXT("Missing drop pool for enemy %d: %s"), Spawn.MonsterId, *Enemy->DropPoolId.ToString()));
+            return;
+        }
     }
       CurrentStageId = StageId;
     if (auto* Profile = UPGProfileSubsystem::Get(this))
@@ -140,6 +147,7 @@ void APGStageManager::PrepareWave(int32 WaveIndex)
 {
     GetWorldTimerManager().ClearTimer(SpawnTimer);
     CurrentWaveIndex = WaveIndex;
+    WaveLootOrdinals.Reset();
     SpawnRandom.Initialize(PGRunRandom::Seed(RunSeed, CurrentStageId, WaveIndex, 1));
     CurrentStageState = EPGStageState::WaveIntermission;
     RemainingMonsters = 0;
@@ -251,6 +259,10 @@ void APGStageManager::SpawnEnemyBatch()
             break;
         }
         SpawnFailureCount = 0;
+        const int32 Ordinal = WaveLootOrdinals.FindOrAdd(MonsterId)++;
+        Enemy->LootSeed = PGRunRandom::LootSeed(RunSeed, CurrentStageId, CurrentWaveIndex, MonsterId, Ordinal);
+        if (const auto* Profile = UPGProfileSubsystem::Get(this))
+            Enemy->LootGuid = PGRunRandom::LootGuid(Profile->GetProfile()->RunId, CurrentStageId, CurrentWaveIndex, MonsterId, Ordinal);
         ++SpawnedMonsters;
         SpawnedEnemies.AddUnique(Enemy);
         Enemy->OnDestroyed.AddUniqueDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
@@ -606,7 +618,13 @@ void APGStageManager::GoToNextStage()
     {
           CurrentStageState = EPGStageState::Finished;
           if (auto* Profile = UPGProfileSubsystem::Get(this))
-              if (!Profile->EndRun(true, CurrentStageId)) { FailStage(TEXT("클리어 기록 저장 실패. 다시 시도해 주세요.")); return; }
+              if (!Profile->EndRun(true, CurrentStageId))
+              {
+                  bVictorySavePending = true;
+                  FailStage(TEXT("클리어 기록과 전리품을 저장하지 못했습니다. 저장을 다시 시도해 주세요."));
+                  return;
+              }
+        bVictorySavePending = false;
         OnRunFinished.Broadcast();
         // Victory is already committed. Leave the boss defeat visible before covering gameplay with results.
         const float Delay = FMath::Max(0.f, float(BossDefeatPresentationUntil - GetWorld()->GetTimeSeconds()));
@@ -618,9 +636,17 @@ void APGStageManager::GoToNextStage()
 void APGStageManager::ShowRunResult()
 {
     if (CurrentStageState != EPGStageState::Finished) return;
+    ShowStageStatus(NSLOCTEXT("PG", "RunVictory", "시련 돌파!"));
+}
+
+void APGStageManager::RestoreRunResult()
+{
     const auto* Profile = UPGProfileSubsystem::Get(this);
-    ShowStageStatus(FText::FromString(FString::Printf(TEXT("시련 돌파!\n완료 구간 %d · 선택한 강화 %d종\n장비와 강화는 새 도전에서 초기화됩니다"),
-        CurrentStageId, Profile ? Profile->GetProfile()->SelectedRewards.Num() : 0)));
+    if (!Profile || !Profile->GetProfile()->bRunEnded || !Profile->GetProfile()->BossReward.Guid.IsValid()) return;
+    CurrentStageId = Profile->GetProfile()->Checkpoint;
+    CurrentStageState = EPGStageState::Finished;
+    UE_LOG(LogTemp, Log, TEXT("PGLoot result restored item=%d wins=%d"), Profile->GetProfile()->BossReward.DefinitionId, Profile->GetProfile()->CompletedRuns);
+    ShowRunResult();
 }
 
 void APGStageManager::StartNextStageAfterDelay()
@@ -637,10 +663,13 @@ void APGStageManager::OnActorDied(const IPGEventData* InEventData)
 
 void APGStageManager::OnActorSpawned(const IPGEventData* InEventData)
 {
-    if (CurrentStageState != EPGStageState::InProgress || !CurrentStageDataCache.bCountSummonedEnemies || !InEventData) return;
+    if (CurrentStageState != EPGStageState::InProgress || !InEventData) return;
     const auto* Data = static_cast<const FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>>*>(InEventData);
     APGCharacterEnemy* Enemy = Data->Value.Get();
     if (!IsValid(Enemy) || Enemy->GetWorld() != GetWorld() || SpawnedEnemies.Contains(Enemy)) return;
+    // Summons cannot create an unlimited loot economy or perturb authored drop identities.
+    Enemy->bCanDropLoot = false;
+    if (!CurrentStageDataCache.bCountSummonedEnemies) return;
     SpawnedEnemies.Add(Enemy);
     Enemy->OnDestroyed.AddUniqueDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
     ++RemainingMonsters;
@@ -749,6 +778,7 @@ void APGStageManager::ReadyForNextStage()
 }
 void APGStageManager::PrepareRun(int32 StageId)
 {
+    bVictorySavePending = false;
     GetWorldTimerManager().ClearTimer(BossResultTimer);
     BossDefeatPresentationUntil = 0;
     CurrentStageId = StageId;
@@ -835,11 +865,29 @@ void APGStageManager::OnPlayerDied(const IPGEventData* Data)
 void APGStageManager::ShowStageStatus(const FText& Text)
 {
     FPGStagePresentation View; View.Owner = this; View.Status = Text;
+    View.bRunResult = bVictorySavePending || CurrentStageState == EPGStageState::Finished;
+    if (View.bRunResult)
+    {
+        View.Result.bSavePending = bVictorySavePending;
+        View.Result.CompletedStages = CurrentStageId;
+        if (const auto* Profile = UPGProfileSubsystem::Get(this))
+        {
+            View.Result.SelectedRewards = Profile->GetProfile()->SelectedRewards;
+            View.Result.CompletedRuns = Profile->GetProfile()->CompletedRuns;
+            View.Result.Loot = bVictorySavePending ? Profile->GetPendingBossReward() : Profile->GetProfile()->BossReward;
+        }
+    }
     View.Retry.BindUObject(this, &ThisClass::RestartRun);
     if (auto* Messages = UPGMessageManager::Get(this)) Messages->SendMessage(EPGUIMessageType::StagePresentation, &View);
 }
 void APGStageManager::RestartRun()
 {
+    if (bVictorySavePending)
+    {
+        CurrentStageState = EPGStageState::Completed;
+        GoToNextStage();
+        return;
+    }
     if (CurrentStageState == EPGStageState::Finished ||
         (UPGProfileSubsystem::Get(this) && UPGProfileSubsystem::Get(this)->GetCatalog() && UPGProfileSubsystem::Get(this)->GetCatalog()->bRoguelikeRuns))
         if (auto* Profile = UPGProfileSubsystem::Get(this)) if (!Profile->BeginNewRun()) return;

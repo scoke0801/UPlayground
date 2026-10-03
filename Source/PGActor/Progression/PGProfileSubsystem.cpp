@@ -1,6 +1,7 @@
 #include "PGProfileSubsystem.h"
 #include "PGRunTelemetrySubsystem.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
+#include "PGData/DataAsset/Progression/PGLootRules.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
@@ -54,7 +55,7 @@ void UPGProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
             if (Row) if (UObject* Asset = Row->MontagePath.TryLoad()) PreparedSkillAssets.AddUnique(Asset);
         }
     LoadProfile();
-    if (!bReadOnly && Catalog->bRoguelikeRuns && (ActiveSlot < 0 || Profile->bRunEnded))
+    if (!bReadOnly && Catalog->bRoguelikeRuns && (ActiveSlot < 0 || (Profile->bRunEnded && !Profile->BossReward.Guid.IsValid())))
         if (!BeginNewRun()) bReadOnly = true;
     if (!bReadOnly && !EnsureRunSeed()) bReadOnly = true;
 }
@@ -110,6 +111,7 @@ bool UPGProfileSubsystem::ValidateCatalog(FString& Error) const
         Ids.Add(Item.Id); Weight += Item.DropWeight;
     }
     if (Weight <= 0 || !FMath::IsFinite(Weight)) { Error = TEXT("드랍 가중치 오류"); return false; }
+    if (!PGLootRules::ValidatePools(*Catalog, Error)) return false;
     TSet<FName> Builds;
     auto* Data = GetGameInstance()->GetSubsystem<UPGDataTableManager>();
     for (const auto& Build : Catalog->Builds)
@@ -147,6 +149,13 @@ bool UPGProfileSubsystem::Validate(const UPGProfileSave* Candidate) const
     for (auto Pair : Candidate->CombatPerks)
         if (Pair.Key <= EPGCombatPerk::None || Pair.Key >= EPGCombatPerk::Max || Pair.Value < 0 || Pair.Value > 100) return false;
     if (Candidate->CompletedRuns < 0 || Candidate->BestStage < 0 || Candidate->RunSeed < 0) return false;
+    for (const auto& Id : Candidate->ClaimedLoot) if (!Id.IsValid()) return false;
+    const auto& Boss = Candidate->BossReward;
+    if (Boss.Guid.IsValid())
+    {
+        if (!Candidate->bRunEnded || Boss.DefinitionId <= 0 || !Candidate->ClaimedLoot.Contains(Boss.Guid) || Ids.Contains(Boss.Guid)) return false;
+        for (auto Pair : Boss.Options) if (Pair.Key <= EPGStatType::None || Pair.Key >= EPGStatType::Max || Pair.Value < 0 || Pair.Value > 110000) return false;
+    }
     for (auto Pair : Candidate->SelectedRewards) if (Pair.Key <= 0 || Pair.Value < 1 || Pair.Value > 100) return false;
     for (auto Pair : Candidate->StageRewardCounts) if (Pair.Key < 1 || Pair.Value < 1 || Pair.Value > 3) return false;
     return true;
@@ -161,14 +170,28 @@ bool UPGProfileSubsystem::Commit(UPGProfileSave* Candidate)
     Profile = Candidate; ActiveSlot = Next;
     Status = TEXT("저장 완료");
     RefreshPlayer();
+    OnProfileChanged.Broadcast();
     return true;
 }
 bool UPGProfileSubsystem::TryPickup(const FPGItemInstance& Item)
 {
     if (!Catalog || !Catalog->FindItem(Item.DefinitionId) || !Item.Guid.IsValid()) return false;
-    if (Profile->Items.ContainsByPredicate([&](const auto& I){ return I.Guid == Item.Guid; })) return false;
+    if (HasClaimedLoot(Item.Guid)) return false;
     if (Profile->Items.Num() >= Catalog->BagCapacity) { Status = TEXT("가방이 가득 찼습니다. 아이템은 바닥에 남습니다."); return false; }
-    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this); Next->Items.Add(Item); return Commit(Next);
+    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
+    Next->Items.Add(Item); Next->ClaimedLoot.Add(Item.Guid);
+    return Commit(Next);
+}
+bool UPGProfileSubsystem::HasClaimedLoot(FGuid Guid) const
+{
+    return Profile && (Profile->ClaimedLoot.Contains(Guid) || Profile->Items.ContainsByPredicate([&](const auto& Item){ return Item.Guid == Guid; }));
+}
+bool UPGProfileSubsystem::QueueBossReward(const FPGItemInstance& Item)
+{
+    if (!Profile || Profile->bRunEnded || !Catalog || !Catalog->bRoguelikeRuns || !Catalog->FindItem(Item.DefinitionId) || !Item.Guid.IsValid() || HasClaimedLoot(Item.Guid)) return false;
+    if (PendingBossReward.Guid.IsValid()) return PendingBossReward.Guid == Item.Guid;
+    PendingBossReward = Item;
+    return true;
 }
 bool UPGProfileSubsystem::Equip(FGuid Guid)
 {
@@ -222,6 +245,7 @@ bool UPGProfileSubsystem::BeginNewRun()
     Next->Checkpoint = 1; Next->RewardBonuses.Reset(); Next->CombatPerks.Reset(); Next->LastReward.Invalidate();
     Next->SelectedRewards.Reset(); Next->bRunEnded = false;
     Next->StageRewardCounts.Reset();
+    Next->RunId = FGuid::NewGuid(); Next->ClaimedLoot.Reset(); Next->BossReward = FPGItemInstance();
     Next->RunSeed = FMath::RandRange(1, MAX_int32);
     Next->bAssistedRun = false;
 #if !UE_BUILD_SHIPPING
@@ -241,14 +265,17 @@ bool UPGProfileSubsystem::BeginNewRun()
                 Next->Items.Add(Item); Next->Equipment.Add(Def->Slot, Item.Guid);
             }
     }
-    return Commit(Next);
+    if (!Commit(Next)) return false;
+    PendingBossReward = FPGItemInstance();
+    return true;
 }
 bool UPGProfileSubsystem::EnsureRunSeed()
 {
     if (!Profile || bReadOnly) return false;
-    if (Profile->RunSeed > 0) return true;
+    if (Profile->RunSeed > 0 && Profile->RunId.IsValid()) return true;
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
-    Next->RunSeed = FMath::RandRange(1, MAX_int32);
+    if (Next->RunSeed <= 0) Next->RunSeed = FMath::RandRange(1, MAX_int32);
+    if (!Next->RunId.IsValid()) Next->RunId = FGuid::NewGuid();
     return Commit(Next);
 }
 bool UPGProfileSubsystem::MarkRunAssisted()
@@ -268,8 +295,22 @@ bool UPGProfileSubsystem::EndRun(bool bVictory, int32 Stage)
     if (!Catalog || !Catalog->bRoguelikeRuns || Profile->bRunEnded) return true;
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
     Next->bRunEnded = true; Next->BestStage = FMath::Max(Next->BestStage, Stage);
-    if (bVictory) ++Next->CompletedRuns;
-    return Commit(Next);
+    if (bVictory)
+    {
+        Next->Checkpoint = Stage;
+        ++Next->CompletedRuns;
+        if (PendingBossReward.Guid.IsValid())
+        {
+            Next->BossReward = PendingBossReward;
+            Next->ClaimedLoot.Add(PendingBossReward.Guid);
+        }
+    }
+    if (!Commit(Next)) return false;
+    if (bVictory && Profile->BossReward.Guid.IsValid())
+        UE_LOG(LogTemp, Log, TEXT("PGLoot boss committed item=%d guid=%s wins=%d"), Profile->BossReward.DefinitionId,
+            *Profile->BossReward.Guid.ToString(), Profile->CompletedRuns);
+    PendingBossReward = FPGItemInstance();
+    return true;
 }
 int32 UPGProfileSubsystem::GetEffectivePerk(EPGCombatPerk Perk) const
 {
@@ -355,21 +396,7 @@ void UPGProfileSubsystem::RefreshPlayer()
     if (!GetWorld()) return;
     if (auto* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0))) RestorePlayer(Player);
 }
-bool UPGProfileSubsystem::RollDrop(FRandomStream& Random, FPGItemInstance& Out) const
+bool UPGProfileSubsystem::RollDrop(FRandomStream& Random, FPGItemInstance& Out, FName PoolId) const
 {
-    if (!Catalog || Random.FRand() >= Catalog->DropChance) return false;
-    float Total = 0; for (auto& Item : Catalog->Items) Total += Item.DropWeight;
-    float Roll = Random.FRand() * Total;
-    for (auto& Def : Catalog->Items)
-    {
-        if (Def.DropWeight <= 0) continue;
-        Roll -= Def.DropWeight;
-        if (Roll > 0) continue;
-        Out.Guid = FGuid::NewGuid(); Out.DefinitionId = Def.Id; Out.Options = Def.BaseOptions;
-        // Stable stat ordering makes rolls reproducible independently of TMap layout.
-        TArray<EPGStatType> Keys; Out.Options.GetKeys(Keys); Keys.Sort();
-        for (auto Key : Keys) Out.Options[Key] += Random.RandRange(0, Def.RollBonus);
-        return true;
-    }
-    return false;
+    return Catalog && PGLootRules::Roll(*Catalog, PoolId, Random, Out);
 }
