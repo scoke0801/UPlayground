@@ -27,6 +27,8 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
 #include "PGActor/Components/Combat/PGEnemyCombatComponent.h"
+#include "PGActor/Components/Combat/PGEnemyPresentationComponent.h"
+#include "PGData/DataAsset/Combat/PGEnemyPresentationData.h"
 #include "PGActor/Components/Combat/PGSkillMontageController.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGEnemySkillHandler.h"
@@ -84,6 +86,7 @@ APGCharacterEnemy::APGCharacterEnemy()
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
 
 	CombatComponent = CreateDefaultSubobject<UPGEnemyCombatComponent>("EnemyCombatComponent");
+    EnemyPresentation = CreateDefaultSubobject<UPGEnemyPresentationComponent>(TEXT("EnemyPresentation"));
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimeline"));
 
 	SkillHandler =  FPGHandler::Create<FPGEnemySkillHandler>();
@@ -143,6 +146,7 @@ void APGCharacterEnemy::BeginPlay()
 
 	if(FPGEnemyDataRow* EnemyData = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
 	{
+        EnemyPresentation->Initialize(EnemyData->Presentation.LoadSynchronous());
 		uint8 Index = 0;
 		for (int32 SkillId : EnemyData->SkillIdList)
 		{
@@ -191,13 +195,17 @@ void APGCharacterEnemy::PossessedBy(AController* NewController)
 
 void APGCharacterEnemy::OnHit(UPGStatComponent* Source, const UPGPawnCombatComponent* Combat)
 {
+    const bool bGuardedHit = Source && GetDirectionalDamageScale(Source->GetOwner()) < 1.f;
     EPGDamageType Type = EPGDamageType::Normal;
     const float Damage = AbilitySystemComponent->ReceiveCombatHit(Source ? Source->GetASC() : nullptr, Type);
     if (Damage > 0.f)
     {
         if (auto* Manager = UPGDamageFloaterManager::Get(this)) Manager->AddFloater(FMath::RoundToInt(Damage), Type, this, false);
         if (EnemyNamePlate) EnemyNamePlate->ShowWidget(5.f);
-        PlayCombatFeedback(Source ? Source->GetOwner() : nullptr, Type);
+        if (!bGuardedHit || !EnemyPresentation->PlayGuardImpact())
+            PlayCombatFeedback(Source ? Source->GetOwner() : nullptr, Type);
+        else if (FeedbackIntensity > 0.f)
+            ApplyHitStop(.015f * FMath::Clamp(FeedbackIntensity, 0.f, 1.f));
     }
 }
 
@@ -391,6 +399,7 @@ void APGCharacterEnemy::StartDissolveEffect()
 
 void APGCharacterEnemy::OnDissolveTimelineUpdate(float Value)
 {
+    EnemyPresentation->SetDissolve(Value);
 	// 캐릭터 메쉬에 DissolveAmount 파라미터 설정
 	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
@@ -473,6 +482,7 @@ void APGCharacterEnemy::OnHealthChanged()
     UpdateHpBar();
     if (bDeathStarted)
     {
+        EnemyPresentation->ResetPresentation(true);
         SetGuarding(false);
         GetWorldTimerManager().ClearTimer(BossTransitionTimer);
         PhaseTransitionUntil = 0;
@@ -572,6 +582,7 @@ void APGCharacterEnemy::ClearPatternHitboxes()
 void APGCharacterEnemy::SetGuarding(bool bEnabled)
 {
     bGuarding = bEnabled;
+    EnemyPresentation->SetGuarding(bEnabled);
     if (!bEnabled)
     {
         if (GuardDecal) GuardDecal->SetVisibility(false);

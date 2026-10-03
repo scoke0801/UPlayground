@@ -24,6 +24,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowedClasses = "/Script/Engine.Actor"))
 	TSoftClassPtr<AActor> ActorClass;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Loot")
+    FName DropPoolId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation")
+    TSoftObjectPtr<class UPGEnemyPresentationData> Presentation;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role")
     EPGEnemyRole Role = EPGEnemyRole::Legacy;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role", meta=(ClampMin="0"))

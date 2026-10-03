@@ -167,6 +167,30 @@ void UPGCheatManager::PGCombatStats()
 #endif
 }
 
+void UPGCheatManager::PGGuardianProbe(FString Action)
+{
+#if !UE_BUILD_SHIPPING
+    FString TestProfile;
+    if (!FParse::Value(FCommandLine::Get(), TEXT("PGTestProfile="), TestProfile) || TestProfile.IsEmpty()) return;
+    auto* Player = Cast<APGCharacterBase>(GetOuterAPlayerController()->GetPawn());
+    if (!Player) return;
+    for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It)
+    {
+        auto* Enemy = *It;
+        if (Enemy->GetCharacterTID() != 15103 || !Enemy->ActorHasTag(TEXT("PGGuardianPrimary"))) continue;
+        auto* ASC = Enemy->GetPGAbilitySystemComponent();
+        const float Before = ASC->GetHealth();
+        const float GuardScale = Enemy->GetDirectionalDamageScale(Player);
+        if (Action == TEXT("hit"))
+            static_cast<APGCharacterBase*>(Enemy)->OnHit(Player->GetStatComponent(), Player->GetCombatComponent());
+        else if (Action == TEXT("kill")) ASC->ReceiveProcDamage(Player->GetPGAbilitySystemComponent(), Before + 10000.f);
+        UE_LOG(LogTemp, Display, TEXT("PGGuardianProbe action=%s guard=%d active=%d recovery=%d scale=%.3f damage=%.3f health=%.3f"),
+            *Action, Enemy->bGuarding, Enemy->bPatternActive, Enemy->bPatternRecovering, GuardScale, Before - ASC->GetHealth(), ASC->GetHealth());
+        break;
+    }
+#endif
+}
+
 void UPGCheatManager::PGBossDamage(float Amount)
 {
 #if !UE_BUILD_SHIPPING
@@ -311,6 +335,9 @@ void UPGCheatManager::PGProfileStatus()
         const auto* Save = Profile->GetProfile();
         UE_LOG(LogTemp, Display, TEXT("PGProfile version=%d revision=%lld items=%d equipped=%d checkpoint=%d clears=%d build=%s status=%s"),
             Save->Version, Save->Revision, Save->Items.Num(), Save->Equipment.Num(), Save->Checkpoint, Save->ClearedStages, *Save->BuildId.ToString(), *Profile->Status);
+        UE_LOG(LogTemp, Display, TEXT("PGLootProfile seed=%d run=%s claims=%d boss=%d guid=%s wins=%d ended=%d checkpoint=%d"),
+            Save->RunSeed, *Save->RunId.ToString(), Save->ClaimedLoot.Num(), Save->BossReward.DefinitionId,
+            *Save->BossReward.Guid.ToString(), Save->CompletedRuns, Save->bRunEnded, Save->Checkpoint);
     }
 #endif
 }

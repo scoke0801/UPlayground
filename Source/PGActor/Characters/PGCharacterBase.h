@@ -97,9 +97,12 @@ public:
 public:
 	int32 GetCharacterTID() const {return CharacterTID;}
     bool bPerformingHeavyAttack = false;
+    // Feedback selection is separate from the gameplay guard against notify hits.
+    bool bUseHeavyImpactFeedback = true;
     const class UPGCombatFeedbackData* GetCombatFeedbackData() const;
     int32 GetSuppressedFeedbackRequests() const { return SuppressedFeedbackRequests; }
     float GetTotalHitStopSeconds() const { return TotalHitStopSeconds; }
+    float GetFeedbackIntensity() const { return FeedbackIntensity; }
     friend class FPGFeedbackBudgetTest;
 	
 public:

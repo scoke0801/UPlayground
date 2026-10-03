@@ -19,6 +19,8 @@ public:
     UFUNCTION(Exec) void PGStageStatus();
     UFUNCTION(Exec) void PGStartStage(int32 StageId = 1);
     UFUNCTION(Exec) void PGCombatStats();
+    UFUNCTION(Exec) void PGGuardianProbe(FString Action = TEXT("status"));
+    UFUNCTION(Exec) void PGGuardianScenario(int32 PackCount = 1);
     /** Assisted GAS damage for threshold/death timing probes. */
     UFUNCTION(Exec) void PGBossDamage(float Amount = 15000.f);
     UFUNCTION(Exec) void PGBuildScenario(FString Family = TEXT("Bleed"), bool bCore = true);

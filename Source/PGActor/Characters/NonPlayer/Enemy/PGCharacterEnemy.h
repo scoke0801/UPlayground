@@ -28,6 +28,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Combat", meta = (AllowPrivateAccess = true))
 	UPGEnemyCombatComponent* CombatComponent;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="PG|Presentation")
+    TObjectPtr<class UPGEnemyPresentationComponent> EnemyPresentation;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "PG|Stat", meta = (AllowPrivateAccess = true))
 	UPGEnemyStatComponent* EnemyStatComponent;
 
@@ -89,7 +92,13 @@ private:
 
 public:
 	APGCharacterEnemy();
-    // A role controller selects an exact ID; the ability consumes it without rerolling.
+    // Assigned once by the stage before combat; independent of kill order and spawn retries.
+    int32 LootSeed = 0;
+    FGuid LootGuid;
+    bool bLootResolved = false;
+    bool bCanDropLoot = true;
+    // Scoped activation request shared by BT and role AI. Zero means legacy tag selection.
+    UPROPERTY(BlueprintReadOnly, Category="PG|Skill")
     int32 RequestedSkillID = 0;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Boss")
     int32 BossPhase = 1;
@@ -110,6 +119,7 @@ public:
     float GetDirectionalDamageScale(const AActor* Attacker) const;
     void ClearPatternHitboxes();
     void SetGuarding(bool bEnabled);
+    UPGEnemyPresentationComponent* GetEnemyPresentation() const { return EnemyPresentation; }
 	
 protected:
 	virtual void BeginPlay() override;

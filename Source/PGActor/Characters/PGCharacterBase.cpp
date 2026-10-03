@@ -177,7 +177,8 @@ void APGCharacterBase::PlayCombatFeedback(AActor* Source, EPGDamageType Type)
     const double Now = FPlatformTime::Seconds();
     if (Now - LastFeedbackTime < FMath::Max(0.f, Data->MinimumFeedbackInterval)) { ++SuppressedFeedbackRequests; return; }
     LastFeedbackTime = Now;
-    const auto& Impact = Type == EPGDamageType::Critical ? Data->Critical : Attacker && Attacker->bPerformingHeavyAttack ? Data->Heavy : Data->Normal;
+    const auto& Impact = Type == EPGDamageType::Critical ? Data->Critical :
+        Attacker && Attacker->bPerformingHeavyAttack && Attacker->bUseHeavyImpactFeedback ? Data->Heavy : Data->Normal;
     const float Scale = FMath::Clamp(FeedbackIntensity, 0.f, 1.f) * FMath::Clamp(Impact.Intensity, 0.f, 3.f);
     const float Stop = FMath::Clamp(Impact.HitStop * Scale, 0.f, FMath::Clamp(Data->MaximumHitStop, 0.f, .15f));
     ApplyHitStop(Stop);
