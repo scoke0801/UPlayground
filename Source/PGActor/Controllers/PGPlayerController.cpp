@@ -4,6 +4,8 @@
 #include "PGActor/Manager/PGStageManager.h"
 #include "PGUI/Widget/Window/PGUIInventory.h"
 #include "PGUI/Widget/HUD/PGUIMainHUD.h"
+#include "PGUI/Widget/Billboard/PGUILootOverlay.h"
+#include "PGUI/Manager/PGUIManager.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "UnrealClient.h"
 #include "TimerManager.h"
@@ -44,6 +46,8 @@ void APGPlayerController::BeginPlay()
 		{
 			Widget->AddToViewport();
 		}	
+        LootOverlay = CreateWidget<UPGUILootOverlay>(this);
+        if (LootOverlay) LootOverlay->AddToViewport(1);
 	}
 
 	// Enhanced Input 서브시스템 설정
@@ -233,9 +237,17 @@ bool APGPlayerController::IsPointerOverUI() const
 void APGPlayerController::CloseInventory()
 {
     if (!InventoryWidget) return;
+    if (auto* UI = UPGUIManager::Get(this)) UI->ReleaseModalInput(InventoryWidget);
     InventoryWidget->RemoveFromParent(); InventoryWidget = nullptr;
-    SetPause(false);
-    SetIgnoreMoveInput(false); FlushPressedKeys();
+    if (auto* LocalPawn = Cast<APGCharacterPlayer>(GetPawn()))
+        if (auto* ASC = LocalPawn->GetPGAbilitySystemComponent()) ASC->ClearBufferedInput();
+}
+
+void APGPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (LootOverlay) { LootOverlay->RemoveFromParent(); LootOverlay = nullptr; }
+    CloseInventory();
+    Super::EndPlay(EndPlayReason);
 }
 
 void APGPlayerController::ToggleInventory()
@@ -246,30 +258,23 @@ void APGPlayerController::ToggleInventory()
     }
     auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
     if (!LocalCharacter || !LocalCharacter->IsGameplayInputAllowed()) return;
+    auto* UI = UPGUIManager::Get(this);
+    if (!UI) return;
     LocalCharacter->GetPGAbilitySystemComponent()->CancelAllAbilities();
     LocalCharacter->GetPGAbilitySystemComponent()->ClearBufferedInput();
     InventoryWidget = CreateWidget<UPGUIInventory>(this);
-    InventoryWidget->SetDesiredSizeInViewport(FVector2D(1040,900));
-    InventoryWidget->SetAnchorsInViewport(FAnchors(.5f,.5f));
-    InventoryWidget->SetAlignmentInViewport(FVector2D(.5f,.5f));
+    if (!InventoryWidget) return;
     InventoryWidget->AddToViewport(90);
-    SetIgnoreMoveInput(true); FlushPressedKeys();
     bool bBuildPhase = false;
     for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It)
           if (It->GetCurrentStageState() == EPGStageState::BuildPhase || It->GetCurrentStageState() == EPGStageState::RunPreparation) { bBuildPhase = true; break; }
-    SetPause(!bBuildPhase);
+    UI->AcquireModalInput(InventoryWidget, !bBuildPhase);
 }
 void APGPlayerController::PickupNearest()
 {
     auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
     if (!LocalCharacter || !LocalCharacter->IsGameplayInputAllowed()) return;
-    APGLootDrop* Nearest = nullptr; double Best = TNumericLimits<double>::Max();
-    for (TActorIterator<APGLootDrop> It(GetWorld()); It; ++It)
-    {
-        const double D = FVector::DistSquared(LocalCharacter->GetActorLocation(), It->GetActorLocation());
-        if (D < Best) { Best = D; Nearest = *It; }
-    }
-    if (Nearest) Nearest->TryPickup(LocalCharacter);
+    if (auto* Nearest = APGLootDrop::FindNearestPickup(LocalCharacter)) Nearest->TryPickup(LocalCharacter);
 }
 
 void APGPlayerController::PGHUDCapture()

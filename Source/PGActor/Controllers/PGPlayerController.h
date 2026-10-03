@@ -25,8 +25,12 @@ public:
     // Development capture after streaming and HUD data have settled.
     UFUNCTION(Exec)
     void PGHUDCapture();
+    // Test-profile-only inventory fixture, interaction checks and capture.
+    UFUNCTION(Exec) void PGInventoryProbe(FString Action = TEXT("open"));
+    UFUNCTION(Exec) void PGRewardProbe(FString Action = TEXT("reward"));
 private:
     UPROPERTY() TObjectPtr<class UPGUIInventory> InventoryWidget;
+    UPROPERTY() TObjectPtr<class UPGUILootOverlay> LootOverlay;
 
 public:
     bool IsPointerOverUI() const;
@@ -90,6 +94,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void SetupInputComponent() override;
 	virtual void Tick(float DeltaTime) override;
 
