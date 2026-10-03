@@ -91,6 +91,7 @@ public:
 	virtual void OnWeaponPulledFromTargetActor(AActor* InteractedActor);
 
 protected:	
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void ToggleWeaponCollisionBoxCollision(bool bShouldEnable);
 	virtual void ToggleBodyCollisionBoxCollision(bool bShouldEnable, EPGToggleDamageType ToggleDamage);
 };

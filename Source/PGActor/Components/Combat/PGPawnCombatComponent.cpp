@@ -10,6 +10,18 @@
 #include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 
+void UPGPawnCombatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    // Stage cleanup/respawn can destroy the pawn without its death/dissolve path.
+    // Registered weapons belong to this component for the pawn's lifetime.
+    for (const auto& Pair : CharacterCarriedWeaponMap)
+        if (IsValid(Pair.Value)) Pair.Value->Destroy();
+    CharacterCarriedWeaponMap.Empty();
+    CurrentEquippedWeaponTag = FGameplayTag();
+    OverlappedActors.Empty();
+    Super::EndPlay(EndPlayReason);
+}
+
 APGWeaponBase* UPGPawnCombatComponent::GetCharacterCarriedWeaponByTag(FGameplayTag InWeaponTagToGet) const
 {
 	if (CharacterCarriedWeaponMap.Contains(InWeaponTagToGet))
