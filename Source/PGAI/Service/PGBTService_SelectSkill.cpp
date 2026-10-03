@@ -28,6 +28,7 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	
 	// 이미 유효한 값이 설정되어 있는 동안에는 별도 처리를 하지 않습니다.
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
+    if (!BlackboardComp) return;
 	if (0 != BlackboardComp->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName))
 	{
 		return;
@@ -136,7 +137,9 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 		const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
 		if (!SkillData) continue;
 	
-		const float Priority = CalculateSkillPriority(SkillID, SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes);
+        if (SkillData->MinimumBossPhase > Enemy->BossPhase) continue;
+		const float Priority = CalculateSkillPriority(SkillID, SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes)
+            * FMath::Max(0, SkillData->InitialPriority) * FMath::Max(0.f, SkillData->SelectionWeight);
 		if (Priority > 0.f)
 		{
 			ReadySkills.Add(SkillID);
@@ -193,22 +196,7 @@ float UPGBTService_SelectSkill::CalculateSkillPriority(
     if (SkillType == EPGSkillType::SummonEnemy && BlackboardComp &&
         BlackboardComp->GetValueAsInt(SummonCountKey.SelectedKeyName) >= MaxSummonCountPerBattle) return 0.f;
 
-	// SkillHandler에서 Priority 확인
-	if (Enemy)
-	{
-		if (FPGSkillHandler* SkillHandler = Enemy->GetSkillHandler())
-		{
-			const int32 CurrentPriority = SkillHandler->GetPriorityByID(SkillID);
-			
-			// Priority가 1이 아니면(설정된 경우), 해당 값을 우선적으로 사용
-			if (CurrentPriority != 1)
-			{
-				return static_cast<float>(CurrentPriority);
-			}
-		}
-	}
-
-	// Priority가 1인 경우(기본값), 거리/HP/타입별 동적 계산 수행
+    // Authored weights multiply context; they never bypass summon or health constraints.
 	switch (SkillType)
 	{
 	case EPGSkillType::Melee:

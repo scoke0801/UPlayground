@@ -124,7 +124,7 @@ bool FPGSkillHandler::IsSkillReadyByID(int32 SkillID) const
 			return !Pair.Value.IsOnCooldown();
 		}
 	}
-	return true; // 스킬이 없으면 사용 가능으로 간주
+	return false; // Unknown IDs must not enter AI candidate lists.
 }
 
 float FPGSkillHandler::GetRemainingCooldownByID(int32 SkillID) const

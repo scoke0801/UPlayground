@@ -1,4 +1,5 @@
 #include "PGRoleAIController.h"
+#include "PGCombatDirectorSubsystem.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
@@ -19,6 +20,7 @@ void APGRoleAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
     PreviousSkill = 0;
+    PendingSkill = 0;
     SequencePhase = 1;
     SequenceCursor = 0;
     NextDecision = RetreatUntil = NextRetreatAt = 0;
@@ -30,6 +32,8 @@ void APGRoleAIController::SetCombatThinkingEnabled(bool bEnabled)
     if (bEnabled && GetPawn()) GetWorldTimerManager().SetTimer(ThinkTimer, this, &ThisClass::Think, .2f, true, .3f);
     else
     {
+        PendingSkill = 0;
+        if (auto* Director = GetWorld()->GetSubsystem<UPGCombatDirectorSubsystem>()) Director->Release(Cast<APGCharacterEnemy>(GetPawn()));
         StopMovement();
         if (auto* Enemy = Cast<APGCharacterEnemy>(GetPawn()))
             if (auto* ASC = Enemy->GetPGAbilitySystemComponent())
@@ -43,6 +47,7 @@ void APGRoleAIController::OnUnPossess()
 }
 void APGRoleAIController::EndPlay(const EEndPlayReason::Type Reason)
 {
+    if (auto* Director = GetWorld()->GetSubsystem<UPGCombatDirectorSubsystem>()) Director->Release(Cast<APGCharacterEnemy>(GetPawn()));
     GetWorldTimerManager().ClearTimer(ThinkTimer);
     Super::EndPlay(Reason);
 }
@@ -50,12 +55,16 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
 {
     auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
     auto* Tables = UPGDataTableManager::Get(this);
-    if (!Enemy || !Tables || Enemy->bPatternActive || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
+    if (!Enemy || !Tables || !Enemy->GetPGAbilitySystemComponent() || Enemy->bPatternActive || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
         Enemy->IsBossTransitioning()) return false;
     const auto* Data = Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID());
     const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(SkillID);
-    if (!Data || !Data->SkillIdList.Contains(SkillID) || !Skill || Skill->MinimumBossPhase > Enemy->BossPhase ||
+    if (!Data || !Data->SkillIdList.Contains(SkillID) || !Skill || !Skill->IsPatternValid() || Skill->MinimumBossPhase > Enemy->BossPhase ||
         !Enemy->GetSkillHandler() || !Enemy->GetSkillHandler()->IsSkillReadyByID(SkillID)) return false;
+    auto* Director = GetWorld()->GetSubsystem<UPGCombatDirectorSubsystem>();
+    auto* Target = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
+    if (!Target || !Target->GetPGAbilitySystemComponent() || Target->GetPGAbilitySystemComponent()->GetHealth() <= 0) return false;
+    if (Director && !Director->TryReserve(Enemy, Target, Skill->AttackPressureCost)) return false;
     auto* ASC = Enemy->GetPGAbilitySystemComponent();
     auto* Spec = ASC->FindAbilitySpecFromClass(UPGEnemyAbilityAttack::StaticClass());
     if (!Spec)
@@ -67,6 +76,7 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
     StopMovement();
     const bool bActivated = Spec && ASC->TryActivateAbility(Spec->Handle);
     Enemy->RequestedSkillID = 0;
+    if ((!bActivated || !Enemy->bPatternActive) && Director) Director->Release(Enemy);
     if (bActivated && Enemy->bPatternActive)
     {
         PreviousSkill = SkillID;
@@ -80,7 +90,8 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
     return bActivated && Enemy->bPatternActive;
 }
 
-int32 APGRoleAIController::SelectSkill(const FPGEnemyDataRow& Data, const TArray<int32>& Candidates, int32 Phase)
+int32 APGRoleAIController::SelectSkill(const FPGEnemyDataRow& Data, const TArray<int32>& Candidates, int32 Phase,
+    const TMap<int32, float>& Weights)
 {
     if (SequencePhase != Phase) { SequencePhase = Phase; SequenceCursor = 0; }
     if (Candidates.IsEmpty()) return 0;
@@ -92,7 +103,16 @@ int32 APGRoleAIController::SelectSkill(const FPGEnemyDataRow& Data, const TArray
         }
     TArray<int32> Choices = Candidates;
     if (Choices.Num() > 1) Choices.Remove(PreviousSkill);
-    return Choices[FMath::RandHelper(Choices.Num())];
+    float TotalWeight = 0.f;
+    for (int32 ID : Choices) TotalWeight += Weights.Contains(ID) ? FMath::Max(0.f, Weights[ID]) : 1.f;
+    if (TotalWeight <= 0.f) return 0;
+    float Roll = FMath::FRand() * TotalWeight;
+    for (int32 ID : Choices)
+    {
+        Roll -= Weights.Contains(ID) ? FMath::Max(0.f, Weights[ID]) : 1.f;
+        if (Roll < 0.f) return ID;
+    }
+    return Choices.Last();
 }
 void APGRoleAIController::Think()
 {
@@ -101,13 +121,15 @@ void APGRoleAIController::Think()
     if (!Enemy || !Enemy->GetPGAbilitySystemComponent() || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
         !Target || !Target->GetPGAbilitySystemComponent() || Target->GetPGAbilitySystemComponent()->GetHealth() <= 0)
     {
+        PendingSkill = 0;
+        if (auto* Director = GetWorld()->GetSubsystem<UPGCombatDirectorSubsystem>()) Director->Release(Enemy);
         StopMovement();
         if (Enemy && Enemy->bPatternActive)
             if (const auto* Spec = Enemy->GetPGAbilitySystemComponent()->FindAbilitySpecFromClass(UPGEnemyAbilityAttack::StaticClass()))
                 Enemy->GetPGAbilitySystemComponent()->CancelAbilityHandle(Spec->Handle);
         return; // Keep the decision timer alive: a replacement player can be acquired later.
     }
-    if (Enemy->bPatternActive || Enemy->IsBossTransitioning()) { StopMovement(); return; }
+    if (Enemy->bPatternActive || Enemy->IsBossTransitioning()) { PendingSkill = 0; StopMovement(); return; }
     if (BrainComponent && BrainComponent->IsRunning()) BrainComponent->StopLogic(TEXT("Data-driven role controller"));
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
@@ -141,27 +163,35 @@ void APGRoleAIController::Think()
     }
     if (Now < NextDecision) return;
     TArray<int32> Candidates;
+    TMap<int32, float> Weights;
     float ReadyRange = 0.f;
     float NearestRange = TNumericLimits<float>::Max();
     const bool bCanSeeTarget = LineOfSightTo(Target);
     for (int32 ID : Data->SkillIdList)
     {
         const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ID);
-        if (!Skill || Skill->MinimumBossPhase > Enemy->BossPhase ||
-            (Skill->TelegraphDuration > 0.f && !Skill->IsPatternValid())) continue;
+        if (!Skill || Skill->MinimumBossPhase > Enemy->BossPhase || Skill->SelectionWeight <= 0.f || !Skill->IsPatternValid()) continue;
         const float Range = Skill->GetPatternActivationRange();
         NearestRange = FMath::Min(NearestRange, Range);
         if (!Handler->IsSkillReadyByID(ID)) continue;
         ReadyRange = FMath::Max(ReadyRange, Range);
-        if (Distance <= Range && bCanSeeTarget) Candidates.Add(ID);
+        if (Skill->IsInActivationRange(Distance) && bCanSeeTarget)
+        {
+            Candidates.Add(ID);
+            Weights.Add(ID, Skill->SelectionWeight);
+        }
     }
     if (!Candidates.IsEmpty())
     {
-        TryExecuteSkill(SelectSkill(*Data, Candidates, Enemy->BossPhase));
-        NextDecision = Now + .25;
+        // Retain an eligible choice while queued; do not reroll away from a heavy attack.
+        if (!Candidates.Contains(PendingSkill)) PendingSkill = SelectSkill(*Data, Candidates, Enemy->BossPhase, Weights);
+        if (TryExecuteSkill(PendingSkill)) PendingSkill = 0;
+        NextDecision = Now + .2;
     }
     else
     {
+        PendingSkill = 0;
+        if (auto* Director = GetWorld()->GetSubsystem<UPGCombatDirectorSubsystem>()) Director->Release(Enemy);
         // A cooling long-range skill must not stop an available short-range attack from approaching.
         float ApproachRange = (ReadyRange > 0.f ? ReadyRange : NearestRange) * .8f;
         if (Data->PreferredDistance > 0.f) ApproachRange = FMath::Min(ApproachRange, Data->PreferredDistance);

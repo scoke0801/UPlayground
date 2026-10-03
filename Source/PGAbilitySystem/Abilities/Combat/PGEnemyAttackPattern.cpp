@@ -1,5 +1,7 @@
 #include "PGEnemyAbilityAttack.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
+#include "PGActor/Components/Combat/PGEnemyPresentationComponent.h"
+#include "Animation/AnimMontage.h"
 #include "PGActor/Projectile/PGPatternProjectile.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGAbilitySystem/Abilities/Util/PGAbilityBPLibrary.h"
@@ -25,7 +27,9 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     auto* Enemy = GetEnemyCharacterFromActorInfo();
     if (!Enemy || !Row.IsPatternValid()) { EndAbilitySelf(); return; }
     EliteData = Row;
-    bElitePattern = Enemy->bPatternActive = Enemy->bPerformingHeavyAttack = true;
+    bElitePattern = Enemy->bPatternActive = true;
+    Enemy->bPerformingHeavyAttack = true;
+    Enemy->bUseHeavyImpactFeedback = Row.bHeavyImpactFeedback;
     Enemy->ActivePatternID = Row.SkillID;
     Enemy->bPatternRecovering = Enemy->bPatternStriking = false;
     Enemy->ClearPatternHitboxes();
@@ -35,19 +39,23 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     PatternForward = Enemy->GetActorForwardVector();
     PatternStartedAt = LastUpdateAt = GetWorld()->GetTimeSeconds();
     Travelled = 0; HazardIndex = 0; bTravelling = bStriking = false;
+    Enemy->GetEnemyPresentation()->BeginWindup(Row.TelegraphDuration, Row.AimTrackingSeconds);
     if (auto* Montage = Row.ElitePresentationMontage.LoadSynchronous())
         if (auto* Anim = Enemy->GetMesh()->GetAnimInstance())
         {
             Anim->Montage_Play(Montage);
             Anim->Montage_SetPosition(Montage, Montage->GetPlayLength() * FMath::Clamp(Row.WindupMontageFraction, 0.f, 1.f));
-            Anim->Montage_Pause(Montage);
+            if (Row.bSyncMontageToPattern)
+                Anim->Montage_SetPlayRate(Montage, Montage->GetPlayLength() *
+                    (Row.ImpactMontageFraction - Row.WindupMontageFraction) / FMath::Max(.05f, Row.TelegraphDuration));
+            else Anim->Montage_Pause(Montage);
         }
     auto* Movement = Enemy->GetCharacterMovement();
     SavedMovementMode = Movement->MovementMode;
     Movement->StopMovementImmediately(); Movement->DisableMovement();
     if (auto* AI = Cast<AAIController>(Enemy->GetController())) AI->StopMovement();
     UpdateAim();
-    ShowTelegraph(StrikeCenter, Row.Pattern == EPGAttackPattern::ChargeSlam || Row.Pattern == EPGAttackPattern::AimedProjectile);
+    ShowTelegraph(StrikeCenter, Row.Pattern == EPGAttackPattern::ChargeSlam || Row.Pattern == EPGAttackPattern::AimedProjectile || Row.Pattern == EPGAttackPattern::Thrust);
     GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &ThisClass::UpdatePattern, .02f, true);
     GetWorld()->GetTimerManager().SetTimer(PatternTimer, this, &ThisClass::StrikeElitePattern, FMath::Max(.05f, Row.TelegraphDuration), false);
     UE_LOG(LogTemp, Log, TEXT("PGPattern Windup skill=%d pattern=%d"), Row.SkillID, int32(Row.Pattern));
@@ -96,7 +104,13 @@ void UPGEnemyAbilityAttack::ShowTelegraph(const FVector& Center, bool bLine, boo
             MID->SetScalarParameterValue(TEXT("Radius"), Radius);
             MID->SetScalarParameterValue(TEXT("Length"), EliteData.TravelDistance);
             MID->SetScalarParameterValue(TEXT("HalfWidth"), EliteData.LineHalfWidth);
-            MID->SetScalarParameterValue(TEXT("Shape"), bLine ? 2.f : (!bRecovery && EliteData.Pattern == EPGAttackPattern::Sweep ? 1.f : 0.f));
+            const float Shape = bRecovery ? 0.f : EliteData.Pattern == EPGAttackPattern::RingBurst ? 3.f :
+                EliteData.Pattern == EPGAttackPattern::AimedProjectile && EliteData.ProjectileCount > 1 ? 4.f :
+                bLine ? 2.f : EliteData.Pattern == EPGAttackPattern::Sweep ? 1.f : 0.f;
+            MID->SetScalarParameterValue(TEXT("Shape"), Shape);
+            MID->SetScalarParameterValue(TEXT("InnerRadius"), EliteData.InnerSafeRadius);
+            MID->SetScalarParameterValue(TEXT("VolleyCount"), float(EliteData.ProjectileCount));
+            MID->SetScalarParameterValue(TEXT("SpreadRadians"), FMath::DegreesToRadians(EliteData.ProjectileSpreadHalfAngle));
             MID->SetScalarParameterValue(TEXT("CosAngle"), FMath::Cos(FMath::DegreesToRadians(EliteData.HalfAngleDegrees)));
             MID->SetVectorParameterValue(TEXT("GradeColor"), bRecovery ? FLinearColor(.05f,.8f,1.5f) : FLinearColor(1,.18f,.025f));
         }
@@ -151,14 +165,27 @@ void UPGEnemyAbilityAttack::UpdatePattern()
     }
     if (CVarPGPatternDebug.GetValueOnGameThread() && !Enemy->bPatternRecovering)
     {
-        if (!bStriking && (EliteData.Pattern == EPGAttackPattern::ChargeSlam || EliteData.Pattern == EPGAttackPattern::AimedProjectile))
-            DrawDebugBox(GetWorld(), PatternOrigin + PatternForward * EliteData.TravelDistance * .5f,
-                FVector(EliteData.TravelDistance * .5f, EliteData.LineHalfWidth, 3), PatternForward.ToOrientationQuat(), FColor::Orange, false, .025f);
+        if (!bStriking && (EliteData.Pattern == EPGAttackPattern::ChargeSlam || EliteData.Pattern == EPGAttackPattern::AimedProjectile || EliteData.Pattern == EPGAttackPattern::Thrust))
+        {
+            const int32 Count = EliteData.Pattern == EPGAttackPattern::AimedProjectile ? EliteData.ProjectileCount : 1;
+            for (int32 Index = 0; Index < Count; ++Index)
+            {
+                const FVector Forward = PatternForward.RotateAngleAxis(PGAttackGeometry::VolleyAngle(Index, Count, EliteData.ProjectileSpreadHalfAngle), FVector::UpVector);
+                DrawDebugBox(GetWorld(), PatternOrigin + Forward * EliteData.TravelDistance * .5f,
+                    FVector(EliteData.TravelDistance * .5f, EliteData.LineHalfWidth, 3), Forward.ToOrientationQuat(), FColor::Orange, false, .025f);
+            }
+        }
         else if (EliteData.Pattern == EPGAttackPattern::Sweep)
             DrawDebugCone(GetWorld(), StrikeCenter + FVector(0,0,3), PatternForward, EliteData.TelegraphRadius,
                 FMath::DegreesToRadians(EliteData.HalfAngleDegrees), .001f, 32, FColor::Orange, false, .025f);
-        else DrawDebugCircle(GetWorld(), StrikeCenter + FVector(0,0,3), EliteData.TelegraphRadius, 48,
-            FColor::Orange, false, .025f, 0, 2, FVector::ForwardVector, FVector::RightVector, false);
+        else
+        {
+            DrawDebugCircle(GetWorld(), StrikeCenter + FVector(0,0,3), EliteData.TelegraphRadius, 48,
+                FColor::Orange, false, .025f, 0, 2, FVector::ForwardVector, FVector::RightVector, false);
+            if (EliteData.Pattern == EPGAttackPattern::RingBurst)
+                DrawDebugCircle(GetWorld(), StrikeCenter + FVector(0,0,3), EliteData.InnerSafeRadius, 48,
+                    FColor::Cyan, false, .025f, 0, 2, FVector::ForwardVector, FVector::RightVector, false);
+        }
     }
 }
 
@@ -185,27 +212,40 @@ void UPGEnemyAbilityAttack::StrikeElitePattern()
             auto* Class = EliteData.ProjectileClass.LoadSynchronous();
             FActorSpawnParameters Params; Params.Owner = Enemy; Params.Instigator = Enemy;
             Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-            const FVector Start = Enemy->GetActorLocation() + PatternForward * 65.f;
-            if (auto* Bolt = GetWorld()->SpawnActor<APGPatternProjectile>(Class ? Class : APGPatternProjectile::StaticClass(), Start, PatternForward.Rotation(), Params))
+            const auto VolleyHits = MakeShared<TSet<TWeakObjectPtr<AActor>>>();
+            for (int32 Index = 0; Index < EliteData.ProjectileCount; ++Index)
             {
-                Bolt->SetMaxTravelDistance(FMath::Max(1.f, EliteData.TravelDistance - 65.f));
-                Bolt->SetCollisionHalfWidth(EliteData.LineHalfWidth);
-                ActiveProjectile = Bolt;
-                Bolt->Fire(Enemy, Start, PatternForward, EliteData.TravelSpeed);
+                const FVector Forward = PatternForward.RotateAngleAxis(
+                    PGAttackGeometry::VolleyAngle(Index, EliteData.ProjectileCount, EliteData.ProjectileSpreadHalfAngle), FVector::UpVector);
+                const FVector Start = Enemy->GetActorLocation() + Forward * 65.f;
+                if (auto* Bolt = GetWorld()->SpawnActor<APGPatternProjectile>(Class ? Class : APGPatternProjectile::StaticClass(), Start, Forward.Rotation(), Params))
+                {
+                    Bolt->SetMaxTravelDistance(FMath::Max(1.f, EliteData.TravelDistance - 65.f));
+                    Bolt->SetCollisionHalfWidth(EliteData.LineHalfWidth);
+                    Bolt->SetVolleyHits(VolleyHits);
+                    ActiveProjectiles.Add(Bolt);
+                    Bolt->Fire(Enemy, Start, Forward, EliteData.TravelSpeed);
+                }
             }
             BeginRecovery(); return;
         }
     }
     TArray<FOverlapResult> Hits;
     FCollisionObjectQueryParams Objects; Objects.AddObjectTypesToQuery(ECC_Pawn); Objects.AddObjectTypesToQuery(ECC_GameTraceChannel3);
-    GetWorld()->OverlapMultiByObjectType(Hits, StrikeCenter, FQuat::Identity, Objects, FCollisionShape::MakeSphere(EliteData.TelegraphRadius + 200));
+    const float QueryRadius = EliteData.Pattern == EPGAttackPattern::Thrust ? EliteData.TravelDistance + EliteData.LineHalfWidth : EliteData.TelegraphRadius;
+    GetWorld()->OverlapMultiByObjectType(Hits, StrikeCenter, FQuat::Identity, Objects, FCollisionShape::MakeSphere(QueryRadius + 200));
     TSet<AActor*> Unique;
     for (const auto& Hit : Hits)
     {
         auto* Target = Hit.GetActor();
         if (!Target || Unique.Contains(Target) || !UPGAbilityBPLibrary::IsTargetActorHostile(Enemy, Target)) continue;
         const float Angle = EliteData.Pattern == EPGAttackPattern::Sweep ? EliteData.HalfAngleDegrees : 180.f;
-        if (!PGAttackGeometry::Contains(Target->GetActorLocation(), StrikeCenter, PatternForward, EliteData.TelegraphRadius, Angle) ||
+        const bool bInside = EliteData.Pattern == EPGAttackPattern::Thrust ?
+            PGAttackGeometry::InLine(Target->GetActorLocation(), StrikeCenter, PatternForward, EliteData.TravelDistance, EliteData.LineHalfWidth) :
+            EliteData.Pattern == EPGAttackPattern::RingBurst ?
+            PGAttackGeometry::InRing(Target->GetActorLocation(), StrikeCenter, EliteData.InnerSafeRadius, EliteData.TelegraphRadius) :
+            PGAttackGeometry::Contains(Target->GetActorLocation(), StrikeCenter, PatternForward, EliteData.TelegraphRadius, Angle);
+        if (!bInside ||
             FMath::Abs(Target->GetActorLocation().Z - StrikeCenter.Z) > 200) continue;
         // Walls block the same world-space area attack players see on the floor.
         FHitResult Wall; FCollisionQueryParams Params(SCENE_QUERY_STAT(PGPatternWall), false, Enemy); Params.AddIgnoredActor(Target);
@@ -217,7 +257,9 @@ void UPGEnemyAbilityAttack::StrikeElitePattern()
         UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Target, PGGamePlayTags::Shared_Event_HitReact, Event);
         if (!IsActive()) return; // Damage can synchronously end the stage and cancel this ability.
     }
-    if (auto* VFX = EliteData.SlamVFX.LoadSynchronous()) UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, StrikeCenter);
+    if (EliteData.ImpactVFXScale > 0.f)
+        if (auto* VFX = EliteData.SlamVFX.LoadSynchronous())
+            UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, StrikeCenter, FRotator::ZeroRotator, FVector(EliteData.ImpactVFXScale));
     UE_LOG(LogTemp, Log, TEXT("PGPattern Strike skill=%d pulse=%d hits=%d"), EliteData.SkillID, HazardIndex, Unique.Num());
     if (EliteData.Pattern == EPGAttackPattern::HazardSequence && ++HazardIndex < FMath::Clamp(EliteData.HazardCount,1,8))
     {
@@ -234,6 +276,15 @@ void UPGEnemyAbilityAttack::BeginRecovery()
 {
     auto* Enemy = GetEnemyCharacterFromActorInfo();
     Enemy->bPatternRecovering = true; Enemy->SetGuarding(false);
+    Enemy->GetEnemyPresentation()->BeginRecovery();
+    if (EliteData.bSyncMontageToPattern)
+        if (auto* Anim = Enemy->GetMesh()->GetAnimInstance())
+            if (auto* Montage = EliteData.ElitePresentationMontage.Get())
+            {
+                Anim->Montage_SetPosition(Montage, Montage->GetPlayLength() * EliteData.ImpactMontageFraction);
+                Anim->Montage_SetPlayRate(Montage, Montage->GetPlayLength() * (1.f - EliteData.ImpactMontageFraction) /
+                    FMath::Max(.05f, EliteData.RecoveryDuration));
+            }
     Enemy->GetPGAbilitySystemComponent()->OpenRecoveryWindow(EliteData.RecoveryDuration, EliteData.RecoveryDamageBonus);
     FVector Floor = Enemy->GetActorLocation(); Floor.Z = PatternOrigin.Z;
     ShowTelegraph(Floor, false, true);
@@ -246,8 +297,8 @@ void UPGEnemyAbilityAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, 
 {
     if (GetWorld()) { GetWorld()->GetTimerManager().ClearTimer(PatternTimer); GetWorld()->GetTimerManager().ClearTimer(UpdateTimer); }
     if (Telegraph) { Telegraph->DestroyComponent(); Telegraph = nullptr; }
-    if (bCancelled && ActiveProjectile.IsValid()) ActiveProjectile->Destroy();
-    ActiveProjectile.Reset();
+    if (bCancelled) for (const auto& Projectile : ActiveProjectiles) if (Projectile.IsValid()) Projectile->Destroy();
+    ActiveProjectiles.Reset();
     if (bElitePattern)
     {
         if (auto* Enemy = GetEnemyCharacterFromActorInfo())
@@ -257,7 +308,9 @@ void UPGEnemyAbilityAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, 
             Enemy->ClearPatternHitboxes();
             Enemy->GetPGAbilitySystemComponent()->CloseRecoveryWindow();
             Enemy->bPatternActive = Enemy->bPatternRecovering = Enemy->bPatternStriking = Enemy->bPerformingHeavyAttack = false;
+            Enemy->bUseHeavyImpactFeedback = true;
             Enemy->ActivePatternID = 0;
+            Enemy->GetEnemyPresentation()->ResetPresentation(Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0);
             if (Enemy->GetPGAbilitySystemComponent()->GetHealth() > 0) Enemy->GetCharacterMovement()->SetMovementMode(static_cast<EMovementMode>(SavedMovementMode));
             Enemy->PublishBossPresentation();
         }

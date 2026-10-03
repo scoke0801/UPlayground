@@ -8,6 +8,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
+#include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGAI/Task/PGAbilityTask_WaitSpawnEnemy.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
@@ -25,7 +27,12 @@ void UPGEnemyAbilitySummonEnemy::ActivateAbility(const FGameplayAbilitySpecHandl
 		return;
 	}
 	
-	FPGSkillDataRow* Row = UPGDataTableManager::Get()->GetRowData<FPGSkillDataRow>(SkillId);
+    const int32 RequestedID = Character->RequestedSkillID > 0 ? Character->RequestedSkillID : SkillId;
+    auto* Handler = Character->GetSkillHandler();
+    const EPGSkillSlot Slot = Handler ? Handler->FindSlotBySkillID(RequestedID) : EPGSkillSlot::NormalAttack;
+    if (!Handler || Handler->GetSkillID(Slot) != RequestedID || !Handler->IsCanUseSkill(Slot)) { EndAbilitySelf(); return; }
+    auto* Tables = UPGDataTableManager::Get(this);
+	FPGSkillDataRow* Row = Tables ? Tables->GetRowData<FPGSkillDataRow>(RequestedID) : nullptr;
 	if(nullptr == Row)
 	{
 		EndAbilitySelf();
@@ -89,6 +96,7 @@ void UPGEnemyAbilitySummonEnemy::ActivateAbility(const FGameplayAbilitySpecHandl
 
 		// 태스크 활성화
 		SpawnTask->ReadyForActivation();
+        Handler->UseSkill(Slot);
 	}
 }
 

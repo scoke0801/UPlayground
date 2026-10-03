@@ -3,7 +3,8 @@
 #include "PGAttackPattern.generated.h"
 
 UENUM(BlueprintType)
-enum class EPGAttackPattern : uint8 { LegacySlam, Sweep, ChargeSlam, HazardSequence, AimedProjectile };
+// Append only: existing DataTables serialize these values.
+enum class EPGAttackPattern : uint8 { LegacySlam, Sweep, ChargeSlam, HazardSequence, AimedProjectile, Thrust, RingBurst };
 
 UENUM(BlueprintType)
 enum class EPGEnemyRole : uint8 { Legacy, Chaser, Shooter, Guardian, Crusher, Warden, Boss };
@@ -24,5 +25,16 @@ namespace PGAttackGeometry
         const FVector Delta = Point - Origin, F = Forward.GetSafeNormal2D();
         const float Along = FVector::DotProduct(Delta, F);
         return Along >= 0 && Along <= Length && FMath::Abs(Delta.X * F.Y - Delta.Y * F.X) <= HalfWidth;
+    }
+
+    inline bool InRing(const FVector& Point, const FVector& Origin, float InnerRadius, float OuterRadius)
+    {
+        const float DistanceSquared = FVector::DistSquared2D(Point, Origin);
+        return DistanceSquared >= FMath::Square(InnerRadius) && DistanceSquared <= FMath::Square(OuterRadius);
+    }
+
+    inline float VolleyAngle(int32 Index, int32 Count, float HalfAngle)
+    {
+        return Count <= 1 ? 0.f : FMath::Lerp(-HalfAngle, HalfAngle, float(Index) / float(Count - 1));
     }
 }

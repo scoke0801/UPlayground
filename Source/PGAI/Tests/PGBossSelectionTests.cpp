@@ -21,6 +21,10 @@ bool FPGBossSelectionTest::RunTest(const FString&)
     TestEqual(TEXT("All cooldowns produce no attack"), AI->SelectSkill(Data, {}, 2), 0);
     Data.PhaseTwoSkillSequence = {999};
     TestEqual(TEXT("Unavailable authored combo falls back to valid attack"), AI->SelectSkill(Data, {15107}, 2), 15107);
+    Data.Role = EPGEnemyRole::Shooter; AI->PreviousSkill = 0;
+    const TMap<int32, float> Weights = {{15102,0.f},{15112,3.f}};
+    for (int32 Index = 0; Index < 20; ++Index)
+        TestEqual(TEXT("Disabled weight never steals the contextual attack"), AI->SelectSkill(Data, {15102,15112}, 1, Weights), 15112);
     World->DestroyWorld(false);
     return true;
 }

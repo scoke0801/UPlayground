@@ -16,6 +16,7 @@ UPGBTTask_ExecuteSkill::UPGBTTask_ExecuteSkill()
 {
 	NodeName = TEXT("Execute Skill");
 	bNotifyTick = false;
+    bCreateNodeInstance = true;
 	
 	SelectedSkillIDKey.SelectedKeyName = FName("SelectedSkillID");
 	TargetActorKey.SelectedKeyName = FName("TargetActor");
@@ -47,6 +48,7 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 
 	// Blackboard에서 스킬 ID 가져오기
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
+    if (!BlackboardComp) return EBTNodeResult::Failed;
 	const int32 SkillID = BlackboardComp->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName);
 	
 	if (SkillID <= 0)
@@ -89,6 +91,8 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 	// AbilitySystemComponent를 통해 어빌리티 실행
 	CachedOwnerComp = &OwnerComp;
 	
+    // Same exact-ID contract as the role controller; the request is scoped to activation.
+    const TGuardValue<int32> SkillRequest(Enemy->RequestedSkillID, SkillID);
 	const bool bActivated = ASC->TryActivateAbilityByTag(AbilityTag);
 	if (bActivated)
 	{
@@ -101,6 +105,7 @@ EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::Succeeded;
 	}
 
+    FinishTask(CachedOwnerComp.Get(), EBTNodeResult::Failed);
 	return EBTNodeResult::Failed;
 }
 

@@ -23,9 +23,16 @@ APGPatternProjectile::APGPatternProjectile()
     ProjectileCollisionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
     MovementComponent->SetUpdatedComponent(ProjectileCollisionBox);
     MovementComponent->bForceSubStepping = true;
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> Shape(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-    if (Shape.Succeeded()) MeshComponent->SetStaticMesh(Shape.Object);
-    MeshComponent->SetRelativeScale3D(FVector(.45f,.22f,.22f));
+    // Blender-authored centimetre mesh: +X forward, centred pivot, 44 x 22 x 22 cm.
+    // The collision box remains independent of the visual mesh.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Shape(
+        TEXT("/Game/Art/Projectiles/SM_PG_CrystalBolt.SM_PG_CrystalBolt"));
+    if (Shape.Succeeded())
+    {
+        MeshComponent->SetStaticMesh(Shape.Object);
+        MeshComponent->SetRelativeScale3D(FVector::OneVector);
+    }
+    MeshComponent->SetCastShadow(false);
 }
 void APGPatternProjectile::SetCollisionHalfWidth(float HalfWidth)
 {
@@ -53,6 +60,11 @@ void APGPatternProjectile::OnProjectileOverlapped(UPrimitiveComponent*, AActor* 
     if (bConsumed || !IsValid(Source) || !Source->GetPGAbilitySystemComponent() || Source->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
         !IsValid(Other) || !UPGAbilityBPLibrary::IsTargetActorHostile(Source, Other)) return;
     bConsumed = true;
+    if (VolleyHits)
+    {
+        if (VolleyHits->Contains(Other)) { Destroy(); return; }
+        VolleyHits->Add(Other);
+    }
     FGameplayEventData Event; Event.Instigator = Shooter; Event.Target = Other;
     UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Other, PGGamePlayTags::Shared_Event_HitReact, Event);
     Destroy();

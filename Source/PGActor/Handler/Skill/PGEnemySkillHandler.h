@@ -22,6 +22,7 @@ public:
 
 	
 	EPGSkillSlot GetSkillSlotByTag(const FGameplayTagContainer& GameplayTags);
+    bool ResolveSkillSlot(int32 RequestedSkillID, const FGameplayTagContainer& Tags, EPGSkillSlot& OutSlot);
 
 private:
 	EPGSkillSlot GetRandomSkillSlotBySkillType(const EPGSkillType InSkillType) const;

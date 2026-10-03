@@ -34,7 +34,7 @@ protected:
     FTimerHandle PatternTimer;
     FTimerHandle UpdateTimer;
     TWeakObjectPtr<AActor> PatternTarget;
-    TWeakObjectPtr<AActor> ActiveProjectile;
+    TArray<TWeakObjectPtr<AActor>> ActiveProjectiles;
     FVector PatternOrigin = FVector::ZeroVector;
     FVector PatternForward = FVector::ForwardVector;
     FVector HazardOrigin = FVector::ZeroVector;

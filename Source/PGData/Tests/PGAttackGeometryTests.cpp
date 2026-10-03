@@ -15,6 +15,13 @@ bool FPGAttackGeometryTest::RunTest(const FString&)
     TestTrue(TEXT("Line includes end and width edge"),PGAttackGeometry::InLine(Origin+FVector(20,300,0),Origin,Forward,300,20));
     TestFalse(TEXT("Line excludes behind attacker"),PGAttackGeometry::InLine(Origin+FVector(0,-1,0),Origin,Forward,300,20));
     TestFalse(TEXT("Line excludes side"),PGAttackGeometry::InLine(Origin+FVector(21,200,0),Origin,Forward,300,20));
+    TestFalse(TEXT("Ring has a safe pocket at its center"), PGAttackGeometry::InRing(Origin + FVector(0,99,0), Origin,100,300));
+    TestTrue(TEXT("Ring inner boundary is dangerous"), PGAttackGeometry::InRing(Origin + FVector(100,0,0),Origin,100,300));
+    TestTrue(TEXT("Ring outer boundary is dangerous"), PGAttackGeometry::InRing(Origin + FVector(0,300,0),Origin,100,300));
+    TestFalse(TEXT("Ring ends at the visible outer edge"), PGAttackGeometry::InRing(Origin + FVector(0,301,0),Origin,100,300));
+    TestEqual(TEXT("Fan left lane"), PGAttackGeometry::VolleyAngle(0,3,24), -24.f);
+    TestEqual(TEXT("Fan center lane"), PGAttackGeometry::VolleyAngle(1,3,24), 0.f);
+    TestEqual(TEXT("Fan right lane"), PGAttackGeometry::VolleyAngle(2,3,24), 24.f);
     FPGSkillDataRow Row;
     Row.TelegraphDuration = 1.f;
     TestTrue(TEXT("Existing timed slam is compatible by default"), Row.IsPatternValid());
@@ -28,6 +35,21 @@ bool FPGAttackGeometryTest::RunTest(const FString&)
     TestFalse(TEXT("Zero interval cannot silently clear the damage timer"), Row.IsPatternValid());
     Row.HazardInterval = .5f; Row.HazardCount = 9;
     TestFalse(TEXT("Hazard sequence stays within the authored budget"), Row.IsPatternValid());
+    Row.HazardCount = 3; Row.Pattern = EPGAttackPattern::Thrust; Row.TravelDistance = 400; Row.SkillRange = 800;
+    Row.MinimumActivationRange = 200;
+    TestEqual(TEXT("Thrust activation agrees with its line length"), Row.GetPatternActivationRange(), 400.f);
+    TestFalse(TEXT("Gap-closer is not selected point blank"), Row.IsInActivationRange(199));
+    TestTrue(TEXT("Both activation boundaries are inclusive"), Row.IsInActivationRange(200) && Row.IsInActivationRange(400));
+    Row.MinimumActivationRange = 400;
+    TestFalse(TEXT("An empty activation interval is rejected"), Row.IsPatternValid());
+    Row.MinimumActivationRange = 0; Row.Pattern = EPGAttackPattern::RingBurst; Row.TelegraphRadius = 400; Row.InnerSafeRadius = 180;
+    TestTrue(TEXT("Ring data is valid"), Row.IsPatternValid());
+    Row.InnerSafeRadius = 400;
+    TestFalse(TEXT("Ring requires a nonempty damage band"), Row.IsPatternValid());
+    Row.Pattern = EPGAttackPattern::AimedProjectile; Row.ProjectileCount = 6;
+    TestFalse(TEXT("Fan cannot exceed its performance budget"), Row.IsPatternValid());
+    Row.ProjectileCount = 3; Row.ProjectileSpreadHalfAngle = 0;
+    TestFalse(TEXT("Multishot cannot stack invisible identical lanes"), Row.IsPatternValid());
     return true;
 }
 #endif

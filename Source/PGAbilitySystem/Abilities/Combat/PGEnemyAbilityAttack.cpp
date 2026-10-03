@@ -56,29 +56,11 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		return;
 	}
 
-	// Spec에서 태그 확인
-	// 태그 기반 스킬 선택
-	EPGSkillSlot SelectedSkillSlot = EPGSkillSlot::NormalAttack;
-	if (FGameplayAbilitySpec* Spec = GetAbilitySystemComponentFromActorInfo()->FindAbilitySpecFromHandle(Handle))
-	{
-		SelectedSkillSlot = SkillHandler->GetSkillSlotByTag(Spec->GetDynamicSpecSourceTags());
-	}
-    if (Character->RequestedSkillID > 0)
-    {
-        SelectedSkillSlot = SkillHandler->FindSlotBySkillID(Character->RequestedSkillID);
-        if (SkillHandler->GetSkillID(SelectedSkillSlot) != Character->RequestedSkillID || !SkillHandler->IsCanUseSkill(SelectedSkillSlot))
-        { EndAbilitySelf(); return; }
-    }
-	// 스킬을 사용할 수 없으면 랜덤 선택
-	if (!SkillHandler->IsCanUseSkill(SelectedSkillSlot))
-	{
-		SelectedSkillSlot = SkillHandler->GetRandomSkillSlot();
-		if (!SkillHandler->IsCanUseSkill(SelectedSkillSlot))
-		{
-			EndAbilitySelf();
-			return;
-		}
-	}
+    const FGameplayAbilitySpec* Spec = GetAbilitySystemComponentFromActorInfo()->FindAbilitySpecFromHandle(Handle);
+    EPGSkillSlot SelectedSkillSlot = EPGSkillSlot::NormalAttack;
+    if (!SkillHandler->ResolveSkillSlot(Character->RequestedSkillID,
+        Spec ? Spec->GetDynamicSpecSourceTags() : FGameplayTagContainer(), SelectedSkillSlot))
+    { EndAbilitySelf(); return; }
 
     auto* Tables = UPGDataTableManager::Get(this);
 	FPGSkillDataRow* Row = Tables ? Tables->GetRowData<FPGSkillDataRow>(SkillHandler->GetSkillID(SelectedSkillSlot)) : nullptr;

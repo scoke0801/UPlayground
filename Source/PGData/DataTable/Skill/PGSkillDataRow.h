@@ -31,6 +31,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<int32> ChainSkillIdList;
 
+    // Time allowed after the current attack's montage for the next chain input.
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Combo", meta=(ClampMin="0", ClampMax="2"))
+    float ComboResetSeconds = .4f;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int32 SkillCoolTime = {};
 
@@ -40,6 +44,14 @@ public:
 	/** 스킬 사용 가능 범위 (0이면 범위 제한 없음) */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float SkillRange = 0.f;
+
+    // AI selection only; the committed shape remains fixed after aim lock.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(ClampMin="0"))
+    float MinimumActivationRange = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(ClampMin="0"))
+    float SelectionWeight = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(ClampMin="1", ClampMax="3"))
+    int32 AttackPressureCost = 1;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cancel", meta=(ClampMin="0", ClampMax="1"))
     float AttackCancelRemainingFraction = 0.2f;
@@ -61,6 +73,12 @@ public:
     float LandingTelegraphSeconds = .25f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="1"))
     float LineHalfWidth = 70.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="1"))
+    float InnerSafeRadius = 160.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="1", ClampMax="5"))
+    int32 ProjectileCount = 1;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="0", ClampMax="60"))
+    float ProjectileSpreadHalfAngle = 22.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="1", ClampMax="8"))
     int32 HazardCount = 3;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="0.1"))
@@ -90,9 +108,29 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph", meta=(ClampMin="0", ClampMax="1"))
     float WindupMontageFraction = .25f;
 
+    // Opt-in: play anticipation up to the authored impact pose, then follow-through
+    // over the existing recovery window. The pattern timer remains damage authority.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph")
+    bool bSyncMontageToPattern = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph", meta=(ClampMin="0.01", ClampMax="0.99"))
+    float ImpactMontageFraction = .5f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph", meta=(ClampMin="0"))
+    float ImpactVFXScale = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph")
+    bool bHeavyImpactFeedback = true;
+
     /** Reject malformed imported data before committing cooldowns or starting timers. */
     bool IsPatternValid() const
     {
+        if (!FMath::IsFinite(SkillRange) || SkillRange < 0.f ||
+            !FMath::IsFinite(MinimumActivationRange) || MinimumActivationRange < 0.f ||
+            MinimumActivationRange >= GetPatternActivationRange() ||
+            !FMath::IsFinite(SelectionWeight) || SelectionWeight < 0.f ||
+            AttackPressureCost < 1 || AttackPressureCost > 3) return false;
+        if (!FMath::IsFinite(ImpactVFXScale) || ImpactVFXScale < 0.f) return false;
+        if (bSyncMontageToPattern && (!FMath::IsFinite(WindupMontageFraction) ||
+            !FMath::IsFinite(ImpactMontageFraction) || WindupMontageFraction < 0.f ||
+            ImpactMontageFraction <= WindupMontageFraction || ImpactMontageFraction >= 1.f)) return false;
         if (!FMath::IsFinite(TelegraphDuration) || TelegraphDuration <= 0.f ||
             !FMath::IsFinite(TelegraphRadius) || TelegraphRadius <= 0.f ||
             !FMath::IsFinite(RecoveryDuration) || RecoveryDuration < 0.f ||
@@ -107,15 +145,29 @@ public:
         if (Pattern == EPGAttackPattern::HazardSequence)
             if (HazardCount < 1 || HazardCount > 8 || !FMath::IsFinite(HazardInterval) || HazardInterval < .1f ||
                 !FMath::IsFinite(HazardSpacing) || HazardSpacing < 0.f) return false;
-        return Pattern >= EPGAttackPattern::LegacySlam && Pattern <= EPGAttackPattern::AimedProjectile;
+        if (Pattern == EPGAttackPattern::Thrust &&
+            (!FMath::IsFinite(TravelDistance) || TravelDistance <= 0.f ||
+             !FMath::IsFinite(LineHalfWidth) || LineHalfWidth <= 0.f)) return false;
+        if (Pattern == EPGAttackPattern::RingBurst &&
+            (!FMath::IsFinite(InnerSafeRadius) || InnerSafeRadius <= 0.f || InnerSafeRadius >= TelegraphRadius)) return false;
+        if (Pattern == EPGAttackPattern::AimedProjectile &&
+            (ProjectileCount < 1 || ProjectileCount > 5 || !FMath::IsFinite(ProjectileSpreadHalfAngle) ||
+             ProjectileSpreadHalfAngle < 0.f || ProjectileSpreadHalfAngle > 60.f ||
+             (ProjectileCount > 1 && ProjectileSpreadHalfAngle <= 0.f))) return false;
+        return Pattern >= EPGAttackPattern::LegacySlam && Pattern <= EPGAttackPattern::RingBurst;
     }
 
     float GetPatternActivationRange() const
     {
         float Range = SkillRange > 0.f ? SkillRange : TNumericLimits<float>::Max();
-        if (TelegraphDuration > 0.f && Pattern == EPGAttackPattern::Sweep) Range = FMath::Min(Range, TelegraphRadius);
-        if (TelegraphDuration > 0.f && Pattern == EPGAttackPattern::AimedProjectile) Range = FMath::Min(Range, TravelDistance);
+        if (TelegraphDuration > 0.f && (Pattern == EPGAttackPattern::Sweep || Pattern == EPGAttackPattern::RingBurst)) Range = FMath::Min(Range, TelegraphRadius);
+        if (TelegraphDuration > 0.f && (Pattern == EPGAttackPattern::AimedProjectile || Pattern == EPGAttackPattern::Thrust)) Range = FMath::Min(Range, TravelDistance);
         return Range;
+    }
+
+    bool IsInActivationRange(float Distance) const
+    {
+        return FMath::IsFinite(Distance) && Distance >= MinimumActivationRange && Distance <= GetPatternActivationRange();
     }
 	
 };
