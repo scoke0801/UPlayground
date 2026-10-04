@@ -146,6 +146,14 @@ void APGCharacterEnemy::BeginPlay()
 
 	if(FPGEnemyDataRow* EnemyData = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
 	{
+        // GAS hit queries and movement use the capsule; cosmetic bones need no
+        // Chaos bodies. Avoid synchronizing every physics bone on every animation
+        // update in dense combat. Explicit bone-physics roles keep their settings.
+        if (EnemyData->Role != EPGEnemyRole::Legacy && !EnemyData->bUseSkeletalMeshCollision && !GetMesh()->IsSimulatingPhysics())
+        {
+            GetMesh()->SetGenerateOverlapEvents(false);
+            GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        }
         EnemyPresentation->Initialize(EnemyData->Presentation.LoadSynchronous());
 		uint8 Index = 0;
 		for (int32 SkillId : EnemyData->SkillIdList)

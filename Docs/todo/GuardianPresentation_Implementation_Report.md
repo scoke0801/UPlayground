@@ -175,3 +175,32 @@ $playProfile = 'GuardianFeel_' + [guid]::NewGuid().ToString('N')
 | 청감 | 동일 출력 장치와 시스템 음량에서 단독·혼합 전투의 예고/조준 확정/타격/방어음을 비교하고 듣기 피로·마스킹 기록 |
 
 이 표는 실행 결과가 아닌 남은 수용 검사다. 패키지 성능, 세 빌드의 난이도, 20회 구간 전환 및 타이머/구독 수 누수 검사는 이번 수호자 부하 측정과 별개다.
+
+## 2026-10-03 후속: 밀집 전투 CPU 최적화
+
+### 확인한 원인과 변경
+
+- 변경 전 CPU 추적 `20261003T074520Z_41ab0404_guardian_soak`의 밀집 구간 130~180초(GameThread)에서 `UMassEntityEditorSubsystem::Tick`은 총 16.035초, 최대 452.376ms였다. 사용하지 않는 에디터 Mass 처리 큐의 실행·대기가 가장 큰 지연 경로였다. `UpdateKinematicBonesToAnim`도 89,350회 / 2.987초를 사용했다. 단일 캡처의 범위별 합계이며 다른 실행의 전체 프레임 평균과 혼합하지 않는다.
+- 엔진 5.8 소스의 `MassProcessingPhaseManager.cpp`에 있는 공식 `mass.UseProcessingQueue` 선택을 확인했다. 프로젝트 `DefaultEngine.ini`에서 0으로 지정해 기존 작업 그래프 실행 경로를 사용한다. Mass 기능이나 GAS/역할 AI를 제거하지 않으며 엔진 파일을 편집하지 않는다.
+- `PGEnemyDataRow.bUseSkeletalMeshCollision=false`인 비 Legacy 적은 BeginPlay에서 메시 오버랩과 메시 충돌을 끈다. 기존 캡슐의 충돌 응답·피해 조회, 애니메이션 평가·소켓 부착은 유지한다. 뼈 조회/물리가 필요한 역할은 데이터에서 선택하고, 이미 물리 시뮬레이션 중인 메시와 Legacy의 BP 설정도 보존한다.
+- 수정 후 추적 `20261003T080514Z_dff4d36d_guardian_soak`의 밀집 140~190초에서 물리 뼈 갱신 비용이 사라지고 Mass의 큰 큐 대기도 제거됐다. PIE의 파일 감시·Slate·OS/작업 대기는 남아 있다. 이 실행은 전체 PASS_WITH_WARNINGS지만 프레임 목표는 미달이며 에디터의 프레임 수치를 패키지 성능으로 대체하지 않는다.
+
+### 재현 도구와 검사 경계
+
+```powershell
+$pythonExe = 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/ThirdParty/Python3/Win64/python.exe'
+& $pythonExe Tools/Validation/RunGuardianSoak.py --seconds 180 --trace --no-images
+& $pythonExe Tools/Validation/ExportGuardianCPU.py Saved/QA/<실행ID> --start 140 --end 190
+& $pythonExe Tools/Validation/RunGuardianBenchmark.py --seconds 1200 --fps-cap 0 --exe Saved/GuardianPerformancePackage/Windows/UPlayground/Binaries/Win64/UPlayground.exe
+```
+
+- 네이티브 `PGGuardianBenchmark`는 5마리/50마리/5마리를 기본 5분/밀집 10분/복귀 5분 동안 실행한다. 각 단계 첫 30초를 CSV 준비 구간으로 제외한다. 고유 격리 프로필과 Assisted 표시, 기존 AI/GAS, 체력 보조와 60초 간격 재배치를 사용한다.
+- 실제 Enemy 채널의 오버랩 조회가 각 적의 캡슐을 찾는지 검사하고 메시 충돌 정책·소환 수·예고/회복·게임 시간 진행·최종 적/무기 정리를 요구한다. 프로세스 오류/크래시·누락 CSV·단계 부족을 실패로 보존한다.
+- `--fps-cap 0`은 제한기의 sleep을 제외한 처리 여력 측정이다. 60fps 제한 실행과 직접 수치 비교하지 않는다. 동일 1280×720/DX12/품질 설정에서 원자료의 Frame/GameThread/GPU p95·p99·최대를 함께 읽는다. 직접 조작, 이동 경로, 전체 런 밸런스, 오디오 청감 검사는 아니다.
+- 최초 네이티브 패키지 검사 `20261003T081656Z_a52103a0_guardian_native`는 **FAIL**이다. 세 단계는 관측됐지만 종료 콜백에서 자기 weak lambda 타이머를 지운 뒤 캡처된 this를 사용해 크래시했다. 타이머 제거를 콜백의 마지막 동작으로 옮겼으며 이 실패의 프레임 수치는 진단 자료일 뿐 성공 근거로 사용하지 않는다.
+
+### 별도로 확인된 렌더 준비 지연
+
+- 종료 수정 후 120초 패키지 검사 `20261003T083353Z_9fd05056_guardian_native`는 정리·충돌·AI 관찰을 통과했다. 밀집 Frame p95는 15.425ms / GameThread p95 7.103ms / GPU p95 5.232ms지만 최악 프레임은 951.165ms였고, 복귀 Frame p95는 45.897ms였다. 짧은 실행의 좋은 밀집 p95만으로 성능 문제 전체가 해결됐다고 판정하지 않는다.
+- CPU 추적을 켠 `20261003T083904Z_4da969b1_guardian_native`는 게임 시간 진행 부족으로 **FAIL**이다. D3D12 로그에 최대 3200ms의 PSO 생성 대기가 있었고, 55~95초 전체 스레드의 `Create time`은 53회 / 합계 360.017초 / 최대 34.037초였다. 이 합계는 병렬 작업의 누적 시간이며 프레임 지연의 합계가 아니다. 엔진 `WindowsD3D12PipelineState.cpp`의 드라이버 파이프라인 생성 범위와 대조했다.
+- PSO 작업 풀 최대 4개 및 저수준 PSO 메모리 유지의 진단 실행 `20261003T084556Z_3b0195db_guardian_native`도 첫 단계 게임 시간 부족으로 **FAIL**이다. 따라서 해당 옵션은 제품 설정에 적용하지 않았다. `RunGuardianBenchmark.py --engine-setting NAME=VALUE`는 비교 실험용이며 실행 명령에 옵션을 기록한다.

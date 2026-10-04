@@ -32,6 +32,10 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role")
     EPGEnemyRole Role = EPGEnemyRole::Legacy;
+    // Pattern enemies receive hits through their capsule. Opt in only for bone-level
+    // queries/physics; legacy enemies retain their Blueprint collision settings.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Collision")
+    bool bUseSkeletalMeshCollision = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role", meta=(ClampMin="0"))
     float PreferredDistance = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role", meta=(ClampMin="0"))

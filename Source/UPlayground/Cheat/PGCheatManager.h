@@ -23,6 +23,8 @@ public:
     UFUNCTION(Exec) void PGGuardianScenario(int32 PackCount = 1);
     /** Assisted GAS damage for threshold/death timing probes. */
     UFUNCTION(Exec) void PGBossDamage(float Amount = 15000.f);
+    /** Rendered 5/50/5 AI load for isolated Development/packaged performance QA. */
+    UFUNCTION(Exec) void PGGuardianBenchmark(int32 Seconds = 1200);
     UFUNCTION(Exec) void PGBuildScenario(FString Family = TEXT("Bleed"), bool bCore = true);
     UFUNCTION(Exec) void PGBuildProbe(FString Action = TEXT("status"));
     UFUNCTION(Exec) void PGBuildCards();
@@ -41,6 +43,7 @@ protected:
 private:
     TWeakObjectPtr<UWorld> BuildScenarioWorld;
     FVector BuildScenarioOrigin = FVector::ZeroVector;
+    FTimerHandle GuardianBenchmarkTimer;
     FTimerHandle CombatCycleTimer;
     int32 CycleProbeTicks = 0;
     int32 CycleProbeRewards = 0;

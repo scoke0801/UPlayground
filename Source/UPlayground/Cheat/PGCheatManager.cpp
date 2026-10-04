@@ -45,6 +45,7 @@
 
 void UPGCheatManager::BeginDestroy()
 {
+	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(GuardianBenchmarkTimer);
 	_components.Empty();
 	
 	Super::BeginDestroy();

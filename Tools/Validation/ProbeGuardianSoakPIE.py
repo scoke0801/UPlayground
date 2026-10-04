@@ -97,6 +97,12 @@ def start_phase(world, now):
     actors.extend(a for a in unreal.GameplayStatics.get_all_actors_of_class(world, unreal.PGCharacterEnemy)
                   if a.actor_has_tag('PGGuardianSoak'))
     assert len(actors) == spec['packs']*5, 'Scenario spawn count mismatch'
+    report['capsule_hit_queries_preserved'] = all(
+        a.get_component_by_class(unreal.CapsuleComponent).get_collision_enabled() != unreal.CollisionEnabled.NO_COLLISION
+        for a in actors)
+    report['skeletal_collision_disabled'] = all(
+        a.get_component_by_class(unreal.SkeletalMeshComponent).get_collision_enabled() == unreal.CollisionEnabled.NO_COLLISION
+        for a in actors)
     arrange(world)
     console(world, 'PGStress 0 0')
     unreal.SystemLibrary.collect_garbage()

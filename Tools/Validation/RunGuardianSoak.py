@@ -57,6 +57,9 @@ def summarize_csv(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--seconds', type=int, default=1200)
+    parser.add_argument('--trace', action='store_true', help='Capture CPU/frame/bookmark trace for Unreal Insights')
+    parser.add_argument('--no-images', action='store_true', help='Exclude high-resolution capture stalls from short profiling runs')
+    parser.add_argument('--mass-processing-queue', type=int, choices=(0, 1), help='Diagnostic override for the UE Mass processing backend')
     args = parser.parse_args()
     if args.seconds < 120:
         parser.error('--seconds must be at least 120 (three audio/CSV phases)')
@@ -67,7 +70,7 @@ def main():
               dict(name='dense', packs=10, seconds=args.seconds//2),
               dict(name='return', packs=1, seconds=args.seconds-args.seconds//4-args.seconds//2)]
     config = dict(run_id=run_id, out=str(out), warmup_seconds=30 if args.seconds >= 1200 else 5,
-                  capture_images=args.seconds < 1200, phases=phases)
+                  capture_images=args.seconds < 1200 and not args.no_images, phases=phases)
     (out/'config.json').write_text(json.dumps(config, indent=2), encoding='utf-8')
     version = json.loads(read_text(ROOT/'UPlayground.uproject'))['EngineAssociation']
     engine = Path(os.environ.get('ProgramFiles', 'C:/Program Files'))/'Epic Games'/f'UE_{version}'
@@ -77,6 +80,10 @@ def main():
         '-nop4', '-culture=en', '-UTF8Output', '-csvGpuStats', '-PGRunSeed=173001', '-DisablePlugins=RiderLink',
         '-ddc=InstalledNoZenLocalFallback', '-ini:Engine:[Audio]:UnfocusedVolumeMultiplier=1.0',
         f'-PGTestProfile=GuardianSoak_{run_id}', f'-PGGuardianSoakConfig={out/"config.json"}', f'-abslog={out/"soak.log"}']
+    if args.trace:
+        command += ['-trace=cpu,frame,bookmark', f'-tracefile={out/"cpu.utrace"}', '-statnamedevents']
+    if args.mass_processing_queue is not None:
+        command += [f'-ini:Engine:[SystemSettings]:mass.UseProcessingQueue={args.mass_processing_queue}']
     print(str(out), flush=True)
     before_hashes = content_hashes()
     try:
@@ -94,6 +101,8 @@ def main():
     observed = json.loads(read_text(out/'observations.json')) if (out/'observations.json').exists() else {}
     if observed.get('status') != 'PASS' or observed.get('remaining_tagged_enemies') != 0:
         errors.append('Missing passing observations/cleanup')
+    if not observed.get('capsule_hit_queries_preserved') or not observed.get('skeletal_collision_disabled'):
+        errors.append('Role collision optimization/capsule preservation not observed')
     if [stage.get('name') for stage in observed.get('stages', [])] != [phase['name'] for phase in phases]:
         errors.append('Incomplete phase sequence')
     for stage, phase in zip(observed.get('stages', []), phases):
