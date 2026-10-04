@@ -61,6 +61,8 @@ protected:
 protected:
 	UFUNCTION()
 	virtual void OnMontageCompleted();
+	UFUNCTION()
+	void OnMontageInterrupted();
 
 	virtual UAbilityTask_PlayMontageAndWait* PlayMontageWait(UAnimMontage* MontageToPlay);
 	virtual void PlayMontageNoWait(UAnimMontage* MontageToPlay);

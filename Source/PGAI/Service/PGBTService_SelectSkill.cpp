@@ -1,12 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PGBTService_SelectSkill.h"
+#include "PGAI/PGCombatSpatial.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Stat/PGEnemyStatComponent.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
 #include "PGData/DataTable/Skill/PGEnemyDataRow.h"
@@ -26,13 +28,9 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 	
-	// 이미 유효한 값이 설정되어 있는 동안에는 별도 처리를 하지 않습니다.
+	// Validate retained choices when the context changes; leave running attacks alone.
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
     if (!BlackboardComp) return;
-	if (0 != BlackboardComp->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName))
-	{
-		return;
-	}
 	
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
@@ -50,6 +48,18 @@ void UPGBTService_SelectSkill::TickNode(UBehaviorTreeComponent& OwnerComp, uint8
 	if (!DTManager)
 	{
 		return;
+	}
+	if (Enemy->bPatternActive || Enemy->bPerformingHeavyAttack ||
+		(Enemy->GetPGAbilitySystemComponent() && Enemy->GetPGAbilitySystemComponent()->GetCurrentMontage())) return;
+	const int32 PendingID = BlackboardComp->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName);
+	if (PendingID > 0)
+	{
+		const auto* Pending = DTManager->GetSkillDataRowByKey(PendingID);
+		auto* Handler = Enemy->GetSkillHandler();
+		if (Pending && Pending->MinimumBossPhase <= Enemy->BossPhase && Pending->SelectionWeight > 0.f &&
+			Handler && Handler->IsSkillReadyByID(PendingID) &&
+			BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName)) return;
+		BlackboardComp->SetValueAsInt(SelectedSkillIDKey.SelectedKeyName, 0);
 	}
 	
 	const FPGEnemyDataRow* EnemyData = DTManager->GetEnemyDataRowByKey(Enemy->GetCharacterTID());
@@ -107,8 +117,7 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 	FPGSkillHandler* SkillHandler = Enemy->GetSkillHandler();
 	if (!SkillHandler)
 	{
-		// SkillHandler가 없으면 첫 번째 스킬 반환
-		return SkillIDList[0];
+		return INDEX_NONE;
 	}
 
 	// 스킬 타입별 존재 여부 사전 체크 (최적화)
@@ -135,7 +144,7 @@ int32 UPGBTService_SelectSkill::SelectBestSkill(const TArray<int32>& SkillIDList
 		}
 
 		const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
-		if (!SkillData) continue;
+		if (!SkillData || (SkillData->TelegraphDuration > 0.f && !SkillData->IsPatternValid())) continue;
 	
         if (SkillData->MinimumBossPhase > Enemy->BossPhase) continue;
 		const float Priority = CalculateSkillPriority(SkillID, SkillData->SkillType, DistanceToTarget, CurrentHPRatio, Enemy, BlackboardComp, AvailableSkillTypes)
@@ -266,40 +275,7 @@ float UPGBTService_SelectSkill::CalculateSkillPriority(
 
 bool UPGBTService_SelectSkill::CheckNeedHealAlly(APGCharacterEnemy* Enemy) const
 {
-	if (!Enemy || !Enemy->GetWorld())
-	{
-		return false;
-	}
-	
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(
-		Enemy->GetWorld(), 
-		APGCharacterEnemy::StaticClass(), 
-		FoundActors
-	);
-	
-	for (AActor* Actor : FoundActors)
-	{
-		APGCharacterEnemy* Ally = Cast<APGCharacterEnemy>(Actor);
-		if (!Ally || Ally == Enemy) continue;
-		
-		// 거리 체크
-		const float Distance = FVector::Dist(Enemy->GetActorLocation(), Ally->GetActorLocation());
-		if (Distance > AllySearchRadius) continue;
-		
-		// HP 체크
-		const UPGEnemyStatComponent* StatComp = Ally->GetEnemyStatComponent();
-		if (StatComp)
-		{
-			const float HPRatio = StatComp->GetHealthRatio();
-			if (HPRatio <= AllyHealThreshold)
-			{
-				return true; // 회복이 필요한 아군 발견
-			}
-		}
-	}
-	
-	return false;
+    return PGCombatSpatial::FindInjuredAlly(Enemy, AllySearchRadius, AllyHealThreshold, false) != nullptr;
 }
 
 bool UPGBTService_SelectSkill::HasSkillType(int32 EnemyTID, EPGSkillType SkillType) const

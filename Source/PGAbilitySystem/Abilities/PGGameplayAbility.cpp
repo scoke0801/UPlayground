@@ -51,6 +51,11 @@ void UPGGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 
 void UPGGameplayAbility::OnMontageCompleted()
 {
+	EndAbility(CachedSpecHandle, CachedActorInfo, CachedActivationInfo, true, false);
+}
+
+void UPGGameplayAbility::OnMontageInterrupted()
+{
 	EndAbilitySelf();
 }
 
@@ -64,10 +69,10 @@ UAbilityTask_PlayMontageAndWait* UPGGameplayAbility::PlayMontageWait(UAnimMontag
 		return nullptr;
 	}
 	
-	MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCompleted);
+	MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageInterrupted);
 	MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
 	MontageTask->OnBlendOut.AddDynamic(this, &ThisClass::OnMontageCompleted);
-	MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCompleted);
+	MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageInterrupted);
 
 	return MontageTask;
 }

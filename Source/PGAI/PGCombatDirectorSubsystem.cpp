@@ -53,5 +53,6 @@ void UPGCombatDirectorSubsystem::Release(APGCharacterEnemy* Enemy)
 void UPGCombatDirectorSubsystem::Deinitialize()
 {
     Active.Reset(); Waiting.Reset(); NextStart.Reset();
+    CombatTrees.Reset();
     Super::Deinitialize();
 }

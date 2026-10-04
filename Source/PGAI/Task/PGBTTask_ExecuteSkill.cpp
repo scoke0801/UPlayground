@@ -2,6 +2,9 @@
 
 #include "PGBTTask_ExecuteSkill.h"
 #include "AIController.h"
+#include "PGAI/PGCombatSpatial.h"
+#include "PGAI/PGRoleAIController.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
@@ -16,6 +19,7 @@ UPGBTTask_ExecuteSkill::UPGBTTask_ExecuteSkill()
 {
 	NodeName = TEXT("Execute Skill");
 	bNotifyTick = false;
+    bNotifyTaskFinished = true;
     bCreateNodeInstance = true;
 	
 	SelectedSkillIDKey.SelectedKeyName = FName("SelectedSkillID");
@@ -28,188 +32,157 @@ UPGBTTask_ExecuteSkill::UPGBTTask_ExecuteSkill()
 
 EBTNodeResult::Type UPGBTTask_ExecuteSkill::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (!AIController)
-	{
-		return EBTNodeResult::Failed;
-	}
+    ResetExecution(true);
+    auto* AI = OwnerComp.GetAIOwner();
+    auto* Enemy = AI ? Cast<APGCharacterEnemy>(AI->GetPawn()) : nullptr;
+    auto* BB = OwnerComp.GetBlackboardComponent();
+    auto* ASC = Enemy ? Enemy->GetPGAbilitySystemComponent() : nullptr;
+    if (!Enemy || !BB || !ASC || ASC->GetHealth() <= 0 || Enemy->bPerformingHeavyAttack || Enemy->IsBossTransitioning())
+        return EBTNodeResult::Failed;
+    const int32 SkillID = BB->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName);
+    auto* Tables = UPGDataTableManager::Get(Enemy);
+    const auto* Skill = Tables ? Tables->GetSkillDataRowByKey(SkillID) : nullptr;
+    auto* Handler = Enemy->GetSkillHandler();
+    if (!Skill || !Handler || !Handler->IsSkillReadyByID(SkillID) || Skill->MinimumBossPhase > Enemy->BossPhase)
+    {
+        BB->SetValueAsInt(SelectedSkillIDKey.SelectedKeyName, 0);
+        return EBTNodeResult::Failed;
+    }
+    // Selection and movement are asynchronous. Recheck the actual firing position before committing.
+    if (Skill->SkillType == EPGSkillType::Melee || Skill->SkillType == EPGSkillType::Projectile || Skill->SkillType == EPGSkillType::AreaOfEffect)
+    {
+        auto* Target = Cast<AActor>(BB->GetValueAsObject(TargetActorKey.SelectedKeyName));
+        const auto* CharacterTarget = Cast<APGCharacterBase>(Target);
+        if (!IsValid(Target) || !Skill->IsInActivationRange(FVector::Dist2D(Enemy->GetActorLocation(), Target->GetActorLocation())) ||
+            !AI->LineOfSightTo(Target) || (CharacterTarget && CharacterTarget->GetPGAbilitySystemComponent() && CharacterTarget->GetPGAbilitySystemComponent()->GetHealth() <= 0))
+        {
+            BB->SetValueAsInt(SelectedSkillIDKey.SelectedKeyName, 0);
+            return EBTNodeResult::Failed;
+        }
+    }
+    const FGameplayTag AbilityTag = GetAbilityTagFromSkillType(Skill->SkillType);
+    if (!AbilityTag.IsValid()) return EBTNodeResult::Failed;
+    auto* RoleAI = Cast<APGRoleAIController>(AI);
+    FGameplayAbilitySpecHandle Handle;
+    if (RoleAI) Handle = RoleAI->GetAttackAbilityHandle();
+    else
+    {
+        TArray<FGameplayAbilitySpec*> Specs;
+        ASC->GetActivatableGameplayAbilitySpecsByAllMatchingTags(AbilityTag.GetSingleTagContainer(), Specs);
+        Specs.RemoveAll([](const FGameplayAbilitySpec* Spec) { return !Spec || Spec->IsActive(); });
+        if (!Specs.IsEmpty()) Handle = Specs[FMath::RandRange(0, Specs.Num() - 1)]->Handle;
+    }
+    if (!Handle.IsValid()) return EBTNodeResult::Failed;
+    if (Skill->SkillType == EPGSkillType::Heal)
+        BB->SetValueAsObject(SkillTargetActorKey.SelectedKeyName, SelectBestHealTarget(Enemy, BB));
+    CachedOwnerComp = &OwnerComp;
+    CachedASC = ASC;
+    CachedSkillType = Skill->SkillType;
+    ActiveAbilityHandle = Handle;
+    AbilityEndedHandle = ASC->OnAbilityEnded.AddUObject(this, &ThisClass::OnAbilityEnded);
+    bActivating = true;
+    bool bActivated = false;
+    {
+        const TGuardValue<int32> Request(Enemy->RequestedSkillID, SkillID);
+        if (RoleAI) bActivated = RoleAI->TryExecuteSkill(SkillID);
+        else
+        {
+            // Preserve legacy routing, without keeping a spec pointer across activation callbacks.
+            auto* Spec = ASC->FindAbilitySpecFromHandle(Handle);
+            const bool bHadTag = Spec && Spec->GetDynamicSpecSourceTags().HasTagExact(AbilityTag);
+            if (Spec) Spec->GetDynamicSpecSourceTags().AddTag(AbilityTag);
+            bActivated = ASC->TryActivateAbility(Handle);
+            Spec = ASC->FindAbilitySpecFromHandle(Handle);
+            if (Spec && !bHadTag) Spec->GetDynamicSpecSourceTags().RemoveTag(AbilityTag);
+        }
+    }
+    bActivating = false;
+    bOwnsAttackReservation = bActivated && RoleAI;
+    if (!bActivated || bEndedDuringActivation)
+    {
+        const auto Result = bActivated && bEndedDuringActivation && !bEndedCancelled ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
+        FinishTask(&OwnerComp, Result);
+        return Result;
+    }
+    return EBTNodeResult::InProgress;
+}
 
-	APGCharacterEnemy* Enemy = Cast<APGCharacterEnemy>(AIController->GetPawn());
-	if (!Enemy || Enemy->bPerformingHeavyAttack)
-	{
-		return EBTNodeResult::Failed;
-	}
+void UPGBTTask_ExecuteSkill::OnAbilityEnded(const FAbilityEndedData& Data)
+{
+    if (!ActiveAbilityHandle.IsValid() || Data.AbilitySpecHandle != ActiveAbilityHandle) return;
+    if (bActivating)
+    {
+        bEndedDuringActivation = true;
+        bEndedCancelled = Data.bWasCancelled;
+        return; // ExecuteTask has not returned InProgress yet.
+    }
+    auto* OwnerComp = CachedOwnerComp.Get();
+    const auto Result = Data.bWasCancelled ? EBTNodeResult::Failed : EBTNodeResult::Succeeded;
+    FinishTask(OwnerComp, Result);
+    if (OwnerComp) FinishLatentTask(*OwnerComp, Result);
+}
 
-	UPGAbilitySystemComponent* ASC = Enemy->GetPGAbilitySystemComponent();
-	if (!ASC)
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	// Blackboard에서 스킬 ID 가져오기
-	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
-    if (!BlackboardComp) return EBTNodeResult::Failed;
-	const int32 SkillID = BlackboardComp->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName);
-	
-	if (SkillID <= 0)
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	UPGDataTableManager* DTManager = UPGDataTableManager::Get();
-	if (!DTManager)
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	const FPGSkillDataRow* SkillData = DTManager->GetSkillDataRowByKey(SkillID);
-	if (!SkillData)
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	// 스킬 타입 캐싱 (완료 시 카운트 증가용)
-	CachedSkillType = SkillData->SkillType;
-
-	// 힐 스킬인 경우 최적의 타겟 선택
-	if (SkillData->SkillType == EPGSkillType::Heal)
-	{
-		AActor* BestHealTarget = SelectBestHealTarget(Enemy, BlackboardComp);
-		if (BestHealTarget)
-		{
-			BlackboardComp->SetValueAsObject(SkillTargetActorKey.SelectedKeyName, BestHealTarget);
-		}
-	}
-
-	// 스킬 타입을 GameplayTag로 변환
-	FGameplayTag AbilityTag = GetAbilityTagFromSkillType(SkillData->SkillType);
-	if (!AbilityTag.IsValid())
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	// AbilitySystemComponent를 통해 어빌리티 실행
-	CachedOwnerComp = &OwnerComp;
-	
-    // Same exact-ID contract as the role controller; the request is scoped to activation.
-    const TGuardValue<int32> SkillRequest(Enemy->RequestedSkillID, SkillID);
-	const bool bActivated = ASC->TryActivateAbilityByTag(AbilityTag);
-	if (bActivated)
-	{
-		// Strafe 이어서 진행할 지 랜덤하게 결정
-		BlackboardComp->SetValueAsBool(StrafeKey.SelectedKeyName, CheckExecuteStrafe(SkillData->SkillType));
-		
-		// 어빌리티 활성화 성공 - 즉시 완료 처리
-		// (어빌리티 자체에서 몽타주를 관리함)
-		FinishTask(CachedOwnerComp.Get(), EBTNodeResult::Succeeded);
-		return EBTNodeResult::Succeeded;
-	}
-
-    FinishTask(CachedOwnerComp.Get(), EBTNodeResult::Failed);
-	return EBTNodeResult::Failed;
+void UPGBTTask_ExecuteSkill::ResetExecution(bool bCancelAbility)
+{
+    auto* ASC = CachedASC.Get();
+    auto* RoleAI = CachedOwnerComp.IsValid() ? Cast<APGRoleAIController>(CachedOwnerComp->GetAIOwner()) : nullptr;
+    const bool bRelease = bOwnsAttackReservation;
+    const auto Handle = ActiveAbilityHandle;
+    if (ASC) ASC->OnAbilityEnded.Remove(AbilityEndedHandle);
+    AbilityEndedHandle.Reset();
+    ActiveAbilityHandle = FGameplayAbilitySpecHandle();
+    CachedASC.Reset();
+    CachedOwnerComp.Reset();
+    CachedSkillType = EPGSkillType::None;
+    bActivating = bEndedDuringActivation = bEndedCancelled = false;
+    bOwnsAttackReservation = false;
+    // Remove the delegate before cancelling: cancellation may synchronously end the ability.
+    if (bCancelAbility && ASC && Handle.IsValid()) ASC->CancelAbilityHandle(Handle);
+    if (bRelease && RoleAI) RoleAI->ReleaseAttackReservation();
 }
 
 EBTNodeResult::Type UPGBTTask_ExecuteSkill::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (AIController)
-	{
-		APGCharacterEnemy* Enemy = Cast<APGCharacterEnemy>(AIController->GetPawn());
-		if (Enemy)
-		{
-			UPGAbilitySystemComponent* ASC = Enemy->GetPGAbilitySystemComponent();
-			if (ASC)
-			{
-				// 현재 활성화된 어빌리티 취소
-				FGameplayTag AbilityTag = GetAbilityTagFromSkillType(CachedSkillType);
-				if (AbilityTag.IsValid())
-				{
-					FGameplayTagContainer TagContainer = AbilityTag.GetSingleTagContainer();
-					ASC->CancelAbilities(&TagContainer);
-				}
-			}
-		}
-	}
-	
-	// 캐시 정리
-	CachedOwnerComp.Reset();
-	CachedSkillType = EPGSkillType::None;
-	
-	return EBTNodeResult::Aborted;
+    ResetExecution(true);
+    FinishTask(&OwnerComp, EBTNodeResult::Aborted);
+    return EBTNodeResult::Aborted;
+}
+
+void UPGBTTask_ExecuteSkill::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
+{
+    ResetExecution(true);
+    Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
+}
+
+void UPGBTTask_ExecuteSkill::OnInstanceDestroyed(UBehaviorTreeComponent& OwnerComp)
+{
+    ResetExecution(true);
+    Super::OnInstanceDestroyed(OwnerComp);
 }
 
 void UPGBTTask_ExecuteSkill::FinishTask(UBehaviorTreeComponent* OwnerComp, EBTNodeResult::Type Result)
 {
-	if (OwnerComp)
-	{
-		UBlackboardComponent* BB = OwnerComp->GetBlackboardComponent();
-
-		if (BB)
-		{
-			// 스킬 실행 성공 시 소환 카운트 증가
-			if (Result == EBTNodeResult::Succeeded && CachedSkillType == EPGSkillType::SummonEnemy)
-			{
-				const int32 CurrentCount = BB->GetValueAsInt(SummonCountKey.SelectedKeyName);
-				BB->SetValueAsInt(SummonCountKey.SelectedKeyName, CurrentCount + 1);
-			}
-
-			// 선택된 스킬 정보 초기화
-			BB->SetValueAsInt(SelectedSkillIDKey.SelectedKeyName, 0);
-		}
-	}
-	
-	CachedOwnerComp.Reset();
-	CachedSkillType = EPGSkillType::None;
+    if (OwnerComp)
+    {
+        if (auto* BB = OwnerComp->GetBlackboardComponent())
+        {
+            if (Result == EBTNodeResult::Succeeded)
+            {
+                if (CachedSkillType == EPGSkillType::SummonEnemy)
+                    BB->SetValueAsInt(SummonCountKey.SelectedKeyName, BB->GetValueAsInt(SummonCountKey.SelectedKeyName) + 1);
+                if (!StrafeKey.SelectedKeyName.IsNone())
+                    BB->SetValueAsBool(StrafeKey.SelectedKeyName, CheckExecuteStrafe(CachedSkillType));
+            }
+            BB->SetValueAsInt(SelectedSkillIDKey.SelectedKeyName, 0);
+            BB->ClearValue(SkillTargetActorKey.SelectedKeyName);
+        }
+    }
+    ResetExecution(false);
 }
 
 AActor* UPGBTTask_ExecuteSkill::SelectBestHealTarget(APGCharacterEnemy* Self, UBlackboardComponent* BlackboardComp) const
 {
-	// TODO: 주변 아군이 notify를 보내고 처리하도록 하는 것이 어떨까?
-	if (!Self || !Self->GetWorld())
-	{
-		return nullptr;
-	}
-	
-	// 현재 타겟 (플레이어)
-	AActor* CurrentTarget = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
-	
-	// 자신의 HP 비율
-	const UPGEnemyStatComponent* SelfStatComp = Self->GetEnemyStatComponent();
-	const float SelfHPRatio = SelfStatComp ? SelfStatComp->GetHealthRatio() : 1.f;
-	
-	// 최적의 힐 타겟 찾기
-	AActor* BestTarget = Self; // 기본값: 자신
-	float LowestHPRatio = SelfHPRatio;
-	
-	// 주변 아군 탐색
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(Self->GetWorld(), APGCharacterEnemy::StaticClass(), FoundActors);
-	
-	for (AActor* Actor : FoundActors)
-	{
-		APGCharacterEnemy* Ally = Cast<APGCharacterEnemy>(Actor);
-		if (!Ally || Ally == Self) continue;
-		
-		// 거리 체크
-		const float Distance = FVector::Dist(Self->GetActorLocation(), Ally->GetActorLocation());
-		if (Distance > AllySearchRadius) continue;
-		
-		// HP 체크
-		const UPGEnemyStatComponent* AllyStatComp = Ally->GetEnemyStatComponent();
-		if (AllyStatComp)
-		{
-			const float AllyHPRatio = AllyStatComp->GetHealthRatio();
-			
-			// 가장 HP가 낮은 아군 선택
-			if (AllyHPRatio < LowestHPRatio)
-			{
-				LowestHPRatio = AllyHPRatio;
-				BestTarget = Ally;
-			}
-		}
-	}
-	
-	return BestTarget;
+    return PGCombatSpatial::FindInjuredAlly(Self, AllySearchRadius, 1.f, true);
 }
 
 FGameplayTag UPGBTTask_ExecuteSkill::GetAbilityTagFromSkillType(EPGSkillType SkillType) const

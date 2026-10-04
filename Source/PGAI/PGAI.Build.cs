@@ -7,6 +7,8 @@ public class PGAI : ModuleRules
 	public PGAI(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        if (Target.bBuildEditor)
+            PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd", "BehaviorTreeEditor", "AIGraph", "Kismet" });
         PublicDependencyModuleNames.AddRange(new string[] { "PGShared" });
         
         // C++ 20 사용 설정

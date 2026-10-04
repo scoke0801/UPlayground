@@ -51,14 +51,9 @@ bool UPGBTDecorator_CheckSkillRange::CalculateRawConditionValue(UBehaviorTreeCom
 		return false;
 	}
 	
-	float SkillUsableDist = GetMaxDistanceFromSkillData(SkillID);
-	if (FMath::IsNearlyZero(SkillUsableDist))
-	{
-		// 스킬 제한 거리가 없는 경우 항상 true
-		return true;
-	}
-	float DistToTarget = FVector::Dist2D(TargetActor->GetActorLocation(),SelfActor->GetActorLocation());
-	return DistToTarget <= SkillUsableDist;
+    auto* Tables = UPGDataTableManager::Get(SelfActor);
+    const auto* Skill = Tables ? Tables->GetSkillDataRowByKey(SkillID) : nullptr;
+    return Skill && Skill->IsInActivationRange(FVector::Dist2D(TargetActor->GetActorLocation(), SelfActor->GetActorLocation()));
 }
 
 FString UPGBTDecorator_CheckSkillRange::GetStaticDescription() const

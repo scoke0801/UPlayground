@@ -13,6 +13,7 @@ UPGBTTask_FindSkillUseLocation::UPGBTTask_FindSkillUseLocation()
 	NodeName = "Find Skill Use Location (EQS)";
 	bNotifyTick = false;
 	bNotifyTaskFinished = true;
+	bCreateNodeInstance = true;
 	
 	TargetActorKey.SelectedKeyName = "TargetActor";
 	SelectedSkillIDKey.SelectedKeyName = "SelectedSkillId";
@@ -21,6 +22,7 @@ UPGBTTask_FindSkillUseLocation::UPGBTTask_FindSkillUseLocation()
 
 EBTNodeResult::Type UPGBTTask_FindSkillUseLocation::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	CancelQuery();
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 	{
@@ -32,6 +34,7 @@ EBTNodeResult::Type UPGBTTask_FindSkillUseLocation::ExecuteTask(UBehaviorTreeCom
 	{
 		return EBTNodeResult::Failed;
 	}
+	Blackboard->ClearValue(SkillLocationKey.SelectedKeyName);
 
 	// EQS 쿼리가 설정되지 않았으면 실패
 	if (!FindSkillLocationQuery)
@@ -63,6 +66,9 @@ EBTNodeResult::Type UPGBTTask_FindSkillUseLocation::ExecuteTask(UBehaviorTreeCom
 	}
 
 	// 스킬 데이터에서 최대 거리 가져오기
+	auto* Tables = UPGDataTableManager::Get(ControlledPawn);
+	const auto* Skill = Tables ? Tables->GetSkillDataRowByKey(SkillID) : nullptr;
+	if (!Skill || (Skill->TelegraphDuration > 0.f && !Skill->IsPatternValid())) return EBTNodeResult::Failed;
 	const float MaxDistance = GetMaxDistanceFromSkillData(SkillID);
 	if (FMath::IsNearlyZero(MaxDistance))
 	{
@@ -74,44 +80,75 @@ EBTNodeResult::Type UPGBTTask_FindSkillUseLocation::ExecuteTask(UBehaviorTreeCom
 	
 	// BehaviorTreeComponent 캐싱
 	CachedOwnerComp = &OwnerComp;
+	QueryTarget = TargetActor;
+	QuerySkillID = SkillID;
 
 	// EQS 요청 생성
 	FEnvQueryRequest QueryRequest(FindSkillLocationQuery, ControlledPawn);
 
 	// Named Parameter 설정
 	QueryRequest.SetFloatParam(FName("MaxDistance"), MaxDistance);
+	QueryRequest.SetFloatParam(FName("MinDistance"), Skill->MinimumActivationRange);
 	
 	// EQS 비동기 실행
-	QueryRequest.Execute(
+	QueryID = QueryRequest.Execute(
 		EEnvQueryRunMode::SingleResult,
 		this,
 		&UPGBTTask_FindSkillUseLocation::OnEQSQueryFinished
 	);
 
+	if (QueryID == INDEX_NONE) { CancelQuery(); return EBTNodeResult::Failed; }
 	return EBTNodeResult::InProgress;
+}
+
+void UPGBTTask_FindSkillUseLocation::CancelQuery()
+{
+	const int32 RequestID = QueryID;
+	UWorld* World = CachedOwnerComp.IsValid() ? CachedOwnerComp->GetWorld() : nullptr;
+	// Invalidate first: AbortQuery may synchronously dispatch its completion delegate.
+	QueryID = INDEX_NONE;
+	QuerySkillID = 0;
+	QueryTarget.Reset();
+	CachedOwnerComp.Reset();
+	if (RequestID != INDEX_NONE && World)
+		if (auto* Manager = UEnvQueryManager::GetCurrent(World)) Manager->AbortQuery(RequestID);
+}
+
+EBTNodeResult::Type UPGBTTask_FindSkillUseLocation::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	CancelQuery();
+	return EBTNodeResult::Aborted;
+}
+
+void UPGBTTask_FindSkillUseLocation::OnInstanceDestroyed(UBehaviorTreeComponent& OwnerComp)
+{
+	CancelQuery();
+	Super::OnInstanceDestroyed(OwnerComp);
 }
 
 void UPGBTTask_FindSkillUseLocation::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
 {
+	CancelQuery();
 	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 }
 
 void UPGBTTask_FindSkillUseLocation::OnEQSQueryFinished(TSharedPtr<FEnvQueryResult> Result)
 {
 	UBehaviorTreeComponent* OwnerComp = CachedOwnerComp.Get();
-	if (!OwnerComp)
+	if (!OwnerComp || QueryID == INDEX_NONE || !Result.IsValid() || Result->QueryID != QueryID)
 	{
 		return;
 	}
 
-	// EQS 쿼리 결과 검증
-	if (!Result.IsValid())
-	{
-		FinishLatentTask(*OwnerComp, EBTNodeResult::Failed);
-		return;
-	}
-
-	if (!Result->IsSuccessful())
+	UBlackboardComponent* Blackboard = OwnerComp->GetBlackboardComponent();
+	const bool bCurrentContext = QueryTarget.IsValid() && Blackboard &&
+		Blackboard->GetValueAsObject(TargetActorKey.SelectedKeyName) == QueryTarget.Get() &&
+		Blackboard->GetValueAsInt(SelectedSkillIDKey.SelectedKeyName) == QuerySkillID;
+	QueryID = INDEX_NONE;
+	CachedOwnerComp.Reset();
+	QueryTarget.Reset();
+	QuerySkillID = 0;
+	if (!bCurrentContext || !Result->IsSuccessful() || Result->Items.IsEmpty())
 	{
 		FinishLatentTask(*OwnerComp, EBTNodeResult::Failed);
 		return;
@@ -121,7 +158,6 @@ void UPGBTTask_FindSkillUseLocation::OnEQSQueryFinished(TSharedPtr<FEnvQueryResu
 	FVector SkillUseLocation = Result->GetItemAsLocation(0);
 	
 	// Blackboard에 결과 위치 저장
-	UBlackboardComponent* Blackboard = OwnerComp->GetBlackboardComponent();
 	if (Blackboard)
 	{
 		Blackboard->SetValueAsVector(SkillLocationKey.SelectedKeyName, SkillUseLocation);
@@ -141,9 +177,10 @@ float UPGBTTask_FindSkillUseLocation::GetMaxDistanceFromSkillData(int32 SkillID)
 	{
 		if (const FPGSkillDataRow* SkillData = DataTableManager->GetRowData<FPGSkillDataRow>(SkillID))
 		{
-			if (SkillData->SkillRange > 0.0f)
+			const float Range = SkillData->GetPatternActivationRange();
+			if (Range < TNumericLimits<float>::Max())
 			{
-				return SkillData->SkillRange;
+				return Range;
 			}
 		}
 	}

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
+#include "GameplayAbilitySpecHandle.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGBTTask_ExecuteSkill.generated.h"
 
@@ -15,6 +16,7 @@ UCLASS()
 class PGAI_API UPGBTTask_ExecuteSkill : public UBTTaskNode
 {
 	GENERATED_BODY()
+	friend class FPGBTAbilityLifecycleTest;
 
 protected:
 	/** Blackboard - 타겟 키*/
@@ -43,6 +45,15 @@ protected:
 
 private:
 	TWeakObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+	TWeakObjectPtr<class UPGAbilitySystemComponent> CachedASC;
+	FGameplayAbilitySpecHandle ActiveAbilityHandle;
+	FDelegateHandle AbilityEndedHandle;
+	bool bActivating = false;
+	bool bEndedDuringActivation = false;
+	bool bEndedCancelled = false;
+	bool bOwnsAttackReservation = false;
+	void OnAbilityEnded(const struct FAbilityEndedData& Data);
+	void ResetExecution(bool bCancelAbility);
 
 	/** 현재 실행 중인 스킬 타입 (카운트 증가용) */
 	EPGSkillType CachedSkillType;
@@ -53,6 +64,8 @@ public:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	
 	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
+	virtual void OnInstanceDestroyed(UBehaviorTreeComponent& OwnerComp) override;
 
 private:
 	/** Task 완료 처리 */

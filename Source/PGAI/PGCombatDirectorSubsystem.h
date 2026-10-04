@@ -15,6 +15,7 @@ class PGAI_API UPGCombatDirectorSubsystem : public UWorldSubsystem
 public:
     bool TryReserve(APGCharacterEnemy* Enemy, AActor* Target, int32 Cost);
     void Release(APGCharacterEnemy* Enemy);
+    class UBehaviorTree* GetCombatBehaviorTree(float DecisionInterval);
     virtual void Deinitialize() override;
 private:
     struct FRequest
@@ -28,5 +29,7 @@ private:
     // Insertion order prevents early-spawned enemies monopolizing every opening.
     TArray<FRequest> Waiting;
     TMap<TWeakObjectPtr<AActor>, double> NextStart;
+    // One template per tuning interval per world, not one per spawned enemy.
+    UPROPERTY(Transient) TMap<float, TObjectPtr<class UBehaviorTree>> CombatTrees;
     bool TryReserveAt(APGCharacterEnemy* Enemy, AActor* Target, int32 Cost, double Now, int32 Budget, float Spacing);
 };

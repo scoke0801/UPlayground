@@ -7,6 +7,17 @@
 #include "PGEnemyDataRow.generated.h"
 
 USTRUCT(BlueprintType)
+struct PGDATA_API FPGCombatPositioning
+{
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bEnabled = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0.5")) float ReconsiderSeconds = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="60")) float Separation = 180.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="60")) float MaxMoveDistance = 350.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="10")) float MinimumImprovement = 45.f;
+};
+
+USTRUCT(BlueprintType)
 struct PGDATA_API FPGEnemyDataRow : public FTableRowBase
 {
 	GENERATED_BODY()
@@ -32,6 +43,10 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role")
     EPGEnemyRole Role = EPGEnemyRole::Legacy;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior")
+    TSoftObjectPtr<class UBehaviorTree> CombatBehaviorTree;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior")
+    FPGCombatPositioning Positioning;
     // Pattern enemies receive hits through their capsule. Opt in only for bone-level
     // queries/physics; legacy enemies retain their Blueprint collision settings.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Collision")

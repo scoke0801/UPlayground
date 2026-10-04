@@ -115,10 +115,17 @@ void UPGEnemyAbilitySummonEnemy::OnSpawnFinished(const TArray<AActor*>& Actors)
 		}
 	}
 
-	EndAbilitySelf();
+	EndAbility(CachedSpecHandle, CachedActorInfo, CachedActivationInfo, true, Actors.IsEmpty());
 }
 
 void UPGEnemyAbilitySummonEnemy::OnSpawnFailed()
 {
 	EndAbilitySelf();
+}
+
+void UPGEnemyAbilitySummonEnemy::OnMontageCompleted()
+{
+    // Only a successful spawn callback completes the BT task successfully.
+    // A montage without its spawn event must not consume the summon count.
+    EndAbilitySelf();
 }

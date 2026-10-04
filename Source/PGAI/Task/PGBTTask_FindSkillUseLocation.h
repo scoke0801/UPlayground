@@ -20,6 +20,7 @@ UCLASS()
 class PGAI_API UPGBTTask_FindSkillUseLocation : public UBTTaskNode
 {
 	GENERATED_BODY()
+	friend class FPGBTAsyncStateTest;
 
 protected:
 	/** EQS - 스킬 사용 위치 탐색 쿼리 */
@@ -41,11 +42,17 @@ protected:
 private:
 	/** BehaviorTreeComponent 약한 참조 */
 	TWeakObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+	TWeakObjectPtr<AActor> QueryTarget;
+	int32 QueryID = INDEX_NONE;
+	int32 QuerySkillID = 0;
+	void CancelQuery();
 
 public:
 	UPGBTTask_FindSkillUseLocation();
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual void OnInstanceDestroyed(UBehaviorTreeComponent& OwnerComp) override;
 
 protected:
 	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
