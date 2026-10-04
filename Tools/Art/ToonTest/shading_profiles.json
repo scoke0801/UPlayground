@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "profiles": {
+    "cloth": {
+      "scalars": {"ShadowSoftness": 0.025, "LightSoftness": 0.035, "BandAA": 0.75, "DiffuseWrap": 0.12, "ShadeStrength": 1.0, "RimStrength": 0.065, "RimPower": 3.5, "RimThreshold": 0.38, "RimSoftness": 0.13, "RimLightMask": 0.85, "RimBaseBlend": 0.65, "SpecularStrength": 0.0},
+      "vectors": {"ShadowTint": [0.55, 0.55, 0.64, 1], "MidTint": [0.82, 0.81, 0.88, 1], "LightTint": [1, 0.98, 0.96, 1], "RimColor": [0.76, 0.81, 0.9, 1]}
+    },
+    "skin": {
+      "inherits": "cloth",
+      "scalars": {"DiffuseWrap": 0.25, "ShadowSoftness": 0.05, "LightSoftness": 0.075, "ShadeStrength": 0.85, "RimStrength": 0.025},
+      "vectors": {"ShadowTint": [0.77, 0.52, 0.53, 1], "MidTint": [0.95, 0.79, 0.76, 1], "RimColor": [1, 0.8, 0.72, 1]}
+    },
+    "face": {
+      "inherits": "skin",
+      "scalars": {"DiffuseWrap": 0.35, "ShadowSoftness": 0.10, "LightSoftness": 0.13, "ShadeStrength": 0.65, "RimStrength": 0.012},
+      "vectors": {"ShadowTint": [0.82, 0.62, 0.63, 1], "MidTint": [0.97, 0.85, 0.82, 1]}
+    },
+    "hair": {
+      "inherits": "cloth",
+      "scalars": {"DiffuseWrap": 0.15, "RimStrength": 0.07, "RimBaseBlend": 0.8, "SpecularStrength": 0.055, "SpecularPower": 32, "SpecularThreshold": 0.5, "SpecularSoftness": 0.075},
+      "vectors": {"ShadowTint": [0.52, 0.51, 0.65, 1], "MidTint": [0.78, 0.78, 0.88, 1], "SpecularTint": [0.83, 0.85, 1, 1]}
+    },
+    "detail": {"inherits": "face", "scalars": {"ShadeStrength": 0.2, "RimStrength": 0.0}},
+    "metal": {"inherits": "cloth", "scalars": {"SpecularStrength": 0.16, "SpecularPower": 48, "SpecularThreshold": 0.45, "SpecularSoftness": 0.06}}
+  },
+  "slots": {
+    "Inori": {
+      "M_Inori_Body": "skin", "M_Inori_Body_Costume1": "cloth", "M_Inori_Body_Costume2": "cloth", "M_Inori_CostumeExtra": "cloth", "M_Inori_Costume_A": "cloth", "M_Inori_Costume_B": "cloth", "M_Inori_Expressions": "detail", "M_Inori_EyeAlpha": "detail", "M_Inori_Glasses": "metal", "M_Inori_Hair": "hair", "M_Inori_Head": "face"
+    },
+    "Bokusei": {
+      "Mat_Bokusei_Body": "skin", "Mat_Bokusei_Face": "face", "Mat_Bokusei_FaceParts": "detail", "Mat_Bokusei_FaceParts_Transparent": "detail", "Mat_Bokusei_Hair": "hair", "Mat_Bokusei_Hair_Transparent": "hair", "Mat_Bokusei_Earring": "metal", "Mat_Bokusei_Robe": "cloth", "Mat_Bokusei_Cloth": "cloth", "Mat_Bokusei_Underwear": "cloth"
+    },
+    "Honoka": {
+      "ho_cloth_uv2": "cloth", "ho_face": "face", "ho_eye": "detail", "ho_eye_hi": "detail", "ho_brow": "detail", "ho_tears": "detail", "ho_body": "skin", "ho_hair": "hair", "ho_hair_sub": "hair", "ho_hair_sub2": "hair", "ho_cloth_uv5": "cloth", "ho_cloth_uv1": "cloth", "ho_cloth_uv3": "cloth", "ho_cloth_uv4": "cloth", "ho_cloth_uv1_cutout": "cloth", "ho_cloth_uv4_cutout": "cloth"
+    },
+    "LianLian": {"Mt_Hair": "hair", "Mt_Body": "face", "Mt_Dressedskin": "skin", "Mt_UW": "cloth", "Mt_Clothing": "cloth", "Mt_Trans": "cloth"}
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "unity_root": "C:/UsingProject/UnityProject/UPlayground/Assets/ExternalAssets/Character",
+  "characters": [
+    {"name": "Bokusei", "folder": "ROKO SHOP/Bokusei", "fbx": "00_FBX/Bokusei.fbx"},
+    {"name": "Honoka", "folder": "Honoka", "fbx": "FBX/Honoka.fbx", "gallery_z_adjust_cm": -23.5},
+    {"name": "LianLian", "folder": "LianLian", "fbx": "FBX/LianLian.fbx"}
+  ]
+}

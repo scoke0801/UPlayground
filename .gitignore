@@ -107,3 +107,6 @@ Script/**/*.png
 !/Docs/todo/*.md
 !/CLAUDE.md
 !/PROJECT_OVERVIEW.md
+
+# Generated asset-pack manifests (clip names and local source paths)
+Tools/Art/ToonTest/**/*manifest.json
