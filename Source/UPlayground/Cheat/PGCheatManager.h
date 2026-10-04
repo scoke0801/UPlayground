@@ -19,12 +19,14 @@ public:
     UFUNCTION(Exec) void PGStageStatus();
     UFUNCTION(Exec) void PGStartStage(int32 StageId = 1);
     UFUNCTION(Exec) void PGCombatStats();
+    /** One disposable process per P0 comparison trial; never writes combat assets. */
+    UFUNCTION(Exec) void PGSkillScenario(FString Scenario = TEXT("P0-M10"), int32 Seed = 173001, FString Variant = TEXT("p0"));
     UFUNCTION(Exec) void PGGuardianProbe(FString Action = TEXT("status"));
     UFUNCTION(Exec) void PGGuardianScenario(int32 PackCount = 1);
-    /** Assisted GAS damage for threshold/death timing probes. */
-    UFUNCTION(Exec) void PGBossDamage(float Amount = 15000.f);
     /** Rendered 5/50/5 AI load for isolated Development/packaged performance QA. */
     UFUNCTION(Exec) void PGGuardianBenchmark(int32 Seconds = 1200);
+    /** Assisted GAS damage for threshold/death timing probes. */
+    UFUNCTION(Exec) void PGBossDamage(float Amount = 15000.f);
     UFUNCTION(Exec) void PGBuildScenario(FString Family = TEXT("Bleed"), bool bCore = true);
     UFUNCTION(Exec) void PGBuildProbe(FString Action = TEXT("status"));
     UFUNCTION(Exec) void PGBuildCards();
@@ -41,9 +43,9 @@ protected:
 	TArray<TSoftObjectPtr<UPGCheatComponent>> _components;
 
 private:
+    FTimerHandle GuardianBenchmarkTimer;
     TWeakObjectPtr<UWorld> BuildScenarioWorld;
     FVector BuildScenarioOrigin = FVector::ZeroVector;
-    FTimerHandle GuardianBenchmarkTimer;
     FTimerHandle CombatCycleTimer;
     int32 CycleProbeTicks = 0;
     int32 CycleProbeRewards = 0;

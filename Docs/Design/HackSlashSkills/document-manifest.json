@@ -1,0 +1,14 @@
+{
+  "document": "PG-DESIGN-COMBAT-001",
+  "version": "1.2.0",
+  "canonicalSha256": "65ce06f2c0292512705a87776a339826ceb00946677345bc206998c2f68ce116",
+  "chapters": 17,
+  "skillTimingRecords": 8,
+  "acceptanceTests": 25,
+  "illustrations": [
+    "assets/skill-vfx-board.png",
+    "assets/build-vfx-board.png"
+  ],
+  "externalResources": 0,
+  "htmlBytes": 11523668
+}

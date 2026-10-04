@@ -1,0 +1,108 @@
+{
+    "document":  "PG-DESIGN-COMBAT-001",
+    "version":  "1.2.0",
+    "date":  "2026-10-04",
+    "canonicalSha256":  "65ce06f2c0292512705a87776a339826ceb00946677345bc206998c2f68ce116",
+    "status":  "PASS",
+    "staticChecks":  [
+                         "Markdown/HTML SHA-256 일치",
+                         "25 acceptance test rows",
+                         "proposal JSON syntax and movement references",
+                         "all Markdown links exist",
+                         "original PNGs embedded intact",
+                         "no external load resources"
+                     ],
+    "browser":  "Microsoft Edge headless; isolated profile",
+    "renders":  [
+                    {
+                        "name":  "desktop-motion",
+                        "status":  "PASS",
+                        "viewport":  [
+                                         1600,
+                                         1100
+                                     ],
+                        "checks":  [
+                                       "8 skill tabs",
+                                       "selected 100",
+                                       "end timing 100",
+                                       "selected 101",
+                                       "end timing 101",
+                                       "selected 102",
+                                       "end timing 102",
+                                       "selected 110",
+                                       "end timing 110",
+                                       "selected 111",
+                                       "end timing 111",
+                                       "selected 112",
+                                       "end timing 112",
+                                       "selected 113",
+                                       "end timing 113",
+                                       "selected 114",
+                                       "end timing 114",
+                                       "110 early cancel",
+                                       "110 locked jump",
+                                       "111 first hit",
+                                       "111 cancel window",
+                                       "embedded PNG decode",
+                                       "zoom opens",
+                                       "zoom closes",
+                                       "no page horizontal overflow",
+                                       "17 chapters"
+                                   ],
+                        "screenshot":  "../../../Saved/DesignQA/HackSlashSkills/desktop-motion.png"
+                    },
+                    {
+                        "name":  "mobile-motion",
+                        "status":  "PASS",
+                        "viewport":  [
+                                         390,
+                                         1000
+                                     ],
+                        "checks":  [
+                                       "8 skill tabs",
+                                       "selected 100",
+                                       "end timing 100",
+                                       "selected 101",
+                                       "end timing 101",
+                                       "selected 102",
+                                       "end timing 102",
+                                       "selected 110",
+                                       "end timing 110",
+                                       "selected 111",
+                                       "end timing 111",
+                                       "selected 112",
+                                       "end timing 112",
+                                       "selected 113",
+                                       "end timing 113",
+                                       "selected 114",
+                                       "end timing 114",
+                                       "110 early cancel",
+                                       "110 locked jump",
+                                       "111 first hit",
+                                       "111 cancel window",
+                                       "embedded PNG decode",
+                                       "zoom opens",
+                                       "zoom closes",
+                                       "no page horizontal overflow",
+                                       "17 chapters"
+                                   ],
+                        "screenshot":  "../../../Saved/DesignQA/HackSlashSkills/mobile-motion.png"
+                    }
+                ],
+    "limitations":  [
+                        "게임 구현·밸런스·성능 검증 결과가 아님",
+                        "출력용 CSS는 제공하나 인쇄 페이지별 검수는 미실시",
+                        "36개 모션 후보의 연속 재생 및 UE 재로드는 미실시"
+                    ],
+    "images":  "Existing ImageGen PNGs reused; no new generation",
+    "visualReview":  "17장 데스크톱·모바일 캡처 직접 확인. 목차 번호 줄바꿈 수정 후 재검사 통과.",
+    "additionalBrowserReport":  "../../../Saved/DesignQA/HackSlashSkills/motion-report.json",
+    "motionReview":  {
+                         "candidateCount":  36,
+                         "existingPackages":  36,
+                         "priorDetailedInspectionMatches":  21,
+                         "fullPlaybackReviewed":  0,
+                         "adopted":  0,
+                         "currentUELoadVerified":  false
+                     }
+}

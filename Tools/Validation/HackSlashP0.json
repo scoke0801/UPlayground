@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "skills": [
+    {"id":100,"name":"열풍검 1타","duration":0.48,"dodge":0.22,"attack":0.30,"cooldown":0,"radius":250,"angle":120,"hits":[0.16],"damage":0.9,"distance":20,"move_start":0.0,"move_end":0.16,"pose":[[0,0.45],[0.16,0.78],[0.22,0.92],[0.48,1.40]]},
+    {"id":101,"name":"열풍검 2타","duration":0.50,"dodge":0.25,"attack":0.32,"cooldown":0,"radius":280,"angle":150,"hits":[0.19],"damage":1.0,"distance":25,"move_start":0.0,"move_end":0.19,"pose":[[0,0.28],[0.19,0.67],[0.25,0.82],[0.50,1.35]]},
+    {"id":102,"name":"열풍검 3타","duration":0.68,"dodge":0.36,"attack":0.46,"cooldown":0,"radius":320,"angle":170,"hits":[0.30],"damage":1.5,"distance":60,"move_start":0.0,"move_end":0.30,"pose":[[0,0.18],[0.30,0.75],[0.36,0.91],[0.68,1.50]]},
+    {"id":111,"name":"질풍연참","duration":0.72,"dodge":0.26,"attack":0.54,"cooldown":3,"radius":240,"angle":100,"hits":[0.18,0.40],"damage":0.9,"distance":450,"move_start":0.10,"move_end":0.44,"pose":[[0,0.05],[0.18,0.38],[0.24,0.62],[0.40,1.24],[0.46,1.50],[0.72,1.98]]},
+    {"id":112,"name":"원월참","duration":0.76,"dodge":0.28,"attack":0.60,"cooldown":4,"radius":320,"angle":360,"hits":[0.20,0.48],"damage":1.0,"distance":0,"move_start":0.0,"move_end":0.76,"pose":[[0,0.02],[0.20,0.48],[0.26,0.76],[0.48,1.38],[0.54,1.66],[0.76,2.16]]}
+  ]
+}
