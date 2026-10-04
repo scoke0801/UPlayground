@@ -1,5 +1,58 @@
 # UPlayground 프로젝트 분석 문서
 
+## 2026-10-04 핵 앤 슬래시 P0 전투 비교 도구
+
+- P0 기본 3타·질풍연참·원월참 구현에 이어 `PGSkillScenario`와 `RunHackSlashComparison.py/.ps1`로 M10/M15/RING/E1의 격리 전투를 재현한다. 초기 배치를 시드로 고정하고 이관 전 스킬 행을 런타임에만 복원해 전후 비교한다.
+- 피해·피격·처치·스킬 사용과 사망/시간 초과/중단 기록을 보존한다. 4개 시나리오 × 5시드 × 전후 2종의 직접 비교 목록을 만들며, 무입력 점검은 이 목록의 완료로 집계하지 않는다.
+- UE 5.8 빌드, 기존 P0 회귀 및 8개 전후 배치 점검을 확인했다. 직접 조작·연속 모션·강화별 비교·패키지 성능 수용은 남아 있다. 범위와 재현은 [P0 구현 보고서](Docs/todo/HackSlashP0_Implementation_Report.md)의 전투 비교 도구 기록을 따른다.
+
+## 2026-10-04 핵 앤 슬래시 P0 전투 비교 도구
+
+- P0 기본 3타·질풍연참·원월참 구현에 이어 `PGSkillScenario`와 `RunHackSlashComparison.py/.ps1`로 M10/M15/RING/E1의 격리 전투를 재현한다. 초기 배치를 시드로 고정하고 이관 전 스킬 행을 런타임에만 복원해 전후 비교한다.
+- 피해·피격·처치·스킬 사용과 사망/시간 초과/중단 기록을 보존한다. 4개 시나리오 × 5시드 × 전후 2종의 직접 비교 목록을 만들며, 무입력 점검은 이 목록의 완료로 집계하지 않는다.
+- UE 5.8 빌드, 기존 P0 회귀 및 8개 전후 배치 점검을 확인했다. 직접 조작·연속 모션·강화별 비교·패키지 성능 수용은 남아 있다. 범위와 재현은 [P0 구현 보고서](Docs/todo/HackSlashP0_Implementation_Report.md)의 전투 비교 도구 기록을 따른다.
+
+## 2026-10-03 플레이어 콤보 복구·공격 구분
+
+- 플레이어 공격 Ability 7개의 자기 공격 태그 차단을 제거해 실제 취소 창에서 기본 1→2→3타 연계를 복구했다. 몽타주 `RateScale`을 콤보 유지 시간에 반영하고 종료·취소 시 무기 판정을 정리한다.
+- `DT_Skill`의 공격 재생 배율·근접 피해 배율·강타 표현을 기본 3타와 기존 스킬에 연결했다. 전진·회전·집중 연격은 각각 2·2·3개의 타격 창을 사용한다. 원본과 이관은 `PlayerAttacks.json` / `ConfigurePlayerAttacks.py`다.
+- `RunPlayerAttacks.py`는 격리 프로필의 실제 GAS·몽타주 연계와 타격 창을 검사한다. 수치·변경 에셋·검증 근거·직접 플레이 잔여 항목은 [플레이어 공격 보고서](Docs/todo/PlayerAttacks_Implementation_Report.md)를 따른다.
+
+## 2026-10-03 몬스터 BT 전체 역할 이관
+
+- 기존 EQS 태스크의 비동기 요청 상태를 개체별로 분리하고 요청 취소·늦은 결과를 처리한다. 스킬 태스크는 실행한 GAS Ability의 종료까지 기다리며, 중단 시 해당 실행만 취소한다. 공격 직전 거리·시야를 재검사하고 정상 완료·취소를 구분한다.
+- 아레나 6종 모두 `DT_Enemy.CombatBehaviorTree`의 편집 가능한 공통 BT/BB를 사용한다. 참조가 없으면 월드별 공유 런타임 트리로 복구한다. 기존 GAS 패턴·공격권 FIFO·보스 순서를 유지한다.
+- `Positioning` 데이터로 빈 위치 이동과 공격 대기 간격을 조정한다. 최대 8개 후보·2개 경로 요청을 낮은 주기로 평가하며, 지원 대상 검색도 주변 Pawn 충돌 검색으로 바꿨다. `pg.AI.DebugPositions`와 `pg.AI.UseBehaviorTree`로 시각화·타이머 비교가 가능하다.
+- `ConfigureCombatBT.py`는 백업 후 자산을 생성/연결하고 기존 편집을 보존한다. `RunCombatBT.py`는 전체 역할 자율 전투·보스 전환·중단/재개·타겟 이동·실제 위치 이동을 검사한다. 빌드, 35개 회귀 테스트 및 전체 진행 검사 결과는 [몬스터 BT 보고서](Docs/todo/MonsterBT_Implementation_Report.md)를 따른다.
+
+## 2026-10-03 수호자 밀집 전투 CPU 최적화
+
+- UE 5.8의 사용하지 않는 Mass 에디터 처리 큐에서 관찰한 긴 대기를 `mass.UseProcessingQueue=0`의 기존 작업 그래프 경로로 우회한다. 엔진 소스는 변경하지 않는다.
+- 역할형 적의 피해·이동 충돌은 기존 캡슐을 사용한다. `PGEnemyDataRow.bUseSkeletalMeshCollision`이 꺼진 역할형 적은 스켈레탈 메시의 충돌·오버랩을 중지해 프레임마다 물리 뼈를 갱신하지 않는다. Legacy 및 물리 시뮬레이션 중인 메시와 명시적 선택은 기존 설정을 유지한다.
+- `RunGuardianSoak.py --trace --no-images`와 `ExportGuardianCPU.py`는 CPU 추적을, `PGGuardianBenchmark` / `RunGuardianBenchmark.py`는 PIE 밖과 Development 패키지의 5→50→5마리 계측을 담당한다. 프레임 제한 대기를 분리하려면 `--fps-cap 0`을 사용한다. 직접 입력·자유 내비게이션·빌드 밸런스 검사와 구분하며, 검증 근거는 [수호자 보고서](Docs/todo/GuardianPresentation_Implementation_Report.md)의 CPU 최적화 기록을 따른다.
+
+## 2026-10-03 Unity lilToon 캐릭터 이전 테스트
+
+- Bokusei에 Frank Slash **1,291개**, Grruzam Sword **959개**, RPG Animations **6,336개**, 합계 **8,586개**를 추가했다. `Animation/FrankSlash`, `Animation/GrruzamSword`, `Animation/RPGAnimations`에 저장하고 `/Game/Art/ToonTest/Maps/PackLibrary`의 26개 맵에서 대표 156개를 확인한다. `RunBokuseiPacks.py`가 소스 12종 직접 리타게팅·체크포인트 복구·렌더·저장 검증을 담당하며 ElfSelena는 사용하지 않는다. 전체 에셋 포즈/저장 및 최종 맵/파일 무결성 검증 PASS다. 보완 캡처의 종료 코드 오류와 표시 위치 보정, 원본 구간 1건 보정, Whip 무기 본 진단 및 전투 연결 범위는 [이전 보고서의 추가 3팩 기록](Docs/todo/ToonRendering_Transfer_Test_Report.md)을 따른다.
+- Inori LOD 화면 검증은 `RunToonLODQuality.py` / `CaptureToonLODQuality.py` / `ReviewToonLODQuality.py`로 6모션·720p/1080p·자동 LOD 왕복의 원본 PNG, 프레임별 본/LOD 기록과 비교 영상을 만든다. 기존 Inori 리타게팅 설정으로 검사용 회피만 추가했다. 큰 LOD1 형상 팝, 얇은 헤어 선, 그림자 캐시 잔상을 구분하며 권장 설정·검증 한계·실행 근거는 [LOD 화면 품질 보고서](Docs/todo/ToonLODQuality_Validation_Report.md)를 따른다. 전투 맵 및 패키지 성능 인증은 별도다.
+- Bokusei 카타나 모션을 기존 6개에서 **60개(제자리 40·이동 변형 20)**로 확장했다. `Configure/Preview/ValidateBokuseiMotionLibrary.py`와 `RunBokuseiMotionLibrary.py`가 원본 소스 Skeleton 의존성 복구·리타게팅·11개 확인용 맵·저장 재검증을 담당한다. 결과는 `Bokusei/Animation`과 `Animation/RootMotion`, 맵은 `/Game/Art/ToonTest/Maps/KatanaLibrary`다. RM 원본은 pelvis에 이동이 있어 XY를 Armature로 추출하며 수직/회전은 Hips에 남긴다. 60개 에셋·11개 맵의 렌더/PIE·저장 검증 PASS이며 게임플레이 이동/GAS 연결은 후속이다. 상세 근거는 이전 보고서의 60개 확장 기록을 따른다.
+- Bokusei 모션 검증은 `ConfigureBokuseiMotionTest.py`로 Unity Anime Katana 팩의 대기·달리기·공격·회피·피격·사망 6개 FBX를 원본 리그에서 Bokusei로 직접 리타게팅한다. `/Game/Art/ToonTest/Bokusei/Animation`의 21개 체인 설정과 `/Game/Art/ToonTest/Maps/L_PGToon_Bokusei_MotionTest`의 반복 재생을 제공한다. `RunBokuseiMotionTest.py`가 생성·SM6 렌더/PIE·저장 재검증을 순차 실행한다. 기존 플레이어와 전투 데이터는 변경하지 않았으며, FK 기반의 모션 적용 검증으로 무기 그립·발 고정 IK·보조 의상 물리는 후속 항목이다. 상세 근거는 이전 보고서의 Bokusei 직접 리타게팅 기록을 따른다.
+- 1단계 성능 후속 작업은 `RunToonPerformance.py` / `ProbeToonPerformance.py`로 동시 Unreal 실행 감시·본 움직임·반복 GPU 비교·CSV 저장 완료를 검사한다. 마지막 CSV 저장 전 종료 문제를 수정한 최신 50개/720p PIE LOD1 재측정(60초×3회)은 GPU 8.77–9.02ms, 프레임 p95 13.18–14.53ms, 합산 p99 16.40ms·최대 58.50ms다. 원본 CPU 추적의 최악 977.59ms 프레임에서는 GPU 가림 쿼리 결과 대기 970.71ms를 확인했다. `ExportToonCPU.py`가 측정 영역별 CPU/렌더/RHI 이벤트를 내보낸다. 이전 실행의 마지막 CSV 누락과 전체 완료 판정 정정, 근거 및 실제 전투·패키지 60fps 인증 한계는 이전 보고서 8차 기록을 따른다.
+- `ConfigureToonPerformanceLOD.py`는 LOD 후보와 별도 `L_PGToon_PerformanceMotionTest`를, `ValidateToonPerformanceLOD.py`는 저장/기존 갤러리 회귀를 담당한다. 앞선 LOD 비교는 6차 기록에 보존하되 마지막 구간 누락에 관한 8차 정정을 함께 적용한다. 연속 영상과 이 테스트 카메라의 전환 거리 검증은 LOD 화면 품질 보고서에 추가했으며, 실제 전투 맵 설정 확정·채택은 후속 작업이다.
+- 월드 조명 확장은 `ConfigureToonLightingLab.py`의 `/Game/Art/ToonTest/Advanced` 변형을 사용한다. Default Lit에 셀 명암·제한된 발광 채움을 결합해 실제 광원/그림자를 받고, `UPGToonPresentationComponent`가 지정 DirectionalLight와 애니메이션 머리 본을 MID에 동기화한다. 얼굴 투사 그림자 제어, 헤어 이방성 하이라이트, CustomStencil 73 기반의 가림을 고려하는 화면 공간 실루엣 외곽선을 제공한다. 기존 Unlit 갤러리와 별도로 `L_PGToon_LightingLab` 및 6모션 `L_PGToon_AdvancedMotionTest`를 저장한다. `ValidateToonLightingRuntime.py`는 PIE 본/광원 추적·수명주기·1/10/50개 렌더 계측을, `ValidateToonLightingAssets.py`는 저장 참조와 기존 갤러리 회귀를 검사한다. 검증 결과·한계는 이전 보고서 5차 기록을 따른다.
+- 초기 셰이딩 개선은 `ConfigureToonShading.py`가 담당한다. `shading_profiles.json`의 부위별 명암·림·하이라이트, 미분 기반 셀 경계 완화, 거리 제한형 Hull 두께를 기존 테스트 에셋에 적용한다. Unity 셰이더 GUID로 불투명/컷아웃/투명을 구분해 Honoka 눈동자 누락·눈 하이라이트 덮임을 수정했다. `PreviewToonShading.py`로 근접/쿼터뷰/측면광/역광을 비교한다. 이 초기 갤러리는 Unlit 비교 기준으로 유지한다.
+- Unity 프로젝트의 `Inori` 캐릭터를 `/Game/Art/ToonTest/Inori`에 스켈레탈 메시·텍스처·머티리얼 인스턴스로 이전했다. lilToon 셰이더 자체가 아니라 Unreal용 3단 셀 명암·림라이트·외곽선 마스터 머티리얼로 변환한다.
+- `ConfigureToonCharacterTest.py`는 격리된 테스트 경로를 재생성하고 9개 활성 머티리얼 슬롯을 검증한다. `PreviewToonCharacterTest.py`는 저장하지 않는 프리뷰 월드에서 전면 3/4 렌더를 생성한다.
+- 2차 테스트는 `ConfigureToonRetargetTest.py`로 ElfSelena의 대기·걷기·달리기·공격·피격·사망 6개 모션을 Inori Skeleton에 오프라인 FK 변환한다. `PreviewToonMotionTest.py`는 `/Game/Art/ToonTest/Maps/L_PGToon_Inori_MotionTest`에 쿼터뷰 모션 갤러리를 저장하며, `ValidateToonMotionTest.py`가 소스 불변·관절 길이·저장된 반복 재생/Leader Pose 연결을 검사한다. 일반 플레이어 Blueprint와 게임 맵은 변경하지 않았다.
+- 추가로 Bokusei·Honoka·LianLian의 기본 FBX를 각 `/Game/Art/ToonTest/<이름>`에 이전했다. `ConfigureToonAdditionalCharacters.py`는 Unity GUID 기반 텍스처·알파 마스크를 32개 슬롯에 연결하고, `PreviewToonCharacterGallery.py`는 Inori 포함 4개 모델 비교 맵 `/Game/Art/ToonTest/Maps/L_PGToon_CharacterGallery`를 저장한다. 새 3개 모델은 아직 Reference Pose이며, `ValidateToonCharacterGallery.py`가 저장 참조·원본 파일 불변·기존 Inori 모션 회귀를 검사한다.
+- 최종 SM6 렌더는 통과했지만 원본 FBX에는 유효하지 않은 Bind Pose, 누락된 스무딩 그룹, 과도한 스킨 영향도 경고가 있다. 실제 플레이어 채택 전 애니메이션 변형 QA와 FBX 재익스포트가 필요하다. 상세 내용은 [카툰 렌더링 이전 테스트 보고서](Docs/todo/ToonRendering_Transfer_Test_Report.md)를 따른다.
+
+## 2026-10-03 Blender 유틸리티 모델 교체
+
+- 개발 맵 5종(`DummyDevMap`, `EmptyDevMap`, `EnemyDevMap`, `FeatureDevMap`, `StageDevMap`)의 LevelPrototyping/Engine 기본 큐브 65개를 Blender 제작 `SM_PG_DevBlock_Corner`·`SM_PG_DevBlock_Centered`로 교체했다. 기존 두 메시의 서로 다른 피벗과 100cm 바운드, 액터 Transform 및 충돌 지오메트리를 보존한다.
+- 전리품 희귀도 빔의 Engine 기본 Cylinder를 Blender 제작 `SM_PG_LootBeam`으로 교체했다. 기존 6cm 폭과 데이터 기반 높이, 동적 희귀도 머티리얼 경로는 유지한다.
+- Blender 원본·FBX·명세는 `Tools/Art/UtilityModels`, UE 에셋은 `/Game/Art/UtilityModels`에 있다. `ReplaceTemporaryModels.py`가 임포트·백업·맵 교체·정적 검증을 수행하며, 저장된 맵의 교체 65개와 `APGLootDrop` CDO 연결을 새 에디터 프로세스에서 검증했다.
+
 ## 2026-10-03 몬스터 스킬 다양화
 
 - 아레나 6종에 찌르기·삼연 사격·고리 공격·근접 내려찍기 7개를 추가해 총 15개 공격을 구성했다. `PGSkillDataRow`의 최소 거리·선택 가중치·압박 비용과 기존 페이즈·쿨다운을 사용한다. 기존 BT도 공통 공격·소환 Ability에 정확한 SkillID를 전달한다.
@@ -649,3 +702,9 @@ LRU 캐시 관리
 - 황혼의 기사(15106)에 횡베기·돌진 강타·황혼 파동과 HP 50% 기준 2페이즈를 연결했다. `PGEnemyDataRow`는 전환 시간·2페이즈 공격 순서·전환/격파 표현을, `PGSkillDataRow`는 공통 범위·타이밍을 소유한다.
 - 보스 상태는 `PGShared`의 스냅샷과 `PGMessage`를 통해 메인 HUD에 전달한다. 공격 중 전환·사망 시 기존 판정을 취소하고, 승리 기록은 즉시 저장한 뒤 격파 표시 시간이 끝나면 결과 창을 연다.
 - 보스 전용 이관은 `ConfigureContentMilestone.py -PGContentStep=2`, 렌더링 검사는 `RunBossPresentation.py`다. 일반 적/웨이브의 기존 튜닝을 보존한다. 구현·검증 근거와 미완료 직접 플레이 기준은 [콘텐츠 계획의 2단계 기록](Docs/todo/17_content_implementation_plan.md#2026-10-01-2단계-보스전-구현-진행)을 따른다. 3단계 신규 강화는 아직 미구현이다.
+
+## 2026-10-04 핵 앤 슬래시 스킬 P0
+
+- 기본 100/101/102와 111/112에 `UPGPlayerSkillProfile`을 연결했다. PGData가 타격·이동·취소·포즈 매핑을, PGActor의 `UPGPlayerAttackComponent`가 논리 시계·공간 판정·표현을 소유한다. PGAbilitySystem은 시전 Commit과 기존 GAS 피해 경로, 명시적 강화 발동 정책을 처리한다.
+- 프로필 경로는 Notify 피해와 중복 실행하지 않는다. 시전별 공격력 스냅샷과 중복 방지, 충격파·격분·쿨다운 반환 제한, 벽/적 캡슐 이동 제한, 히트스톱과 입력 버퍼/콤보 취소를 적용했다. 프로필이 없는 스킬과 기존 회피는 이전 경로를 유지한다.
+- `ConfigureHackSlashP0.py`가 다섯 행과 전용 에셋을 백업 후 이관한다. `RunHackSlashP0.py --render`의 빌드·에셋·PG 테스트 39개·실제 공간 판정·오프스크린 렌더와 기존 공격 회귀 검사는 통과했다. 직접 플레이 비교·모션 및 연출 검수·패키지 성능은 미완료이며 P0 수용 완료로 보지 않는다. [구현 보고서](Docs/todo/HackSlashP0_Implementation_Report.md)에 백업·재현 방법·검증 한계를 기록했다.
