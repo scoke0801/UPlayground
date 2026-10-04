@@ -28,6 +28,12 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 	
 protected:
+	virtual UAbilityTask_PlayMontageAndWait* PlayMontageWait(UAnimMontage* MontageToPlay) override;
+	float AttackPlayRate = 1.f;
+	float MeleeDamageMultiplier = 1.f;
+	bool bHeavyImpact = false;
+    bool bUsingPlayerProfile = false;
+    TSharedPtr<struct FPGSkillObservation> Observation;
 	UFUNCTION()
 	void OnGameplayEventReceived(FGameplayEventData Payload);
 };

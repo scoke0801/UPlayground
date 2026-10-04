@@ -242,7 +242,7 @@ void UPGCheatManager::PGBuildScenario(FString Family, bool bCore)
     ASC->CancelAbilities();
     ASC->SetCombatPerks({}); Profile->RestorePlayer(Player);
     for (const auto& Pair : Player->GetSkillHandler()->GetAllSkillData())
-        Player->GetSkillHandler()->GetSkillData(Pair.Key)->LastSkillUsedTime=0.;
+        Player->GetSkillHandler()->GetSkillData(Pair.Key)->LastSkillUsedTime=-1.e30;
     ASC->SetNumericAttributeBase(UPGAtrributeSet::GetAttackPowerAttribute(),100.f);
     ASC->SetNumericAttributeBase(UPGAtrributeSet::GetCriticalRateAttribute(),0.f);
     // Weapon modifiers remain separate from the profile. Normalize evaluated stats for comparison.
@@ -287,7 +287,7 @@ void UPGCheatManager::PGBuildProbe(FString Action)
     if(Action==TEXT("hit")) { Source->BeginCombatSkill(EPGSkillSlot::NormalAttack); for(auto* Target:Targets) Target->ReceiveCombatHit(Source,Type); }
     if(Action==TEXT("heavy"))
     {
-        if(auto* Skill=Player->GetSkillHandler()->GetSkillData(EPGSkillSlot::SkillSlot_1)) { Skill->CoolTime=10; Skill->LastSkillUsedTime=FPlatformTime::Seconds(); }
+        if(auto* Skill=Player->GetSkillHandler()->GetSkillData(EPGSkillSlot::SkillSlot_1)) { Skill->CoolTime=10; Skill->LastSkillUsedTime=Skill->GetTime(); }
         Source->BeginCombatSkill(EPGSkillSlot::SkillSlot_1);
         for(auto* Target:Targets) Target->ReceiveCombatHit(Source,Type);
         Source->SetHeavySkill(false);

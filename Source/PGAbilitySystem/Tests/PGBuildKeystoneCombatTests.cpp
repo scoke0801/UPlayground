@@ -26,7 +26,7 @@ bool FPGBuildKeystoneCombatTest::RunTest(const FString& Parameters)
     if (!TestNotNull(TEXT("Possession creates real skill handler"),Handler)) { World->DestroyWorld(false); return false; }
     Handler->AddSkill(EPGSkillSlot::SkillSlot_1,0);
     auto* Skill = Handler->GetSkillData(EPGSkillSlot::SkillSlot_1);
-    Skill->CoolTime=10.f; Skill->LastSkillUsedTime=FPlatformTime::Seconds();
+    Skill->CoolTime=10.f; Skill->LastSkillUsedTime=Skill->GetTime();
     TArray<UPGAbilitySystemComponent*> Targets;
     for (int32 I=0;I<3;++I)
     {

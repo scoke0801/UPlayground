@@ -13,6 +13,8 @@
 #include "Combat/PGCombatMath.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
+#include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
 #include "PGActor/Progression/PGRunTelemetrySubsystem.h"
 #include "PGShared/Shared/Tag/PGGamePlayEventTags.h"
@@ -48,13 +50,17 @@ void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInpu
     if (!InInputTag.IsValid() || HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead)) return;
     if (const APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetAvatarActor()))
         if (!Player->IsGameplayInputAllowed()) { ClearBufferedInput(); return; }
+    if (BufferedInput == PGGamePlayTags::InputTag_Roll && InInputTag != PGGamePlayTags::InputTag_Roll &&
+        GetWorld() && GetWorld()->GetTimeSeconds() < BufferExpiresAt) return;
     ClearBufferedInput(false);
     if (InInputTag == PGGamePlayTags::InputTag_Skill_Normal) bNormalAttackHeld = true;
-    if (TryInput(InInputTag)) return;
+    const double InputAt = GetWorld() ? GetWorld()->GetTimeSeconds() : -1.;
+    if (TryInput(InInputTag, InputAt)) return;
     // Toggle actions must never turn on later after an unrelated state change.
     if (InputBufferSeconds <= 0.f || InInputTag.MatchesTag(PGGamePlayTags::InputTag_Toggleable)) return;
     BufferedInput = InInputTag;
-    BufferExpiresAt = FPlatformTime::Seconds() + InputBufferSeconds;
+    BufferedInputAt = InputAt;
+    BufferExpiresAt = GetWorld()->GetTimeSeconds() + InputBufferSeconds;
     GetWorld()->GetTimerManager().SetTimer(InputBufferTimer, this, &ThisClass::RetryBufferedInput, 0.01f, true);
 }
 
@@ -210,7 +216,8 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     const UPGCombatTuningData* Tuning = CombatTuning ? CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
     const bool bCritical = FMath::FRand() * 10000.f < FMath::Clamp(Source->GetCombatStat(EPGStatType::CriticalRate), 0.f, 10000.f);
     OutType = bCritical ? EPGDamageType::Critical : EPGDamageType::Normal;
-    float Damage = PGCombatMath::Damage(Source->GetCombatStat(EPGStatType::Attack), GetEffectiveDefense(),
+    const float Attack = Source->ScopedCast ? Source->ScopedCast->Attack : Source->GetCombatStat(EPGStatType::Attack);
+    float Damage = PGCombatMath::Damage(Attack * Source->MeleeDamageMultiplier, GetEffectiveDefense(),
         bCritical, Source->GetCombatStat(EPGStatType::CriticalDamage), Tuning->DefenseConstant, Tuning->BaseCriticalMultiplier, Tuning->MinimumDamage);
     const float Before = GetHealth();
     if (const auto* Guard = Cast<APGCharacterEnemy>(GetAvatarActor())) Damage *= Guard->GetDirectionalDamageScale(Source->GetAvatarActor());
@@ -229,8 +236,13 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     Effect->Modifiers.Add(Modifier);
     auto* Telemetry = UPGRunTelemetrySubsystem::Get(this);
     const int32 TelemetrySample = Telemetry ? Telemetry->GetSampleIndex() : INDEX_NONE;
+    const auto Observation = Source->ScopedObservation;
+    const int32 ObservedPhase = Source->ScopedHitPhase;
+    const FVector HitOrigin = Source->GetAvatarActor() ? Source->GetAvatarActor()->GetActorLocation() : FVector::ZeroVector;
+    const FVector HitForward = Source->GetAvatarActor() ? Source->GetAvatarActor()->GetActorForwardVector() : FVector::ForwardVector;
     ApplyGameplayEffectToSelf(Effect, 1.f, Source->MakeEffectContext());
     const float Applied = FMath::Max(0.f, Before - GetHealth());
+    Source->RecordObservedHit(Observation, GetAvatarActor(), ObservedPhase, Applied, HitOrigin, HitForward);
     const bool bPlayerSource = Cast<APGCharacterPlayer>(Source->GetAvatarActor()) != nullptr;
     const bool bPlayerTarget = Cast<APGCharacterPlayer>(GetAvatarActor()) != nullptr;
     if (Telemetry && ((bPlayerSource && Cast<APGCharacterEnemy>(GetAvatarActor())) ||
@@ -240,43 +252,47 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     if (Source != this) Source->RestoreHealth(Applied * Source->GetPerkPercent(EPGCombatPerk::LifeSteal) * .01f);
     if (Applied > 0 && Source != this && Cast<APGCharacterPlayer>(Source->GetAvatarActor()) && Cast<APGCharacterEnemy>(GetAvatarActor()))
     {
-        const double Now = GetWorld()->GetTimeSeconds();
-        Source->LastBuildTarget = this;
-        if (Source->GetPerkPercent(EPGCombatPerk::Frenzy) > 0)
+        if (Source->ScopedCast) ProcessProfileProcs(Source, Damage, Applied);
+        else
         {
-            if (Now > Source->FrenzyUntil) Source->FrenzyStacks = 0;
-            Source->FrenzyStacks = FMath::Min(SourceTuning->FrenzyMaxStacks, Source->FrenzyStacks + 1);
-            Source->FrenzyUntil = Now + SourceTuning->FrenzySeconds * (1.f + Source->GetPerkPercent(EPGCombatPerk::FrenzyDuration) * .01f);
-            Source->RestoreHealth(Applied * Source->GetPerkPercent(EPGCombatPerk::FrenzyLeech) * .01f);
-            if (Now >= Source->NextFrenzyVFXAt) { Source->NextFrenzyVFXAt = Now + 1.; Source->PlayBuildVFX(SourceTuning->FrenzyVFX, Source->GetAvatarActor()->GetActorLocation()); }
-        }
-        const bool bWasBleeding = BleedRemaining > 0 && BleedSource == Source && BleedSourceGeneration == Source->BleedGeneration;
-        const float SpreadDamage = BleedDamage;
-        if (GetHealth() > 0 && Source->bHeavySkill && bWasBleeding && Source->GetPerkPercent(EPGCombatPerk::BleedBurst) > 0)
-        {
-            const float Burst = BleedDamage * BleedRemaining * Source->GetPerkPercent(EPGCombatPerk::BleedBurst) * .01f;
-            BleedRemaining = 0; BleedStacks = 0;
-            GetWorld()->GetTimerManager().ClearTimer(BleedTimer);
-            ReceiveProcDamage(Source, Burst, EPGDamageCause::BleedBurst);
-        }
-        if (GetHealth() > 0 && Source->GetPerkPercent(EPGCombatPerk::Bleed) > 0)
-            AddBleed(Source, Damage * Source->GetPerkPercent(EPGCombatPerk::Bleed) * .01f);
-        if (GetHealth() <= 0 && bWasBleeding && Source->GetPerkPercent(EPGCombatPerk::BleedSpread) > 0)
-            Source->Pulse(GetAvatarActor()->GetActorLocation(), SpreadDamage * Source->GetPerkPercent(EPGCombatPerk::BleedSpread) * .01f, SourceTuning->ProcRadius, true);
-        if (Source->bHeavySkill && Source->GetPerkPercent(EPGCombatPerk::Shockwave) > 0 && Now >= Source->NextShockAt)
-        {
-            Source->NextShockAt = Now + FMath::Max(.1f, SourceTuning->ShockCooldown);
-            Source->ShockProcUntil = Now + SourceTuning->BuildProcDisplaySeconds;
-            const FVector Center = GetAvatarActor()->GetActorLocation();
-            const float Radius = SourceTuning->ProcRadius * (1.f + Source->GetPerkPercent(EPGCombatPerk::ShockRadius) * .01f);
-            const float Power = Damage * Source->GetPerkPercent(EPGCombatPerk::Shockwave) * .01f;
-            Source->Pulse(Center, Power, Radius, false);
-            if (Source->GetPerkPercent(EPGCombatPerk::ShockEcho) > 0)
+            const double Now = GetWorld()->GetTimeSeconds();
+            Source->LastBuildTarget = this;
+            if (Source->GetPerkPercent(EPGCombatPerk::Frenzy) > 0)
             {
-                const float EchoPower = Power * Source->GetPerkPercent(EPGCombatPerk::ShockEcho) * .01f;
-                GetWorld()->GetTimerManager().SetTimer(Source->ShockEchoTimer, FTimerDelegate::CreateWeakLambda(Source, [Source, Center, EchoPower, Radius]()
-                { if (Source->GetHealth() > 0 && Source->GetPerkPercent(EPGCombatPerk::Shockwave) > 0 && Source->GetPerkPercent(EPGCombatPerk::ShockEcho) > 0)
-                    Source->Pulse(Center, EchoPower, Radius, false, EPGDamageCause::ShockEcho); }), .3f, false);
+                if (Now > Source->FrenzyUntil) Source->FrenzyStacks = 0;
+                Source->FrenzyStacks = FMath::Min(SourceTuning->FrenzyMaxStacks, Source->FrenzyStacks + 1);
+                Source->FrenzyUntil = Now + SourceTuning->FrenzySeconds * (1.f + Source->GetPerkPercent(EPGCombatPerk::FrenzyDuration) * .01f);
+                Source->RestoreHealth(Applied * Source->GetPerkPercent(EPGCombatPerk::FrenzyLeech) * .01f);
+                if (Now >= Source->NextFrenzyVFXAt) { Source->NextFrenzyVFXAt = Now + 1.; Source->PlayBuildVFX(SourceTuning->FrenzyVFX, Source->GetAvatarActor()->GetActorLocation()); }
+            }
+            const bool bWasBleeding = BleedRemaining > 0 && BleedSource == Source && BleedSourceGeneration == Source->BleedGeneration;
+            const float SpreadDamage = BleedDamage;
+            if (GetHealth() > 0 && Source->bHeavySkill && bWasBleeding && Source->GetPerkPercent(EPGCombatPerk::BleedBurst) > 0)
+            {
+                const float Burst = BleedDamage * BleedRemaining * Source->GetPerkPercent(EPGCombatPerk::BleedBurst) * .01f;
+                BleedRemaining = 0; BleedStacks = 0;
+                GetWorld()->GetTimerManager().ClearTimer(BleedTimer);
+                ReceiveProcDamage(Source, Burst, EPGDamageCause::BleedBurst);
+            }
+            if (GetHealth() > 0 && Source->GetPerkPercent(EPGCombatPerk::Bleed) > 0)
+                AddBleed(Source, Damage * Source->GetPerkPercent(EPGCombatPerk::Bleed) * .01f);
+            if (GetHealth() <= 0 && bWasBleeding && Source->GetPerkPercent(EPGCombatPerk::BleedSpread) > 0)
+                Source->Pulse(GetAvatarActor()->GetActorLocation(), SpreadDamage * Source->GetPerkPercent(EPGCombatPerk::BleedSpread) * .01f, SourceTuning->ProcRadius, true);
+            if (Source->bHeavySkill && Source->GetPerkPercent(EPGCombatPerk::Shockwave) > 0 && Now >= Source->NextShockAt)
+            {
+                Source->NextShockAt = Now + FMath::Max(.1f, SourceTuning->ShockCooldown);
+                Source->ShockProcUntil = Now + SourceTuning->BuildProcDisplaySeconds;
+                const FVector Center = GetAvatarActor()->GetActorLocation();
+                const float Radius = SourceTuning->ProcRadius * (1.f + Source->GetPerkPercent(EPGCombatPerk::ShockRadius) * .01f);
+                const float Power = Damage * Source->GetPerkPercent(EPGCombatPerk::Shockwave) * .01f;
+                Source->Pulse(Center, Power, Radius, false);
+                if (Source->GetPerkPercent(EPGCombatPerk::ShockEcho) > 0)
+                {
+                    const float EchoPower = Power * Source->GetPerkPercent(EPGCombatPerk::ShockEcho) * .01f;
+                    GetWorld()->GetTimerManager().SetTimer(Source->ShockEchoTimer, FTimerDelegate::CreateWeakLambda(Source, [Source, Center, EchoPower, Radius]()
+                    { if (Source->GetHealth() > 0 && Source->GetPerkPercent(EPGCombatPerk::Shockwave) > 0 && Source->GetPerkPercent(EPGCombatPerk::ShockEcho) > 0)
+                        Source->Pulse(Center, EchoPower, Radius, false, EPGDamageCause::ShockEcho); }), .3f, false);
+                }
             }
         }
     }
@@ -369,8 +385,51 @@ int32 UPGAbilitySystemComponent::HandleGameplayEvent(FGameplayTag EventTag, cons
     }
     return Super::HandleGameplayEvent(EventTag, Payload);
 }
-bool UPGAbilitySystemComponent::TryInput(const FGameplayTag& Tag)
+void UPGAbilitySystemComponent::ApplyPlayerMeleeHit(APGCharacterBase* Target, float DamageMultiplier, bool bHeavyImpact)
 {
+    auto* Player = Cast<APGCharacterPlayer>(GetAvatarActor());
+    if (!IsValid(Player) || !IsValid(Target) || Player == Target || GetHealth() <= 0.f ||
+        !FMath::IsFinite(DamageMultiplier) || DamageMultiplier <= 0.f) return;
+    auto* TargetASC = Target->GetPGAbilitySystemComponent();
+    if (!TargetASC) return;
+    TGuardValue<TSharedPtr<FPGSkillObservation>> ObservationScope(ScopedObservation, ActiveObservation);
+    TGuardValue<float> DamageScope(MeleeDamageMultiplier, FMath::Clamp(DamageMultiplier, .1f, 5.f));
+    TGuardValue<bool> FeedbackScope(Player->bPerformingHeavyAttack, bHeavyImpact);
+    FGameplayEventData Event;
+    Event.Instigator = Player;
+    Event.Target = Target;
+    TargetASC->HandleGameplayEvent(PGGamePlayTags::Shared_Event_HitReact, &Event);
+}
+void UPGAbilitySystemComponent::ApplyPlayerProfileHit(APGCharacterBase* Target, const TSharedPtr<FPGSkillCastContext>& Context,
+    int32 PhaseId, float Multiplier, bool bHeavy, const FPGHitProcPolicy& Policy, float HitStopSeconds)
+{
+    auto* Player = Cast<APGCharacterPlayer>(GetAvatarActor());
+    if (!Context || Context->Caster != Player || !IsValid(Player) || !IsValid(Target) ||
+        !Cast<APGCharacterEnemy>(Target) || GetHealth() <= 0.f || !Target->GetPGAbilitySystemComponent() ||
+        Target->GetPGAbilitySystemComponent()->GetHealth() <= 0.f || PhaseId < 0 ||
+        !FMath::IsFinite(Context->Attack) || Context->Attack < 0.f ||
+        !FMath::IsFinite(Multiplier) || Multiplier <= 0.f || Context->HitTargets.FindOrAdd(PhaseId).Contains(Target)) return;
+    Context->HitTargets.FindOrAdd(PhaseId).Add(Target); // Claim before reentrant GAS/death callbacks.
+    TGuardValue<TSharedPtr<FPGSkillCastContext>> CastScope(ScopedCast, Context);
+    TGuardValue<TSharedPtr<FPGSkillObservation>> ObservationScope(ScopedObservation,
+        ActiveObservation && ActiveObservation->CastId == Context->CastId ? ActiveObservation : nullptr);
+    TGuardValue<int32> PhaseScope(ScopedHitPhase, PhaseId);
+    TGuardValue<FPGHitProcPolicy> PolicyScope(ScopedProcPolicy, Policy);
+    TGuardValue<float> DamageScope(MeleeDamageMultiplier, Multiplier);
+    TGuardValue<bool> HeavyScope(Player->bPerformingHeavyAttack, bHeavy);
+    TGuardValue<bool> FeedbackScope(Player->bProfileHitFeedback, true);
+    const float Before = Target->GetPGAbilitySystemComponent()->GetHealth();
+    FGameplayEventData Event; Event.Instigator = Player; Event.Target = Target;
+    Target->GetPGAbilitySystemComponent()->HandleGameplayEvent(PGGamePlayTags::Shared_Event_HitReact, &Event);
+    if (Target->GetPGAbilitySystemComponent()->GetHealth() < Before && !Context->FeedbackPhases.Contains(PhaseId))
+    {
+        Context->FeedbackPhases.Add(PhaseId);
+        if (GetHealth() > 0.f) Player->ApplyProfileHitStop(HitStopSeconds * Player->GetFeedbackIntensity());
+    }
+}
+bool UPGAbilitySystemComponent::TryInput(const FGameplayTag& Tag, double InputAt)
+{
+    TGuardValue<double> InputScope(ObservedInputAt, InputAt);
     TArray<FGameplayAbilitySpecHandle> Handles;
     for (const auto& Spec : GetActivatableAbilities())
         if (Spec.GetDynamicSpecSourceTags().HasTagExact(Tag)) Handles.Add(Spec.Handle);
@@ -403,9 +462,16 @@ void UPGAbilitySystemComponent::OnAbilityInputHeld(const FGameplayTag& InInputTa
 }
 void UPGAbilitySystemComponent::ClearBufferedInput(bool bClearHeldInput)
 {
+    if (bClearHeldInput)
+        if (auto* Player = Cast<APGCharacterPlayer>(GetAvatarActor()))
+        {
+            if (auto* Handler = Player->GetSkillHandler()) Handler->ResetCombo();
+            if (!Player->IsGameplayInputAllowed()) Player->GetPlayerAttackComponent()->Stop(true);
+        }
     if (bClearHeldInput) bNormalAttackHeld = false;
     BufferedInput = FGameplayTag();
     BufferExpiresAt = 0.;
+    BufferedInputAt = -1.;
     if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(InputBufferTimer);
 }
 void UPGAbilitySystemComponent::RetryBufferedInput()
@@ -416,7 +482,7 @@ void UPGAbilitySystemComponent::RetryBufferedInput()
         ClearBufferedInput();
         return;
     }
-    if (!BufferedInput.IsValid() || FPlatformTime::Seconds() > BufferExpiresAt || TryInput(BufferedInput)) ClearBufferedInput(false);
+    if (!BufferedInput.IsValid() || GetWorld()->GetTimeSeconds() > BufferExpiresAt || TryInput(BufferedInput, BufferedInputAt)) ClearBufferedInput(false);
 }
 void UPGAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
 {

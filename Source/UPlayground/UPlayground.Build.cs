@@ -42,7 +42,7 @@ public class UPlayground : ModuleRules
             
             "PGData",
             "PGAbilitySystem",
-            "PGActor",
+            "PGActor", "PGMessage",
             "PGShared", "PGAI", "PGUI"
 		});
 

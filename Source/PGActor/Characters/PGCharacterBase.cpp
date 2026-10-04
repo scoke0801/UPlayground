@@ -182,7 +182,7 @@ void APGCharacterBase::PlayCombatFeedback(AActor* Source, EPGDamageType Type)
     const float Scale = FMath::Clamp(FeedbackIntensity, 0.f, 1.f) * FMath::Clamp(Impact.Intensity, 0.f, 3.f);
     const float Stop = FMath::Clamp(Impact.HitStop * Scale, 0.f, FMath::Clamp(Data->MaximumHitStop, 0.f, .15f));
     ApplyHitStop(Stop);
-    if (Attacker) Attacker->ApplyHitStop(Stop * FMath::Clamp(Attacker->FeedbackIntensity, 0.f, 1.f));
+    if (Attacker && !Attacker->bProfileHitFeedback) Attacker->ApplyHitStop(Stop * FMath::Clamp(Attacker->FeedbackIntensity, 0.f, 1.f));
     auto* VFX = Impact.VFX ? Impact.VFX.Get() : Data->ImpactVFX.Get();
     auto* Sound = Impact.Sound ? Impact.Sound.Get() : Data->ImpactSound.Get();
     if (VFX) UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, GetActorLocation(), FRotator::ZeroRotator, FVector(FMath::Max(.1f, Scale)));

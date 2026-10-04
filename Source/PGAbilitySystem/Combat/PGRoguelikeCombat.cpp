@@ -41,14 +41,18 @@ float UPGAbilitySystemComponent::ReceiveProcDamage(UPGAbilitySystemComponent* So
         const auto* Tuning = Source->CombatTuning ? Source->CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
         Source->LastBuildTarget = this;
         if (GetHealth() > 0 && (Cause == EPGDamageCause::Shockwave || Cause == EPGDamageCause::ShockEcho)) RegisterShockHit(Source);
-        if (GetHealth() <= 0 && Cause == EPGDamageCause::BleedBurst && Source->bHeavySkill && !Source->bRefundUsed &&
+        const auto Context = Source->ScopedCast;
+        const bool bCanRefund = Context ? Context->bRefundEligible && !Context->bRefundUsed : Source->bHeavySkill && !Source->bRefundUsed;
+        if (GetHealth() <= 0 && Cause == EPGDamageCause::BleedBurst && bCanRefund &&
             Source->GetPerkPercent(EPGCombatPerk::BleedRecast) > 0)
         {
             // Claim before callbacks/another target in the same montage can also die.
             Source->bRefundUsed = true;
+            if (Context) Context->bRefundUsed = true;
             auto* Player = Cast<APGCharacterPlayer>(Source->GetAvatarActor());
             if (auto* Handler = Player->GetSkillHandler())
-                if (Handler->RefundRemainingCooldown(Source->ActiveCombatSlot, Tuning->BleedRefundFraction) > 0)
+                if ((Context ? Handler->RefundRemainingCooldownByID(Context->SkillID, Tuning->BleedRefundFraction) :
+                    Handler->RefundRemainingCooldown(Source->ActiveCombatSlot, Tuning->BleedRefundFraction)) > 0)
                     Source->RefundProcUntil = GetWorld()->GetTimeSeconds() + Tuning->BuildProcDisplaySeconds;
         }
         if (GetHealth() <= 0 && bWasBleeding && Cause != EPGDamageCause::External && Source->GetPerkPercent(EPGCombatPerk::BleedSpread) > 0)

@@ -2,6 +2,8 @@
 
 
 #include "PGPawnCombatComponent.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGPlayerAttackComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 
@@ -78,6 +80,8 @@ void UPGPawnCombatComponent::SetCurrentEquippedWeaponTag(FGameplayTag WeaponTag)
 
 void UPGPawnCombatComponent::ToggleWeaponCollision(bool bShouldEnable, EPGToggleDamageType ToggleDamageType)
 {
+    if (const auto* Player = Cast<APGCharacterPlayer>(GetOwner()))
+        if (Player->GetPlayerAttackComponent()->IsRunning()) bShouldEnable = false;
 	if (EPGToggleDamageType::CurrentEquippedWeapon == ToggleDamageType)
 	{
 		ToggleWeaponCollisionBoxCollision(bShouldEnable);
@@ -100,7 +104,12 @@ void UPGPawnCombatComponent::ToggleWeaponCollisionBoxCollision(bool bShouldEnabl
 {
 	APGWeaponBase* WeaponToToggle = GetCharacterCurrentEquippedWeapon();
 
-	check(WeaponToToggle);
+	// NotifyEnd may arrive after EndPlay/unequip has already destroyed the weapon.
+    if (!IsValid(WeaponToToggle) || !IsValid(WeaponToToggle->GetWeaponCollisionBox()))
+    {
+        OverlappedActors.Empty();
+        return;
+    }
 
 	if (bShouldEnable)
 	{

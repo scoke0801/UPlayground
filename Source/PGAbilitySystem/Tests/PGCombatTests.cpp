@@ -88,7 +88,7 @@ bool FPGInputBufferTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Successful input consumed"), ASC->BufferedInput.IsValid());
     ASC->CancelAbilityHandle(Handle);
     ASC->BufferedInput = PGGamePlayTags::InputTag_Skill_Normal;
-    ASC->BufferExpiresAt = FPlatformTime::Seconds() - 1.;
+    ASC->BufferExpiresAt = World->GetTimeSeconds() - 1.;
     ASC->RetryBufferedInput();
     TestFalse(TEXT("Expired input is discarded"), ASC->BufferedInput.IsValid());
     TestFalse(TEXT("Expired input does not activate"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());

@@ -35,6 +35,16 @@ public:
     UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Combo", meta=(ClampMin="0", ClampMax="2"))
     float ComboResetSeconds = .4f;
 
+    // Multipliers on the existing montage and confirmed melee hit; ranged notifies retain their own damage.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Attack", meta=(ClampMin="0.5", ClampMax="2"))
+    float PlayerAttackPlayRate = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Attack")
+    TSoftObjectPtr<class UPGPlayerSkillProfile> PlayerProfile;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Attack", meta=(ClampMin="0.1", ClampMax="5"))
+    float PlayerMeleeDamageMultiplier = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Attack")
+    bool bPlayerHeavyImpact = false;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int32 SkillCoolTime = {};
 

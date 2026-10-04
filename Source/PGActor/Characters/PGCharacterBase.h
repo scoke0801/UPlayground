@@ -97,6 +97,8 @@ public:
 public:
 	int32 GetCharacterTID() const {return CharacterTID;}
     bool bPerformingHeavyAttack = false;
+    // A profile phase applies source hit-stop once, even when its window acquires later targets.
+    bool bProfileHitFeedback = false;
     // Feedback selection is separate from the gameplay guard against notify hits.
     bool bUseHeavyImpactFeedback = true;
     const class UPGCombatFeedbackData* GetCombatFeedbackData() const;

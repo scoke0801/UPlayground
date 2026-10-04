@@ -377,7 +377,7 @@ bool UPGProfileSubsystem::RestorePlayer(APGCharacterPlayer* Player)
         auto* Skill = Handler->GetSkillData(Entry.Slot);
         if (!Skill || Skill->SkillId != Entry.SkillId)
         {
-            const double LastUse = Skill ? Skill->LastSkillUsedTime : 0.;
+            const double LastUse = Skill ? Skill->LastSkillUsedTime : -1.e30;
             Handler->RemoveSkill(Entry.Slot); Handler->AddSkill(Entry.Slot, Entry.SkillId);
             if (auto* Replacement = Handler->GetSkillData(Entry.Slot)) Replacement->LastSkillUsedTime = LastUse;
         }

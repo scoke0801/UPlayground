@@ -2,6 +2,8 @@
 
 
 #include "PGPlayerSkillHandler.h"
+#include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Engine/World.h"
@@ -39,21 +41,29 @@ void FPGPlayerSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
     UPGDataTableManager* Manager = UPGDataTableManager::Get(Context.Get());
     if (!Manager) return;
     const PGSkillId SkillId = GetSkillID(InSlotId);
-    if (const auto* BaseSkill = Manager->GetRowData<FPGSkillDataRow>(Super::GetSkillID(InSlotId)))
+    if (InSlotId == EPGSkillSlot::SkillSlot_Roll && bProfileCombo)
+    {
+        // Preserve the original deadline. Dodge cannot extend the combo.
+    }
+    else if (const auto* BaseSkill = Manager->GetRowData<FPGSkillDataRow>(Super::GetSkillID(InSlotId)))
     {
         float MontageSeconds = 0.f;
         const auto* Character = Cast<APGCharacterBase>(Context.Get());
         const auto* Anim = Character && Character->GetMesh() ? Character->GetMesh()->GetAnimInstance() : nullptr;
         if (const auto* Montage = Anim ? Anim->GetCurrentActiveMontage() : nullptr)
             MontageSeconds = FMath::Max(0.f, Montage->GetPlayLength() - Anim->Montage_GetPosition(Montage)) /
-                FMath::Max(.01f, FMath::Abs(Anim->Montage_GetPlayRate(Montage)));
+                FMath::Max(.01f, FMath::Abs(Anim->Montage_GetPlayRate(Montage) * Montage->RateScale));
+        const auto* Player = Cast<APGCharacterPlayer>(Character);
+        if (Player && Player->GetPlayerAttackComponent()->IsRunning())
+            MontageSeconds = Player->GetPlayerAttackComponent()->GetExpectedSeconds();
         AdvanceCombo(InSlotId, *BaseSkill, GetComboTime(), MontageSeconds);
+        bProfileCombo = InSlotId == EPGSkillSlot::NormalAttack && !BaseSkill->PlayerProfile.IsNull();
     }
     else ComboCount = 0;
 
 	if (FPGSkillData* Data = SkillDataMap.Find(InSlotId))
 	{
-		Data->LastSkillUsedTime = FPlatformTime::Seconds();
+        Data->LastSkillUsedTime = FMath::Max(UE_DOUBLE_SMALL_NUMBER, Data->GetTime());
 	}
 	
 	FPGEventDataTwoParam<PGSkillId, EPGSkillSlot> ToSendData(SkillId, InSlotId);

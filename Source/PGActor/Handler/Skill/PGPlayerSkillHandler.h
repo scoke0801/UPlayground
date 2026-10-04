@@ -19,6 +19,7 @@ private:
 	EPGSkillSlot LastUsedSlot = EPGSkillSlot::NormalAttack;
     PGSkillId ComboBaseSkill = INVALID_SKILL_ID;
     double ComboExpiresAt = 0.;
+    bool bProfileCombo = false;
     double GetComboTime() const;
     int32 GetComboIndex(EPGSkillSlot Slot, const struct FPGSkillDataRow& BaseSkill, double Now) const;
     void AdvanceCombo(EPGSkillSlot Slot, const struct FPGSkillDataRow& BaseSkill, double Now, float MontageSeconds);
@@ -28,6 +29,7 @@ public:
 
 public:
 	virtual void UseSkill(const EPGSkillSlot InSlotId) override;
+    virtual void ResetCombo() override { ComboCount = 0; ComboExpiresAt = 0.; bProfileCombo = false; }
 	virtual PGSkillId GetSkillID(const EPGSkillSlot InSlotId) override;
 
 };

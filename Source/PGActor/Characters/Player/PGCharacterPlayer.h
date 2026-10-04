@@ -51,7 +51,12 @@ public:
     void SetAttackAimTracking(bool bEnabled) { bTrackAttackAim = bEnabled; }
     bool CanStartSkill(bool bDodge) const;
     void SetSkillCancelPolicy(float AttackFraction, float DodgeFraction);
+    class UPGPlayerAttackComponent* GetPlayerAttackComponent() const { return PlayerAttackComponent; }
+    void ResetAttackHitStop() { EndHitStop(); }
+    void ApplyProfileHitStop(float Seconds) { ApplyHitStop(Seconds); }
 private:
+    UPROPERTY(VisibleAnywhere, Category="PG|Combat")
+    TObjectPtr<class UPGPlayerAttackComponent> PlayerAttackComponent;
     friend class FPGDodgeDirectionTest;
     FVector MoveInputDirection = FVector::ZeroVector;
     bool bTrackAttackAim = false;

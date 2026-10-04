@@ -2,6 +2,7 @@
 
 
 #include "PGCharacterPlayer.h"
+#include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGData/DataAsset/Input/PGQuarterViewData.h"
 #include "PGActor/Controllers/PGPlayerController.h"
@@ -41,6 +42,7 @@
 
 APGCharacterPlayer::APGCharacterPlayer()
 {
+    PlayerAttackComponent = CreateDefaultSubobject<UPGPlayerAttackComponent>(TEXT("PlayerAttackComponent"));
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
 
 	bUseControllerRotationPitch = false;
@@ -89,6 +91,7 @@ void APGCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
     if (auto* Profile = UPGProfileSubsystem::Get(this)) Profile->RestorePlayer(this);
+    PlayerAttackComponent->PrepareLoadout();
     AbilitySystemComponent->RestoreHealth(AbilitySystemComponent->GetCombatStat(EPGStatType::Health));
     ConfigureQuarterView();
 
@@ -152,6 +155,7 @@ void APGCharacterPlayer::PossessedBy(AController* NewController)
     SkillHandler = FPGHandler::Create<FPGPlayerSkillHandler>();
     SkillHandler->SetContext(this);
     if (auto* Profile = UPGProfileSubsystem::Get(this)) Profile->RestorePlayer(this);
+    PlayerAttackComponent->PrepareLoadout();
     // Spawned players can BeginPlay before possession; equip after startup abilities are granted.
     if (!CombatComponent->GetCharacterCurrentEquippedWeapon())
     {
@@ -453,14 +457,11 @@ void APGCharacterPlayer::RefreshCursorAim()
             AimPoint = Hit.ImpactPoint;
         else
         {
-            // Retain aiming over gaps/outside the floor instead of freezing the last direction.
-            if (FMath::IsNearlyZero(Direction.Z)) return;
-            const double Distance = (GetActorLocation().Z - Origin.Z) / Direction.Z;
-            if (Distance < 0.0) return;
-            AimPoint = Origin + Direction * Distance;
+            // A gap is not a valid ground target. Retain the last finite ground direction.
+            return;
         }
         const FVector Aim = (AimPoint - GetActorLocation()).GetSafeNormal2D();
-        if (!Aim.IsNearlyZero()) LastAimDirection = Aim;
+        if (!Aim.ContainsNaN() && !Aim.IsNearlyZero()) LastAimDirection = Aim;
     }
 }
 void APGCharacterPlayer::FaceAimDirection()
@@ -482,6 +483,7 @@ FVector APGCharacterPlayer::GetDodgeDirection()
 bool APGCharacterPlayer::CanStartSkill(bool bDodge) const
 {
     if (!IsGameplayInputAllowed()) return false;
+    if (PlayerAttackComponent->IsRunning()) return PlayerAttackComponent->CanCancel(bDodge);
     const UAnimInstance* Anim = GetMesh()->GetAnimInstance();
     if (!Anim) return false;
     const UAnimMontage* Montage = Anim->GetCurrentActiveMontage();

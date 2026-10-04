@@ -12,6 +12,8 @@
 #include "PGShared/Shared/Enum/PGRewardTypes.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGShared/Shared/Message/Combat/PGBuildCombatState.h"
+#include "PGShared/Shared/Combat/PGSkillCastContext.h"
+#include "PGShared/Shared/Combat/PGSkillObservation.h"
 #include "PGAbilitySystemComponent.generated.h"
 
 /**
@@ -45,6 +47,10 @@ private:
     double NextShockAt = 0.;
     double NextFrenzyVFXAt = 0.;
     bool bHeavySkill = false;
+    // Scoped to a synchronous melee event, never retained by a later projectile or another ability.
+    float MeleeDamageMultiplier = 1.f;
+    TSharedPtr<FPGSkillCastContext> ScopedCast;
+    FPGHitProcPolicy ScopedProcPolicy;
     bool bRefundUsed = false;
     EPGSkillSlot ActiveCombatSlot = EPGSkillSlot::NormalAttack;
     TWeakObjectPtr<UPGAbilitySystemComponent> LastBuildTarget;
@@ -61,6 +67,7 @@ private:
     double AfterimageProcUntil = 0.;
     FTimerHandle ShockEchoTimer;
     void RegisterShockHit(UPGAbilitySystemComponent* Source);
+    void ProcessProfileProcs(UPGAbilitySystemComponent* Source, float Damage, float Applied);
     bool HasShockWeakness() const;
     float GetEffectiveDefense() const;
     void TickBleed();
@@ -72,8 +79,13 @@ private:
     FGameplayTag BufferedInput;
     bool bNormalAttackHeld = false;
     double BufferExpiresAt = 0.;
+    double BufferedInputAt = -1.;
+    double ObservedInputAt = -1.;
+    TSharedPtr<FPGSkillObservation> ActiveObservation;
+    TSharedPtr<FPGSkillObservation> ScopedObservation;
+    int32 ScopedHitPhase = INDEX_NONE;
     FTimerHandle InputBufferTimer;
-    bool TryInput(const FGameplayTag& Tag);
+    bool TryInput(const FGameplayTag& Tag, double InputAt = -1.);
     void RetryBufferedInput();
 
 protected:
@@ -81,6 +93,14 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 public:
+    TSharedPtr<FPGSkillObservation> BeginSkillObservation(int32 SkillID, const TSharedPtr<FPGSkillCastContext>& Context = nullptr);
+    void EndSkillObservation(const TSharedPtr<FPGSkillObservation>& Observation, bool bCancelled);
+    FString GetObservedCastId() const;
+    void RecordObservedHit(const TSharedPtr<FPGSkillObservation>& Observation, AActor* Target, int32 Phase,
+        float Damage, const FVector& Origin, const FVector& Forward);
+    void ApplyPlayerMeleeHit(class APGCharacterBase* Target, float DamageMultiplier, bool bHeavyImpact);
+    void ApplyPlayerProfileHit(class APGCharacterBase* Target, const TSharedPtr<FPGSkillCastContext>& Context,
+        int32 PhaseId, float Multiplier, bool bHeavy, const FPGHitProcPolicy& Policy, float HitStopSeconds);
     float ReceiveProcDamage(UPGAbilitySystemComponent* Source, float Damage, EPGDamageCause Cause = EPGDamageCause::External);
     float GetFrenzyRate() const;
     void SetHeavySkill(bool bHeavy) { bHeavySkill = bHeavy; }
@@ -92,7 +112,7 @@ public:
     UPROPERTY(EditDefaultsOnly, Category="PG|Combat")
     TObjectPtr<class UPGCombatTuningData> CombatTuning;
     UPROPERTY(EditDefaultsOnly, Category="PG|Input", meta=(ClampMin="0", ClampMax="0.5"))
-    float InputBufferSeconds = 0.12f;
+    float InputBufferSeconds = 0.18f;
     UPROPERTY(EditDefaultsOnly, Category="PG|Input")
     bool bRepeatNormalAttackWhileHeld = true;
     void InitializeCombatStats(const TMap<EPGStatType, int32>& Stats);

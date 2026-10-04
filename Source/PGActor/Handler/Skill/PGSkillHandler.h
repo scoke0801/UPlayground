@@ -18,10 +18,12 @@ struct PGACTOR_API FPGSkillData
 public:
 	PGSkillId SkillId = 0;				// 스킬 ID
 	
-	double LastSkillUsedTime = 0.0;	// Platform clock needs double precision for long-running sessions.
+    double LastSkillUsedTime = -1.e30; // Unused; world clock may start at zero.
 	float CoolTime = 0.0f;
 
 	EPGSkillType SkillType;
+    TWeakObjectPtr<UObject> ClockContext;
+    double GetTime() const;
 
 	int32 Priority = 1;		// 우선순위, 한 번 사용한 이후 다른 스킬이 먼저 사용되도록 하던가 하는 용도로 사용
 	
@@ -68,6 +70,8 @@ public:
 	// 스킬 ID로 남은 쿨타임 조회
 	float GetRemainingCooldownByID(int32 SkillID) const;
     float RefundRemainingCooldown(EPGSkillSlot Slot, float Fraction);
+    float RefundRemainingCooldownByID(int32 SkillID, float Fraction);
+    virtual void ResetCombo() {}
 
 	// 스킬 ID로 Priority 조회
 	int32 GetPriorityByID(int32 SkillID) const;

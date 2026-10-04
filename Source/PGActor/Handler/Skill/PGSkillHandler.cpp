@@ -2,6 +2,7 @@
 
 
 #include "PGSkillHandler.h"
+#include "Engine/World.h"
 
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
@@ -29,7 +30,20 @@ void FPGSkillData::Init(const PGSkillId InSkillId)
 
 bool FPGSkillData::IsOnCooldown() const
 {
-	return CoolTime + LastSkillUsedTime > FPlatformTime::Seconds();
+    return CoolTime + LastSkillUsedTime > GetTime();
+}
+
+double FPGSkillData::GetTime() const
+{
+    const auto* World = ClockContext.IsValid() ? ClockContext->GetWorld() : nullptr;
+    return World ? World->GetTimeSeconds() : FPlatformTime::Seconds();
+}
+
+float FPGSkillHandler::RefundRemainingCooldownByID(int32 SkillID, float Fraction)
+{
+    for (auto& Pair : SkillDataMap)
+        if (Pair.Value.SkillId == SkillID) return RefundRemainingCooldown(Pair.Key, Fraction);
+    return 0.f;
 }
 
 float FPGSkillHandler::RefundRemainingCooldown(EPGSkillSlot Slot, float Fraction)
@@ -43,7 +57,7 @@ float FPGSkillHandler::RefundRemainingCooldown(EPGSkillSlot Slot, float Fraction
 
 float FPGSkillData::GetRemainingCooldown() const
 {
-	const double CurrentTime = FPlatformTime::Seconds();
+	const double CurrentTime = GetTime();
 	const double EndTime = LastSkillUsedTime + CoolTime;
 	return FMath::Max(0.0f, static_cast<float>(EndTime - CurrentTime));
 }
@@ -70,6 +84,7 @@ void FPGSkillHandler::AddSkill(const EPGSkillSlot InSlotId, const PGSkillId InSk
 	}
 
 	SkillDataMap.Emplace(InSlotId, FPGSkillData(InSkillId));
+    SkillDataMap[InSlotId].ClockContext = Context;
 }
 
 void FPGSkillHandler::RemoveSkill(const EPGSkillSlot InSlotID)
@@ -109,7 +124,7 @@ bool FPGSkillHandler::IsCanUseSkill(const EPGSkillSlot InSlotId)
 {
 	if (FPGSkillData* Data = SkillDataMap.Find(InSlotId))
 	{
-		return Data->CoolTime + Data->LastSkillUsedTime < FPlatformTime::Seconds();
+        return !Data->IsOnCooldown();
 	}
 
 	return false;
@@ -168,6 +183,6 @@ void FPGSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 	if (FPGSkillData* Data = SkillDataMap.Find(InSlotId))
 	{
 		// 쿨타임 업데이트
-		Data->LastSkillUsedTime = FPlatformTime::Seconds();
+        Data->LastSkillUsedTime = FMath::Max(UE_DOUBLE_SMALL_NUMBER, Data->GetTime());
 	}
 }
