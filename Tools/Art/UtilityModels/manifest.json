@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "blender_file": "PG_UtilityModels.blend",
+  "unit": "metres",
+  "destination": "/Game/Art/UtilityModels",
+  "meshes": {
+    "SM_PG_DevBlock_Corner": {
+      "file": "SM_PG_DevBlock_Corner.fbx",
+      "bounds_m": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "triangles": 60,
+      "vertices": 32,
+      "material": "M_PG_DevBlock"
+    },
+    "SM_PG_DevBlock_Centered": {
+      "file": "SM_PG_DevBlock_Centered.fbx",
+      "bounds_m": [
+        [
+          -0.5,
+          -0.5,
+          -0.5
+        ],
+        [
+          0.5,
+          0.5,
+          0.5
+        ]
+      ],
+      "triangles": 60,
+      "vertices": 32,
+      "material": "M_PG_DevBlock"
+    },
+    "SM_PG_LootBeam": {
+      "file": "SM_PG_LootBeam.fbx",
+      "bounds_m": [
+        [
+          -0.5,
+          -0.5,
+          -0.5
+        ],
+        [
+          0.5,
+          0.5,
+          0.5
+        ]
+      ],
+      "triangles": 92,
+      "vertices": 48,
+      "material": "M_PG_LootBeam"
+    }
+  },
+  "replacements": {
+    "/Game/ExternalAssets/LevelDesign/LevelPrototyping/Meshes/SM_Cube.SM_Cube": "SM_PG_DevBlock_Corner",
+    "/Engine/BasicShapes/Cube.Cube": "SM_PG_DevBlock_Centered",
+    "/Engine/BasicShapes/Cylinder.Cylinder": "SM_PG_LootBeam"
+  },
+  "materials": {
+    "M_PG_DevBlock": {
+      "color": [
+        0.1,
+        0.15,
+        0.21
+      ],
+      "metallic": 0.32,
+      "roughness": 0.64,
+      "emission": 0.0
+    },
+    "M_PG_LootBeam": {
+      "color": [
+        0.35,
+        0.82,
+        0.72
+      ],
+      "metallic": 0.05,
+      "roughness": 0.28,
+      "emission": 1.8
+    }
+  }
+}

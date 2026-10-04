@@ -32,8 +32,12 @@ APGLootDrop::APGLootDrop()
     Beam->SetupAttachment(GetRootComponent()); Beam->SetAutoActivate(false);
     BeamMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LootBeam"));
     BeamMesh->SetupAttachment(GetRootComponent()); BeamMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); BeamMesh->SetCastShadow(false);
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> Mesh(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    BeamMesh->SetStaticMesh(Mesh.Object); BeamMesh->SetVisibility(false);
+    // Blender-authored, centred 100 cm mesh. Runtime scaling preserves the
+    // existing six-centimetre rarity beam width and data-driven height.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Mesh(
+        TEXT("/Game/Art/UtilityModels/SM_PG_LootBeam.SM_PG_LootBeam"));
+    if (Mesh.Succeeded()) BeamMesh->SetStaticMesh(Mesh.Object);
+    BeamMesh->SetVisibility(false);
 }
 void APGLootDrop::InitializeItem(const FPGItemInstance& InItem)
 {
