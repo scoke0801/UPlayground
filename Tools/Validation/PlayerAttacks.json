@@ -1,0 +1,17 @@
+{
+  "skills": [
+    {"SkillID":100,"Desc":"검술 · 빠른 횡베기","PlayerAttackPlayRate":1.1,"PlayerMeleeDamageMultiplier":0.9,"bPlayerHeavyImpact":false,"AttackCancelRemainingFraction":0.5,"DodgeCancelRemainingFraction":0.58,"ComboResetSeconds":0.5},
+    {"SkillID":101,"Desc":"검술 · 되베기","PlayerAttackPlayRate":1.18,"PlayerMeleeDamageMultiplier":1.0,"bPlayerHeavyImpact":false,"AttackCancelRemainingFraction":0.48,"DodgeCancelRemainingFraction":0.56},
+    {"SkillID":102,"Desc":"검술 · 마무리 강타","PlayerAttackPlayRate":1.0,"PlayerMeleeDamageMultiplier":1.5,"bPlayerHeavyImpact":true,"AttackCancelRemainingFraction":0.42,"DodgeCancelRemainingFraction":0.54},
+    {"SkillID":110,"Desc":"도약 베기 · 단일 강타","PlayerAttackPlayRate":1.1,"PlayerMeleeDamageMultiplier":1.8,"bPlayerHeavyImpact":true,"SkillCoolTime":4,"AttackCancelRemainingFraction":0.2,"DodgeCancelRemainingFraction":0.35},
+    {"SkillID":111,"Desc":"전진 연격 · 두 번 베기","PlayerAttackPlayRate":1.25,"PlayerMeleeDamageMultiplier":0.85,"bPlayerHeavyImpact":false,"SkillCoolTime":3,"AttackCancelRemainingFraction":0.25,"DodgeCancelRemainingFraction":0.4},
+    {"SkillID":112,"Desc":"회전 베기 · 주변 두 번 베기","PlayerAttackPlayRate":1.2,"PlayerMeleeDamageMultiplier":0.8,"bPlayerHeavyImpact":false,"SkillCoolTime":5,"AttackCancelRemainingFraction":0.3,"DodgeCancelRemainingFraction":0.4},
+    {"SkillID":113,"Desc":"집중 연격 · 세 번 베기","PlayerAttackPlayRate":1.35,"PlayerMeleeDamageMultiplier":0.7,"bPlayerHeavyImpact":false,"SkillCoolTime":4,"AttackCancelRemainingFraction":0.3,"DodgeCancelRemainingFraction":0.4},
+    {"SkillID":114,"Desc":"검기 · 원거리 견제","PlayerAttackPlayRate":1.1,"PlayerMeleeDamageMultiplier":1.0,"bPlayerHeavyImpact":false,"SkillCoolTime":3,"AttackCancelRemainingFraction":0.3,"DodgeCancelRemainingFraction":0.45}
+  ],
+  "melee_windows": {
+    "111": [[0.24,0.52],[1.08,0.64]],
+    "112": [[0.201,0.70],[1.12,0.945]],
+    "113": [[0.171,0.48],[0.96,0.48],[1.86,0.546]]
+  }
+}

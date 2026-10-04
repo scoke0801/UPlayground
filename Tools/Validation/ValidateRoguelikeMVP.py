@@ -60,6 +60,10 @@ result['guardian_presentation'] = validate_guardian_presentation(enemies, skills
 result['build_schema'] = validate_build_keystones(rewards, stages, tuning)
 result['loot_schema'] = validate_loot_pools(catalog, enemies)
 result['combat_controls'] = validate_combat_feel()
+from ValidatePlayerAttacks import validate_player_attacks
+result['player_attacks'] = validate_player_attacks()
+from ValidateCombatBT import validate_combat_bt
+result['combat_bt'] = validate_combat_bt(enemies)
 dest=os.path.join(unreal.Paths.project_saved_dir(),'RoguelikeMVP','validation.json')
 with open(dest,'w',encoding='utf-8') as f: json.dump(result,f,indent=2)
 unreal.log('PGRogue VALIDATION PASS '+json.dumps(result))
