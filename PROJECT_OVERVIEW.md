@@ -1,10 +1,55 @@
 # UPlayground 프로젝트 분석 문서
 
-## 2026-10-04 핵 앤 슬래시 P0 전투 비교 도구
+## 2026-10-05 툰 플레이어 선택 및 P09 몬스터 확장
 
-- P0 기본 3타·질풍연참·원월참 구현에 이어 `PGSkillScenario`와 `RunHackSlashComparison.py/.ps1`로 M10/M15/RING/E1의 격리 전투를 재현한다. 초기 배치를 시드로 고정하고 이관 전 스킬 행을 런타임에만 복원해 전후 비교한다.
-- 피해·피격·처치·스킬 사용과 사망/시간 초과/중단 기록을 보존한다. 4개 시나리오 × 5시드 × 전후 2종의 직접 비교 목록을 만들며, 무입력 점검은 이 목록의 완료로 집계하지 않는다.
-- UE 5.8 빌드, 기존 P0 회귀 및 8개 전후 배치 점검을 확인했다. 직접 조작·연속 모션·강화별 비교·패키지 성능 수용은 남아 있다. 범위와 재현은 [P0 구현 보고서](Docs/todo/HackSlashP0_Implementation_Report.md)의 전투 비교 도구 기록을 따른다.
+- `I → 캐릭터`에서 Bokusei / LianLian / Honoka / Hichi / Siuha / Lili / Nenmir를 선택한다. 준비·정비 단계에서 변경하며 기존 검술·장비·GAS를 공유하고 선택 ID는 저장·새 도전에도 유지한다.
+- `PGCharacterAppearance`와 표시 전용 리타게팅 컴포넌트가 외형, 툰 머리 축, 무기 본 매핑, 모듈러 부위를 데이터로 연결한다. P09 남녀 기본형·Armor007의 적 템플릿 4종은 `15201–15204`이며 기존 추격자 AI/GAS를 계승한다.
+- 에셋은 `/Game/DataCenter/Characters`, 목록은 `DA_PGProgression.PlayableCharacters`에 있다. 재생성·검증은 `RunPlayableCharacters.py`, 사용법과 검증 범위는 [플레이어 선택·P09 보고서](Docs/todo/PlayableToonCharacters_Implementation_Report.md)를 따른다.
+
+## 2026-10-05 툰 플레이어 선택 및 P09 몬스터 확장
+
+- `I → 캐릭터`에서 Bokusei / LianLian / Honoka / Hichi / Siuha / Lili / Nenmir를 선택한다. 준비·정비 단계에서 변경하며 기존 검술·장비·GAS를 공유하고 선택 ID는 저장·새 도전에도 유지한다.
+- `PGCharacterAppearance`와 표시 전용 리타게팅 컴포넌트가 외형, 툰 머리 축, 무기 본 매핑, 모듈러 부위를 데이터로 연결한다. P09 남녀 기본형·Armor007의 적 템플릿 4종은 `15201–15204`이며 기존 추격자 AI/GAS를 계승한다.
+- 에셋은 `/Game/DataCenter/Characters`, 목록은 `DA_PGProgression.PlayableCharacters`에 있다. 재생성·검증은 `RunPlayableCharacters.py`, 사용법과 검증 범위는 [플레이어 선택·P09 보고서](Docs/todo/PlayableToonCharacters_Implementation_Report.md)를 따른다.
+
+## 2026-10-05 플레이어 검기 Niagara 전환
+
+- `/Game/Art/PlayerCombatFX/NS_PGPlayerSlash`와 `NS_PGPlayerBlade`를 8개 공격의 `SlashVFX`에 연결했다. 기존 MixedVFX 검기 원본을 복제해 검기 메시·스파크·연무의 로컬 시뮬레이션과 색/투명도 사용자 입력을 구성한다. 원본과 피해·판정·모션 데이터는 유지한다.
+- 근접은 공격 논리 시계, 발사형은 투사체 수명으로 Niagara를 재생한다. 회전기는 반대 방향 원호 2개를 사용하며 종료 시 수동 풀 반환으로 정리한다. 기존 Plane 표현은 Niagara 참조가 없는 프로필의 대체 경로다.
+- `RunPlayerSlashFX.py --niagara --apply`가 백업·생성·재로드·회귀·8종 실제 Niagara 재생/정리/화면 검사를 수행한다. 편집 항목과 검증 범위는 [검기 FX 보고서](Docs/todo/PlayerSlashFX_Implementation_Report.md)를 따른다.
+
+## 2026-10-05 플레이어 검기 FX 개선
+
+- 기본 3타와 액티브 5종의 고정 원호 재질을 진행 방향·밝은 칼날·폭 변화·분리 잔상·소멸을 갖는 절차적 검기로 교체했다. 회전기는 두 원호, 발사형 검기는 수명 끝 소멸을 사용한다.
+- `PGPlayerSkillProfile.Presentation`에서 색·지속시간·폭·밝기·높이·방향을 조정한다. 근접 표현은 논리 시계와 히트스톱을 따르며 장착 시 메시/재질 렌더 준비를 시작한다. 피해·판정·모션 수치는 유지한다.
+- `ConfigurePlayerSlashFX.py`가 백업 후 표현만 저장하고 `RunPlayerSlashFX.py`가 저장 재로드·회귀·8종 SM6 캡처를 검사한다. 셰이더 원본, 실행 근거와 직접 플레이/무기 리본의 후속 범위는 [검기 FX 보고서](Docs/todo/PlayerSlashFX_Implementation_Report.md)를 따른다.
+
+## 2026-10-05 액티브 스킬 재생 속도 조정
+
+- 기본 콤보와 별개로 남아 있던 액티브 110~114의 포즈 시간 압축을 완화했다. 논리 시간·포즈 키·타격 창·이동·조준 및 취소 시각을 1.5배로 늘려 기존 대비 재생 속도를 2/3로 낮췄다. 기본 3타, 피해량·이동 거리·쿨다운·투사체 속도는 유지한다.
+- `ConfigureAttackMotion.py -PGActiveSkillTempo`는 기존 액티브 프로필 5개만 백업 후 갱신한다. JSON 원본과 재생성 도구도 함께 반영하고, 보간 중 순간 배속과 실제 런타임 포즈 진행에 속도 상한 검사를 추가했다. 수치·검증 근거·직접 플레이 확인 범위는 [P1 보고서](Docs/todo/HackSlashP1_Implementation_Report.md#2026-10-05-액티브-스킬-속도-재조정)를 따른다.
+
+## 2026-10-04 툰 캐릭터 5종 추가
+
+- Unity의 Nenmir·Spi_Reien·Suiha·lili·Hichi 기본 FBX를 `/Game/Art/ToonCharacters`에 스켈레탈 메시 5개·툰 재질 56개·텍스처 38개로 이전했다. 기존 월드 조명 툰 마스터와 부위별 프로필, 머리 본/광원 동기화, Stencil 73 외곽선을 사용한다.
+- 각 폴더의 `BP_PG_<이름>_Toon`과 `/Game/Art/ToonCharacters/Maps/L_PG_ToonCharacters`에서 확인한다. `Prepare/Configure/Preview/Validate/RunToonCharacterBatch.py`가 소스 매핑·임포트·렌더·재로드 검사를 담당한다.
+- Suiha의 원본에서 누락된 금속/렌즈 텍스처 2종은 원본 색상/불투명도로 대체하고, Suiha·Hichi의 깊이 기록형 반투명 헤어는 컷아웃으로 보정했다. SM6 16장 렌더와 새 프로세스의 저장 참조/MID 초기화/원본 해시 검증 PASS다. 기본 포즈 외형 이전이며 애니메이션·의상 물리·플레이어/GAS 연결은 별도다. 검증 결과와 한계는 [캐릭터 5종 이전 보고서](Docs/todo/ToonCharacters_Transfer_Report.md)를 따른다.
+
+## 2026-10-04 스킬 속도·콤보 전환 후속 수정
+
+- 액티브 5종의 과도한 모션 압축을 완화하고 8개 몽타주에 0.16초 Cubic 블렌딩을 적용했다. 프로필 시작 포즈를 처음부터 적용하고, 다음 공격 전환 중 이전 모션을 원본 배속으로 재개하지 않도록 수정했다.
+- Development·DebugGame 빌드, DebugGame 에셋 재로드·자동 테스트 45개·8개 공격 공간 검사가 통과했다. 렌더링된 실제 유지 입력 콤보도 순서·교차 블렌딩·이전 포즈 유지·해제 후 종료 검사 PASS다. 직접 플레이의 체감 평가는 별도이며, 근거와 한계는 [P1 보고서](Docs/todo/HackSlashP1_Implementation_Report.md#2026-10-04-스킬-속도콤보-전환-후속-수정)를 따른다.
+
+## 2026-10-04 기본 공격 속도 조정
+
+- 기본 3타의 포즈·타격·이동 시간을 1.5배로 늘려 재생 시간을 0.72/0.75/1.02초로 조정했다. 다음 공격 허용은 0.48/0.51/0.72초이며, 기본 속도의 누름 연계 한 바퀴는 이론상 1.71초다. 피해량·총 전진 거리·액티브 스킬은 유지한다.
+- `HackSlashP0.json`을 원본으로 `ConfigureNormalAttackTempo.py`가 기존 100/101/102 프로필의 시간만 백업 후 저장한다. 검증과 직접 플레이 조정 범위는 [P0 보고서](Docs/todo/HackSlashP0_Implementation_Report.md#2026-10-04-기본-공격-속도-조정)를 따른다.
+
+## 2026-10-04 공격 모션 끊김 대응
+
+- 히트스톱의 0초 애니메이션 갱신에서 이동 속도가 NaN/Inf가 되는 경로를 막고, 이동 → 공격 포즈 → 메시 평가 순서를 명시해 포즈의 한 프레임 지연을 줄였다. 장착 시 콤보 몽타주를 미리 불러온다.
+- 프로필 포즈 매핑을 단조 Hermite 보간으로 바꿔 타격 키·게임플레이 시간을 유지하면서 구간 경계의 급격한 속도 변화를 완화했다. 전용 회귀 2개와 `RunHackSlashMotion.py`의 실제 뼈 포즈 기록을 추가했다. 최종 검증 및 직접 조작 검수 한계는 [P1 보고서의 모션 수정 기록](Docs/todo/HackSlashP1_Implementation_Report.md#2026-10-04-공격-모션-끊김-수정)을 따른다.
+- 수정 후 자동 테스트 45개와 새 Development 패키지의 P0/P1 공간 검사가 통과했다. 패키지 8개 공격의 논리 시계 진행 샘플 298개에서 포즈 정체 0개를 기록했다. 직접 플레이의 자연스러움과 장시간 성능 수용은 별도다.
 
 ## 2026-10-04 핵 앤 슬래시 P0 전투 비교 도구
 
@@ -30,6 +75,12 @@
 - UE 5.8의 사용하지 않는 Mass 에디터 처리 큐에서 관찰한 긴 대기를 `mass.UseProcessingQueue=0`의 기존 작업 그래프 경로로 우회한다. 엔진 소스는 변경하지 않는다.
 - 역할형 적의 피해·이동 충돌은 기존 캡슐을 사용한다. `PGEnemyDataRow.bUseSkeletalMeshCollision`이 꺼진 역할형 적은 스켈레탈 메시의 충돌·오버랩을 중지해 프레임마다 물리 뼈를 갱신하지 않는다. Legacy 및 물리 시뮬레이션 중인 메시와 명시적 선택은 기존 설정을 유지한다.
 - `RunGuardianSoak.py --trace --no-images`와 `ExportGuardianCPU.py`는 CPU 추적을, `PGGuardianBenchmark` / `RunGuardianBenchmark.py`는 PIE 밖과 Development 패키지의 5→50→5마리 계측을 담당한다. 프레임 제한 대기를 분리하려면 `--fps-cap 0`을 사용한다. 직접 입력·자유 내비게이션·빌드 밸런스 검사와 구분하며, 검증 근거는 [수호자 보고서](Docs/todo/GuardianPresentation_Implementation_Report.md)의 CPU 최적화 기록을 따른다.
+
+## 2026-10-04 P09 모듈러 캐릭터 툰 연결
+
+- Unity `P09_Modular_Humanoid`를 `/Game/Art/P09Modular`에 개별 메시 193개·툰 인스턴스 103개·텍스처 82개로 이전했다. 기존 `M_PGToonWorld_multi`와 부위별 프로필을 재사용하며, FBX 메타데이터의 재질 이름→GUID 매핑으로 피부/의상 슬롯을 연결한다.
+- `PrepareP09Modular.py`와 `Configure/Preview/ValidateP09Modular.py`, `RunP09Modular.py`가 분리 익스포트·연결·프리셋 생성·렌더·저장 검증을 담당한다. 기본 남성/여성과 Armor007 변형 4종을 `/Game/Art/P09Modular/Maps/L_PG_P09Modular_Toon`에서 확인한다.
+- 기본 포즈의 외형 확인용이며 애니메이션 동기화·헤어 부착/물리·장비 UI/GAS 연결은 포함하지 않는다. `Hair_10`의 스킨 연결 예외, 사용법과 검증 근거는 [P09 툰 연결 보고서](Docs/todo/P09Modular_Toon_Transfer_Report.md)를 따른다.
 
 ## 2026-10-03 Unity lilToon 캐릭터 이전 테스트
 
@@ -708,3 +759,11 @@ LRU 캐시 관리
 - 기본 100/101/102와 111/112에 `UPGPlayerSkillProfile`을 연결했다. PGData가 타격·이동·취소·포즈 매핑을, PGActor의 `UPGPlayerAttackComponent`가 논리 시계·공간 판정·표현을 소유한다. PGAbilitySystem은 시전 Commit과 기존 GAS 피해 경로, 명시적 강화 발동 정책을 처리한다.
 - 프로필 경로는 Notify 피해와 중복 실행하지 않는다. 시전별 공격력 스냅샷과 중복 방지, 충격파·격분·쿨다운 반환 제한, 벽/적 캡슐 이동 제한, 히트스톱과 입력 버퍼/콤보 취소를 적용했다. 프로필이 없는 스킬과 기존 회피는 이전 경로를 유지한다.
 - `ConfigureHackSlashP0.py`가 다섯 행과 전용 에셋을 백업 후 이관한다. `RunHackSlashP0.py --render`의 빌드·에셋·PG 테스트 39개·실제 공간 판정·오프스크린 렌더와 기존 공격 회귀 검사는 통과했다. 직접 플레이 비교·모션 및 연출 검수·패키지 성능은 미완료이며 P0 수용 완료로 보지 않는다. [구현 보고서](Docs/todo/HackSlashP0_Implementation_Report.md)에 백업·재현 방법·검증 한계를 기록했다.
+- 후속으로 `pg.Skill.Observe` 기반 선택적 시전·직접 피해·입력 시각 관측과 비교 집계를 추가했다. `RunHackSlashComparison.py`는 강화 QA를 기본40회와 분리하고 Development 패키지도 실행한다. 당시 패키지·실제 공간 검사, PG 테스트40개 및 기록 검사22개를 통과했다. 패키지 전후8회와1080p 정지 화면은 확인했으나 직접40회·연속 모션·20분 성능 수용은 미완료다. 이후 요청으로 P1 구현을 진행했으며 최신 검증과 수용 상태는 아래 P1 기록을 따른다. P2는 미착수다.
+
+## 2026-10-04 핵 앤 슬래시 P1 구현·검증
+
+- 110/113/114에 전용 프로필을 연결하고, `APGPlayerSkillProjectile`이 원래 CastId와 스킬 ID를 보존한다. 발사된 검기는 다음 시전·회피와 독립적으로 적중하며 시전자 사망·스테이지 변경·런 종료에 정리된다.
+- 5종 중 서로 다른 2종을 안전 단계에서 장착하고 저장 성공 후 적용한다. 신규 저장은 데이터의 111+112를 기본 장착하며 기존 v1 저장의 빈 선택은 이전 프리셋을 보존한다. 쿨다운과 반환은 해제 후에도 스킬 ID를 따른다.
+- 현재 Enhanced Input 키, 사용 불가 이유, 프로필 기반 설명, 환급과 격분 회피 준비 표시를 연결했다. 인벤토리는 실제 장착과 적용 예정 선택을 구분한다. `RunHackSlashP1.py`와 `RunHackSlashPackage.py --p1`로 자동 회귀와 패키지 공간 검사를 수행한다.
+- 최종 PG 테스트 43개·Python 기록 검사 23개와 최신 Development 패키지의 P0/P1 공간 검사를 통과했다. 113/114 및 장착 화면은 정지 캡처를 확인했으나 110은 최신 캡처 2회에서 타격 표현이 보이지 않아 원인 확인이 남았다. P0 직접 비교 40회, 세 강화 빌드의 무보조 6구간, 연속 모션·청취·입력 검수, 20분 패키지 전투 성능은 미완료다. P2는 미착수로 유지한다. 최종 검증 근거와 완료·잔여 판정은 [P1 구현 보고서](Docs/todo/HackSlashP1_Implementation_Report.md)를 따른다.
