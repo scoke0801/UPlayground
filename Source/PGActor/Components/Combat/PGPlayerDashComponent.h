@@ -26,6 +26,7 @@ public:
     UPROPERTY(EditAnywhere, Category="PG|Dash", meta=(ClampMin="0.02", ClampMax="0.2")) float SnapshotInterval = .045f;
     UPROPERTY(EditAnywhere, Category="PG|Dash", meta=(ClampMin="0.05", ClampMax="0.5")) float FadeSeconds = .24f;
     void Start();
+    void PrepareAfterimages();
     void Stop(bool bClear = false);
     bool IsDashing() const { return bDashing; }
     int32 GetVisibleGhostCount() const;
@@ -36,6 +37,8 @@ protected:
 private:
     UPROPERTY(Transient) TArray<FPGDashGhost> Ghosts;
     UPROPERTY(Transient) TObjectPtr<class UMaterialInterface> LoadedMaterial;
+    TWeakObjectPtr<class UCapsuleComponent> DashCollisionCapsule;
+    ECollisionResponse SavedEnemyResponse = ECR_Block;
     bool bDashing = false;
     float SinceSnapshot = 0.f;
     int32 NextGhost = 0;

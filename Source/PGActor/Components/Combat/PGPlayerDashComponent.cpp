@@ -1,4 +1,5 @@
 #include "PGPlayerDashComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/PoseableMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -21,20 +22,50 @@ void UPGPlayerDashComponent::BeginPlay()
 
 void UPGPlayerDashComponent::Start()
 {
+    if (bDashing) return;
     bDashing = true;
+    if (auto* Player = Cast<APGCharacterPlayer>(GetOwner()))
+    {
+        auto* Capsule = Player->GetCapsuleComponent();
+        SavedEnemyResponse = Capsule->GetCollisionResponseToChannel(ECC_GameTraceChannel1);
+        if (SavedEnemyResponse == ECR_Block)
+        {
+            DashCollisionCapsule = Capsule;
+            // Enemy bodies cannot stop either character's movement during a dash.
+            // Keep overlaps for combat; world collision and damage rules are unchanged.
+            Capsule->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
+        }
+    }
     SinceSnapshot = 0.f;
     LastSnapshotLocation = GetOwner()->GetActorLocation();
     SetComponentTickEnabled(true);
 }
 
+void UPGPlayerDashComponent::PrepareAfterimages()
+{
+    if (bDashing || GetNetMode() == NM_DedicatedServer) return;
+    if (!LoadedMaterial) LoadedMaterial = AfterimageMaterial.LoadSynchronous();
+    // Build the bounded pool/skin material pipelines while loading or changing appearance,
+    // before a short first dash can finish while its render resources are still compiling.
+    for (int32 Index = 0; Index < 8; ++Index) Capture();
+    for (auto& Ghost : Ghosts)
+        for (const auto& Mesh : Ghost.Meshes) Mesh->PrecachePSOs();
+    Stop(true);
+}
+
 void UPGPlayerDashComponent::Stop(bool bClear)
 {
     bDashing = false;
+    if (auto* Capsule = DashCollisionCapsule.Get())
+    {
+        DashCollisionCapsule.Reset();
+        Capsule->SetCollisionResponseToChannel(ECC_GameTraceChannel1, SavedEnemyResponse);
+    }
     if (bClear)
         for (auto& Ghost : Ghosts)
         {
             Ghost.Age = 100.f;
-            for (auto* Mesh : Ghost.Meshes) Mesh->SetVisibility(false);
+            for (const auto& Mesh : Ghost.Meshes) Mesh->SetVisibility(false);
         }
     if (GetVisibleGhostCount() == 0) SetComponentTickEnabled(false);
 }
@@ -70,11 +101,12 @@ void UPGPlayerDashComponent::Capture()
             Mesh->SetCastShadow(false);
             Mesh->SetCanEverAffectNavigation(false);
             Mesh->RegisterComponent();
+            Mesh->SetComponentTickEnabled(false); // Frozen pose is refreshed explicitly on capture.
             Ghost.Meshes.Add(Mesh);
         }
-        auto* Mesh = Ghost.Meshes[Index];
+        auto* Mesh = Ghost.Meshes[Index].Get();
         auto* Source = Sources[Index];
-        if (Mesh->GetSkeletalMeshAsset() != Source->GetSkeletalMeshAsset()) Mesh->SetSkeletalMesh(Source->GetSkeletalMeshAsset());
+        if (Mesh->GetSkinnedAsset() != Source->GetSkeletalMeshAsset()) Mesh->SetSkeletalMesh(Source->GetSkeletalMeshAsset());
         Mesh->SetWorldTransform(Source->GetComponentTransform());
         // Modular followers have no local pose; copy their leader's evaluated pose.
         auto* Leader = Cast<USkeletalMeshComponent>(Source->LeaderPoseComponent.Get());
@@ -98,7 +130,7 @@ void UPGPlayerDashComponent::TickComponent(float Dt, ELevelTick Type, FActorComp
         Ghost.Age += Dt;
         const float Alpha = FMath::Clamp(1.f - Ghost.Age / FMath::Max(.05f, FadeSeconds), 0.f, 1.f);
         Ghost.Material->SetScalarParameterValue(TEXT("Opacity"), .48f * Alpha * Alpha);
-        if (Alpha <= 0.f) for (auto* Mesh : Ghost.Meshes) Mesh->SetVisibility(false);
+        if (Alpha <= 0.f) for (const auto& Mesh : Ghost.Meshes) Mesh->SetVisibility(false);
     }
     SinceSnapshot += Dt;
     if (bDashing && SinceSnapshot >= FMath::Max(.02f, SnapshotInterval) &&
@@ -113,7 +145,7 @@ void UPGPlayerDashComponent::TickComponent(float Dt, ELevelTick Type, FActorComp
 void UPGPlayerDashComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
     Stop(true);
-    for (auto& Ghost : Ghosts) for (auto* Mesh : Ghost.Meshes) Mesh->DestroyComponent();
+    for (auto& Ghost : Ghosts) for (const auto& Mesh : Ghost.Meshes) Mesh->DestroyComponent();
     Ghosts.Empty();
     Super::EndPlay(Reason);
 }
