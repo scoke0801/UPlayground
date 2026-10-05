@@ -1,5 +1,45 @@
 # UPlayground 프로젝트 분석 문서
 
+## 2026-10-05 Hwarin · Arin · Yura 모델 이전
+
+- Unity의 `PlayerModel_Hwarin`, `PlayerModel_Arin`, `PlayerModel_Yura` 프리팹에서 활성 부위·재질 변형·기본 체형/헤어 모프를 추출해 `/Game/Art/PlayerModels`에 스켈레탈 메시 3종을 저장했다. Arin의 SaltLine 의상과 Yura의 Twin Bun Braids 헤어를 포함한다.
+- 원본·합성 FBX·재현 도구는 `Tools/Art/PlayerModels`에 있다. 기본 포즈 외형 이전이며 플레이어 선택·GAS·리타게팅 연결은 별도다. 배치용 블루프린트, 확인 맵 및 최종 검증 근거는 [모델 이전 보고서](Docs/todo/PlayerModels_Transfer_Report.md)를 따른다.
+
+## 2026-10-05 모델 기반 초상화 검증·비율 수정
+
+- 실제 선택 메시의 정면·얼굴 14장을 기준으로 제작한 투명 초상화 7종을 `PGCharacterAppearance.Portrait`에 연결했다. 원본·프롬프트는 `Tools/Art/MoonlitUI/ModelPortraits.json`에 보존하며 PNG 해시와 별도 UE 프로세스의 저장 참조 검사를 통과했다.
+- 텍스처 준비 중 임시 정사각형 크기가 캐시되어 초상화가 늘어나던 문제를 `GetImportedSize()`로 수정했다. 카드는 상단 기준으로 자르고 상세는 전체 원본 비율을 유지한다. `RunInventoryPresentation.py --portrait-previews`의 실제 갤러리 버튼·배치 비율 검증과 실행 근거는 [달빛 성소 UI 보고서](Docs/todo/SubcultureUI_Implementation_Report.md#2026-10-05-모델-기반-초상화-재개-및-표시-비율-수정)를 따른다.
+
+## 2026-10-05 Bokusei 검 그립 보정
+
+- `DA_Bokusei`의 `Weapon.Sword / RightWeaponSocket`에 실제 손잡이 접촉점과 오른손 15개 손가락 본의 쥐기 포즈를 적용했다. 원본은 `PlayableCharacterGrip_Bokusei.json`과 `PlayableCharacterPolish.json`이며 다른 외형의 그립 값은 유지한다.
+- 표시 AnimInstance는 리타게팅 뒤에 장착 상태에 맞춰 손가락 회전만 보간한다. 장비 해제 시 원래 포즈로 돌아가며, 손 밖 본·중복 본은 검증에서 거부한다. 원본 전투 애니메이션과 손목/팔은 변경하지 않는다.
+- `RunGripPreview.py --motion --calibration Tools/Validation/Data/PlayableCharacterGrip_Bokusei.json`의 근접 렌더·1,000개 정렬 표본, 실제 GAS 8공격 비교, 7종/P09 런타임과 PG 테스트 45개가 통과했다. 플레이어 납도는 기존 정책대로 비활성이므로 검사는 격리 프로필의 부착 해제/재부착으로 수행한다. 상세 근거와 잔여 범위는 [폴리싱 기록](Docs/todo/PlayableToonCharacters_Polishing_Implementation_Report.md#2026-10-05-bokusei-실제-검-그립-적용)을 따른다.
+
+## 2026-10-05 무기 휘두름 FX 누락 보완
+
+- 관통검기(114)의 발사 순간에 `NS_PGPlayerCastSwing`을 별도로 연결한다. `ProjectileSwingVFX/Radius`는 캐릭터 베기, 기존 `SlashVFX`는 투사체 표현을 담당하며 공격 판정과 모션 시간은 유지한다.
+- uncooked Niagara의 첫 활성화 지연 컴파일로 짧은 베기가 시뮬레이션되지 않는 경우를 재현해, 장착 준비에서 컴파일을 완료하도록 수정했다. 장착 갱신 없이 주입된 프로필도 공격 시계 시작 전에 준비한다.
+- Niagara 생성 도구의 113/114 오분류를 `HitPhases.Shape` 기반으로 수정했다. `RunPlayerSlashFX.py --niagara --apply --all-phases`는 기본 3타·액티브 5종의 12개 페이즈를 적중·헛스윙으로 검사한다. 실행 결과와 수용 범위는 [검기 FX 보고서](Docs/todo/PlayerSlashFX_Implementation_Report.md)의 누락 보완 기록을 따른다.
+
+## 2026-10-05 기본 액티브 스킬 4종 장착
+
+- 기본 장착은 질풍연참(111)·원월참(112)·낙성참(110)·관통검기(114)이며 기존 입력 1·2·3·4로 사용한다. `DA_PGProgression.DefaultActiveSkills`가 순서를 소유하고 검술 창에서 5종 중 서로 다른 4종을 배치·저장한다.
+- 기존 v1 저장의 2종 선택과 프리셋 순서를 보존하고 나머지 슬롯은 기본 데이터에서 중복 없이 채운다. 저장 실패 시 장착 유지, 스킬 ID별 쿨다운 유지, 안전 단계의 변경 제한을 유지한다.
+- `ConfigureDefaultSkills.py -PGApplyDefaultSkills`는 원본 에셋 백업 후 기본 장착만 수정한다. `RunHackSlashP1.py`에 기본 4슬롯의 실제 GAS 시전·피해 검사를 추가했다. 근거와 화면 검증 범위는 [P1 보고서](Docs/todo/HackSlashP1_Implementation_Report.md#2026-10-05-기본-액티브-스킬-4종-장착)를 따른다.
+
+## 2026-10-05 달빛 성소 UI / UX
+
+- 전투 준비 창에 달빛 성소 배경과 캐릭터 초상화 7종, 장비 / 검술·강화 / 전리품 / 캐릭터 탭을 적용했다. 캐릭터는 미리보기와 저장 확정을 분리하고, 선택 기록이 없는 프로필도 상세 미리보기를 표시한다.
+- 검술은 목록·상세·고정 장착 슬롯의 세 영역으로 구성한다. 현재 장착과 적용 예정 구성을 구분하며 중복 스킬 배치는 슬롯을 교환한다. 미적용 변경은 적용 후 닫기·계속 편집·취소 후 닫기로 처리하고 저장 실패 시 유지한다.
+- HUD의 빌드 요약을 하단 모서리로 옮기고 상태가 없는 설명은 숨긴다. 아트 원본·가져오기는 `Tools/Art/MoonlitUI`, 격리 프로필 화면·입력 검사는 `RunInventoryPresentation.py`다. 검증 근거와 후속 범위는 [달빛 성소 UI 보고서](Docs/todo/SubcultureUI_Implementation_Report.md)를 따른다.
+
+## 2026-10-05 캐릭터 폴리싱 재생성·그립 기반
+
+- P1 후속은 `RunPlayableCharacterGrip.py`의 7종 × 8공격 부착 전후 전투 비교와 접촉 좌표 기반 `GripOffset` 후보 계산을 제공한다. 고정 DLL 사본의 112회 전투·기존 캐릭터 런타임·PG 테스트 45개가 통과했다. 당시에는 실제 오프셋을 적용하지 않았으며 이후 Bokusei 적용은 위 기록을 따른다. 레거시 무기 충돌 경로의 수용은 별도다.
+- `PlayableCharacterPolish.json`이 11종의 외형·리그·포즈·Op 원본을 보존한다. 생성은 수동 변경 감지, 전체 패키지 백업, 새 프로세스 의미 비교와 실패 복구를 거친다. `polish-export/validate/check` 경로와 단계별 범위는 [폴리싱 1차 기록](Docs/todo/PlayableToonCharacters_Polishing_Implementation_Report.md)을 따른다.
+- `GripProfiles`는 기존 무기 태그·원본 소켓별 표시 부착점과 로컬 오프셋을 제공하며 캐시도 이 두 키를 사용한다. Bokusei 검 프로필에는 손가락 포즈까지 적용했고 나머지는 기존 표시를 유지한다. 다른 캐릭터의 그립 튜닝·발 IK·물리는 후속 수용 대상이다.
+
 ## 2026-10-05 툰 플레이어 선택 및 P09 몬스터 확장
 
 - `I → 캐릭터`에서 Bokusei / LianLian / Honoka / Hichi / Siuha / Lili / Nenmir를 선택한다. 준비·정비 단계에서 변경하며 기존 검술·장비·GAS를 공유하고 선택 ID는 저장·새 도전에도 유지한다.
