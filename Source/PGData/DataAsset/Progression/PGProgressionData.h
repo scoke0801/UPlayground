@@ -63,6 +63,9 @@ public:
     // Empty enemy pool IDs retain the legacy global chance and item weights.
     UPROPERTY(EditAnywhere, Category="Loot") TArray<FPGDropPool> DropPools;
     UPROPERTY(EditAnywhere) TArray<FPGBuildDefinition> Builds;
+    UPROPERTY(EditAnywhere, Category="Characters") TArray<TSoftObjectPtr<class UPGCharacterAppearance>> PlayableCharacters;
+    UPROPERTY(EditAnywhere, Category="Skills") TArray<int32> SelectableActiveSkills;
+    UPROPERTY(EditAnywhere, Category="Skills") TArray<int32> DefaultActiveSkills;
     const FPGItemDataRow* FindItem(int32 Id) const { return Items.FindByPredicate([Id](const auto& I){ return I.Id == Id; }); }
     const FPGDropPool* FindDropPool(FName Id) const { return DropPools.FindByPredicate([Id](const auto& Pool){ return Pool.Id == Id; }); }
 };

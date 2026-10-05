@@ -269,6 +269,12 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Stage Info")
 	int32 GetRemainingMonsters() const { return RemainingMonsters; }
+    bool CanEditSkillLoadout() const
+    {
+        // RemainingMonsters includes the NEXT wave while waiting between waves.
+        return SpawnedEnemies.IsEmpty() && (CurrentStageState==EPGStageState::RunPreparation ||
+            CurrentStageState==EPGStageState::BuildPhase || CurrentStageState==EPGStageState::WaveIntermission);
+    }
 	
 	UFUNCTION(BlueprintCallable, Category = "Stage Info")
 	int32 GetSpawnedMonsters() const { return SpawnedMonsters; }

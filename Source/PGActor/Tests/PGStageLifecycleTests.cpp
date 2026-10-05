@@ -92,6 +92,11 @@ bool FPGStageLifecycleTest::RunTest(const FString& Parameters)
     Stage->PrepareRun(1);
     TestTrue(TEXT("Starting loadout preparation can launch"),Stage->CanReady());
     TestEqual(TEXT("Preparation does not spawn combat"),Stage->CurrentStageState,EPGStageState::RunPreparation);
+    TestTrue(TEXT("Preparation permits skill editing"),Stage->CanEditSkillLoadout());
+    Stage->CurrentStageState=EPGStageState::WaveIntermission; Stage->RemainingMonsters=15;
+    TestTrue(TEXT("Queued next-wave enemies do not block maintenance"),Stage->CanEditSkillLoadout());
+    Stage->CurrentStageState=EPGStageState::InProgress;
+    TestFalse(TEXT("Combat rejects skill editing"),Stage->CanEditSkillLoadout());
     Stage->CurrentStageState = EPGStageState::Completed;
     Stage->BossDefeatPresentationUntil = World->GetTimeSeconds() + 3.f;
     Stage->GoToNextStage();

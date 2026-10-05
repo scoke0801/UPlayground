@@ -2,6 +2,7 @@
 
 
 #include "PGCharacterBase.h"
+#include "PGActor/Components/Rendering/PGCharacterAppearanceComponent.h"
 #include "PGData/DataAsset/Combat/PGCombatFeedbackData.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "Kismet/GameplayStatics.h"
@@ -19,12 +20,18 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
 
+USceneComponent* APGCharacterBase::ResolveEquipmentAttachment(FName& Socket) const
+{
+    return AppearanceComponent->ResolveEquipmentAttachment(Socket);
+}
+
 const FName DissolveEdgeColorName = FName("DissolveEdgeColor");
 const FName DissolveParticleColorName = FName("DissolveParticleColor");
 
 // Sets default values
 APGCharacterBase::APGCharacterBase()
 {
+    AppearanceComponent = CreateDefaultSubobject<UPGCharacterAppearanceComponent>(TEXT("CharacterAppearance"));
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bStartWithTickEnabled = false;

@@ -119,7 +119,9 @@ void UPGAbilityEquipWeapon::OnEventReceived(FGameplayEventData Payload)
 	if (CombatComponent->GetCharacterCurrentEquippedWeapon() == Weapon) return;
 
 	FAttachmentTransformRules Rule(LocationRule, RotationRule, ScaleRule, true);
-	if (Weapon->AttachToComponent(Mesh, Rule, AttachSocketName))
+    FName Socket = AttachSocketName;
+    auto* Attachment = Parent->ResolveEquipmentAttachment(Socket);
+	if (Weapon->AttachToComponent(Attachment, Rule, Socket))
 	{
 		HandleEquipWeapon(Weapon);
 		CombatComponent->SetCurrentEquippedWeaponTag(WeaponTag);

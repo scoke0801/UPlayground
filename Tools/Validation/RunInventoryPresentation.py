@@ -25,7 +25,7 @@ def main():
     out.mkdir(parents=True)
     cases = dict(open720=(1280, 720, 'open'), open1080=(1920, 1080, 'open'), wide=(2560, 1080, 'open'),
                  full=(1280, 720, 'full'), empty=(1280, 720, 'empty'), build=(1280, 720, 'build'),
-                 failure=(1280, 720, 'failure'), interaction=(1280, 720, 'open'), states=(1280, 720, 'open'))
+                 build1080=(1920,1080,'build'), failure=(1280, 720, 'failure'), interaction=(1280, 720, 'open'), states=(1280, 720, 'open'))
     report = dict(status='RUNNING', assisted=True, physical_input=False, cases=[])
     print('Inventory evidence: ' + str(out), flush=True)
     for name in args.cases.split(','):

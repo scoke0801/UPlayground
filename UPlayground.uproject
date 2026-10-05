@@ -67,6 +67,10 @@
 	],
 	"Plugins": [
 		{
+			"Name": "IKRig",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [

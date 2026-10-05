@@ -15,6 +15,7 @@ public:
     bool EquipSelected();
     bool DiscardSelected();
     void SetBuildTab(bool bBuild);
+    void SetCharacterTab();
     FGuid GetSelectedItem() const { return SelectedItem; }
 protected:
     virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -29,7 +30,7 @@ private:
     UPROPERTY(Transient) TMap<int32, TObjectPtr<UTexture2D>> IconTextures;
     TArray<TSharedPtr<FPGInventoryCellView>> Cells;
     TSharedPtr<class SUniformGridPanel> BagGrid;
-    TSharedPtr<class SVerticalBox> EquippedRows, ComparisonRows, BuildRows, NearbyRows;
+    TSharedPtr<class SVerticalBox> EquippedRows, ComparisonRows, BuildRows, NearbyRows, CharacterRows;
     TSharedPtr<class SScrollBox> ComparisonScroll, BuildScroll;
     TSharedPtr<class SWidgetSwitcher> Tabs;
     TSharedPtr<class SBox> Frame;
@@ -41,6 +42,7 @@ private:
     FGuid PendingDiscard;
     bool bConfirmRecovery = false;
     bool bBuildTab = false;
+    TArray<int32> DraftActiveSkills;
     bool bRefreshPending = false;
     bool bKnownSelection = false;
     bool bSelectedEquipped = false;
@@ -54,6 +56,7 @@ private:
     void RefreshComparison();
     void RefreshBuilds();
     void RefreshNearby();
+    void RefreshCharacters();
     FReply Close();
     FReply RecoverSave();
     FReply Unequip(uint8 EquipmentSlot);

@@ -12,6 +12,8 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     auto* GI = NewObject<UGameInstance>();
     auto* System = NewObject<UPGProfileSubsystem>(GI);
     System->Profile = NewObject<UPGProfileSave>(System);
+    TestTrue(TEXT("Legacy character identity defaults to unchanged appearance"), System->Profile->CharacterId.IsNone());
+    System->Profile->CharacterId = TEXT("Bokusei");
     System->TestSlotPrefix = TEXT("PGAutomation_") + FGuid::NewGuid().ToString() + TEXT("_");
     System->Catalog = NewObject<UPGProgressionData>(System);
     System->Catalog->BagCapacity = 1;
@@ -64,6 +66,7 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Restored valid"), System->Validate(Restored));
     if (Restored)
     {
+        TestEqual(TEXT("Character identity survives serialization"), Restored->CharacterId, FName(TEXT("Bokusei")));
         TestEqual(TEXT("Combat perk survives serialization"), Restored->CombatPerks.FindRef(EPGCombatPerk::LifeSteal), 8);
         TestEqual(TEXT("Core effect survives serialization"),Restored->CombatPerks.FindRef(EPGCombatPerk::ShockFracture),1);
         TestEqual(TEXT("Core selection limit survives serialization"),Restored->SelectedRewards.FindRef(15019),1);
@@ -86,6 +89,7 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Assisted survives disk reload"), System->Profile->bAssistedRun);
     TestEqual(TEXT("Perk restored from disk"), System->Profile->CombatPerks.FindRef(EPGCombatPerk::Counter), 65);
     TestTrue(TEXT("New run commits"), System->BeginNewRun());
+    TestEqual(TEXT("New run preserves character choice"), System->Profile->CharacterId, FName(TEXT("Bokusei")));
     TestFalse(TEXT("New unassisted run resets marker"), System->Profile->bAssistedRun);
     TestEqual(TEXT("New run removes all combat perks"), System->Profile->CombatPerks.Num(), 0);
     System->Profile->Equipment.Reset();
@@ -128,6 +132,37 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Unknown version is preserved read-only"), System->IsSaveBlocked());
     UGameplayStatics::DeleteGameInSlot(System->SlotName(0), 0);
     UGameplayStatics::DeleteGameInSlot(System->SlotName(1), 0);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGCustomLoadoutTest, "PG.HackSlash.LoadoutTransactions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FPGCustomLoadoutTest::RunTest(const FString&)
+{
+    auto* GI=NewObject<UGameInstance>();
+    auto* System=NewObject<UPGProfileSubsystem>(GI);
+    System->Profile=NewObject<UPGProfileSave>(System);
+    System->Catalog=NewObject<UPGProgressionData>(System);
+    FPGBuildDefinition Build; Build.Id=TEXT("Legacy"); System->Catalog->Builds.Add(Build);
+    System->Catalog->SelectableActiveSkills={110,111,112,113,114};
+    System->TestSlotPrefix=TEXT("PGP1_")+FGuid::NewGuid().ToString()+TEXT("_");
+    TestTrue(TEXT("Old v1 empty selection remains valid"),System->Validate(System->Profile));
+    System->Catalog->DefaultActiveSkills={111,112}; System->LoadProfile();
+    TestTrue(TEXT("New profile gets authored default pair"),System->Profile->CustomActiveSkills==TArray<int32>({111,112}));
+    System->Profile->CustomActiveSkills.Reset();
+    TestTrue(TEXT("Legacy empty choice commits"),System->Commit(DuplicateObject<UPGProfileSave>(System->Profile,System)));
+    System->LoadProfile();
+    TestTrue(TEXT("Existing empty v1 save keeps preset despite new defaults"),System->Profile->CustomActiveSkills.IsEmpty());
+    auto* Candidate=DuplicateObject<UPGProfileSave>(System->Profile,System);
+    Candidate->CustomActiveSkills={110,110}; TestFalse(TEXT("Duplicate skills rejected"),System->Validate(Candidate));
+    Candidate->CustomActiveSkills={100,114}; TestFalse(TEXT("Fixed attack cannot enter active slots"),System->Validate(Candidate));
+    Candidate->CustomActiveSkills={113,114}; TestTrue(TEXT("Two catalog skills accepted"),System->Validate(Candidate));
+    System->bInjectSaveFailure=true; TestFalse(TEXT("Write failure rejects selection"),System->Commit(Candidate));
+    TestTrue(TEXT("Failed write preserves old loadout"),System->Profile->CustomActiveSkills.IsEmpty());
+    System->bInjectSaveFailure=false; System->bCommitting=true;
+    TestFalse(TEXT("Reentrant commit rejected"),System->Commit(Candidate)); System->bCommitting=false;
+    TestTrue(TEXT("Pair commits atomically"),System->Commit(Candidate)); System->LoadProfile();
+    TestTrue(TEXT("Both slots survive disk reload"),System->Profile->CustomActiveSkills==TArray<int32>({113,114}));
+    FString Reason; TestFalse(TEXT("No live safe stage rejects public selection"),System->CanChangeSkills(Reason));
+    UGameplayStatics::DeleteGameInSlot(System->SlotName(0),0); UGameplayStatics::DeleteGameInSlot(System->SlotName(1),0);
     return true;
 }
 #endif

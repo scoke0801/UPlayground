@@ -34,7 +34,7 @@ public class PGActor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"PGAbilitySystem", 
+				"PGAbilitySystem", "IKRig", "AnimGraphRuntime",
 				"MotionWarping",
 				"PGMessage",
 				"PGUI", 

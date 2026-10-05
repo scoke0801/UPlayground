@@ -2,6 +2,7 @@
 
 
 #include "PGSpawnWeaponAbility.h"
+#include "PGActor/Characters/PGCharacterBase.h"
 
 #include "Abilities/Tasks/AbilityTask_SpawnActor.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
@@ -42,7 +43,10 @@ void UPGSpawnWeaponAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		// 무기를 지정된 소켓에 부착
 		FAttachmentTransformRules Rule(EAttachmentRule::SnapToTarget, 
 EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);
-		SpawnedWeapon->AttachToComponent(OwningComponent,Rule,SocketNameToAttachTo);
+        FName Socket = SocketNameToAttachTo;
+        auto* Character = Cast<APGCharacterBase>(AvatarActor);
+        USceneComponent* Attachment = Character ? Character->ResolveEquipmentAttachment(Socket) : OwningComponent;
+		SpawnedWeapon->AttachToComponent(Attachment,Rule,Socket);
 	}
 
 	if (UPGPawnCombatComponent* CombatComponent = GetCombatComponentFromActorInfo())

@@ -52,6 +52,10 @@ public:
 	// Sets default values for this actor's properties
 	APGCharacterBase();
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="PG|Appearance")
+    TObjectPtr<class UPGCharacterAppearanceComponent> AppearanceComponent;
+    USceneComponent* ResolveEquipmentAttachment(FName& Socket) const;
+
 public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

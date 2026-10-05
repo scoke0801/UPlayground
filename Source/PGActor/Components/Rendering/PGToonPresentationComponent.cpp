@@ -14,7 +14,7 @@ UPGToonPresentationComponent::UPGToonPresentationComponent()
 void UPGToonPresentationComponent::BeginPlay()
 {
     Super::BeginPlay();
-    if (GetOwner())
+    if (GetOwner() && !IsValid(Mesh))
         Initialize(GetOwner()->FindComponentByClass<USkeletalMeshComponent>());
 }
 

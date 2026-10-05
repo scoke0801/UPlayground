@@ -15,6 +15,10 @@ public:
     UPROPERTY(SaveGame) TArray<FPGItemInstance> Items;
     UPROPERTY(SaveGame) TMap<EPGEquipmentSlot, FGuid> Equipment;
     UPROPERTY(SaveGame) FName BuildId;
+    // Additive v1 field; an empty identity retains the original player appearance.
+    UPROPERTY(SaveGame) FName CharacterId;
+    // Empty preserves the previous preset exactly. Additive version-1 migration.
+    UPROPERTY(SaveGame) TArray<int32> CustomActiveSkills;
     UPROPERTY(SaveGame) int32 Checkpoint = 1;
     UPROPERTY(SaveGame) int32 ClearedStages = 0;
     UPROPERTY(SaveGame) FGuid LastReward;

@@ -1,4 +1,6 @@
 #include "PGProfileSubsystem.h"
+#include "PGData/DataAsset/Character/PGCharacterAppearance.h"
+#include "PGActor/Components/Rendering/PGCharacterAppearanceComponent.h"
 #include "PGRunTelemetrySubsystem.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "PGData/DataAsset/Progression/PGLootRules.h"
@@ -15,6 +17,12 @@
 #include "Misc/Parse.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
+#include "PGActor/Manager/PGStageManager.h"
+#include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
+#include "PGData/DataAsset/Combat/PGPlayerSkillProfile.h"
+#include "Animation/AnimMontage.h"
+#include "EngineUtils.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 UPGProfileSubsystem* UPGProfileSubsystem::Get(const UObject* Context)
 {
@@ -67,7 +75,8 @@ void UPGProfileSubsystem::LoadProfile()
     bool bUnsupported = false;
     for (int32 Index = 0; Index < 2; ++Index)
     {
-        bAnyFile |= UGameplayStatics::DoesSaveGameExist(SlotName(Index), 0);
+        if (!UGameplayStatics::DoesSaveGameExist(SlotName(Index), 0)) continue;
+        bAnyFile = true;
         auto* Loaded = Cast<UPGProfileSave>(UGameplayStatics::LoadGameFromSlot(SlotName(Index), 0));
         if (Loaded && Loaded->Version != 1) bUnsupported = true;
         if (Validate(Loaded) && (ActiveSlot < 0 || Loaded->Revision > Profile->Revision)) { Profile = Loaded; ActiveSlot = Index; }
@@ -75,6 +84,8 @@ void UPGProfileSubsystem::LoadProfile()
     bReadOnly = bUnsupported || (bAnyFile && ActiveSlot < 0);
     Status = bReadOnly ? TEXT("저장 파일 손상/버전 불일치: 원본 보존, 저장 중단") : TEXT("획득/장착 즉시 저장 · I 가방 · E 근접 획득");
     if (Profile->BuildId.IsNone()) Profile->BuildId = Catalog->Builds[0].Id;
+    // Only a genuinely new profile gets the new authored default. Old empty v1 saves retain their preset.
+    if (!bAnyFile && !bReadOnly) Profile->CustomActiveSkills = Catalog->DefaultActiveSkills;
 }
 bool UPGProfileSubsystem::RecoverSave()
 {
@@ -114,6 +125,20 @@ bool UPGProfileSubsystem::ValidateCatalog(FString& Error) const
     if (!PGLootRules::ValidatePools(*Catalog, Error)) return false;
     TSet<FName> Builds;
     auto* Data = GetGameInstance()->GetSubsystem<UPGDataTableManager>();
+    TSet<int32> Selectable;
+    for (int32 Id : Catalog->SelectableActiveSkills)
+    {
+        const auto* Row=Data ? Data->GetRowData<FPGSkillDataRow>(Id) : nullptr;
+        const auto* SkillProfile=Row ? Row->PlayerProfile.LoadSynchronous() : nullptr;
+        FString ProfileError;
+        if (Selectable.Contains(Id) || !SkillProfile || !SkillProfile->Validate(Id,ProfileError) || !Cast<UAnimMontage>(Row->MontagePath.TryLoad()))
+        { Error=TEXT("자유 장착 스킬 정의 누락/중복/프로필 오류"); return false; }
+        Selectable.Add(Id);
+    }
+    if (!Catalog->DefaultActiveSkills.IsEmpty() && (Catalog->DefaultActiveSkills.Num()!=2 ||
+        Catalog->DefaultActiveSkills[0]==Catalog->DefaultActiveSkills[1] ||
+        !Selectable.Contains(Catalog->DefaultActiveSkills[0]) || !Selectable.Contains(Catalog->DefaultActiveSkills[1])))
+    { Error=TEXT("기본 액티브 장착 정의 오류"); return false; }
     for (const auto& Build : Catalog->Builds)
     {
         if (Build.Id.IsNone() || Builds.Contains(Build.Id) || Build.Skills.IsEmpty() || Build.RequiredClears < 0) { Error = TEXT("빌드 정의 오류"); return false; }
@@ -131,6 +156,11 @@ bool UPGProfileSubsystem::ValidateCatalog(FString& Error) const
 bool UPGProfileSubsystem::Validate(const UPGProfileSave* Candidate) const
 {
     if (!Candidate || Candidate->Version != 1 || Candidate->Revision < 0 || Candidate->Checkpoint < 1 || Candidate->ClearedStages < 0 || Candidate->Items.Num() > 256) return false;
+    if (!Candidate->CustomActiveSkills.IsEmpty())
+    {
+        if (!Catalog || Candidate->CustomActiveSkills.Num() != 2 || Candidate->CustomActiveSkills[0] == Candidate->CustomActiveSkills[1]) return false;
+        for (int32 Id : Candidate->CustomActiveSkills) if (!Catalog->SelectableActiveSkills.Contains(Id)) return false;
+    }
     TSet<FGuid> Ids;
     for (const auto& Item : Candidate->Items)
     {
@@ -162,7 +192,8 @@ bool UPGProfileSubsystem::Validate(const UPGProfileSave* Candidate) const
 }
 bool UPGProfileSubsystem::Commit(UPGProfileSave* Candidate)
 {
-    if (bReadOnly || bInjectSaveFailure || !Validate(Candidate)) { Status = TEXT("저장 실패: 변경을 적용하지 않았습니다"); return false; }
+    if (bCommitting || bReadOnly || bInjectSaveFailure || !Validate(Candidate)) { Status = TEXT("저장 실패: 변경을 적용하지 않았습니다"); return false; }
+    TGuardValue<bool> Committing(bCommitting, true);
     Candidate->Revision = Profile->Revision + 1;
     const int32 Next = ActiveSlot == 0 ? 1 : 0;
     if (!UGameplayStatics::SaveGameToSlot(Candidate, SlotName(Next), 0)) { Status = TEXT("저장 실패: 이전 정상 저장 유지"); return false; }
@@ -213,11 +244,65 @@ bool UPGProfileSubsystem::Discard(FGuid Guid)
 }
 bool UPGProfileSubsystem::SelectBuild(FName Id)
 {
+    if (!CanChangeSkills(Status)) return false;
     if (Catalog && Catalog->bRoguelikeRuns && (Profile->Checkpoint > 1 || !Profile->SelectedRewards.IsEmpty()))
     { Status = TEXT("검술은 도전 시작 전에 선택할 수 있습니다"); return false; }
     const auto* Build = Catalog ? Catalog->Builds.FindByPredicate([&](const auto& B){ return B.Id == Id; }) : nullptr;
     if (!Build || Profile->ClearedStages < Build->RequiredClears) { Status = TEXT("빌드 해금 조건을 만족하지 못했습니다"); return false; }
-    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this); Next->BuildId = Id; return Commit(Next);
+    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this); Next->BuildId = Id; Next->CustomActiveSkills.Reset(); return Commit(Next);
+}
+bool UPGProfileSubsystem::SelectCharacter(FName Id)
+{
+    if (!CanChangeSkills(Status)) return false;
+    auto* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
+    UPGCharacterAppearance* Selected = nullptr;
+    for (const auto& Reference : Catalog->PlayableCharacters)
+        if (auto* Appearance = Reference.LoadSynchronous(); Appearance && Appearance->Id == Id)
+        { Selected = Appearance; break; }
+    if (!Player || !Selected || !Player->AppearanceComponent->CanApply(Selected))
+    { Status = TEXT("캐릭터 데이터를 불러오지 못했습니다. 기존 선택을 유지합니다"); return false; }
+    if (Profile->CharacterId == Id) return true;
+    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
+    Next->CharacterId = Id;
+    return Commit(Next);
+}
+bool UPGProfileSubsystem::CanChangeSkills(FString& Reason) const
+{
+    Reason = TEXT("전투 준비 또는 웨이브 정비 중에 변경할 수 있습니다");
+    if (!Profile || !Catalog || bReadOnly || bCommitting) { Reason = TEXT("저장 처리 중이거나 저장이 차단되었습니다"); return false; }
+    if (!GetWorld()) return false;
+    auto* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
+    auto* ASC = Player ? Player->GetPGAbilitySystemComponent() : nullptr;
+    if (!ASC || ASC->GetHealth() <= 0 || ASC->IsProcessingDamage() || Player->GetPlayerAttackComponent()->IsRunning()) return false;
+    FGameplayTagContainer Actions;
+    Actions.AddTag(PGGamePlayTags::Player_Ability_Attack); Actions.AddTag(PGGamePlayTags::Player_Ability_Roll);
+    Actions.AddTag(PGGamePlayTags::Player_Ability_Equip_Weapon); Actions.AddTag(PGGamePlayTags::Player_Ability_UnEquip_Weapon);
+    for (const auto& Spec : ASC->GetActivatableAbilities())
+        if (Spec.IsActive() && Spec.Ability && Spec.Ability->GetAssetTags().HasAny(Actions)) return false;
+    for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It)
+    {
+        if (It->CanEditSkillLoadout())
+        { Reason.Reset(); return true; }
+    }
+    return false;
+}
+bool UPGProfileSubsystem::SelectActiveSkills(int32 First, int32 Second)
+{
+    if (!CanChangeSkills(Status)) return false;
+    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
+    Next->CustomActiveSkills = { First, Second };
+    if (!Validate(Next)) { Status = TEXT("서로 다른 액티브 스킬 2개를 선택하세요"); return false; }
+    auto* Tables = UPGDataTableManager::Get(this);
+    for (int32 Id : Next->CustomActiveSkills)
+    {
+        const auto* Row = Tables ? Tables->GetRowData<FPGSkillDataRow>(Id) : nullptr;
+        const auto* SkillProfile = Row ? Row->PlayerProfile.LoadSynchronous() : nullptr;
+        auto* Montage = Row ? Cast<UAnimMontage>(Row->MontagePath.TryLoad()) : nullptr;
+        FString Error;
+        if (!SkillProfile || !Montage || !SkillProfile->Validate(Id, Error))
+        { Status = TEXT("스킬 데이터를 불러오지 못했습니다. 기존 장착을 유지합니다"); return false; }
+    }
+    return Commit(Next);
 }
 bool UPGProfileSubsystem::CommitReward(FGuid Token, int32 NextStage, EPGStatType Stat, int32 Amount, EPGCombatPerk Perk, int32 PerkPercent, int32 RewardId, bool bAdvance)
 {
@@ -353,6 +438,14 @@ bool UPGProfileSubsystem::ConfigureBuildScenario(const TArray<int32>& RewardIds)
 bool UPGProfileSubsystem::RestorePlayer(APGCharacterPlayer* Player)
 {
     if (!Catalog || !Player || !Player->GetSkillHandler() || !Player->GetPGAbilitySystemComponent()) return false;
+    if (!Profile->CharacterId.IsNone())
+    {
+        bool bApplied = false;
+        for (const auto& Reference : Catalog->PlayableCharacters)
+            if (auto* Appearance = Reference.LoadSynchronous(); Appearance && Appearance->Id == Profile->CharacterId)
+            { bApplied = Player->AppearanceComponent->ApplyAppearance(Appearance); break; }
+        if (!bApplied) Status = TEXT("저장된 캐릭터 외형을 불러오지 못해 현재 외형을 유지합니다");
+    }
     auto* ASC = Player->GetPGAbilitySystemComponent();
     TMap<EPGStatType, int32> Bonuses = Profile->RewardBonuses;
     TMap<EPGCombatPerk, int32> Perks = Profile->CombatPerks;
@@ -371,23 +464,36 @@ bool UPGProfileSubsystem::RestorePlayer(APGCharacterPlayer* Player)
     const auto* Build = Catalog->Builds.FindByPredicate([&](const auto& B){ return B.Id == Profile->BuildId && B.RequiredClears <= Profile->ClearedStages; });
     if (!Build) { Build = &Catalog->Builds[0]; Status = TEXT("이전 빌드 ID를 찾지 못해 기본 빌드를 적용했습니다"); }
     auto* Handler = Player->GetSkillHandler();
+    TArray<FPGLoadoutEntry> Entries = Build->Skills;
+    if (Profile->CustomActiveSkills.Num() == 2)
+        for (int32 Index = 0; Index < 2; ++Index)
+        {
+            const auto Slot = Index == 0 ? EPGSkillSlot::SkillSlot_1 : EPGSkillSlot::SkillSlot_2;
+            Entries.RemoveAll([Slot](const auto& E){ return E.Slot == Slot; });
+            FPGLoadoutEntry Entry; Entry.Slot = Slot; Entry.SkillId = Profile->CustomActiveSkills[Index]; Entries.Add(Entry);
+        }
+    bool bMappingChanged = false;
+    // Capture both old IDs before installing either new slot (including A/B swaps).
+    for (const auto& Entry : Entries)
+        if (const auto* Existing=Handler->GetSkillData(Entry.Slot); Existing && Existing->SkillId!=Entry.SkillId)
+        { Handler->RemoveSkill(Entry.Slot); bMappingChanged=true; }
     // Keep cooldown history on equipment changes; rebuild only when mapping changes.
-    for (const auto& Entry : Build->Skills)
+    for (const auto& Entry : Entries)
     {
         auto* Skill = Handler->GetSkillData(Entry.Slot);
         if (!Skill || Skill->SkillId != Entry.SkillId)
         {
-            const double LastUse = Skill ? Skill->LastSkillUsedTime : -1.e30;
             Handler->RemoveSkill(Entry.Slot); Handler->AddSkill(Entry.Slot, Entry.SkillId);
-            if (auto* Replacement = Handler->GetSkillData(Entry.Slot)) Replacement->LastSkillUsedTime = LastUse;
+            bMappingChanged = true;
         }
         Skill = Handler->GetSkillData(Entry.Slot);
         const auto* Row = GetGameInstance()->GetSubsystem<UPGDataTableManager>()->GetRowData<FPGSkillDataRow>(Entry.SkillId);
         if (Skill && Row) Skill->CoolTime = (Entry.CooldownSeconds >= 0.f ? Entry.CooldownSeconds : Row->SkillCoolTime) * Entry.CooldownScale * (1.f - FMath::Min(50, Perks.FindRef(EPGCombatPerk::Cooldown)) * .01f);
     }
     TArray<EPGSkillSlot> Remove;
-    for (auto Pair : Handler->GetAllSkillData()) if (!Build->Skills.ContainsByPredicate([&](const auto& E){ return E.Slot == Pair.Key; })) Remove.Add(Pair.Key);
+    for (auto Pair : Handler->GetAllSkillData()) if (!Entries.ContainsByPredicate([&](const auto& E){ return E.Slot == Pair.Key; })) Remove.Add(Pair.Key);
     for (auto Slot : Remove) Handler->RemoveSkill(Slot);
+    if (bMappingChanged) { Handler->ResetCombo(); Player->GetPlayerAttackComponent()->PrepareLoadout(); }
     if (auto* Messages = UPGMessageManager::Get(Player)) Messages->SendMessage(EPGPlayerMessageType::LoadoutChanged, nullptr);
     return true;
 }

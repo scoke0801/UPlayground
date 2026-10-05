@@ -20,6 +20,9 @@ public:
     bool Unequip(EPGEquipmentSlot Slot);
     bool Discard(FGuid Guid);
     bool SelectBuild(FName Id);
+    bool SelectCharacter(FName Id);
+    bool SelectActiveSkills(int32 First, int32 Second);
+    bool CanChangeSkills(FString& Reason) const;
     bool CommitReward(FGuid Token, int32 NextStage, EPGStatType Stat, int32 Amount, EPGCombatPerk Perk = EPGCombatPerk::None, int32 PerkPercent = 0, int32 RewardId = 0, bool bAdvance = true);
     bool EndRun(bool bVictory, int32 Stage);
     int32 GetEffectivePerk(EPGCombatPerk Perk) const;
@@ -45,10 +48,12 @@ public:
     int32 RetryProbeFailures = 0;
 private:
     friend class FPGProfileTest;
+    friend class FPGCustomLoadoutTest;
     friend class FPGLootTransactionTest;
     UPROPERTY() TObjectPtr<UPGProfileSave> Profile;
     UPROPERTY() TObjectPtr<UPGProgressionData> Catalog;
     bool bReadOnly = false;
+    bool bCommitting = false;
     int32 ActiveSlot = -1;
     FString TestSlotPrefix;
     UPROPERTY() TArray<TObjectPtr<UObject>> PreparedSkillAssets;
