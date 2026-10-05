@@ -1,9 +1,54 @@
 # UPlayground 프로젝트 분석 문서
 
+## 2026-10-05 몬스터 배리에이션 · P09 등급 장비
+
+- 보유 리소스로 새끼 거미·거미 여왕·리치·엔트·골렘(`15301–15305`)을 시련에 추가하고, P09 남녀를 일반·강화·정예 6종(`15201–15206`)으로 구성했다. 등급별 Armor003/007/012, Sword001/003/005와 정예 방패·방어·보장 드랍을 연결한다.
+- `MonsterVariations.json`이 능력치·전투 패턴·장비·15웨이브 편성을 소유한다. 일반/강화/정예 P09는 1/3/4구간부터 등장하며 기존 웨이브 총수와 6구간 보스는 유지한다. 이전 P09 전용 편성 기록보다 이 구성이 우선한다.
+- `PGCharacterAppearance.Attachments`는 표시 메시 본의 고정 장비를 관리하며 골렘은 `PGCreatureAnimInstance`로 기존 Fantasy Pack 모션을 재생한다. 적용·백업·저장 재로드·11종 실전 검사는 `RunMonsterVariations.py`이며 검증 결과와 범위는 [몬스터 배리에이션 보고서](Docs/todo/MonsterVariations_Implementation_Report.md)를 따른다.
+
+## 2026-10-05 월빛 회복약 · HUD 크기 수정
+
+- Q 또는 체력바 옆 버튼으로 최대 체력 40%를 즉시 회복한다. 3개 휴대·8초 대기시간이며 일반 구간 정비에서 체력/회복약을 보충한다. 공격·대시·피격 경직은 유지하고, 같은 구간의 웨이브와 프로필 저장은 재보급하지 않는다.
+- `PGConsumableData`와 `DA_PGProgression.HealingPotion`이 수치·보급 정책·표현을 소유한다. 원본은 `Tools/Validation/Data/Consumables.json`, 에셋 적용·새 프로세스 재로드·GAS/실제 입력 검증은 `RunConsumables.py`다.
+- 사용 안내가 나타날 때 HUD가 커지는 문제를 고정 크기/안내 영역과 축소 전용 스케일로 수정했다. PG 테스트 48개 및 1280×720 실행의 버튼 작동·회복·대기시간·소진·정비 상태 크기 검사가 통과했다. 상세 근거와 난이도 플레이테스트 범위는 [회복약 구현 보고서](Docs/todo/Consumables_Implementation_Report.md)를 따른다.
+
+## 2026-10-05 적중 반동 보완
+
+- 확정 피해 피드백에 `PGEnemyPresentationComponent`의 방향성 외형 반동을 추가했다. 교체 외형과 기존 메시를 지원하고 공격 몽타주 중에도 동작한다. 충돌 캡슐·피해·공격 상태는 유지한다.
+- `PGCombatFeedbackData`의 각 타격 프리셋에서 거리·지속시간을 조절한다. 연속 적중 누적 방지와 사망 정리를 포함하며, 피격 플래시·음향 및 실제 체감 검수 범위는 [타격감 보완 기록](Docs/todo/CombatFeel_Implementation_Report.md)을 따른다.
+
+## 2026-10-05 P09 몬스터 웨이브 편성
+
+- P09 남녀 기본형(`15201/15202`)을 1~2스테이지부터, Armor007(`15203/15204`)을 3~5스테이지에 혼합했다. 기존 근접 추격자 20마리를 대체하며 웨이브별 총수·궁수/수호자/정예 수·6스테이지 보스는 유지한다.
+- 편성 원본은 `Tools/Validation/P09WaveRoster.py`, 백업·적용·저장 재로드·실제 스폰 확인은 `RunP09Waves.py --apply`다. 콘텐츠 재생성도 P09 등록 시 같은 편성을 사용한다. 기존 추격자 AI/GAS와 외형 에셋 연결을 유지한다.
+- 저장 재로드·전체 편성 보존 검사와 1~6스테이지 첫 웨이브 36마리의 실제 스폰 검사를 통과했다. P09 4종의 컨트롤러·표시 메시를 확인했으며, 밀집 전투 성능은 별도다. 실행 근거는 [플레이어 선택·P09 보고서](Docs/todo/PlayableToonCharacters_Implementation_Report.md)의 웨이브 편성 기록을 따른다.
+
+## 2026-10-05 플레이어 8종 검 그립 확장
+
+- LianLian·Honoka·Yura(저장 ID Hichi)·Siuha·Lili·Nenmir·Hwarin·Arin에 손잡이 접촉 프레임과 오른손 15개 본의 쥐기 포즈를 적용했다. bOKUSEI의 기존 값은 유지하며, 리그의 100배 단위 차이를 보정해 검의 월드 크기를 유지한다.
+- 원본은 `PlayableCharacterGrip_Players.json`과 `PlayableCharacterPolish.json`이다. `RunPlayableCharacterPolish.py --step configure-grips`는 바뀐 외형 그립만 백업·저장하고 새 프로세스에서 재로드 검증한다.
+- 저장된 8종의 공격·대시·장비 해제/재장착 6,908개 표본과 근접 캡처 560장, 9종/P09 런타임 및 PG 자동 테스트 46개가 통과했다. LianLian은 원본 긴 소매가 손을 덮으므로 접촉면 시각 확인에 한계가 있다. 전투 비교와 재현 근거는 [그립 확장 기록](Docs/todo/PlayableToonCharacters_Polishing_Implementation_Report.md#2026-10-05-플레이어-8종-검-그립-확장)을 따른다.
+
+## 2026-10-05 시련 · 전투 준비 UI 개선
+
+- 실패·보상·승리 창, HUD 시련 안내·준비/시작·강화 공명과 전투 준비 창에 ImageGen 달빛 프레임을 연결했다. `PGUIStyleSettings`에서 각 표현용 텍스처를 교체한다.
+- 불필요한 영어와 닫기 키 안내를 지우고, 검술은 공격 방식·피해·재사용 시간, 강화는 획득 효과와 다음 선택 중심으로 표시한다. 실패 사유의 개발 원문은 로그에 보존하고 화면에서는 한국어로 안내한다.
+- 원본·프롬프트·가져오기는 `Tools/Art/TrialUI`, 검증은 `RunRewardLootPresentation.py`와 `RunInventoryPresentation.py`다. 구현·검증 범위는 [시련 UI 보고서](Docs/todo/TrialUI_Implementation_Report.md)를 따른다.
+
+## 2026-10-05 플레이어 대시
+
+- 기존 회피 슬롯 10000을 Shift 대시로 바꾸고, 플레이어 스켈레톤의 전진 회피 모션을 FullBody 몽타주로 연결했다. 원본 모션과 기존 슬롯·강화 연계는 유지한다.
+- `PGPlayerDashComponent`가 선택 외형의 포즈 잔상을 최대 8개 재사용하며, GAS의 RootMotionSource가 이동·벽 충돌을 처리한다. 기본 450cm/0.36초와 잔상 색·간격·수명은 컴포넌트에서 편집한다.
+- 대시 중에는 캡슐의 Enemy 채널 차단을 Overlap으로 바꿔 적을 통과한다. 종료·취소·사망·EndPlay에서 원래 응답을 복구하며 벽 충돌과 피격 판정은 유지한다.
+- 대시 중에는 캡슐의 Enemy 채널 차단을 Overlap으로 바꿔 적을 통과한다. 종료·취소·사망·EndPlay에서 원래 응답을 복구하며 벽 충돌과 피격 판정은 유지한다.
+- 적용·검증 도구는 `ConfigurePlayerDash.py` / `RunPlayerDash.py`이며 범위와 실행 근거는 [대시 보고서](Docs/todo/PlayerDash_Implementation_Report.md)를 따른다.
+
 ## 2026-10-05 Hwarin · Arin · Yura 모델 이전
 
 - Unity의 `PlayerModel_Hwarin`, `PlayerModel_Arin`, `PlayerModel_Yura` 프리팹에서 활성 부위·재질 변형·기본 체형/헤어 모프를 추출해 `/Game/Art/PlayerModels`에 스켈레탈 메시 3종을 저장했다. Arin의 SaltLine 의상과 Yura의 Twin Bun Braids 헤어를 포함한다.
-- 원본·합성 FBX·재현 도구는 `Tools/Art/PlayerModels`에 있다. 기본 포즈 외형 이전이며 플레이어 선택·GAS·리타게팅 연결은 별도다. 배치용 블루프린트, 확인 맵 및 최종 검증 근거는 [모델 이전 보고서](Docs/todo/PlayerModels_Transfer_Report.md)를 따른다.
+- Hwarin·Arin을 플레이어 목록에 추가하고 Hichi의 표시 모델·이름을 Yura로 교체했다. `I → 캐릭터`에서 총 9종을 선택하며, 기존 저장 ID `Hichi`는 유지해 이전 선택 기록도 Yura로 이어진다. 세 합성 리그에 전용 리타게팅과 스케일 보정·무기 본 매핑을 연결했다.
+- 일러스트는 사용자가 지정한 `AdditionalPortraits_20261005/T_Yura_v2.png`, `T_Hwarin.png`, `T_Arin.png`를 사용한다. `PlayableCharacterCatalog.py`가 재생성 시에도 같은 모델 ID와 초상화 경로를 유지한다.
+- 원본·합성 FBX·재현 도구는 `Tools/Art/PlayerModels`에 있다. 연결은 `RunConnection.py`, 저장 원본은 `PlayableCharacterPolish.json`이며 배치용 블루프린트·확인 맵·검증 근거는 [모델 이전 보고서](Docs/todo/PlayerModels_Transfer_Report.md)를 따른다.
 
 ## 2026-10-05 모델 기반 초상화 검증·비율 수정
 
@@ -18,9 +63,10 @@
 
 ## 2026-10-05 무기 휘두름 FX 누락 보완
 
+- 후속 요청으로 큰 검기와 피해를 `ResolveHitPhases`의 동일한 모션 접점 목록에 연결했다. 기본 3타·액티브 5종의 24타가 각각 독립 피해를 주며, 기존 1타 계수를 유지해 추가 타격만큼 총 피해가 증가한다. 스킬 설명도 실제 타수·총 피해를 표시한다. PG 회귀 46개와 24타 적중/24타 헛스윙의 체력·FX 검증, 양쪽 에디터 빌드가 통과했다. 최신 동작과 피해 배율은 [검기/피해 보고서](Docs/todo/PlayerSlashFX_Implementation_Report.md)의 모든 베기·찌르기 피해 연결 기록을 따른다.
 - 관통검기(114)의 발사 순간에 `NS_PGPlayerCastSwing`을 별도로 연결한다. `ProjectileSwingVFX/Radius`는 캐릭터 베기, 기존 `SlashVFX`는 투사체 표현을 담당하며 공격 판정과 모션 시간은 유지한다.
 - uncooked Niagara의 첫 활성화 지연 컴파일로 짧은 베기가 시뮬레이션되지 않는 경우를 재현해, 장착 준비에서 컴파일을 완료하도록 수정했다. 장착 갱신 없이 주입된 프로필도 공격 시계 시작 전에 준비한다.
-- Niagara 생성 도구의 113/114 오분류를 `HitPhases.Shape` 기반으로 수정했다. `RunPlayerSlashFX.py --niagara --apply --all-phases`는 기본 3타·액티브 5종의 12개 페이즈를 적중·헛스윙으로 검사한다. 실행 결과와 수용 범위는 [검기 FX 보고서](Docs/todo/PlayerSlashFX_Implementation_Report.md)의 누락 보완 기록을 따른다.
+- Niagara 생성 도구의 113/114 오분류를 `HitPhases.Shape` 기반으로 수정했다. 후속 조사에서 피해 12페이즈와 원본 모션의 공격 24접점이 다른 것을 확인했다. `SwingNotifyName=P_HitPoint`로 원본 접점을 논리 시각에 매핑해 큰 검기를 각 베기·찌르기에 연결하며, 피해·모션 수치는 유지한다. `RunPlayerSlashFX.py --niagara --all-phases`는 24접점의 적중·헛스윙을 검사한다. 실행 결과와 범위는 [검기 FX 보고서](Docs/todo/PlayerSlashFX_Implementation_Report.md)의 원본 모션별 연결 기록을 따른다.
 
 ## 2026-10-05 기본 액티브 스킬 4종 장착
 
@@ -361,7 +407,7 @@ PGActor/
 - `PGProjectileManager`: 전역 투사체 관리자
 - `PGProjectilePool`: 타입별 풀 관리
 - `PGPooledProjectile`: 풀링된 투사체
-- `PGPatternProjectile`: 적의 별빛 조준 사격(15102)은 Blender 임시 모델 `/Game/Art/Projectiles/SM_PG_CrystalBolt`를 사용한다. +X 전방·44×22×22cm·304삼각형·단일 버텍스 컬러 머티리얼이며 기존 Box 충돌과 스킬 수치를 유지한다. 원본/FBX는 `Tools/Art/Projectiles`, 재임포트·연결 검사는 `Tools/Validation/ReplaceProjectileModel.py`, 실제 발사 화면 검사는 `Tools/Validation/PreviewProjectilePIE.py`에 있다. 임포트 후 에디터를 빌드하고 `-PGValidateProjectile`로 연결을 검사한다.
+- `PGPatternProjectile`: 스켈레톤 궁수의 15102/15112는 `/Game/DataCenter/SkeletonArcher/BP_PGSkeletonArrow`에서 기존 `SkeletonEnemy/.../Bow/Arrow/SM_Arrow`와 원본 재질을 사용한다. +Y 화살을 -90° 회전해 비행 +X에 맞추며 Box 충돌·속도는 유지한다. 두 사격 모두 단발·직선 예고이고, 기존 몸체용 활 공격 `Anim_Attack`을 알림 없는 전용 몽타주로 연결해 원본 발사 시점과 동기화한다. 재현·저장 재로드·실제 GAS 렌더 검사는 `Tools/Validation/RunSkeletonArcher.py --apply`, 상세 근거는 [궁수 수정 보고서](Docs/todo/SkeletonArcher_Presentation_Report.md)를 따른다. 이전 크리스털 모델은 공통 클래스 기본값으로만 남는다.
 
 ---
 
