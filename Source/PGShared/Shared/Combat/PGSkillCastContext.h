@@ -30,4 +30,5 @@ struct PGSHARED_API FPGSkillCastContext
     TMap<int32, TSet<TWeakObjectPtr<AActor>>> HitTargets;
     TSet<int32> FeedbackPhases;
     int32 SpatialQueries = 0;
+    TWeakPtr<struct FPGSkillObservation> Observation;
 };

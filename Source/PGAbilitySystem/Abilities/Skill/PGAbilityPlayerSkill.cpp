@@ -39,6 +39,7 @@ void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Han
         auto* Profile = Data.PlayerProfile.LoadSynchronous();
         auto* Montage = Cast<UAnimMontage>(Data.MontagePath.TryLoad());
         FString Error;
+        if (Player) Player->FaceAimDirection();
         if (!Player || !Profile || !Profile->Validate(Data.SkillID, Error) ||
             !Player->GetPlayerAttackComponent()->CanPrepare(Profile, Montage, Error))
         {
@@ -46,9 +47,14 @@ void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Han
                 Data.SkillID, *Data.PlayerProfile.ToString(), *Error);
             EndAbilitySelf(); return;
         }
-        AttackPlayRate = 1.f;
+        // Start at the authored pose, already paused. Starting at zero then seeking
+        // after activation exposes the wrong pose to montage-start callbacks.
+        AttackPlayRate = 0.f;
+        AttackStartTime = Profile->GetMontagePosition(0.f);
         auto* Task = PlayMontageWait(Montage);
         if (!Task || !CommitAbility(Handle, ActorInfo, ActivationInfo)) { EndAbilitySelf(); return; }
+        // A post-commit montage interruption or new obstacle must not refund the cast.
+        Handler->FPGSkillHandler::UseSkill(SlotIndex);
         // No hit listener and no collision authority until after Commit.
         Task->ReadyForActivation();
         if (!IsActive()) return;
@@ -65,6 +71,7 @@ void UPGAbilityPlayerSkill::ActivateAbility(const FGameplayAbilitySpecHandle Han
         !FMath::IsFinite(Data.PlayerMeleeDamageMultiplier) || Data.PlayerMeleeDamageMultiplier < .1f || Data.PlayerMeleeDamageMultiplier > 5.f)
     { EndAbilitySelf(); return; }
     AttackPlayRate = Data.PlayerAttackPlayRate;
+    AttackStartTime = 0.f;
     MeleeDamageMultiplier = Data.PlayerMeleeDamageMultiplier;
     bHeavyImpact = Data.bPlayerHeavyImpact;
     UAnimMontage* Montage = Cast<UAnimMontage>(Data.MontagePath.TryLoad());
@@ -115,7 +122,8 @@ UAbilityTask_PlayMontageAndWait* UPGAbilityPlayerSkill::PlayMontageWait(UAnimMon
 {
     const auto* ASC = GetPGAbilitySystemComponentFromActorInfo();
     auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-        this, NAME_None, MontageToPlay, AttackPlayRate * (ASC ? ASC->GetFrenzyRate() : 1.f));
+        this, NAME_None, MontageToPlay, AttackPlayRate * (ASC ? ASC->GetFrenzyRate() : 1.f),
+        NAME_None, true, 1.f, AttackStartTime);
     if (!Task) return nullptr;
     Task->OnCancelled.AddDynamic(this, &ThisClass::OnMontageInterrupted);
     Task->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageInterrupted);

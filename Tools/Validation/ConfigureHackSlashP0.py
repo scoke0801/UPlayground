@@ -1,14 +1,18 @@
 """Back up current content, create opt-in P0 profiles and update exactly five skill rows.
 
 Run in Unreal Python after compiling native types. No profile saves, loadout data,
-enemy patterns, source montages or legacy PlayerAttacks.json are overwritten.
+enemy patterns, source sequences or legacy PlayerAttacks.json are overwritten.
+Player montage blend settings follow the shared attack-motion tuning.
 """
 from datetime import datetime, timezone
 import copy
 import json
 from pathlib import Path
 import shutil
+import sys
 import unreal
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ConfigureAttackMotion import configure_montage_blend
 
 ROOT = Path(unreal.Paths.project_dir()).resolve()
 DEST = '/Game/DataCenter/HackSlashP0'
@@ -54,24 +58,8 @@ if material:
     preserve(material)
 else:
     material = tools.create_asset('M_PlayerSlash', DEST, unreal.Material, unreal.MaterialFactoryNew())
-lib = unreal.MaterialEditingLibrary
-lib.delete_all_material_expressions(material)
-set_props(material, {'blend_mode': unreal.BlendMode.BLEND_ADDITIVE, 'two_sided': True})
-material.set_editor_property('shading_model', unreal.MaterialShadingModel.MSM_UNLIT)
-uv = lib.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate)
-angle = lib.create_material_expression(material, unreal.MaterialExpressionScalarParameter)
-set_props(angle, {'parameter_name':'HalfAngleCos', 'default_value':0.5})
-tint = lib.create_material_expression(material, unreal.MaterialExpressionVectorParameter)
-set_props(tint, {'parameter_name':'Tint', 'default_value':unreal.LinearColor(.25,1,.75,1)})
-mask = lib.create_material_expression(material, unreal.MaterialExpressionCustom)
-set_props(mask, {'code': 'float2 p=(UV-.5)*2; float r=length(p); float edge=saturate((r-.84)/.04)*saturate((1-r)/.05); return edge * step(CosAngle,p.x/max(r,.001));',
-                 'output_type':unreal.CustomMaterialOutputType.CMOT_FLOAT1,
-                 'inputs':[set_props(unreal.CustomInput(), {'input_name':'UV'}), set_props(unreal.CustomInput(), {'input_name':'CosAngle'})]})
-lib.connect_material_expressions(uv, '', mask, 'UV')
-lib.connect_material_expressions(angle, '', mask, 'CosAngle')
-lib.connect_material_property(mask, '', unreal.MaterialProperty.MP_OPACITY)
-lib.connect_material_property(tint, '', unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-lib.recompile_material(material)
+from PlayerSlashMaterial import build as build_slash_material
+build_slash_material(material)
 save(material)
 
 sound = unreal.load_asset('/Game/DataCenter/CombatCycle/S_Normal')
@@ -95,14 +83,14 @@ for item in SPEC['skills']:
     for index, start in enumerate(item['hits']):
         policy = set_props(unreal.PGHitProcPolicy(), {'bleed':True, 'bleed_burst':skill_id in (111,112) and index == 1, 'shock':True, 'frenzy':True})
         phases.append(set_props(unreal.PGPlayerHitPhase(), {
-            'phase_id':index, 'start':start, 'end':start+.06,
+            'phase_id':index, 'start':start, 'end':start+item.get('hit_window', .06),
             'shape':unreal.PGPlayerHitShape.DISC if skill_id == 112 else unreal.PGPlayerHitShape.FAN,
             'radius':item['radius'], 'full_angle_degrees':item['angle'], 'height_tolerance':150,
             'wall_occlusion':True, 'damage_multiplier':item['damage'], 'heavy_impact':skill_id == 102,
             'hit_stop_seconds':.045 if skill_id == 102 else .020 if skill_id == 112 else .025,
             'movement_segment_id':'movement', 'proc_policy':policy}))
     keys = [set_props(unreal.PGPlayerPoseKey(), {'time':t, 'montage_seconds':m}) for t,m in item['pose']]
-    set_props(profile, {'skill_id':skill_id, 'duration':item['duration'], 'aim_lock':.1,
+    set_props(profile, {'skill_id':skill_id, 'duration':item['duration'], 'aim_lock':item.get('aim', .1),
                         'dodge_cancel':item['dodge'], 'attack_cancel':item['attack'], 'attack_speed':1.,
                         'frenzy_per_cast_cap':3, 'hit_phases':phases, 'movement_segments':[movement],
                         'pose_keys':keys, 'slash_material':material, 'swing_sound':sound})
@@ -112,6 +100,9 @@ for item in SPEC['skills']:
     row['SkillCoolTime'] = item['cooldown']
     row['Desc'] = item['name']
     montage = unreal.load_asset(row['MontagePath']['AssetPath']['PackageName'])
+    preserve(montage)
+    configure_montage_blend(montage)
+    save(montage)
     mapping.append({'skill':skill_id, 'montage':montage.get_path_name(), 'length':montage.get_play_length(),
                     'source_rate_scale':montage.get_editor_property('rate_scale'), 'pose_keys':item['pose'],
                     'logical_rate':1.0, 'legacy_rate_not_applied':row['PlayerAttackPlayRate']})

@@ -15,4 +15,7 @@ struct FPGSkillObservation
     int32 Hits = 0;
     float DirectDamage = 0.f;
     bool bEnded = false;
+    int32 Dependents = 0;
+    bool bEndRequested = false;
+    bool bCancelled = false;
 };

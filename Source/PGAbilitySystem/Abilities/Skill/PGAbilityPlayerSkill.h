@@ -30,6 +30,7 @@ public:
 protected:
 	virtual UAbilityTask_PlayMontageAndWait* PlayMontageWait(UAnimMontage* MontageToPlay) override;
 	float AttackPlayRate = 1.f;
+    float AttackStartTime = 0.f;
 	float MeleeDamageMultiplier = 1.f;
 	bool bHeavyImpact = false;
     bool bUsingPlayerProfile = false;

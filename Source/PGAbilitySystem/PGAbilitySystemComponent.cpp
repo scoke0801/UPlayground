@@ -211,8 +211,10 @@ float UPGAbilitySystemComponent::GetHealth() const { return GetNumericAttribute(
 
 float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Source, EPGDamageType& OutType)
 {
+    TGuardValue<int32> Processing(DamageProcessingDepth, DamageProcessingDepth + 1);
     OutType = EPGDamageType::Normal;
     if (!Source || GetHealth() <= 0.f || HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead)) return 0.f;
+    TGuardValue<int32> SourceProcessing(Source->DamageProcessingDepth, Source->DamageProcessingDepth + 1);
     const UPGCombatTuningData* Tuning = CombatTuning ? CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
     const bool bCritical = FMath::FRand() * 10000.f < FMath::Clamp(Source->GetCombatStat(EPGStatType::CriticalRate), 0.f, 10000.f);
     OutType = bCritical ? EPGDamageType::Critical : EPGDamageType::Normal;
@@ -412,7 +414,7 @@ void UPGAbilitySystemComponent::ApplyPlayerProfileHit(APGCharacterBase* Target, 
     Context->HitTargets.FindOrAdd(PhaseId).Add(Target); // Claim before reentrant GAS/death callbacks.
     TGuardValue<TSharedPtr<FPGSkillCastContext>> CastScope(ScopedCast, Context);
     TGuardValue<TSharedPtr<FPGSkillObservation>> ObservationScope(ScopedObservation,
-        ActiveObservation && ActiveObservation->CastId == Context->CastId ? ActiveObservation : nullptr);
+        Context->Observation.Pin());
     TGuardValue<int32> PhaseScope(ScopedHitPhase, PhaseId);
     TGuardValue<FPGHitProcPolicy> PolicyScope(ScopedProcPolicy, Policy);
     TGuardValue<float> DamageScope(MeleeDamageMultiplier, Multiplier);

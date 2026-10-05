@@ -16,6 +16,8 @@
 float UPGAbilitySystemComponent::ReceiveProcDamage(UPGAbilitySystemComponent* Source, float Damage, EPGDamageCause Cause)
 {
     if (!IsValid(Source) || Source->GetHealth() <= 0 || GetHealth() <= 0 || !FMath::IsFinite(Damage) || Damage <= 0) return 0;
+    TGuardValue<int32> Processing(DamageProcessingDepth, DamageProcessingDepth + 1);
+    TGuardValue<int32> SourceProcessing(Source->DamageProcessingDepth, Source->DamageProcessingDepth + 1);
     const float Before = GetHealth();
     const bool bWasBleeding = BleedRemaining > 0 && BleedSource == Source && BleedSourceGeneration == Source->BleedGeneration;
     const float SpreadDamage = BleedDamage;
@@ -53,7 +55,10 @@ float UPGAbilitySystemComponent::ReceiveProcDamage(UPGAbilitySystemComponent* So
             if (auto* Handler = Player->GetSkillHandler())
                 if ((Context ? Handler->RefundRemainingCooldownByID(Context->SkillID, Tuning->BleedRefundFraction) :
                     Handler->RefundRemainingCooldown(Source->ActiveCombatSlot, Tuning->BleedRefundFraction)) > 0)
+                {
                     Source->RefundProcUntil = GetWorld()->GetTimeSeconds() + Tuning->BuildProcDisplaySeconds;
+                    Source->RefundSkillID = Context ? Context->SkillID : Handler->GetSkillID(Source->ActiveCombatSlot);
+                }
         }
         if (GetHealth() <= 0 && bWasBleeding && Cause != EPGDamageCause::External && Source->GetPerkPercent(EPGCombatPerk::BleedSpread) > 0)
             Source->Pulse(GetAvatarActor()->GetActorLocation(), SpreadDamage * Source->GetPerkPercent(EPGCombatPerk::BleedSpread) * .01f, Tuning->ProcRadius, true);
@@ -196,6 +201,7 @@ FPGBuildCombatState UPGAbilitySystemComponent::GetBuildCombatState() const
     State.ShockHitsRequired = FMath::Max(1, Tuning->ShockFractureHits);
     State.bShockProc = Now < ShockProcUntil;
     State.bRefundProc = Now < RefundProcUntil;
+    State.RefundSkillID = State.bRefundProc ? RefundSkillID : 0;
     State.bAfterimageProc = Now < AfterimageProcUntil;
     if (const auto* Target = LastBuildTarget.Get(); Target && Target->GetHealth() > 0)
     {

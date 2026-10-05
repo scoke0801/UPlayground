@@ -12,7 +12,7 @@ TSharedPtr<FPGSkillObservation> UPGAbilitySystemComponent::BeginSkillObservation
     auto Observation = MakeShared<FPGSkillObservation>();
     Observation->SkillID = SkillID;
     Observation->ProfileCast = Context;
-    if (Context) Observation->CastId = Context->CastId;
+    if (Context) { Observation->CastId = Context->CastId; Context->Observation = Observation; }
     Observation->InputAt = ObservedInputAt;
     Observation->Started = GetWorld()->GetTimeSeconds();
     Observation->Origin = GetAvatarActor()->GetActorLocation();
@@ -25,6 +25,12 @@ TSharedPtr<FPGSkillObservation> UPGAbilitySystemComponent::BeginSkillObservation
 void UPGAbilitySystemComponent::EndSkillObservation(const TSharedPtr<FPGSkillObservation>& Observation, bool bCancelled)
 {
     if (!Observation || Observation->bEnded) return;
+    if (Observation->Dependents > 0)
+    {
+        Observation->bEndRequested = true; Observation->bCancelled = bCancelled;
+        if (ActiveObservation == Observation) ActiveObservation.Reset();
+        return;
+    }
     Observation->bEnded = true;
     const auto Context = Observation->ProfileCast;
     const float Displacement = GetAvatarActor() ? FVector::Dist2D(Observation->Origin, GetAvatarActor()->GetActorLocation()) : 0.f;

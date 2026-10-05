@@ -39,6 +39,8 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|QuarterView")
     TObjectPtr<class UPGQuarterViewData> QuarterViewData;
     FVector LastAimDirection = FVector::ForwardVector;
+    FVector LastAimPoint = FVector::ZeroVector;
+    bool bHasAimPoint = false;
     FTimerHandle AimTimer;
     void UpdateAim();
     void ConfigureQuarterView();
@@ -46,6 +48,7 @@ public:
     bool IsGameplayInputAllowed() const;
     const UDataAsset_InputConfig* GetInputConfig() const { return InputConfigDataAsset; }
     void FaceAimDirection();
+    bool GetGroundAimPoint(FVector& Point) const { Point = LastAimPoint; return bHasAimPoint; }
     void FaceDodgeDirection();
     FVector GetDodgeDirection();
     void SetAttackAimTracking(bool bEnabled) { bTrackAttackAim = bEnabled; }

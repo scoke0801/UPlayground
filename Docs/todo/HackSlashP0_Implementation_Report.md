@@ -6,7 +6,7 @@
 
 [설계 원본](../Design/HackSlashSkills/HackSlashSkills_Spec.md)의 첫 구현 MUST 범위인 기본 공격 100/101/102, 질풍연참 111, 원월참 112를 데이터와 런타임에 연결했다. 기존 회피와 GAS 피해 경로를 유지한다. **구현·자동 검증 단계이며 P0 직접 플레이 수용 완료는 아니다.** P1의 110/113/114 이관·자유 장착 UI, P2 장비 변형, 후속 모션 교체는 이번 범위에 포함하지 않는다.
 
-기존 작업 트리와 Content의 변경은 보존했다. 원본 몽타주를 덮어쓰지 않고 프로필의 논리 시간 → 몽타주 위치 매핑으로 기존 애니메이션을 샘플링한다. 새 모션 후보의 최종 채택이나 연속 재생 품질 검수 완료를 의미하지 않는다.
+기존 작업 트리와 Content의 변경은 보존했다. 프로필의 논리 시간 → 몽타주 위치 매핑으로 기존 애니메이션을 샘플링한다. 후속 속도·콤보 수정에서는 원본 시퀀스를 유지하고 플레이어 몽타주의 블렌딩 설정만 조정했다. 새 모션 후보의 최종 채택이나 연속 재생 품질 검수 완료를 의미하지 않는다.
 
 ## 구현
 
@@ -19,13 +19,29 @@
 
 | ID | 피해 배율 | 반경 / 전체 각도 | 타격 시점 | 지속 시간 | 이동 | 쿨다운 |
 |---|---|---|---|---|---|---|
-| 100 | 0.9 | 250 / 120° | 0.16 | 0.48 | 전진 20cm | 0 |
-| 101 | 1.0 | 280 / 150° | 0.19 | 0.50 | 전진 25cm | 0 |
-| 102 | 1.5 | 320 / 170° | 0.30 | 0.68 | 전진 60cm | 0 |
-| 111 | 0.9 × 2 | 240 / 100° | 0.18, 0.40 | 0.72 | 전진 450cm | 3초 |
-| 112 | 1.0 × 2 | 320 / 360° | 0.20, 0.48 | 0.76 | 이동속도 60% 보행 | 4초 |
+| 100 | 0.9 | 250 / 120° | 0.24 | 0.72 | 전진 20cm | 0 |
+| 101 | 1.0 | 280 / 150° | 0.285 | 0.75 | 전진 25cm | 0 |
+| 102 | 1.5 | 320 / 170° | 0.45 | 1.02 | 전진 60cm | 0 |
+| 111 | 0.9 × 2 | 240 / 100° | 0.32, 0.80 | 1.35 | 전진 450cm | 3초 |
+| 112 | 1.0 × 2 | 320 / 360° | 0.36, 0.94 | 1.45 | 이동속도 60% 보행 | 4초 |
 
 거리 단위는 cm, 시간은 실효 속도 1.0의 논리 초다. 속도 범위는 0.75~1.75이며 전진 총거리는 속도에 따라 변하지 않는다. 기존 빌드 프리셋에 명시된 쿨다운 조정은 유지하므로 표는 프로필 기본값 및 격리 로드아웃 기준이다.
+
+액티브 스킬 시간과 0.16초 Cubic 콤보 전환의 후속 변경·검증은 [P1 보고서](HackSlashP1_Implementation_Report.md#2026-10-04-스킬-속도콤보-전환-후속-수정)에 기록한다.
+
+## 2026-10-04 기본 공격 속도 조정
+
+빠르게 보이는 기본 3타의 논리 시간과 포즈 키 시간을 기존의 1.5배로 늘렸다. 원본 모션 구간은 유지하므로 평균 포즈 진행 속도는 기존보다 약 33% 낮아진다. 준비·타격·전진 이동을 같은 비율로 옮기고, 판정 창 폭 0.06초와 히트스톱은 유지한다.
+
+- 지속 시간: 0.48/0.50/0.68 → 0.72/0.75/1.02초.
+- 다음 공격 허용: 0.30/0.32/0.46 → 0.48/0.51/0.72초. 누름 연계 한 바퀴의 이론적 최소 시간은 1.08 → 1.71초(프레임 양자화·히트스톱·광분 제외).
+- 회피 허용: 0.22/0.25/0.36 → 0.33/0.375/0.54초. 타격 후 회피와 콤보를 구분한다.
+- 피해·범위·전진 총거리·광분 배율·액티브 스킬은 유지한다. 공격 빈도가 줄어 기본 공격의 지속 DPS도 낮아지므로 직접 전투에서 처치 시간과 회피 반응성을 확인해야 한다.
+- `ConfigureNormalAttackTempo.py`는 100/101/102 프로필만 백업하고 시간 필드를 저장한다. `ConfigureHackSlashP0.py` 전체 재생성도 수정된 JSON을 사용한다.
+- `ValidateHackSlashP0.py`의 기존 저장 검사에 타격 창 종료·이동 구간·포즈 키 시간 검사를 보강했다.
+- 정적 시간 범위·포즈 순서·Python 구문 검사는 통과했다. 첫 저장은 열린 DebugGame 에디터의 파일 잠금으로 실패했으나, 에디터 종료 후 3개 에셋 저장과 새 프로세스 재로드 검사가 통과했다. 적용 로그는 `Saved/Logs/NormalAttackTempoApplyRetry.log`, 적용 직전 백업은 `Saved/Backups/NormalAttackTempo/20261004T131446408398Z`다.
+- `RunHackSlashP0.py --skip-build`: `Saved/QA/20261004T131502Z_e25b22_hack_slash_p0/report.json`의 assets/automation/spatial 모두 PASS. 기존 Development 바이너리에서 자동 테스트 45개(38 성공·7 경고 포함 성공), 실패·미실행 0이다. 실제 기본 3타 종료 시계 0.720/0.750/1.020초, 피해 90/100/150, 전진 20/25/60cm를 확인했다. 이번 변경은 데이터·도구 수정으로 C++ 재빌드나 패키지 재생성은 하지 않았다.
+- `RunHackSlashMotion.py --label normal_tempo`: `Saved/QA/20261004T131715Z_3ecf3f_attack_motion_normal_tempo/report.json`에 렌더링된 포즈 기록 완료(`RECORDED`, 오류 0). 기본 3타의 논리 시계 진행 샘플 121개에서 포즈 정체 0개다. 직접 조작의 체감·연속 콤보 영상 수용이나 성능 인증을 의미하지 않는다.
 
 ## 에셋과 이관
 
@@ -116,3 +132,71 @@
 - 첫 실행 `20261004T065415Z_dda515_hack_slash_comparison`은 내비게이션 초기화 누락으로 실패했고 그대로 보존했다. 이후 정상 실행으로 수정 확인했다.
 - 직접 시험 40회는 아직 PENDING이다. 스킬별 유효 적중/시전 비율, 첫 입력→타격 지연, 111 이동거리·2타 성공률, 112 중 피격·이탈, 강화 3계열·발동 상한의 통합 기록은 후속 검증이 필요하다. 현재 Health 로그만으로 피해를 특정 시전이나 강화에 귀속시키지 않는다.
 - 연속 모션·VFX/SFX 품질, 경사/층/낭떠러지 이동, 실제 입력·포커스 복귀, 1080p 패키지 20분 성능과 전체 런 밸런스는 미완료다. 이번 도구 실행과 정지 캡처로 대체하지 않는다.
+
+## 2026-10-04 후속 — 시전 계측과 Development 패키지
+
+P2 진입 전 단계별 완료 요청의 첫 단계로 P0의 누락 계측과 패키지 실행 경로를 보강했다. **P0 수용 완료·P1 구현 완료는 아니다.** [설계 14~15장](../Design/HackSlashSkills/HackSlashSkills_Spec.md)의 실제 전투 통과 조건을 유지한다. 스킬 수치·Content 에셋·일반 적까지 막는 111의 이동 정책은 이 후속에서 변경하지 않았다.
+
+### 구현
+
+- `PGShared/FPGSkillObservation`, `PGAbilitySystem/Combat/PGSkillObservation.cpp`: `pg.Skill.Observe 1`일 때 시전 ID, 실제 사용 SkillID, 시작/종료, 취소, 직접 유효 피해, 타격 단계·대상·전후방, 시작→종료 수평 변위를 기록한다. 관측 데이터는 피해·입력·쿨다운의 권위로 사용하지 않는다. 프로필 없는 기준선 공격도 같은 관측 경로를 사용한다.
+- 입력 시각은 ASC가 허용한 `OnAbilityInputPressed` 호출 시점이다. 버퍼 재시도는 원래 요청 시각을 유지하고, 버튼 유지에 의한 새 시전과 직접 Ability 활성화에는 새 누름 지연값을 만들지 않는다. **하드웨어 입력 지연이나 사람 입력 증명이 아니다.** 자동 공간 프로브도 입력 함수를 호출하므로 별도로 `programmatic_input=true`를 기록한다.
+- 직접 GAS 피해를 강화 처리 전에 관측하여 출혈 폭발 등을 직접 피해에 중복 합산하지 않는다. 지연 출혈·충격파 메아리를 현재 시전에 잘못 귀속하지 않는다. 이들 추가 피해는 총 Health 감소에 포함되지만 개별 시전 귀속은 아직 제공하지 않는다.
+- P0 프로필의 시전 종료에 공간 질의 횟수와 공유 격분·충격파·반환 카운터를 기록한다. 카운터는 발동 횟수의 독립 이벤트 감사와 구분한다. 관측 종료는 중복 호출해도 한 번만 기록하고, 시험의 END 이전에 활성 Ability를 취소하여 마지막 시전 기록을 닫는다.
+- `PGSkillScenario`의 피격 기록에 당시 활성 시전 ID를 추가했다. `HackSlashMetrics.py`는 스킬별 유효 적중 시전 비율, 새 누름→첫 유효 피해, 111/112 양쪽 타격 창 적중 비율, 이동 변위, 시전 중 받은 피해·피격 수와 취소 수를 계산한다. 111 양쪽 창의 적중은 서로 다른 대상이어도 포함하며, 개별 대상/단계 목록도 보존한다. 112의 안전 지점 이탈 여부는 영상 검수가 필요하다.
+- `--build none|bleed|shock|frenzy`로 강화 없는 기본 비교와 강화 QA 프리셋을 분리한다. 프리셋은 런타임 전용이며 라이브 보상 데이터·저장을 이관하지 않는다. 흡혈·자동 회복은 넣지 않았다. `bleed`는 출혈10/폭발100/반환1, `shock`는 충격파30/메아리50/파쇄1, `frenzy`는 격분3/잔상1이다. 이 값은 확정 밸런스가 아니다.
+- 비교 파서는 유한 수치·HP 감소 순서·대상 ID·시험 경계·시전/USE 일치·중복 타격·발동 상한을 검사한다. 오래된 로그는 새 계측을 `UNAVAILABLE`로 표시한다. 강화 시험·smoke는 기본 40칸에서 제외하며, 손상된 보고서도 집계 오류로 보존한다.
+- `RunHackSlashPackage.py`는 UE 버전을 프로젝트에서 읽고 고유 QA 폴더에 Development 빌드·쿠킹·스테이징 및 실제 공간 프로브를 실행한다. 이전 `Saved/StagedBuilds` 패키지는 덮어쓰지 않는다. 비교 런처의 `--packaged-exe`는 해당 게임 실행 파일을 사용하며 실행 파일 해시와 별도 `UserDir`를 남긴다. 테스트 저장 이름 앞쪽에 고유 ID를 배치해 기존 프로필 이름 길이 제한에 의한 충돌을 방지했다.
+- `RunHackSlashP0.py`는 시작 실패로 네이티브 로그가 없더라도 stdout과 FAIL 보고서를 보존하도록 보강했다.
+
+### 실행
+
+```powershell
+# 기존 40회 목록 생성 및 개별 직접 시험: --build 기본값은 none
+./Tools/Validation/RunHackSlashComparison.ps1 --prepare
+./Tools/Validation/RunHackSlashComparison.ps1 --scenario P0-M10 --seed 173001 --variant p0
+
+# 강화 QA는 기본 40회와 별도 기록
+./Tools/Validation/RunHackSlashComparison.ps1 --scenario P0-E1 --seed 173001 --variant p0 --build bleed
+
+# 프로젝트 버전의 엔진 Python으로 패키지 생성과 실제 공간 프로브
+$pgVersion = (Get-Content UPlayground.uproject -Raw | ConvertFrom-Json).EngineAssociation
+$pgPython = Join-Path $env:ProgramFiles "Epic Games/UE_$pgVersion/Engine/Binaries/ThirdParty/Python3/Win64/python.exe"
+& $pgPython Tools/Validation/RunHackSlashPackage.py
+
+# 생성된 report.json의 executable 경로를 사용
+./Tools/Validation/RunHackSlashComparison.ps1 --smoke --all --packaged-exe '<Development 실행 파일 경로>'
+./Tools/Validation/RunHackSlashComparison.ps1 --smoke --render-smoke --scenario P0-RING --packaged-exe '<Development 실행 파일 경로>'
+
+& $pgPython -m unittest discover -s Tools/Validation -p 'TestHackSlash*.py'
+./Tools/Validation/RunHackSlashComparison.ps1 --summarize Saved/QA
+```
+
+### 검증 근거
+
+| 검사 | 결과 / 근거 |
+|---|---|
+| Editor 빌드 | PASS, `Saved/QA/20261004T072833Z_cb093a_hack_slash_p0/build.log`. 이후 신규 관측 테스트를 포함한 Editor/Game 빌드도 아래 패키지 UAT에서 통과 |
+| 최종 저장 에셋·PG 테스트·실제 공간 검사 | PASS, `Saved/QA/20261004T073343Z_9aad22_hack_slash_p0/report.json`. **40개: 성공34 + 경고 포함 성공6, 실패0**. 이 실행은 패키지 작업에서 갱신한 바이너리를 사용하여 빌드를 생략 |
+| 독립 HP 측정과 새 계측 대조 | 같은 폴더 `spatial_observations.json`. 100/101/102 직접 피해90/100/150, 변위20/25/60cm. 111 두 대상 합계180·449.998cm, 112 두 대상 합계400·무입력 변위0. 자동 입력 호출이며 사람 입력 지연 근거 아님 |
+| Development 패키지·패키지 공간 검사 | PASS, `Saved/QA/20261004T073142Z_c2bc0fee_hack_slash_package/report.json`, `package.log`, `spatial_observations.json`. 실행 파일은 이 폴더의 `Package/Windows/UPlayground/Binaries/Win64/UPlayground.exe` |
+| 패키지 4종 전후 8회 | RECORDED, 초기 적 종류·HP·좌표 전후 일치, pair_errors 없음. `Saved/QA/20261004T073521Z_a05140_hack_slash_comparison/report.json` |
+| 패키지 강화 3종 초기화 | RECORDED, `Saved/QA/20261004T073749Z_95b95f_hack_slash_build_smoke/report.json`. 정예전 무입력 smoke이므로 강화별 실제 운용 통과는 아님 |
+| 패키지 1080p | 실제 PNG1920×1080, 적 포위·플레이어·HUD를 열어 확인. `Saved/QA/20261004T073702Z_3ef2b5_hack_slash_comparison/P0-RING_173001_p0_cb112204/scene.png`. 정지 화면이며 연속 모션/성능 통과 근거 아님 |
+| 기록 검사 | **22개 통과**, 최종 파서로 위12개 실제 시험 로그 재검사 통과. `Saved/QA/HackSlash_PreP2_20261004/python_tests.log`, `report.json` |
+| 모듈 경계 | `AuditModuleDependencies.py` 통과. 새 모듈 의존성 추가 없음 |
+
+첫 비승격 빌드는 `AppData/Roaming/Unreal Engine/UnrealBuildTool` 접근 거절로 실패했다. `Saved/QA/20261004T072650Z_124b34_hack_slash_p0/build.stdout.log`를 보존하고, 권한을 허용한 후 빌드 성공을 확인했다. 기존 엔진 API 폐기 예정·선호 도구 체인 경고와 테스트 픽스처 경고는 남는다.
+
+### P2 이전 단계 상태와 재개 조건
+
+| 단계 | 현재 상태 | 완료에 필요한 다음 근거 |
+|---|---|---|
+| P0-A/B 구현·자동 검사 | 기존 구현 + 누락 시전 계측·패키지 경로 검증 완료 | 직접 수용 조건과 구분 |
+| P0 실제 전투 수용 | **미완료: 직접 비교 40칸 모두 PENDING** | 동일5시드 전후 실제 조작·대표 영상·실패, 강화별 운용/상한, 이동 안전·연속 모션·포커스 복귀 검수 |
+| P0 패키지 성능 수용 | **미완료** | 목표 PC·품질 기준, 1080p20분 전투의 Frame/Game/Render/GPU 분위수·메모리·잔존 상태. 이번 패키지 생성/짧은 smoke로 대체 불가 |
+| P1-A | **구현·자동 회귀 완료, 화면·실제 조작 수용 잔여** | 110/113/114·5종 중2종 장착/저장·쿨다운 귀속 구현. 모션 끊김 수정 후 45개 테스트·패키지 공간 검사 PASS. 최신 포즈 계측, 110 타격 표현과 실제 플레이 잔여는 [P1 보고서](HackSlashP1_Implementation_Report.md) 참조 |
+| P1-B | **강화 연결·HUD 구현, 직접 검증 잔여** | CastId 귀속과 HUD 연결. QA-10~13 자동 근거와 QA-21 무보조 빌드별 전투 수용을 구분 |
+| P2 | **미착수, 이번 요청의 진입 경계** | P1 완료 후 별도 장비 변형 단계 |
+
+직접 조작 도구는 `Computer Use native pipe is unavailable: failed to connect native pipe ... (os error 2)`로 창 목록 조회부터 실패했고, 재개 후 재확인에서도 동일했다. 이 때문에 직접 입력·연속 조작 검수를 수행하지 못했다. 자동 프로브를 직접 플레이로 간주하지 않았다. 당시 `p1_started=false`였던 `Saved/QA/HackSlash_PreP2_20261004/report.json`은 과거 결과다. 사용자의 후속 전체 진행 요청에 따라 P1 구현을 이어갔으며, 현재 구현·수용 상태와 검증 근거는 [P1 보고서](HackSlashP1_Implementation_Report.md)가 우선한다. P0/P1 실제 수용 완료 및 P2 진입 표시는 계속 보류한다.

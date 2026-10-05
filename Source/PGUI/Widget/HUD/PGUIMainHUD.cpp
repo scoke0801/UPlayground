@@ -15,6 +15,9 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "PGData/DataTable/Skill/PGPlayerSkillText.h"
+#include "PGData/DataAsset/Input/DataAsset_InputConfig.h"
+#include "EnhancedInputSubsystems.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
@@ -83,7 +86,7 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
     .Visibility_Lambda([this,Index](){return SkillIds[Index] > 0 ? EVisibility::Visible : EVisibility::Collapsed;})
     [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(3)
         .IsEnabled_Lambda([this,Index](){return bCanAct && SkillIds[Index] > 0 && Cooldowns[Index] <= 0.f;})
-        .ToolTipText_Lambda([this,Index](){return SkillNames[Index];})
+        .ToolTipText_Lambda([this,Index](){return FText::FromString(SkillNames[Index].ToString()+TEXT("\n")+SkillReasons[Index].ToString());})
         .OnClicked_Lambda([this,Index](){return ActivateSlot(Index);})
         [SNew(SOverlay)
             + SOverlay::Slot().Padding(1,1,1,5)[SNew(SImage).Image(&SkillBrushes[Index])]
@@ -99,10 +102,14 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
                     if(SkillTextures[Index]) return FText::GetEmpty();
                     return FText::FromString(Index==0 ? TEXT("공격") : Index==7 ? TEXT("회피") : FString::FromInt(Index));
                 })]
+            + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
+            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ShadowOffset(FVector2D(1,1)).Text_Lambda([this,Index](){return SkillKeys[Index];})]
+            + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,4)
+            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",9)).Text_Lambda([this,Index](){return SkillReasons[Index];})]
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom)
             [SNew(SBox).WidthOverride(18).HeightOverride(2)
                 [SNew(SImage).Image(FCoreStyle::Get().GetBrush("WhiteBrush"))
-                    .ColorAndOpacity_Lambda([this,Index,Accent](){return SkillIds[Index]>0 ? Accent : FLinearColor(.14f,.18f,.24f);})]]
+                    .ColorAndOpacity_Lambda([this,Index,Accent](){return SkillIds[Index]==RefundSkillID && RefundSkillID>0 ? FLinearColor(1,.15f,.2f) : Index==7 && bAfterimageReady ? FLinearColor(1,.8f,.25f) : SkillIds[Index]>0 ? Accent : FLinearColor(.14f,.18f,.24f);})]]
         ]
     ];
 }
@@ -226,9 +233,12 @@ void UPGUIMainHUD::Refresh()
     RageText=FText::FromString(FString::Printf(TEXT("%.0f / %.0f"),Rage,MaxRage));
     const auto* Profile = UPGProfileSubsystem::Get(this);
     bRogueHUD = Profile && Profile->GetCatalog() && Profile->GetCatalog()->bRoguelikeRuns;
+    RefundSkillID=0; bAfterimageReady=false;
     if (bRogueHUD && ASC)
     {
         const auto State = ASC->GetBuildCombatState();
+        RefundSkillID=State.RefundSkillID;
+        bAfterimageReady=State.FrenzyMaxStacks>0 && State.FrenzyStacks==State.FrenzyMaxStacks && ASC->GetPerkPercent(EPGCombatPerk::FrenzyAfterimage)>0;
         RageRatio = State.FrenzyMaxStacks > 0 ? float(State.FrenzyStacks)/State.FrenzyMaxStacks : 0;
         RageText = FText::FromString(FString::Printf(TEXT("%d/%d · %.1f초"),State.FrenzyStacks,State.FrenzyMaxStacks,State.FrenzySeconds));
         TArray<FString> Summary;
@@ -262,6 +272,16 @@ void UPGUIMainHUD::Refresh()
         const auto* Data=Player && Player->GetSkillHandler() ? Player->GetSkillHandler()->GetSkillData(PGMainHUD::Slot(Index)) : nullptr;
         const int32 Id=Data ? Data->SkillId : 0;
         Cooldowns[Index]=Data ? FMath::Max(0.f,Data->GetRemainingCooldown()) : 0.f;
+        SkillReasons[Index]=FText::FromString(Health<=0 ? TEXT("사망") : !bCanAct ? TEXT("준비 중") : Cooldowns[Index]>0 ? TEXT("재사용 대기") : Player && !Player->CanStartSkill(Index==7) ? TEXT("동작 중") : TEXT(""));
+        SkillKeys[Index]=FText::FromString(TEXT("미지정"));
+        if (Player && Player->GetInputConfig() && GetOwningLocalPlayer())
+            if (auto* Input=GetOwningLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+                for (const auto& Mapping : Player->GetInputConfig()->AbilityInputActions)
+                    if (Mapping.InputTag==PGMainHUD::Tag(Index))
+                    {
+                        const auto Keys=Input->QueryKeysMappedToAction(Mapping.InputAction);
+                        if (!Keys.IsEmpty()) SkillKeys[Index]=Keys[0].GetDisplayName(false);
+                    }
         if(SkillIds[Index]!=Id)
         {
             SkillIds[Index]=Id; SkillTextures[Index]=nullptr;
@@ -269,7 +289,7 @@ void UPGUIMainHUD::Refresh()
             if(auto* Tables=UPGDataTableManager::Get(this); Tables && Id>0)
                 if(const auto* Row=Tables->GetRowData<FPGSkillDataRow>(Id))
                 {
-                    SkillNames[Index]=FText::FromString(Row->Desc);
+                    SkillNames[Index]=FText::FromString(PGPlayerSkillText::Describe(*Row));
                     SkillTextures[Index]=Cast<UTexture2D>(Row->SkillIconPath.TryLoad());
                 }
             SkillBrushes[Index].SetResourceObject(SkillTextures[Index]);

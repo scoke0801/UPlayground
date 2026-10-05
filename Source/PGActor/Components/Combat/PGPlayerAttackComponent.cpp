@@ -1,4 +1,5 @@
 #include "PGPlayerAttackComponent.h"
+#include "PGPlayerSkillProjectile.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
@@ -38,14 +39,39 @@ FCollisionObjectQueryParams WorldObjects()
     Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
     return Objects;
 }
+UStaticMeshComponent* CreateSlashMesh(AActor* Owner, UMaterialInterface* Material)
+{
+    auto* Mesh = NewObject<UStaticMeshComponent>(Owner);
+    Mesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane")));
+    Mesh->SetMaterial(0, Material);
+    Mesh->SetVisibility(false);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Mesh->SetGenerateOverlapEvents(false);
+    Mesh->SetCanEverAffectNavigation(false);
+    Mesh->SetCastShadow(false);
+    Owner->AddInstanceComponent(Mesh); Mesh->RegisterComponent();
+    Mesh->PrecachePSOs();
+    return Mesh;
+}
 }
 
 UPGPlayerAttackComponent::UPGPlayerAttackComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
     PrimaryComponentTick.bStartWithTickEnabled = false;
-    // Input/cancellation and character movement are evaluated before damage.
-    PrimaryComponentTick.TickGroup = TG_PostPhysics;
+    // Movement -> profile clock/pose -> skeletal evaluation. PostPhysics sampling left
+    // the displayed pose one frame behind the hit and the beginning/end of hit-stop.
+    PrimaryComponentTick.TickGroup = TG_PrePhysics;
+}
+
+void UPGPlayerAttackComponent::BeginPlay()
+{
+    Super::BeginPlay();
+    if (auto* Player = Cast<APGCharacterPlayer>(GetOwner()))
+    {
+        AddTickPrerequisiteComponent(Player->GetCharacterMovement());
+        Player->GetMesh()->AddTickPrerequisiteComponent(this);
+    }
 }
 
 void UPGPlayerAttackComponent::PrepareLoadout()
@@ -63,12 +89,24 @@ void UPGPlayerAttackComponent::PrepareLoadout()
     }
     for (int32 ID : IDs)
         if (const auto* Row = Tables->GetRowData<FPGSkillDataRow>(ID))
+        {
+            // Montage references are soft as well; preload the full combo at loadout time,
+            // rather than synchronously loading a different motion on every first swing.
+            if (auto* Montage = Row->MontagePath.TryLoad()) PreparedLoadoutAssets.Add(Montage);
             if (auto* Profile = Row->PlayerProfile.LoadSynchronous())
             {
                 PreparedLoadoutAssets.Add(Profile);
                 for (const auto& Path : {Profile->SlashMaterial.ToSoftObjectPath(), Profile->SlashVFX.ToSoftObjectPath(), Profile->SwingSound.ToSoftObjectPath()})
                     if (!Path.IsNull()) if (auto* Asset = Path.TryLoad()) PreparedLoadoutAssets.Add(Asset);
+                if (auto* System = Profile->SlashVFX.Get()) System->PrecacheAssetPSOs();
+                // Prepare the actual primitive/material pipeline before the first short swing.
+                // Loading the material alone does not precache the static-mesh draw pipeline.
+                if (!SlashMesh && Profile->SlashVFX.IsNull())
+                    if (auto* Material = Profile->SlashMaterial.Get()) SlashMesh = CreateSlashMesh(Player, Material);
             }
+        }
+    if (auto* Plane = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane")))
+        PreparedLoadoutAssets.Add(Plane);
 }
 
 bool UPGPlayerAttackComponent::CanPrepare(const UPGPlayerSkillProfile* Profile, const UAnimMontage* Montage, FString& Error) const
@@ -87,7 +125,42 @@ bool UPGPlayerAttackComponent::CanPrepare(const UPGPlayerSkillProfile* Profile, 
     if (!GetWorld()->LineTraceSingleByObjectType(Floor, Origin + FVector(0,0,45), Origin - FVector(0,0,50), WorldObjects(), Params) ||
         Floor.ImpactNormal.Z < Player->GetCharacterMovement()->GetWalkableFloorZ())
     { Error = TEXT("No walkable ground at cast origin"); return false; }
+    float Distance;
+    if (!FindLeapDistance(Profile,Player->GetActorForwardVector(),Distance))
+    { Error = TEXT("No safe leap landing"); return false; }
     return true;
+}
+
+bool UPGPlayerAttackComponent::FindLeapDistance(const UPGPlayerSkillProfile* Profile, const FVector& Direction, float& Distance) const
+{
+    Distance = 0.f;
+    const auto* Move = Profile->MovementSegments.FindByPredicate([](const auto& M){ return M.Mode==EPGPlayerMoveMode::GroundLeap; });
+    if (!Move) return true;
+    const auto* Player = CastChecked<APGCharacterPlayer>(GetOwner());
+    FVector Aim;
+    float Wanted = Player->GetGroundAimPoint(Aim) ? FMath::Min(Move->Distance,float(FVector::Dist2D(Aim,Feet(Player)))) : Move->Distance;
+    const auto* Capsule = Player->GetCapsuleComponent();
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(PGLeapPreflight),false,Player);
+    const FVector Start = Player->GetActorLocation();
+    const auto Shape = FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(),Capsule->GetScaledCapsuleHalfHeight()-2.f);
+    FCollisionObjectQueryParams Bodies; Bodies.AddObjectTypesToQuery(ECC_Pawn); Bodies.AddObjectTypesToQuery(ECC_GameTraceChannel1);
+    TArray<FHitResult> Contacts;
+    GetWorld()->SweepMultiByObjectType(Contacts,Start,Start+Direction*Wanted,FQuat::Identity,Bodies,Shape,Params);
+    for (const auto& Contact : Contacts)
+        if (auto* Enemy=Cast<APGCharacterEnemy>(Contact.GetActor()); Enemy && Contact.GetComponent()==Enemy->GetCapsuleComponent() && Enemy->GetPGAbilitySystemComponent()->GetHealth()>0)
+            Wanted=FMath::Min(Wanted,float(FVector::Dist2D(Start,Contact.Location))-2.f);
+    for (float Step=FMath::Min(20.f,Wanted); Step>0.f && Step<=Wanted; Step=FMath::Min(Step+20.f,Wanted))
+    {
+        const FVector Point = Start+Direction*Step;
+        FHitResult Wall, Floor;
+        if (GetWorld()->SweepSingleByChannel(Wall,Start,Point,FQuat::Identity,ECC_Pawn,Shape,Params)) break;
+        const FVector Ground=Point-FVector(0,0,Capsule->GetScaledCapsuleHalfHeight());
+        if (!GetWorld()->LineTraceSingleByObjectType(Floor,Ground+FVector(0,0,30),Ground-FVector(0,0,30),WorldObjects(),Params) ||
+            Floor.ImpactNormal.Z<Player->GetCharacterMovement()->GetWalkableFloorZ()) break;
+        Distance=Step;
+        if (Step>=Wanted) break;
+    }
+    return Distance>1.f;
 }
 
 bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnimMontage* Montage,
@@ -103,18 +176,13 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     PreparedVFX = Profile->SlashVFX.LoadSynchronous();
     PreparedSound = Profile->SwingSound.LoadSynchronous();
     if (SlashMesh) SlashMesh->SetVisibility(false);
+    SlashUntil = 0.; SlashStarted = 0.f;
     SlashMID = nullptr;
-    if (auto* Material = Profile->SlashMaterial.LoadSynchronous())
+    if (auto* Material = PreparedVFX ? nullptr : Profile->SlashMaterial.LoadSynchronous())
     {
         if (!SlashMesh)
         {
-            SlashMesh = NewObject<UStaticMeshComponent>(Player);
-            SlashMesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane")));
-            SlashMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-            SlashMesh->SetGenerateOverlapEvents(false);
-            SlashMesh->SetCanEverAffectNavigation(false);
-            SlashMesh->SetCastShadow(false);
-            Player->AddInstanceComponent(SlashMesh); SlashMesh->RegisterComponent();
+            SlashMesh = CreateSlashMesh(Player, Material);
         }
         SlashMID = UMaterialInstanceDynamic::Create(Material, this);
         SlashMesh->SetMaterial(0, SlashMID); SlashMesh->SetVisibility(false);
@@ -130,6 +198,8 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     Speed = FMath::Clamp(Profile->AttackSpeed * ASC->GetFrenzyRate(), .75f, 1.75f);
     bAimLocked = false; PresentedPhases.Reset();
     Player->FaceAimDirection(); LockedForward = Player->GetActorForwardVector();
+    FindLeapDistance(ActiveProfile,LockedForward,LeapDistance);
+    SavedMeshLocation = Player->GetMesh()->GetRelativeLocation();
     Player->SetAttackAimTracking(false);
     SavedWalkSpeed = Player->GetCharacterMovement()->MaxWalkSpeed;
     Player->GetCharacterMovement()->StopMovementImmediately();
@@ -140,6 +210,8 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     // The scheduler owns pose sampling as well as hits: RateScale/legacy notifies cannot double-drive it.
     Anim->Montage_SetPlayRate(Montage, 0.f);
     Anim->Montage_SetPosition(Montage, ActiveProfile->GetMontagePosition(0.f));
+    if (auto* Instance = Anim->GetActiveInstanceForMontage(Montage))
+        Instance->bEnableAutoBlendOut = false; // Logical duration owns completion, including the final pose key.
     Player->GetCombatComponent()->ToggleWeaponCollision(false, EPGToggleDamageType::CurrentEquippedWeapon);
     SetComponentTickEnabled(true);
     if (CVarPGSkillCast.GetValueOnGameThread())
@@ -157,18 +229,24 @@ void UPGPlayerAttackComponent::Stop(bool bNotify, bool bCancelled)
             CastContext->bShockUsed, CastContext->bRefundUsed);
     auto Callback = MoveTemp(Ended);
     CastContext.Reset();
+    for (const auto& Slash : NiagaraSlashes) PGPlayerSlashFX::Release(Slash.Component.Get());
+    NiagaraSlashes.Reset();
     if (SlashMesh) SlashMesh->SetVisibility(false);
     SetComponentTickEnabled(false);
     if (auto* Player = Cast<APGCharacterPlayer>(GetOwner()))
     {
         Player->GetCharacterMovement()->MaxWalkSpeed = SavedWalkSpeed;
+        Player->GetMesh()->SetRelativeLocation(SavedMeshLocation);
         Player->GetCharacterMovement()->StopMovementImmediately();
         Player->SetAttackAimTracking(false);
         Player->ResetAttackHitStop();
         if (auto* Anim = Player->GetMesh()->GetAnimInstance())
         {
             Anim->SetRootMotionMode(static_cast<ERootMotionMode::Type>(SavedRootMotionMode));
-            Anim->Montage_SetPlayRate(ActiveMontage, 1.f);
+            // Keep the outgoing sampled pose during the task's blend-out. Resuming
+            // native playback here discards the profile clock and replays legacy
+            // notifies while the next attack is blending in.
+            Anim->Montage_SetPlayRate(ActiveMontage, 0.f);
         }
         Player->GetCombatComponent()->ToggleWeaponCollision(false, EPGToggleDamageType::CurrentEquippedWeapon);
     }
@@ -183,7 +261,7 @@ void UPGPlayerAttackComponent::EndPlay(const EEndPlayReason::Type Reason)
 
 bool UPGPlayerAttackComponent::CanCancel(bool bDodge) const
 {
-    return IsRunning() && LogicalTime >= (bDodge ? ActiveProfile->DodgeCancel : ActiveProfile->AttackCancel);
+    return IsRunning() && ((bDodge && LogicalTime<ActiveProfile->EarlyDodgeUntil) || LogicalTime >= (bDodge ? ActiveProfile->DodgeCancel : ActiveProfile->AttackCancel));
 }
 float UPGPlayerAttackComponent::GetExpectedSeconds() const { return IsRunning() ? ActiveProfile->Duration / Speed : 0.f; }
 
@@ -203,6 +281,24 @@ void UPGPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
         return;
     }
     Advance(DeltaTime * Speed);
+    if (IsRunning())
+        for (int32 Index = NiagaraSlashes.Num() - 1; Index >= 0; --Index)
+        {
+            const auto& Slash = NiagaraSlashes[Index];
+            const float Progress = (LogicalTime - Slash.StartedAt) / ActiveProfile->SlashDuration;
+            if (Progress >= 1.f || !Slash.Component.IsValid())
+            {
+                PGPlayerSlashFX::Release(Slash.Component.Get());
+                NiagaraSlashes.RemoveAtSwap(Index);
+            }
+            else PGPlayerSlashFX::SetProgress(Slash.Component.Get(), ActiveProfile, Progress);
+        }
+    if (IsRunning() && SlashMesh && SlashMID)
+    {
+        SlashMID->SetScalarParameterValue(TEXT("Progress"), FMath::Clamp(
+            (LogicalTime - SlashStarted) / ActiveProfile->SlashDuration, 0.f, 1.f));
+        SlashMesh->SetVisibility(LogicalTime < SlashUntil);
+    }
 }
 
 void UPGPlayerAttackComponent::Advance(float Seconds)
@@ -224,6 +320,7 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
         {
             Player->FaceAimDirection(); LockedForward = Player->GetActorForwardVector();
             bAimLocked = Next >= ActiveProfile->AimLock;
+            if (!FindLeapDistance(ActiveProfile,LockedForward,LeapDistance)) { Stop(true); return; }
         }
         const float Previous = LogicalTime;
         if (!MoveBetween(Previous, Next)) { Stop(true); return; }
@@ -232,8 +329,17 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
         {
             if (Next >= Hit.Start && Next <= Hit.End)
             {
-                if (!PresentedPhases.Contains(Hit.PhaseId)) { PresentedPhases.Add(Hit.PhaseId); PresentHit(Hit); }
-                QueryHit(Hit);
+                if (!PresentedPhases.Contains(Hit.PhaseId))
+                {
+                    PresentedPhases.Add(Hit.PhaseId); PresentHit(Hit);
+                    if (Hit.Shape==EPGPlayerHitShape::Projectile)
+                    {
+                        FActorSpawnParameters Params; Params.Owner=Player; Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+                        auto* Projectile=GetWorld()->SpawnActor<APGPlayerSkillProjectile>(Feet(Player)+FVector(0,0,80),LockedForward.Rotation(),Params);
+                        if (Projectile) Projectile->Initialize(ActiveProfile,Hit,Context,LockedForward);
+                    }
+                }
+                if (Hit.Shape!=EPGPlayerHitShape::Projectile) QueryHit(Hit);
                 if (CastContext != Context) return; // death/cancel/reentrant callbacks
             }
         }
@@ -258,7 +364,12 @@ bool UPGPlayerAttackComponent::MoveBetween(float From, float To)
             continue;
         }
         const float Fraction = (FMath::Clamp(To, Move.Start, Move.End) - FMath::Clamp(From, Move.Start, Move.End)) / (Move.End - Move.Start);
-        const FVector Delta = LockedForward * Move.Distance * Fraction;
+        const FVector Delta = LockedForward * (Move.Mode==EPGPlayerMoveMode::GroundLeap ? LeapDistance : Move.Distance) * Fraction;
+        if (Move.Mode==EPGPlayerMoveMode::GroundLeap)
+        {
+            const float Progress=FMath::Clamp((To-Move.Start)/(Move.End-Move.Start),0.f,1.f);
+            Player->GetMesh()->SetRelativeLocation(SavedMeshLocation+FVector(0,0,80.f*FMath::Sin(PI*Progress)));
+        }
         if (Delta.IsNearlyZero()) continue;
         // Ground support before moving; a dash never bridges a gap or teleports up a floor.
         const FVector DesiredFeet = Feet(Player) + Delta;
@@ -369,21 +480,31 @@ void UPGPlayerAttackComponent::PresentHit(const FPGPlayerHitPhase& Hit)
 {
     const auto* Player = CastChecked<APGCharacterPlayer>(GetOwner());
     const FVector Center = Feet(Player) + FVector(0,0,10);
-    if (SlashMesh && SlashMID)
+    if (!PreparedVFX && SlashMesh && SlashMID && Hit.Shape!=EPGPlayerHitShape::Projectile)
     {
         SlashMID->SetScalarParameterValue(TEXT("HalfAngleCos"), Hit.Shape == EPGPlayerHitShape::Disc ? -1.f : FMath::Cos(FMath::DegreesToRadians(Hit.FullAngleDegrees*.5f)));
-        SlashMID->SetVectorParameterValue(TEXT("Tint"), Hit.PhaseId % 2 ? FLinearColor(.55f,.4f,1.f) : FLinearColor(.25f,1.f,.75f));
-        SlashMesh->SetWorldLocationAndRotation(Center + FVector(0,0,35), LockedForward.Rotation());
+        SlashMID->SetVectorParameterValue(TEXT("Tint"), ActiveProfile->SlashTint);
+        SlashMID->SetScalarParameterValue(TEXT("BladeWidth"), ActiveProfile->SlashWidth);
+        SlashMID->SetScalarParameterValue(TEXT("Intensity"), ActiveProfile->SlashIntensity);
+        SlashMID->SetScalarParameterValue(TEXT("Direction"), (ActiveProfile->bReverseSlash != bool(Hit.PhaseId % 2)) ? -1.f : 1.f);
+        SlashMID->SetScalarParameterValue(TEXT("Projectile"), 0.f);
+        SlashMID->SetScalarParameterValue(TEXT("Progress"), 0.f);
+        SlashMesh->SetWorldLocationAndRotation(Feet(Player) + FVector(0,0,ActiveProfile->SlashHeight), LockedForward.Rotation());
         SlashMesh->SetWorldScale3D(FVector(Hit.Radius / 50.f, Hit.Radius / 50.f, 1.f));
-        SlashMesh->SetVisibility(true); SlashUntil = LogicalTime + .1f;
+        SlashStarted = LogicalTime;
+        SlashMesh->SetVisibility(true); SlashUntil = LogicalTime + ActiveProfile->SlashDuration;
     }
-    if (PreparedVFX)
-        if (auto* FX = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, PreparedVFX, Center,
-            LockedForward.Rotation(), FVector::OneVector, true, false, ENCPoolMethod::AutoRelease))
+    if (PreparedVFX && Hit.Shape != EPGPlayerHitShape::Projectile)
+        for (int32 Side = 0; Side < (Hit.Shape == EPGPlayerHitShape::Disc ? 2 : 1); ++Side)
         {
-            FX->SetVariableFloat(TEXT("User.Radius"), Hit.Radius);
-            FX->SetVariableFloat(TEXT("User.FullAngle"), Hit.Shape == EPGPlayerHitShape::Disc ? 360.f : Hit.FullAngleDegrees);
-            FX->Activate();
+            FRotator Rotation = LockedForward.Rotation(); Rotation.Yaw += Side * 180.f;
+            if (auto* FX = PGPlayerSlashFX::Spawn(this, PreparedVFX, ActiveProfile, Hit.Radius,
+                Feet(Player) + FVector(0, 0, ActiveProfile->SlashHeight), Rotation,
+                ActiveProfile->bReverseSlash != bool(Hit.PhaseId % 2)))
+            {
+                FX->AddTickPrerequisiteComponent(this);
+                NiagaraSlashes.Add({FX, LogicalTime});
+            }
         }
     if (PreparedSound) UGameplayStatics::PlaySoundAtLocation(this, PreparedSound, Center);
     if (CVarPGSkillShapes.GetValueOnGameThread())

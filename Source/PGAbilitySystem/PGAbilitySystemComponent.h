@@ -64,6 +64,7 @@ private:
     double WeaknessUntil = 0.;
     double ShockProcUntil = 0.;
     double RefundProcUntil = 0.;
+    int32 RefundSkillID = 0;
     double AfterimageProcUntil = 0.;
     FTimerHandle ShockEchoTimer;
     void RegisterShockHit(UPGAbilitySystemComponent* Source);
@@ -84,6 +85,7 @@ private:
     TSharedPtr<FPGSkillObservation> ActiveObservation;
     TSharedPtr<FPGSkillObservation> ScopedObservation;
     int32 ScopedHitPhase = INDEX_NONE;
+    int32 DamageProcessingDepth = 0;
     FTimerHandle InputBufferTimer;
     bool TryInput(const FGameplayTag& Tag, double InputAt = -1.);
     void RetryBufferedInput();
@@ -93,6 +95,7 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 public:
+    bool IsProcessingDamage() const { return DamageProcessingDepth > 0; }
     TSharedPtr<FPGSkillObservation> BeginSkillObservation(int32 SkillID, const TSharedPtr<FPGSkillCastContext>& Context = nullptr);
     void EndSkillObservation(const TSharedPtr<FPGSkillObservation>& Observation, bool bCancelled);
     FString GetObservedCastId() const;

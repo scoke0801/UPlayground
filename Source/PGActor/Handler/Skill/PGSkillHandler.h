@@ -19,6 +19,7 @@ public:
 	PGSkillId SkillId = 0;				// 스킬 ID
 	
     double LastSkillUsedTime = -1.e30; // Unused; world clock may start at zero.
+    double InheritedCooldownUntil = -1.e30;
 	float CoolTime = 0.0f;
 
 	EPGSkillType SkillType;
@@ -48,6 +49,7 @@ class PGACTOR_API FPGSkillHandler : public FPGHandler
 protected:
     TWeakObjectPtr<UObject> Context;
 	TMap<EPGSkillSlot, FPGSkillData> SkillDataMap;
+    TMap<int32, double> UnequippedCooldowns;
 	
 public:
 	virtual ~FPGSkillHandler();

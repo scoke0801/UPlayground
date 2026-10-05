@@ -78,8 +78,9 @@ class ComparisonEvidenceTest(unittest.TestCase):
 
     def test_corrupt_report_retained_without_breaking_summary(self):
         with tempfile.TemporaryDirectory() as tmp:
-            (Path(tmp)/'report.json').write_text('{', encoding='utf-8')
-            self.assertEqual(len(summarize_trials(Path(tmp))['invalid_reports']),1)
+            for text in ('{','[]',json.dumps(dict(scenario='P0-E1',seed=173001,variant='p0'))):
+                (Path(tmp)/'report.json').write_text(text, encoding='utf-8')
+                self.assertEqual(len(summarize_trials(Path(tmp))['invalid_reports']),1)
 
     def test_pinned_baseline_is_pre_migration(self):
         self.assertEqual(len(baseline_evidence(DEFAULT_BASELINE)['skills']), 5)

@@ -30,7 +30,7 @@ void FPGSkillData::Init(const PGSkillId InSkillId)
 
 bool FPGSkillData::IsOnCooldown() const
 {
-    return CoolTime + LastSkillUsedTime > GetTime();
+    return GetRemainingCooldown() > 0.f;
 }
 
 double FPGSkillData::GetTime() const
@@ -43,6 +43,13 @@ float FPGSkillHandler::RefundRemainingCooldownByID(int32 SkillID, float Fraction
 {
     for (auto& Pair : SkillDataMap)
         if (Pair.Value.SkillId == SkillID) return RefundRemainingCooldown(Pair.Key, Fraction);
+    if (double* Until = UnequippedCooldowns.Find(SkillID); Until && FMath::IsFinite(Fraction))
+    {
+        const double Now = Context.IsValid() && Context->GetWorld() ? Context->GetWorld()->GetTimeSeconds() : FPlatformTime::Seconds();
+        const float Refund = FMath::Max(0., *Until - Now) * FMath::Clamp(Fraction, 0.f, 1.f);
+        *Until -= Refund;
+        return Refund;
+    }
     return 0.f;
 }
 
@@ -51,14 +58,15 @@ float FPGSkillHandler::RefundRemainingCooldown(EPGSkillSlot Slot, float Fraction
     auto* Data = GetSkillData(Slot);
     if (!Data || !FMath::IsFinite(Fraction)) return 0.f;
     const float Refund = Data->GetRemainingCooldown() * FMath::Clamp(Fraction, 0.f, 1.f);
-    Data->LastSkillUsedTime -= Refund;
+    Data->InheritedCooldownUntil = Data->GetTime() + Data->GetRemainingCooldown() - Refund;
+    Data->LastSkillUsedTime = Data->InheritedCooldownUntil - Data->CoolTime;
     return Refund;
 }
 
 float FPGSkillData::GetRemainingCooldown() const
 {
 	const double CurrentTime = GetTime();
-	const double EndTime = LastSkillUsedTime + CoolTime;
+	const double EndTime = FMath::Max(LastSkillUsedTime + CoolTime, InheritedCooldownUntil);
 	return FMath::Max(0.0f, static_cast<float>(EndTime - CurrentTime));
 }
 
@@ -73,6 +81,7 @@ void FPGSkillHandler::Initialize()
 
 void FPGSkillHandler::Finalize()
 {
+	SkillDataMap.Reset(); UnequippedCooldowns.Reset();
 	FPGHandler::Finalize();
 }
 
@@ -85,10 +94,13 @@ void FPGSkillHandler::AddSkill(const EPGSkillSlot InSlotId, const PGSkillId InSk
 
 	SkillDataMap.Emplace(InSlotId, FPGSkillData(InSkillId));
     SkillDataMap[InSlotId].ClockContext = Context;
+    if (const double* Until = UnequippedCooldowns.Find(InSkillId)) SkillDataMap[InSlotId].InheritedCooldownUntil = *Until;
 }
 
 void FPGSkillHandler::RemoveSkill(const EPGSkillSlot InSlotID)
 {
+    if (const auto* Data = SkillDataMap.Find(InSlotID); Data && Data->SkillId > 0)
+        UnequippedCooldowns.Add(Data->SkillId, Data->GetTime() + Data->GetRemainingCooldown());
 	SkillDataMap.Remove(InSlotID);
 }
 
@@ -151,7 +163,9 @@ float FPGSkillHandler::GetRemainingCooldownByID(int32 SkillID) const
 			return Pair.Value.GetRemainingCooldown();
 		}
 	}
-	return 0.0f;
+    const double Now = Context.IsValid() && Context->GetWorld() ? Context->GetWorld()->GetTimeSeconds() : FPlatformTime::Seconds();
+    const double* Until = UnequippedCooldowns.Find(SkillID);
+    return Until ? FMath::Max(0., *Until - Now) : 0.f;
 }
 
 int32 FPGSkillHandler::GetPriorityByID(int32 SkillID) const
@@ -184,5 +198,6 @@ void FPGSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 	{
 		// 쿨타임 업데이트
         Data->LastSkillUsedTime = FMath::Max(UE_DOUBLE_SMALL_NUMBER, Data->GetTime());
+        Data->InheritedCooldownUntil = -1.e30;
 	}
 }

@@ -15,5 +15,6 @@ struct FPGBuildCombatState
     FString TargetName;
     bool bShockProc = false;
     bool bRefundProc = false;
+    int32 RefundSkillID = 0;
     bool bAfterimageProc = false;
 };

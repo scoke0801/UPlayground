@@ -15,7 +15,7 @@ def validate_player_attacks():
     for item in spec['skills']:
         row = by_id[item['SkillID']]
         profile = row.get('PlayerProfile')
-        if isinstance(profile, str) and profile.startswith('/Game/DataCenter/HackSlashP0/'):
+        if isinstance(profile, str) and profile.startswith(('/Game/DataCenter/HackSlashP0/','/Game/DataCenter/HackSlashP1/')):
             continue  # Explicit profile owns P0 tuning; validate below, never against legacy coefficients.
         for key, expected in item.items():
             actual = row[key]

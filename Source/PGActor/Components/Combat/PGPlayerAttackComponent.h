@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "PGData/DataAsset/Combat/PGPlayerSkillProfile.h"
+#include "PGPlayerSlashFX.h"
 #include "PGPlayerAttackComponent.generated.h"
 
 DECLARE_DELEGATE_OneParam(FPGPlayerAttackEnded, bool /* cancelled */);
@@ -28,6 +29,7 @@ public:
         const FVector& TargetFeet, float CapsuleRadius);
 
 protected:
+    virtual void BeginPlay() override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:
@@ -40,6 +42,8 @@ private:
     UPROPERTY(Transient) TObjectPtr<class UStaticMeshComponent> SlashMesh;
     UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> SlashMID;
     double SlashUntil = 0.;
+    float SlashStarted = 0.f;
+    TArray<FPGPlayerSlashFXInstance> NiagaraSlashes;
     TSharedPtr<FPGSkillCastContext> CastContext;
     FPGPlayerAttackEnded Ended;
     float LogicalTime = 0.f;
@@ -49,6 +53,9 @@ private:
     FVector LockedForward = FVector::ForwardVector;
     TSet<int32> PresentedPhases;
     bool bAimLocked = false;
+    float LeapDistance = 0.f;
+    FVector SavedMeshLocation = FVector::ZeroVector;
+    bool FindLeapDistance(const UPGPlayerSkillProfile* Profile, const FVector& Direction, float& Distance) const;
     void Advance(float Seconds);
     bool MoveBetween(float From, float To);
     void QueryHit(const FPGPlayerHitPhase& Hit);

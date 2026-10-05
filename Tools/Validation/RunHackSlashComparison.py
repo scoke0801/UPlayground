@@ -28,11 +28,16 @@ def summarize_trials(directory):
     for path in sorted(directory.rglob('report.json')):
         try:
             report = json.loads(read_text(path))
+            if not isinstance(report, dict):
+                raise ValueError('Report must be a JSON object')
         except (ValueError, OSError) as exc:
             invalid_reports.append(dict(report=str(path), error=str(exc)))
             continue
         key = (report.get('scenario'), report.get('seed'), report.get('variant'))
         if key not in cells:
+            continue
+        if report.get('status') not in ('RECORDED','FAIL'):
+            invalid_reports.append(dict(report=str(path), error='Missing or invalid trial status'))
             continue
         if report.get('smoke'):
             smoke_reports.append(str(path))
@@ -53,7 +58,7 @@ def baseline_evidence(path):
     raw = path.read_bytes()
     rows = json.loads(raw.decode('utf-8-sig'))
     selected = {r['SkillID']: r for r in rows if r['SkillID'] in (100, 101, 102, 111, 112)}
-    if len(selected) != 5 or any(r['PlayerProfile'] not in ('None', '', None) for r in selected.values()):
+    if len(selected) != 5 or sum(r['SkillID'] in selected for r in rows) != 5 or any(r['PlayerProfile'] not in ('None', '', None) for r in selected.values()):
         raise ValueError('Baseline must contain all five pre-P0 rows with empty PlayerProfile')
     return {'path': str(path.resolve()), 'sha256': hashlib.sha256(raw).hexdigest(), 'skills': selected}
 

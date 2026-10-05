@@ -1,0 +1,7 @@
+{
+  "skills": [
+    {"id":110,"name":"낙성참 · 진입과 착지 폭발","duration":2.325,"aim":0.3,"dodge":1.53,"early_dodge":0.3,"attack":1.92,"cooldown":5,"hits":[1.32],"damage":[2.2],"radius":300,"angle":360,"shape":"DISC","moves":[[0.3,1.32,600,"GROUND_LEAP"]],"pose_fraction":[[0.0,0],[0.3,0.15],[1.32,0.55],[2.325,1]],"hit_window":0,"max_pose_rate":1.35},
+    {"id":113,"name":"파쇄연격 · 정예 집중 3연격","duration":3.975,"aim":0.15,"dodge":0.78,"early_dodge":0.0,"attack":3.225,"cooldown":4,"hits":[0.3,1.08,1.98],"damage":[0.7,0.7,1.45],"radius":270,"angle":60,"shape":"FAN","moves":[[0.15,0.3,20,"FORWARD_SWEEP"],[0.9,1.08,20,"FORWARD_SWEEP"],[1.8,1.98,20,"FORWARD_SWEEP"]],"pose_seconds":[[0.0,0],[0.3,0.171],[0.75,0.651],[1.08,0.96],[1.53,1.44],[1.98,1.86],[2.49,2.406]],"hit_window":0.09,"max_pose_rate":1.35},
+    {"id":114,"name":"관통검기 · 원거리 직선 관통","duration":2.1,"aim":0.42,"dodge":1.125,"early_dodge":0.0,"attack":1.65,"cooldown":3,"hits":[0.9],"damage":[1.6],"radius":80,"angle":60,"shape":"PROJECTILE","moves":[],"pose_fraction":[[0.0,0],[0.42,0.2],[0.9,0.4],[2.1,1]],"hit_window":0,"max_pose_rate":1.35}
+  ]
+}

@@ -43,6 +43,10 @@ private:
     int32 SkillIds[8] = {-1,-1,-1,-1,-1,-1,-1,-1};
     float Cooldowns[8] = {};
     FText SkillNames[8];
+    FText SkillKeys[8];
+    FText SkillReasons[8];
+    int32 RefundSkillID = 0;
+    bool bAfterimageReady = false;
     FText Objective;
     FText StageTitle;
     FText HealthText;

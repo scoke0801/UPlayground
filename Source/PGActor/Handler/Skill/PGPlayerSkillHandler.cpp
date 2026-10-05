@@ -64,6 +64,7 @@ void FPGPlayerSkillHandler::UseSkill(const EPGSkillSlot InSlotId)
 	if (FPGSkillData* Data = SkillDataMap.Find(InSlotId))
 	{
         Data->LastSkillUsedTime = FMath::Max(UE_DOUBLE_SMALL_NUMBER, Data->GetTime());
+        Data->InheritedCooldownUntil = -1.e30;
 	}
 	
 	FPGEventDataTwoParam<PGSkillId, EPGSkillSlot> ToSendData(SkillId, InSlotId);

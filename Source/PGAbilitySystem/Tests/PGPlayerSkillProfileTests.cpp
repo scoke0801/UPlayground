@@ -12,6 +12,7 @@
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
+#include "PGActor/Components/Combat/PGPlayerSkillProjectile.h"
 #include "PGData/DataAsset/Combat/PGPlayerSkillProfile.h"
 
 namespace
@@ -64,6 +65,42 @@ bool FPGPlayerProfileDataTest::RunTest(const FString&)
     TestFalse(TEXT("Behind player excluded"),Contains(FVector(-100,0,0)));
     TestFalse(TEXT("Different floor excluded"),Contains(FVector(100,0,151)));
     TestTrue(TEXT("Capsule footprint overlaps rim"),Contains(FVector(260,0,0),20));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGPlayerPoseContinuityTest,"PG.HackSlash.PoseContinuity",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPGPlayerPoseContinuityTest::RunTest(const FString&)
+{
+    auto* Profile=TestProfile();
+    const float Times[]={0.f,.16f,.22f,.34f,.40f,.62f,.68f,.92f};
+    const float Poses[]={0.f,.171f,.651f,.96f,1.44f,1.86f,2.406f,4.05f};
+    Profile->PoseKeys.SetNum(UE_ARRAY_COUNT(Times));
+    for(int32 Index=0;Index<Profile->PoseKeys.Num();++Index)
+    {
+        Profile->PoseKeys[Index].Time=Times[Index];
+        Profile->PoseKeys[Index].MontageSeconds=Poses[Index];
+    }
+    for(int32 Index=0;Index<Profile->PoseKeys.Num();++Index)
+    {
+        TestEqual(TEXT("Authored pose/hit alignment is unchanged"),Profile->GetMontagePosition(Times[Index]),Poses[Index],.00001f);
+        if(Index>0 && Index<Profile->PoseKeys.Num()-1)
+        {
+            const float Epsilon=.00001f;
+            const float Left=(Profile->GetMontagePosition(Times[Index])-Profile->GetMontagePosition(Times[Index]-Epsilon))/Epsilon;
+            const float Right=(Profile->GetMontagePosition(Times[Index]+Epsilon)-Profile->GetMontagePosition(Times[Index]))/Epsilon;
+            TestEqual(TEXT("No playback velocity jump at a pose key"),Left,Right,.08f);
+        }
+    }
+    float Previous=Profile->GetMontagePosition(-1.f);
+    TestEqual(TEXT("Before start holds first pose"),Previous,0.f);
+    for(int32 Step=1;Step<=920;++Step)
+    {
+        const float Position=Profile->GetMontagePosition(Step*.001f);
+        TestTrue(TEXT("Continuous samples remain finite, monotone and within montage"),
+            FMath::IsFinite(Position) && Position>=Previous && Position<=4.05001f);
+        Previous=Position;
+    }
+    TestEqual(TEXT("After end holds final pose"),Profile->GetMontagePosition(2.f),4.05f);
     return true;
 }
 
@@ -223,6 +260,83 @@ bool FPGPlayerProfileLifecycleTest::RunTest(const FString&)
     Attack->Advance(.6f);
     TestFalse(TEXT("Overlap-only enemy body still stops dash"),Attack->IsRunning());
     TestTrue(TEXT("Elite/boss safety does not rely on legacy capsule response"),Player->GetActorLocation().X < 170.f);
+    Attack->Stop(); BodyTarget->Destroy(); Player->SetActorLocation(FVector(0,0,98)); Begin();
+    auto* LandingTarget=World->SpawnActor<APGCharacterEnemy>(); Stats(LandingTarget);
+    LandingTarget->SetActorLocation(FVector(800,0,98));
+    LandingTarget->GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel1);
+    LandingTarget->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    auto* Leap=Attack->ActiveProfile.Get(); Leap->SkillID=110; Leap->Duration=.9f; Leap->AimLock=.12f;
+    Leap->EarlyDodgeUntil=.12f; Leap->DodgeCancel=.62f; Leap->AttackCancel=.72f;
+    Leap->HitPhases.SetNum(1); Leap->HitPhases[0].Start=.52f; Leap->HitPhases[0].End=.52f;
+    Leap->HitPhases[0].Radius=300; Leap->HitPhases[0].DamageMultiplier=2.2f;
+    FPGPlayerMovementSegment Jump; Jump.SegmentId=TEXT("leap"); Jump.Mode=EPGPlayerMoveMode::GroundLeap;
+    Jump.Start=.12f; Jump.End=.52f; Jump.Distance=600; Jump.bEndCastOnBlock=true; Leap->MovementSegments={Jump};
+    TestTrue(TEXT("Leap preflight finds safe route"),Attack->FindLeapDistance(Leap,FVector::ForwardVector,Attack->LeapDistance));
+    TestEqual(TEXT("Full valid leap distance"),Attack->LeapDistance,600.f,.1f);
+    TestTrue(TEXT("Dodge before takeoff allowed"),Attack->CanCancel(true));
+    Attack->Advance(.2f); TestFalse(TEXT("Airborne dodge rejected"),Attack->CanCancel(true));
+    auto LeapContext=Attack->CastContext; Attack->Advance(.4f);
+    TestEqual(TEXT("Landing performs one spatial query"),LeapContext->SpatialQueries,1);
+    TestEqual(TEXT("Landing disc deals 220 at destination"),LandingTarget->GetPGAbilitySystemComponent()->GetHealth(),9780.f);
+    TestEqual(TEXT("Leap ends at safe destination"),Player->GetActorLocation().X,600.,.1);
+    Attack->Advance(.03f); TestTrue(TEXT("Dodge after recovery threshold allowed"),Attack->CanCancel(true));
+    Attack->Stop();
+    World->DestroyWorld(false); return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGPlayerP1ProjectileTest,"PG.HackSlash.ProjectileLifetimeAndSweep",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPGPlayerP1ProjectileTest::RunTest(const FString&)
+{
+    auto* World=TestWorld(); auto* Player=World->SpawnActor<APGCharacterPlayer>(); Stats(Player);
+    auto* ASC=Player->GetPGAbilitySystemComponent();
+    auto* Profile=TestProfile(); Profile->SkillID=114;
+    FPGPlayerHitPhase Phase; Phase.Shape=EPGPlayerHitShape::Projectile; Phase.Radius=80; Phase.DamageMultiplier=1.6f; Phase.HitStopSeconds=0;
+    TArray<APGCharacterEnemy*> Targets;
+    for (FVector Position : {FVector(30,0,96),FVector(450,0,96),FVector(900,0,96),FVector(450,0,500)})
+    {
+        auto* Enemy=World->SpawnActor<APGCharacterEnemy>(); Stats(Enemy); Enemy->SetActorLocation(Position);
+        Enemy->GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel1);
+        Enemy->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly); Targets.Add(Enemy);
+    }
+    auto Context=MakeShared<FPGSkillCastContext>(); Context->Caster=Player; Context->SkillID=114; Context->Attack=100;
+    auto* Projectile=World->SpawnActor<APGPlayerSkillProjectile>(FVector(0,0,80),FRotator::ZeroRotator);
+    Projectile->Initialize(Profile,Phase,Context,FVector::ForwardVector);
+    TestEqual(TEXT("Spawn overlap deals exactly one 160 hit"),Targets[0]->GetPGAbilitySystemComponent()->GetHealth(),9840.f);
+    ASC->BeginCombatSkill(EPGSkillSlot::SkillSlot_1); ASC->ApplyStatBonus(EPGStatType::Attack,900);
+    Projectile->Tick(.6f); // One 600ms frame must cover the complete path.
+    TestEqual(TEXT("Spawn target never double hits"),Targets[0]->GetPGAbilitySystemComponent()->GetHealth(),9840.f);
+    TestEqual(TEXT("Long frame hits middle target with original snapshot"),Targets[1]->GetPGAbilitySystemComponent()->GetHealth(),9840.f);
+    TestEqual(TEXT("Long frame hits far target"),Targets[2]->GetPGAbilitySystemComponent()->GetHealth(),9840.f);
+    TestEqual(TEXT("Other floor excluded"),Targets[3]->GetPGAbilitySystemComponent()->GetHealth(),10000.f);
+    TestTrue(TEXT("Range expires projectile"),Projectile->IsActorBeingDestroyed());
+    TestEqual(TEXT("Original skill identity preserved"),Context->SkillID,114);
+    auto* Wall=World->SpawnActor<AActor>(); auto* Box=NewObject<UBoxComponent>(Wall); Wall->SetRootComponent(Box);
+    Box->SetBoxExtent(FVector(10,150,150)); Box->SetCollisionObjectType(ECC_WorldStatic);
+    Box->SetCollisionEnabled(ECollisionEnabled::QueryOnly); Box->SetCollisionResponseToAllChannels(ECR_Block);
+    Box->RegisterComponent(); Wall->SetActorLocation(FVector(200,0,100));
+    Context=MakeShared<FPGSkillCastContext>(); Context->Caster=Player; Context->SkillID=114; Context->Attack=100;
+    Projectile=World->SpawnActor<APGPlayerSkillProjectile>(FVector(0,0,80),FRotator::ZeroRotator);
+    Projectile->Initialize(Profile,Phase,Context,FVector::ForwardVector); Projectile->Tick(.6f);
+    TestEqual(TEXT("Wall prevents far damage"),Targets[1]->GetPGAbilitySystemComponent()->GetHealth(),9840.f);
+    TestTrue(TEXT("Wall destroys projectile"),Projectile->IsActorBeingDestroyed());
+    World->DestroyWorld(false); return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGPlayerP1CooldownTest,"PG.HackSlash.CooldownIdentity",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPGPlayerP1CooldownTest::RunTest(const FString&)
+{
+    auto* World=TestWorld(); auto* Player=World->SpawnActor<APGCharacterPlayer>(); Stats(Player);
+    FPGSkillHandler Handler; Handler.SetContext(Player);
+    Handler.AddSkill(EPGSkillSlot::SkillSlot_1,0);
+    auto* A=Handler.GetSkillData(EPGSkillSlot::SkillSlot_1); A->SkillId=110; A->CoolTime=5; A->LastSkillUsedTime=A->GetTime();
+    Handler.RemoveSkill(EPGSkillSlot::SkillSlot_1);
+    Handler.AddSkill(EPGSkillSlot::SkillSlot_1,0);
+    auto* B=Handler.GetSkillData(EPGSkillSlot::SkillSlot_1); B->SkillId=114; B->CoolTime=3;
+    TestEqual(TEXT("Different skill does not inherit previous slot cooldown"),B->GetRemainingCooldown(),0.f);
+    TestEqual(TEXT("Original unequipped ID can refund"),Handler.RefundRemainingCooldownByID(110,.35f),1.75f,.001f);
+    Handler.RemoveSkill(EPGSkillSlot::SkillSlot_1); Handler.AddSkill(EPGSkillSlot::SkillSlot_2,110);
+    A=Handler.GetSkillData(EPGSkillSlot::SkillSlot_2); A->SkillId=110; A->CoolTime=5;
+    TestEqual(TEXT("Reequipping in another slot retains remaining time"),A->GetRemainingCooldown(),3.25f,.001f);
+    TestTrue(TEXT("Reequipped cooldown blocks use"),A->IsOnCooldown());
     World->DestroyWorld(false); return true;
 }
 #endif

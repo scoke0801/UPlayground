@@ -6,9 +6,9 @@
 #include "PGPlayerSkillProfile.generated.h"
 
 UENUM(BlueprintType)
-enum class EPGPlayerHitShape : uint8 { Fan, Disc };
+enum class EPGPlayerHitShape : uint8 { Fan, Disc, Projectile };
 UENUM(BlueprintType)
-enum class EPGPlayerMoveMode : uint8 { ForwardSweep, Walk };
+enum class EPGPlayerMoveMode : uint8 { ForwardSweep, Walk, GroundLeap };
 
 USTRUCT(BlueprintType)
 struct PGDATA_API FPGPlayerMovementSegment
@@ -62,6 +62,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float AimLock = .10f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float DodgeCancel = .22f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float AttackCancel = .30f;
+    // Optional pre-takeoff cancel interval; zero disables it.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float EarlyDodgeUntil = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float ProjectileSpeed = 1800.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float ProjectileRange = 1000.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float ProjectileLifetime = .7f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float AttackSpeed = 1.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 FrenzyPerCastCap = 3;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FPGPlayerHitPhase> HitPhases;
@@ -70,6 +75,17 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UNiagaraSystem> SlashVFX;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class USoundBase> SwingSound;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UMaterialInterface> SlashMaterial;
+    // Presentation only: the profile clock also freezes the slash during hit-stop.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") FLinearColor SlashTint = FLinearColor(.18f, .8f, 1.f);
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation", meta=(ClampMin="0.05", ClampMax="0.5")) float SlashDuration = .22f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation", meta=(ClampMin="0.02", ClampMax="0.4")) float SlashWidth = .16f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation", meta=(ClampMin="0", ClampMax="10")) float SlashIntensity = 2.4f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation", meta=(ClampMin="0", ClampMax="150")) float SlashHeight = 65.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") bool bReverseSlash = false;
+    // Authoring units of SlashVFX; runtime scales its footprint and simulation age.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Niagara", meta=(ClampMin="1")) float NiagaraReferenceRadius = 100.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Niagara", meta=(ClampMin="0.05", ClampMax="5")) float NiagaraReferenceDuration = .5f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Niagara") FRotator NiagaraRotation = FRotator::ZeroRotator;
 
     bool Validate(int32 ExpectedSkillID, FString& Error) const;
     float GetMontagePosition(float Time) const;

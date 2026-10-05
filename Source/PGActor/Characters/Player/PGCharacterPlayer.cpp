@@ -461,7 +461,7 @@ void APGCharacterPlayer::RefreshCursorAim()
             return;
         }
         const FVector Aim = (AimPoint - GetActorLocation()).GetSafeNormal2D();
-        if (!Aim.ContainsNaN() && !Aim.IsNearlyZero()) LastAimDirection = Aim;
+          if (!Aim.ContainsNaN() && !Aim.IsNearlyZero()) { LastAimDirection = Aim; LastAimPoint = AimPoint; bHasAimPoint = true; }
     }
 }
 void APGCharacterPlayer::FaceAimDirection()
