@@ -28,6 +28,9 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Rewards", meta=(ClampMin="0", ClampMax="0.3")) float CardStaggerSeconds = .07f;
     UPROPERTY(Config, EditAnywhere, Category="Rewards", meta=(ClampMin="0.05", ClampMax="0.5")) float ConfirmSeconds = .18f;
     UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> SanctuaryBackground;
+    UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> TrialFrame;
+    UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> HUDPlaque;
+    UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> MenuFrame;
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> RewardOpenSound;
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> RewardConfirmSound;
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> VictorySound;

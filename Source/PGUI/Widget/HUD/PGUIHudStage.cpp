@@ -44,6 +44,6 @@ void UPGUIHudStage::OnStageUpdated(const IPGEventData* InEventData)
 		return;
 	}
 
-	FString StageString = FString::Printf(TEXT("Stage %d"), EventData->Value);
+	FString StageString = FString::Printf(TEXT("%d구간"), EventData->Value);
 	StageText->SetText(FText::FromString(StageString));
 }

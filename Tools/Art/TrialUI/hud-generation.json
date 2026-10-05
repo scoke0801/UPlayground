@@ -1,0 +1,13 @@
+{
+  "tool": "built-in image_gen",
+  "images": [
+    {
+      "output": "T_HUDPlaque.png",
+      "prompt": "Use case: stylized-concept\nAsset type: production transparent game HUD frame texture, 1536x512 landscape 3:1.\nCreate ONE delicate moonlit sanctuary HUD plaque for a premium anime fantasy action RPG. Front facing flat UI asset. Full rectangular dark midnight navy translucent inset, thin silver border, very small silver crescent motif integrated on the left edge, tiny silver leaf points at corners, faint mint glow along the top horizontal edge. The interior is completely empty with uniform deep navy and no detail for live typography. Sparse, precise, elegant, practical at small 360x120 screen size. The whole shape must fit inside canvas with only 2 percent exterior transparent padding. Actual transparent background outside the plaque, preserve alpha. No text, lettering, pseudo writing, icons in the center, buttons, multiple panels, heavy metal, gold, characters, perspective, drop shadow backdrop or mockup."
+    },
+    {
+      "output": "T_MenuFrame.png",
+      "prompt": "Use case: stylized-concept\nAsset type: transparent overlay frame for a full screen fantasy equipment menu, 1536x1024.\nCreate one complete rectangular ornamental border, front-facing flat, for the moonlit sanctuary menu of a premium anime fantasy RPG. Very thin elegant silver perimeter, small silver and muted lavender leaf ornaments confined to corners, tiny crescent centerpiece at top, faint mint edging. All decoration must be confined to the outer 4 percent so an equipment grid can fill the center. Entire center must be genuinely transparent, including the huge rectangular opening (at least 92 percent of width and height). Outside frame also transparent. No filled panel or background whatsoever. Understated sophisticated style, no heavy metal or gold, no text, letters, icons, buttons, environment, perspective, logo, mockup or watermark. The image itself is an importable UI frame overlay with alpha."
+    }
+  ]
+}

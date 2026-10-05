@@ -1,4 +1,4 @@
-﻿#include "PGActor/Controllers/PGPlayerController.h"
+#include "PGActor/Controllers/PGPlayerController.h"
 
 #if !UE_BUILD_SHIPPING
 #include "PGActor/Progression/PGProfileSubsystem.h"
@@ -101,7 +101,7 @@ void APGPlayerController::PGInventoryProbe(FString Action)
         const auto EquippedBefore=EquippedPair();
         Click(TEXT("슬롯 2에 배치"));
         Check(Profile->GetProfile()->CustomActiveSkills==OriginalSkills,TEXT("skill draft does not save"));
-        Click(TEXT("닫기  ·"));
+        Click(TEXT("닫기"));
         Check(InventoryWidget!=nullptr,TEXT("dirty close stays open"));
         Click(TEXT("계속 편집"));
         Profile->bInjectSaveFailure=true;
@@ -114,24 +114,24 @@ void APGPlayerController::PGInventoryProbe(FString Action)
         Check(Catalog->IsValidActiveSelection(Result),TEXT("four unique skills saved after retry"));
         Check(Result!=OriginalSkills,TEXT("retry commits the draft"));
         Check(EquippedPair()==Result,TEXT("saved draft applies runtime slots"));
-        Click(TEXT("닫기  ·"));
+        Click(TEXT("닫기"));
         Check(!InventoryWidget && !IsMoveInputIgnored(),TEXT("applied close releases input"));
         ToggleInventory(); InventoryWidget->SetBuildTab(true);
         Click(TEXT("슬롯 1에 배치"));
         Click(TEXT("슬롯 2에 배치"));
-        Click(TEXT("닫기  ·"));
+        Click(TEXT("닫기"));
         Check(!InventoryWidget,TEXT("swapping back to equipped pair leaves no dirty prompt"));
         if (!InventoryWidget) ToggleInventory();
         InventoryWidget->SetBuildTab(true);
         Click(TEXT("슬롯 1에 배치"));
-        Click(TEXT("닫기  ·"));
+        Click(TEXT("닫기"));
         Check(InventoryWidget!=nullptr,TEXT("swap close asks confirmation"));
         Click(TEXT("변경 취소 후 닫기"));
         Check(!InventoryWidget && Profile->GetProfile()->CustomActiveSkills==Result,TEXT("discard closes without saving"));
         if (!InventoryWidget) ToggleInventory();
         InventoryWidget->SetBuildTab(true);
         Click(TEXT("슬롯 1에 배치"));
-        Click(TEXT("닫기  ·"));
+        Click(TEXT("닫기"));
         Profile->bInjectSaveFailure=true;
         Click(TEXT("적용 후 닫기"));
         Profile->bInjectSaveFailure=false;
@@ -143,7 +143,7 @@ void APGPlayerController::PGInventoryProbe(FString Action)
         ToggleInventory(); InventoryWidget->SetBuildTab(true);
         // Leave the pending-close layout visible for a real, arranged 720p capture.
         Click(TEXT("슬롯 2에 배치"));
-        Click(TEXT("닫기  ·"));
+        Click(TEXT("닫기"));
         UE_LOG(LogTemp,Display,TEXT("PGInventoryProbe DESIGN failures=%d"),Failures);
         PGInventoryProbe(TEXT("capture"));
         return;

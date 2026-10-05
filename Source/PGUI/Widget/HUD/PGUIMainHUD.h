@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Styling/SlateBrush.h"
 #include "Styling/SlateTypes.h"
+#include "PGShared/Shared/Message/Combat/PGConsumablePresentation.h"
 #include "PGUIMainHUD.generated.h"
 
 /** Native gameplay HUD; no legacy widget blueprint bindings required. */
@@ -29,7 +30,26 @@ private:
     void Refresh();
     FReply ActivateSlot(int32 Index);
     TSharedRef<SWidget> MakeResource(bool bHealth);
+    TSharedRef<SWidget> MakeHealingPotion();
+    void RefreshHealingPotion();
+    void OnConsumableChanged(const class IPGEventData* Event);
+    FDelegateHandle ConsumableHandle;
+    FPGConsumableState Potion;
+    FText PotionKey;
+    FText PotionNotice;
+    bool bPotionHintShown = false;
+    double PotionHintUntil = 0.;
     TSharedRef<SWidget> MakeSkill(int32 Index);
+    TSharedRef<SWidget> MakeStagePanel();
+    TSharedRef<SWidget> MakeActions();
+    TSharedRef<SWidget> MakeBuildPanel();
+    UPROPERTY(Transient) TObjectPtr<UTexture2D> HUDPlaque;
+    FSlateBrush PlaqueBrush;
+    FButtonStyle ActionStyle;
+    FText StagePhase;
+    bool BuildActive[3] = {};
+    bool BuildCore[3] = {};
+    int32 BuildBranches[3] = {};
     FTimerHandle RefreshTimer;
     TWeakObjectPtr<class APGStageManager> Stage;
     TWeakObjectPtr<AActor> Boss;

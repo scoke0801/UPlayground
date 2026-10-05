@@ -1,5 +1,6 @@
 ﻿#include "PGUIMainHUD.h"
 #include "PGUI/Style/PGUIStyle.h"
+#include "PGUI/Style/PGUIStyleSettings.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
 #include "PGShared/Shared/Enum/PGMessageTypes.h"
@@ -60,7 +61,7 @@ UPGUIMainHUD::UPGUIMainHUD(const FObjectInitializer& Initializer) : Super(Initia
 
 TSharedRef<SWidget> UPGUIMainHUD::MakeResource(bool bHealth)
 {
-    return SNew(SBox).WidthOverride(bHealth ? 300.f : 180.f)
+    return SNew(SBox).WidthOverride(bHealth ? 240.f : 120.f)
     [SNew(SVerticalBox)
         + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,7)
         [SNew(SHorizontalBox)
@@ -100,7 +101,7 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
                     if(Cooldowns[Index]>0.f) return FText::FromString(FString::Printf(TEXT("%.1f"),Cooldowns[Index]));
                     if(SkillIds[Index]<=0) return FText::FromString(TEXT("·"));
                     if(SkillTextures[Index]) return FText::GetEmpty();
-                    return FText::FromString(Index==0 ? TEXT("공격") : Index==7 ? TEXT("회피") : FString::FromInt(Index));
+                    return FText::FromString(Index==0 ? TEXT("공격") : Index==7 ? TEXT("대시") : FString::FromInt(Index));
                 })]
             + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
             [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ShadowOffset(FVector2D(1,1)).Text_Lambda([this,Index](){return SkillKeys[Index];})]
@@ -116,6 +117,21 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
 
 TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
 {
+    HUDPlaque = GetDefault<UPGUIStyleSettings>()->HUDPlaque.LoadSynchronous();
+    PlaqueBrush = FPGUIStyle::Get().Panel;
+    if (HUDPlaque)
+    {
+        PlaqueBrush = FSlateBrush();
+        PlaqueBrush.SetResourceObject(HUDPlaque);
+        PlaqueBrush.SetUVRegion(FBox2f(FVector2f(0,.10f),FVector2f(1,.85f)));
+        PlaqueBrush.ImageSize = FVector2D(360,120);
+    }
+    FSlateBrush Normal = PlaqueBrush, Hover = PlaqueBrush, Pressed = PlaqueBrush;
+    Normal.TintColor = FLinearColor(.75f,.83f,.95f,1);
+    Hover.TintColor = FLinearColor(1,1,1,1);
+    Pressed.TintColor = FLinearColor(.45f,.72f,.68f,1);
+    ActionStyle = FPGUIStyle::Get().Button;
+    ActionStyle.SetNormal(Normal).SetHovered(Hover).SetPressed(Pressed);
     auto Skills = SNew(SHorizontalBox);
     for (int32 Index=0; Index<8; ++Index)
         Skills->AddSlot().AutoWidth().Padding(Index == 7 ? 14.f : Index == 0 ? 0.f : 6.f,0,0,0)[MakeSkill(Index)];
@@ -134,51 +150,28 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
                     [SNew(STextBlock).Text_Lambda([this](){return BossStatus;}).ColorAndOpacity_Lambda([this](){return BossStatusColor;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))]]]]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(32,28)
-        [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).BorderImage(&FPGUIStyle::Get().Panel).Padding(FMargin(20,16))
-            [SNew(SVerticalBox)
-                + SVerticalBox::Slot().AutoHeight()
-                [SNew(STextBlock).Text(FText::FromString(TEXT("T R I A L  /  시련")))
-                    .Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(FPGUIStyle::Get().Mint)]
-                + SVerticalBox::Slot().AutoHeight().Padding(0,6,0,8)
-                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",25)).ColorAndOpacity(FPGUIStyle::Get().Text)
-                    .Text_Lambda([this](){return StageTitle;})]
-                + SVerticalBox::Slot().AutoHeight()
-                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular",12)).ColorAndOpacity(FPGUIStyle::Get().Muted)
-                    .WrapTextAt(340).Text_Lambda([this](){return Objective;})]
-            ]]
+        [MakeStagePanel()]
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(32,28)
-        [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(FMargin(20,13))
-            .OnClicked_Lambda([this](){if(auto* PC=Cast<APGPlayerController>(GetOwningPlayer())) PC->ToggleInventory(); return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(TEXT("I   전투 준비"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))
-                .ColorAndOpacity(FPGUIStyle::Get().Text)]]
-        + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(32,92)
-        [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(FMargin(20,13))
-            .Visibility_Lambda([this](){ return Stage.IsValid() && Stage->IsManualReady() && Stage->CanReady() ? EVisibility::Visible : EVisibility::Collapsed; })
-            .OnClicked_Lambda([this](){ if (Stage.IsValid()) Stage->ReadyForNextStage(); return FReply::Handled(); })
-            [SNew(STextBlock).Text(FText::FromString(TEXT("시련 시작  →"))).ColorAndOpacity(FPGUIStyle::Get().Mint)]]
+        [MakeActions()]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(32,0,0,32)
-        [SNew(SBox).WidthOverride(285).Visibility_Lambda([this](){return bRogueHUD ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
-            [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Panel).Padding(14)
-                [SNew(SVerticalBox)
-                    + SVerticalBox::Slot().AutoHeight()
-                    [SNew(STextBlock).Text_Lambda([this](){return BuildSummary;}).WrapTextAt(255)
-                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(FPGUIStyle::Get().Text)]
-                    + SVerticalBox::Slot().AutoHeight().Padding(0,10,0,0)
-                    [SNew(STextBlock).Visibility_Lambda([this](){return BuildStatus.IsEmpty() ? EVisibility::Collapsed : EVisibility::HitTestInvisible;}).Text_Lambda([this](){return BuildStatus;}).WrapTextAt(255)
-                        .Font(FCoreStyle::GetDefaultFontStyle("Regular",12)).ColorAndOpacity(FPGUIStyle::Get().Muted)]
-                    + SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)
-                    [SNew(STextBlock).Visibility_Lambda([this](){return BuildProc.IsEmpty() ? EVisibility::Collapsed : EVisibility::HitTestInvisible;}).Text_Lambda([this](){return BuildProc;}).WrapTextAt(255)
-                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(FPGUIStyle::Get().Mint)]]]]
+        [MakeBuildPanel()]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(24,0,24,30)
         [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
+            [SNew(SBox).Tag(TEXT("PGCombatHUDLayout")).WidthOverride(560).HeightOverride(194)
             [SNew(SVerticalBox)
-                + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,10)
-                [SNew(SBorder).Visibility(EVisibility::HitTestInvisible).BorderImage(&FPGUIStyle::Get().Panel).Padding(FMargin(18,12))
+                + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,0,0,10)
+                [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Panel).Padding(FMargin(18,8))
                     [SNew(SHorizontalBox)
-                        + SHorizontalBox::Slot().AutoWidth()[MakeResource(true)]
-                        + SHorizontalBox::Slot().AutoWidth().Padding(30,0,0,0)[MakeResource(false)]]]
+                        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[MakeResource(true)]
+                        + SHorizontalBox::Slot().AutoWidth().Padding(16,0)[MakeHealingPotion()]
+                        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[MakeResource(false)]]]
+                + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,0,0,8)
+                [SNew(SBox).HeightOverride(20).Visibility(EVisibility::HitTestInvisible)
+                [SNew(STextBlock).Text_Lambda([this](){return PotionNotice;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))
+                    .ColorAndOpacity(FPGUIStyle::Get().Mint).ShadowOffset(FVector2D(0,1))
+                ]]
                 + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[Skills]
-            ]]
+            ]]]
     ];
 }
 
@@ -186,7 +179,10 @@ void UPGUIMainHUD::NativeConstruct()
 {
     Super::NativeConstruct();
     if (auto* Messages = UPGMessageManager::Get(this))
+    {
         BossPresentationHandle = Messages->RegisterDelegate(EPGUIMessageType::BossPresentation, this, &ThisClass::OnBossPresentation);
+        ConsumableHandle = Messages->RegisterDelegate(EPGUIMessageType::ConsumableChanged, this, &ThisClass::OnConsumableChanged);
+    }
     for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It) It->PublishBossPresentation();
     SetVisibility(ESlateVisibility::SelfHitTestInvisible);
     Refresh();
@@ -196,6 +192,7 @@ void UPGUIMainHUD::NativeDestruct()
 {
     if(GetWorld()) GetWorld()->GetTimerManager().ClearTimer(RefreshTimer);
     if (auto* Messages = UPGMessageManager::Get(this)) Messages->UnregisterDelegate(EPGUIMessageType::BossPresentation, BossPresentationHandle);
+    if (auto* Messages = UPGMessageManager::Get(this)) Messages->UnregisterDelegate(EPGUIMessageType::ConsumableChanged, ConsumableHandle);
     Boss.Reset();
     bShowBoss = bBossDefeated = false;
     Stage.Reset();
@@ -230,10 +227,13 @@ void UPGUIMainHUD::Refresh()
     HealthRatio=MaxHealth>0 ? FMath::Clamp(Health/MaxHealth,0.f,1.f) : 0.f;
     RageRatio=MaxRage>0 ? FMath::Clamp(Rage/MaxRage,0.f,1.f) : 0.f;
     HealthText=FText::FromString(FString::Printf(TEXT("%.0f / %.0f"),Health,MaxHealth));
+    RefreshHealingPotion();
     RageText=FText::FromString(FString::Printf(TEXT("%.0f / %.0f"),Rage,MaxRage));
     const auto* Profile = UPGProfileSubsystem::Get(this);
     bRogueHUD = Profile && Profile->GetCatalog() && Profile->GetCatalog()->bRoguelikeRuns;
     RefundSkillID=0; bAfterimageReady=false;
+    for (int32 I=0; I<3; ++I) {BuildActive[I]=BuildCore[I]=false; BuildBranches[I]=0;}
+    BuildStatus=BuildProc=FText::GetEmpty();
     if (bRogueHUD && ASC)
     {
         const auto State = ASC->GetBuildCombatState();
@@ -241,18 +241,19 @@ void UPGUIMainHUD::Refresh()
         bAfterimageReady=State.FrenzyMaxStacks>0 && State.FrenzyStacks==State.FrenzyMaxStacks && ASC->GetPerkPercent(EPGCombatPerk::FrenzyAfterimage)>0;
         RageRatio = State.FrenzyMaxStacks > 0 ? float(State.FrenzyStacks)/State.FrenzyMaxStacks : 0;
         RageText = FText::FromString(FString::Printf(TEXT("%d/%d · %.1f초"),State.FrenzyStacks,State.FrenzyMaxStacks,State.FrenzySeconds));
-        TArray<FString> Summary;
+        int32 ActiveFamilies = 0;
         const EPGCombatPerk Roots[] = {EPGCombatPerk::Bleed, EPGCombatPerk::Shockwave, EPGCombatPerk::Frenzy};
         const EPGCombatPerk Cores[] = {EPGCombatPerk::BleedRecast, EPGCombatPerk::ShockFracture, EPGCombatPerk::FrenzyAfterimage};
-        const TCHAR* Names[] = {TEXT("출혈"),TEXT("충격파"),TEXT("격분")};
         for (int32 I=0; I<3; ++I)
         {
             int32 Branches = 0;
             for (int32 Offset=1; Offset<=3; ++Offset) if (ASC->GetPerkPercent(EPGCombatPerk(uint8(Roots[I])+Offset)) > 0) ++Branches;
-            if (ASC->GetPerkPercent(Roots[I]) > 0)
-                Summary.Add(FString::Printf(TEXT("%s · 전용 %d/3 · %s"),Names[I],Branches,ASC->GetPerkPercent(Cores[I])>0 ? TEXT("핵심 획득") : TEXT("성장 중")));
+            BuildBranches[I]=Branches;
+            BuildActive[I]=ASC->GetPerkPercent(Roots[I])>0;
+            BuildCore[I]=ASC->GetPerkPercent(Cores[I])>0;
+            if (BuildActive[I]) ++ActiveFamilies;
         }
-        BuildSummary = FText::FromString(Summary.IsEmpty() ? TEXT("현재 빌드\n강화를 선택해 계열을 완성하세요") : TEXT("빌드 공명\n") + FString::Join(Summary,TEXT("\n")));
+        BuildSummary = FText::FromString(ActiveFamilies==0 ? TEXT("시련을 돌파하고 새로운 힘을 선택하세요.") : TEXT("같은 계열의 강화를 모아 힘을 키우세요."));
         FString Status = State.TargetName.IsEmpty() ? TEXT("") : State.TargetName;
         if (State.BleedStacks > 0) Status += FString::Printf(TEXT("\n출혈 %d중첩 · %.1f초"),State.BleedStacks,State.BleedSeconds);
         if (ASC->GetPerkPercent(EPGCombatPerk::ShockFracture) > 0 && !State.TargetName.IsEmpty())
@@ -298,17 +299,18 @@ void UPGUIMainHUD::Refresh()
         }
     }
     if(!Stage.IsValid() && GetWorld()) for(TActorIterator<APGStageManager> It(GetWorld());It;++It) {Stage=*It;break;}
-    StageTitle=FText::FromString(Stage.IsValid() ? FString::Printf(TEXT("시련  %02d"),Stage->GetCurrentStageId()) : TEXT("탐험"));
-    FString Goal=TEXT("전투를 준비하세요");
+    StageTitle=FText::FromString(Stage.IsValid() ? FString::Printf(TEXT("제 %d 시련"),Stage->GetCurrentStageId()) : TEXT("탐험"));
+    StagePhase=FText::FromString(TEXT("준비"));
+    FString Goal=TEXT("검술과 장비를 정비하세요.");
     if(Stage.IsValid()) switch(Stage->GetCurrentStageState())
     {
-        case EPGStageState::InProgress: Goal=FString::Printf(TEXT("웨이브 %d / %d   ·   남은 적 %d"),Stage->GetCurrentWaveNumber(),Stage->GetWaveCount(),Stage->GetRemainingMonsters());break;
-        case EPGStageState::WaveIntermission: Goal=FString::Printf(TEXT("웨이브 %d / %d   ·   %.0f초 후 시작"),Stage->GetCurrentWaveNumber(),Stage->GetWaveCount(),FMath::CeilToFloat(Stage->GetWaveTimeRemaining()));break;
-        case EPGStageState::BuildPhase: Goal=Stage->IsManualReady() ? TEXT("구간 완료 · 강화와 장비를 정비하세요") : FString::Printf(TEXT("스테이지 완료 · 빌드 시간 %d초"),FMath::CeilToInt(Stage->GetBuildTimeRemaining()));break;
+        case EPGStageState::InProgress: StagePhase=FText::FromString(TEXT("전투 중")); Goal=FString::Printf(TEXT("공세 %d / %d   ·   남은 적 %d"),Stage->GetCurrentWaveNumber(),Stage->GetWaveCount(),Stage->GetRemainingMonsters());break;
+        case EPGStageState::WaveIntermission: Goal=FString::Printf(TEXT("다음 공세까지 %.0f초"),FMath::CeilToFloat(Stage->GetWaveTimeRemaining()));break;
+        case EPGStageState::BuildPhase: StagePhase=FText::FromString(TEXT("정비")); Goal=Stage->IsManualReady() ? TEXT("획득한 힘으로 다음 시련을 준비하세요.") : FString::Printf(TEXT("다음 시련까지 %d초"),FMath::CeilToInt(Stage->GetBuildTimeRemaining()));break;
         case EPGStageState::RewardPhase: Goal=TEXT("보상을 선택해 빌드를 강화하세요");break;
-        case EPGStageState::Failed: Goal=TEXT("시련 실패 · 재도전을 기다립니다");break;
-        case EPGStageState::RunPreparation: Goal=TEXT("검술과 장비를 정비한 뒤 시련을 시작하세요.");break;
-        case EPGStageState::Finished: Goal=TEXT("모든 시련을 완료했습니다");break;
+        case EPGStageState::Failed: StagePhase=FText::FromString(TEXT("종료")); Goal=TEXT("잠시 숨을 고르고 다시 도전하세요.");break;
+        case EPGStageState::RunPreparation: Goal=TEXT("준비를 마치면 시련을 시작하세요.");break;
+        case EPGStageState::Finished: StagePhase=FText::FromString(TEXT("돌파")); Goal=TEXT("모든 시련을 완료했습니다");break;
         case EPGStageState::Completed: Goal=TEXT("시련 완료");break;
         default: break;
     }

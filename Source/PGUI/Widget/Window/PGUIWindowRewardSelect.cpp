@@ -30,10 +30,10 @@
 
 namespace PGRewardUI
 {
-    TSharedRef<STextBlock> Text(const FText& Value, int32 Size, FLinearColor Color, bool Bold = false)
-    { return SNew(STextBlock).Text(Value).Font(FPGUIStyle::Get().Font(Size,Bold)).ColorAndOpacity(Color).AutoWrapText(true); }
-    TSharedRef<STextBlock> Text(const FString& Value, int32 Size, FLinearColor Color, bool Bold = false)
-    { return Text(FText::FromString(Value),Size,Color,Bold); }
+    TSharedRef<STextBlock> Text(const FText& Value, int32 Size, FLinearColor Color, bool Bold = false, bool Wrap = true)
+    { return SNew(STextBlock).Text(Value).Font(FPGUIStyle::Get().Font(Size,Bold)).ColorAndOpacity(Color).AutoWrapText(Wrap); }
+    TSharedRef<STextBlock> Text(const FString& Value, int32 Size, FLinearColor Color, bool Bold = false, bool Wrap = true)
+    { return Text(FText::FromString(Value),Size,Color,Bold,Wrap); }
     void Sound(const UObject* Context, TSoftObjectPtr<USoundBase> Asset)
     { if (auto* Loaded = Asset.LoadSynchronous()) UGameplayStatics::PlaySound2D(Context,Loaded); }
 }
@@ -50,35 +50,78 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::RebuildWidget()
 {
     using namespace PGRewardUI;
     const auto& Style = FPGUIStyle::Get();
+    const bool bCompact = bIsStatus && !bIsResult;
+    FrameTexture = GetDefault<UPGUIStyleSettings>()->TrialFrame.LoadSynchronous();
+    FrameBrush.SetResourceObject(FrameTexture);
+    FrameBrush.ImageSize = FVector2D(1536,1024);
     bCanCloseWithEscape = bCanCloseWithBackgroundClick = false; SetIsFocusable(true);
     Cards.Empty(); PresentationTime = ConfirmTime = 0; bConfirming = false;
     const FText Title = bIsResult ? FText::FromString(Result.bSavePending ? TEXT("시련 돌파 · 저장 대기") : TEXT("시련 돌파!")) :
         bIsStatus ? FText::FromString(TEXT("도전 종료")) : FText::FromString(TEXT("다음 전투의 힘을 선택하세요"));
-    auto Content = bIsResult ? MakeResult() : bIsStatus ? StaticCastSharedRef<SWidget>(
-        SNew(SScrollBox) + SScrollBox::Slot()[Text(StatusText,24,Style.Text)]) : MakeChoices();
+    auto Content = bIsResult ? MakeResult() : bIsStatus ? MakeStatus() : MakeChoices();
     auto Layout = SNew(SVerticalBox)
-        + SVerticalBox::Slot().AutoHeight()[Text(bIsStatus ? TEXT("T R I A L  /  도전 결과") : TEXT("A U G M E N T  /  강화 선택"),16,Style.Mint,true)]
-        + SVerticalBox::Slot().AutoHeight().Padding(0,8,0,10)[Text(Title,32,Style.Text,true)]
+        + SVerticalBox::Slot().AutoHeight().HAlign(bCompact ? HAlign_Center : HAlign_Left)
+        [Text(bIsStatus ? TEXT("시련의 기록") : TEXT("강화 선택"),14,Style.Mint,true,false)]
+        + SVerticalBox::Slot().AutoHeight().HAlign(bCompact ? HAlign_Center : HAlign_Left).Padding(0,8,0,10)
+        [Text(Title,bCompact ? 36 : 30,Style.Text,true,!bCompact)]
         + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,18)
-        [SNew(STextBlock).Text_Lambda([this](){return CountdownText();}).Font(Style.Font(16)).ColorAndOpacity(Style.Muted).AutoWrapText(true)]
+        [SNew(STextBlock).Visibility(bCompact ? EVisibility::Collapsed : EVisibility::Visible)
+            .Text_Lambda([this](){return CountdownText();}).Font(Style.Font(16)).ColorAndOpacity(Style.Muted).AutoWrapText(true)]
         + SVerticalBox::Slot().FillHeight(1)[Content]
         + SVerticalBox::Slot().AutoHeight().Padding(0,12,0,0)
-        [SNew(STextBlock).Text_Lambda([this](){return Feedback;}).Font(Style.Font(16)).ColorAndOpacity(Style.Danger).AutoWrapText(true)];
+        [SNew(STextBlock).Visibility_Lambda([this](){return Feedback.IsEmpty() ? EVisibility::Collapsed : EVisibility::Visible;})
+            .Text_Lambda([this](){return Feedback;}).Font(Style.Font(16)).ColorAndOpacity(Style.Danger).AutoWrapText(true)];
     if (bIsStatus)
     {
-        Layout->AddSlot().AutoHeight().Padding(0,16,0,0)
+        Layout->AddSlot().AutoHeight().HAlign(HAlign_Center).Padding(0,16,0,0)
+            [SNew(SBox).WidthOverride(280)
             [SNew(SButton).ButtonStyle(&Style.Button).ContentPadding(FMargin(20,14)).HAlign(HAlign_Center)
                 .IsEnabled_Lambda([this](){return !bConfirming && PresentationTime >= GetDefault<UPGUIStyleSettings>()->RevealSeconds;})
                 .OnClicked_Lambda([this](){RetryRun();return FReply::Handled();})
                 [SNew(STextBlock).Text(bIsResult ? FText::FromString(Result.bSavePending ? TEXT("저장 다시 시도") : TEXT("새 도전 시작")) :
-                    StatusAction.IsEmpty() ? FText::FromString(TEXT("다시 도전하기")) : StatusAction).Font(Style.Font(20,true)).ColorAndOpacity(Style.Mint)]];
+                    StatusAction.IsEmpty() ? FText::FromString(TEXT("다시 도전하기")) : StatusAction).Font(Style.Font(20,true)).ColorAndOpacity(Style.Mint)]]];
+        if (bCompact)
+            Layout->AddSlot().AutoHeight().Padding(0,14,0,0)
+                [SNew(STextBlock).Text(CountdownText()).Justification(ETextJustify::Center)
+                    .Font(Style.Font(14)).ColorAndOpacity(Style.Muted).AutoWrapText(true)];
     }
     return SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-        .BorderBackgroundColor(FLinearColor(.004f,.008f,.018f,.90f)).Padding(0)
+        .BorderBackgroundColor(FLinearColor(.004f,.008f,.018f,.74f)).Padding(0)
         [SNew(SSafeZone)[SNew(SOverlay)
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(GetDefault<UPGUIStyleSettings>()->ScreenMargin)
-            [SAssignNew(Frame,SBox).WidthOverride(1200).HeightOverride(780)
-                [SNew(SBorder).BorderImage(&Style.Panel).Padding(24)[Layout]]]]];
+            [SAssignNew(Frame,SBox).WidthOverride(bCompact ? 900 : 1200).HeightOverride(bCompact ? 570 : 780)
+                [SNew(SBorder).BorderImage(FrameTexture ? &FrameBrush : &Style.Panel)
+                    .Padding(FMargin(42,60,42,38))[Layout]]]]];
+}
+
+TSharedRef<SWidget> UPGUIWindowRewardSelect::MakeStatus()
+{
+    using namespace PGRewardUI;
+    const auto& Style = FPGUIStyle::Get();
+    auto Summary = SNew(SHorizontalBox);
+    auto AddRecord = [&Summary,&Style](const FText& Label, const FText& Value)
+    {
+        Summary->AddSlot().FillWidth(1).Padding(6,0)
+            [SNew(SBorder).BorderImage(&Style.Card).Padding(FMargin(16,18))
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[Text(Label,14,Style.Muted,false,false)]
+                    + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,8,0,0)[Text(Value,24,Style.Lavender,true,false)]]];
+    };
+    if (StageOwner.IsValid())
+        AddRecord(FText::FromString(TEXT("도달 구간")),FText::Format(NSLOCTEXT("PG","ReachedStage","{0}구간"),FText::AsNumber(StageOwner->GetCurrentStageId())));
+    if (const auto* Profile = UPGProfileSubsystem::Get(this))
+        if (Profile->GetProfile())
+        {
+            int32 Count = 0;
+            for (const auto& Entry : Profile->GetProfile()->SelectedRewards) Count += Entry.Value;
+            AddRecord(FText::FromString(TEXT("선택한 강화")),FText::Format(NSLOCTEXT("PG","RunRewardCount","{0}회"),FText::AsNumber(Count)));
+        }
+    return SNew(SScrollBox) + SScrollBox::Slot()
+        [SNew(SVerticalBox)
+            + SVerticalBox::Slot().AutoHeight().Padding(0,6,0,26)
+            [SNew(STextBlock).Text(StatusText).Font(Style.Font(18)).ColorAndOpacity(Style.Muted)
+                .Justification(ETextJustify::Center).AutoWrapText(true)]
+            + SVerticalBox::Slot().AutoHeight()[Summary]];
 }
 
 TSharedRef<SWidget> UPGUIWindowRewardSelect::MakeResult()
@@ -89,7 +132,7 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::MakeResult()
     const auto* Profile = UPGProfileSubsystem::Get(this);
     const auto* Def = Profile && Profile->GetCatalog() && Result.Loot.Guid.IsValid() ? Profile->GetCatalog()->FindItem(Result.Loot.DefinitionId) : nullptr;
     auto Loot = SNew(SVerticalBox);
-    Loot->AddSlot().AutoHeight()[Text(TEXT("B O S S  L O O T  /  보스 전리품"),16,Style.Mint,true)];
+    Loot->AddSlot().AutoHeight()[Text(TEXT("보스 전리품"),16,Style.Mint,true)];
     if (Def)
     {
         LootIcon = Def->Icon.LoadSynchronous(); LootBrush.SetResourceObject(LootIcon); LootBrush.ImageSize = FVector2D(112);
@@ -137,7 +180,7 @@ FText UPGUIWindowRewardSelect::CountdownText() const
     if (bIsResult) return FText::FromString(TEXT("전리품 · 장비 · 강화는 이번 도전 전용입니다. 새 도전에서 초기화됩니다."));
     if (bIsStatus) return FText::FromString(TEXT("장비와 강화는 새 도전에서 다시 구성됩니다."));
     if (!StageOwner.IsValid() || StageOwner->IsManualReady()) return FText::FromString(TEXT("한 가지를 선택하세요 · 이번 도전 동안 누적 · 선택 후 장비 정비"));
-    return FText::Format(NSLOCTEXT("PG", "BuildCountdown", "빌드 시간 {0}초 · 시간 종료 시 첫 번째 보상 자동 선택"),
+    return FText::Format(NSLOCTEXT("PG", "BuildCountdown", "정비 시간 {0}초 · 시간 종료 시 첫 번째 보상 자동 선택"),
         FText::AsNumber(FMath::CeilToInt(StageOwner->GetBuildTimeRemaining())));
 }
 
@@ -157,6 +200,7 @@ void UPGUIWindowRewardSelect::NativeDestruct()
 void UPGUIWindowRewardSelect::ReleaseSlateResources(bool bReleaseChildren)
 {
     Super::ReleaseSlateResources(bReleaseChildren); Frame.Reset(); ResultBody.Reset(); Cards.Empty(); LootIcon = nullptr;
+    FrameBrush.SetResourceObject(nullptr); FrameTexture = nullptr;
 }
 void UPGUIWindowRewardSelect::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
@@ -164,8 +208,9 @@ void UPGUIWindowRewardSelect::NativeTick(const FGeometry& Geometry, float DeltaT
     const auto* Settings = GetDefault<UPGUIStyleSettings>();
     if (Frame)
     {
-        Frame->SetWidthOverride(FMath::Max(1.f,FMath::Min(Settings->RewardMaxWidth,Geometry.GetLocalSize().X-Settings->ScreenMargin*2)));
-        Frame->SetHeightOverride(FMath::Max(1.f,FMath::Min(820.f,Geometry.GetLocalSize().Y-Settings->ScreenMargin*2)));
+        const bool bCompact = bIsStatus && !bIsResult;
+        Frame->SetWidthOverride(FMath::Max(1.f,FMath::Min(bCompact ? 900.f : Settings->RewardMaxWidth,Geometry.GetLocalSize().X-Settings->ScreenMargin*2)));
+        Frame->SetHeightOverride(FMath::Max(1.f,FMath::Min(bCompact ? 570.f : 820.f,Geometry.GetLocalSize().Y-Settings->ScreenMargin*2)));
     }
     PresentationTime += DeltaTime;
     if (ResultBody) ResultBody->SetRenderOpacity(FMath::Clamp(PresentationTime/FMath::Max(.05f,Settings->RevealSeconds),0.f,1.f));
@@ -235,7 +280,7 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::MakeChoices()
     auto Row = SNew(SHorizontalBox);
     for (int32 Index = 0; Index < FMath::Max(1,Choices.Num()); ++Index)
     {
-        FText Name = NSLOCTEXT("PG", "ContinueBuild", "빌드 준비하기");
+        FText Name = NSLOCTEXT("PG", "ContinueBuild", "다음 전투 준비");
         FText Desc = NSLOCTEXT("PG", "NoRewardsContinue", "선택할 강화가 없습니다. 장비를 정비한 뒤 다음 전투를 준비하세요.");
         EPGRewardGrade Grade = EPGRewardGrade::Normal;
         UTexture2D* Icon = nullptr;

@@ -159,6 +159,12 @@ void APGPlayerController::PGRewardProbe(FString Action)
         const auto Size=View->GetCachedGeometry().GetLocalSize();
         const auto FrameSize=View->Frame->GetCachedGeometry().GetLocalSize();
         Check(FrameSize.X<=Size.X && FrameSize.Y<=Size.Y,TEXT("responsive frame fits viewport"));
+        Check(View->FrameTexture!=nullptr,TEXT("generated trial frame is loaded"));
+        if (View->bIsStatus && !View->bIsResult)
+        {
+            Check(FrameSize.X<=900 && FrameSize.Y<=570,TEXT("failure uses compact result layout"));
+            Check(!View->StatusText.ToString().Contains(TEXT("Player defeated")) && !View->StatusText.ToString().Contains(TEXT("Missing enemy")),TEXT("diagnostic English is not displayed"));
+        }
         for (const auto& Card : View->Cards)
             Check(Card->GetCachedGeometry().GetLocalSize().Y>250 && Card->GetIsEnabled(),TEXT("cards arranged and reveal finished"));
         const FModifierKeysState Modifiers;
@@ -229,6 +235,13 @@ void APGPlayerController::PGRewardProbe(FString Action)
             Drop->InitializeItem(Item);
         }
         Later(3.f,Action==TEXT("lootFar") ? TEXT("checkLootFar") : TEXT("checkLoot"));
+    }
+    else if (Action==TEXT("defeat") || Action==TEXT("interrupted"))
+    {
+        Check(Profile->ConfigureBuildScenario({15000,15003}),TEXT("valid failed run fixture"));
+        Stage->CurrentStageId=3;
+        Stage->FailStage(Action==TEXT("defeat") ? TEXT("Player defeated.") : TEXT("Missing enemy class: 99999"));
+        Later(3.f,TEXT("checkLayout"));
     }
     else if (Action==TEXT("result") || Action==TEXT("pending") || Action==TEXT("pendingRetry"))
     {

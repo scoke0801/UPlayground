@@ -33,24 +33,24 @@ FString PGRewardText::Effect(EPGCombatPerk Perk, int32 Value, const UPGCombatTun
 {
     switch (Perk)
     {
-    case EPGCombatPerk::Bleed: return FString::Printf(TEXT("직접 적중 피해의 %d%%씩 %.1f초마다 출혈. %.1f초, 최대 %d중첩."), Value,T.BleedInterval,T.BleedInterval*T.BleedTicks,T.BleedMaxStacks);
-    case EPGCombatPerk::BleedPotency: return FString::Printf(TEXT("출혈 틱 피해 +%d%%."),Value);
-    case EPGCombatPerk::BleedSpread: return FString::Printf(TEXT("출혈 대상 처치 시 틱 피해의 %d%%를 반경 %.0f에 출혈로 확산."),Value,T.ProcRadius);
-    case EPGCombatPerk::BleedBurst: return FString::Printf(TEXT("액티브 직접 적중 시 남은 출혈의 %d%%를 폭발시키고 새 출혈 부여."),Value);
-    case EPGCombatPerk::Shockwave: return FString::Printf(TEXT("액티브 직접 적중 피해의 %d%%로 반경 %.0f 파동. 간격 %.1f초."),Value,T.ProcRadius,T.ShockCooldown);
+    case EPGCombatPerk::Bleed: return FString::Printf(TEXT("공격한 적에게 출혈을 남깁니다. 적중 피해의 %d%%를 %.1f초마다 추가로 가하며, %.1f초 동안 최대 %d중첩됩니다."), Value,T.BleedInterval,T.BleedInterval*T.BleedTicks,T.BleedMaxStacks);
+    case EPGCombatPerk::BleedPotency: return FString::Printf(TEXT("출혈로 주는 지속 피해가 %d%% 증가합니다."),Value);
+    case EPGCombatPerk::BleedSpread: return FString::Printf(TEXT("출혈 중인 적을 처치하면 %.1fm 안의 적에게 출혈이 번집니다. 퍼진 출혈은 기존 지속 피해의 %d%%를 줍니다."),T.ProcRadius/100,Value);
+    case EPGCombatPerk::BleedBurst: return FString::Printf(TEXT("검술로 적을 맞히면 남은 출혈 피해의 %d%%가 한 번에 터지고, 새 출혈을 남깁니다."),Value);
+    case EPGCombatPerk::Shockwave: return FString::Printf(TEXT("검술이 적중하면 %.1fm 안에 충격파가 퍼져 적중 피해의 %d%%를 추가로 줍니다. %.1f초마다 발동합니다."),T.ProcRadius/100,Value,T.ShockCooldown);
     case EPGCombatPerk::ShockRadius: return FString::Printf(TEXT("충격파와 메아리 반경 +%d%%."),Value);
     case EPGCombatPerk::ShockEcho: return FString::Printf(TEXT("0.3초 뒤 최초 파동 피해의 %d%%로 메아리."),Value);
-    case EPGCombatPerk::ShockExecute: return FString::Printf(TEXT("HP 35%% 이하 적에게 충격파·메아리 피해 +%d%%."),Value);
-    case EPGCombatPerk::Frenzy: return FString::Printf(TEXT("직접 적중마다 공격 속도 +%d%%. %d중첩·%.1f초, 속도 상한 +75%%."),Value,T.FrenzyMaxStacks,T.FrenzySeconds);
+    case EPGCombatPerk::ShockExecute: return FString::Printf(TEXT("생명력이 35%% 이하인 적에게 충격파와 메아리가 %d%% 더 큰 피해를 줍니다."),Value);
+    case EPGCombatPerk::Frenzy: return FString::Printf(TEXT("공격을 맞힐수록 공격 속도가 %d%%씩 빨라집니다. %.1f초 동안 최대 %d중첩되며, 최대 75%%까지 증가합니다."),Value,T.FrenzySeconds,T.FrenzyMaxStacks);
     case EPGCombatPerk::FrenzyDuration: return FString::Printf(TEXT("격분 유지 시간 +%d%% (%.1f초)."),Value,T.FrenzySeconds*(1+Value*.01f));
     case EPGCombatPerk::FrenzyLeech: return FString::Printf(TEXT("격분을 쌓는 직접 피해의 %d%%만큼 회복."),Value);
     case EPGCombatPerk::FrenzyGuard: return FString::Printf(TEXT("격분 유지 중 받는 직접 피해 %d%% 감소."),FMath::Min(60,Value));
     case EPGCombatPerk::LifeSteal: return FString::Printf(TEXT("실제 가한 직접 피해의 %d%% 회복. 과잉 피해 제외."),Value);
-    case EPGCombatPerk::Cooldown: return FString::Printf(TEXT("장착 스킬·회피 쿨다운 %d%% 감소."),FMath::Min(50,Value));
-    case EPGCombatPerk::BleedRecast: return FString::Printf(TEXT("출혈 폭발로 처치하면 사용한 액티브의 남은 쿨다운 %.0f%% 반환. 스킬 사용당 1회."),T.BleedRefundFraction*100);
+    case EPGCombatPerk::Cooldown: return FString::Printf(TEXT("검술과 대시의 재사용 대기시간이 %d%% 감소합니다."),FMath::Min(50,Value));
+    case EPGCombatPerk::BleedRecast: return FString::Printf(TEXT("출혈 폭발로 적을 처치하면 사용한 검술의 남은 대기시간이 %.0f%% 줄어듭니다. 검술 사용마다 한 번 발동합니다."),T.BleedRefundFraction*100);
     case EPGCombatPerk::ShockFracture: return FString::Printf(TEXT("같은 적에게 %.1f초 내 파동·메아리 %d회 적중 시 %.1f초간 방어력 %.0f%% 감소."),T.ShockStackSeconds,T.ShockFractureHits,T.ShockWeaknessSeconds,T.ShockDefenseReduction*100);
-    case EPGCombatPerk::FrenzyAfterimage: return FString::Printf(TEXT("최대 격분에서 회피하면 전 중첩 소비. 출발점 반경 %.0f에 공격력 %.0f%% 잔상 타격."),T.AfterimageRadius,T.AfterimageAttackMultiplier*100);
-    case EPGCombatPerk::Execution: return FString::Printf(TEXT("HP %.0f%% 이하 대상에게 직접 피해 +%d%%."),T.ExecutionHealthThreshold*100,Value);
+    case EPGCombatPerk::FrenzyAfterimage: return FString::Printf(TEXT("격분이 가득 찼을 때 대시하면 격분을 모두 소모하고 잔상을 남깁니다. 잔상이 출발점 %.1fm 안의 적에게 공격력의 %.0f%% 피해를 줍니다."),T.AfterimageRadius/100,T.AfterimageAttackMultiplier*100);
+    case EPGCombatPerk::Execution: return FString::Printf(TEXT("생명력이 %.0f%% 이하인 적을 직접 공격하면 피해가 %d%% 증가합니다."),T.ExecutionHealthThreshold*100,Value);
     case EPGCombatPerk::Counter: return FString::Printf(TEXT("회복 중인 적에게 직접 피해 +%d%%."),Value);
     default: return FString();
     }

@@ -12,7 +12,7 @@ from RunQA import ROOT, FATAL, read_text, run_process, unexpected_errors
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cases', default='reward720,reward1080,rewardWide,result720,result1080,resultWide,pending,pendingRetry,interaction,empty,loot,loot100,lootFar')
+    parser.add_argument('--cases', default='defeat720,defeat1080,defeatWide,interrupted,reward720,reward1080,rewardWide,result720,result1080,resultWide,pending,pendingRetry,interaction,empty,loot,loot100,lootFar')
     args = parser.parse_args()
     version = json.loads(read_text(ROOT / 'UPlayground.uproject'))['EngineAssociation']
     engine = Path(os.environ.get('ProgramFiles', 'C:/Program Files')) / 'Epic Games' / ('UE_' + version)
@@ -20,6 +20,8 @@ def main():
     out = ROOT / 'Saved/QA' / (run_id + '_reward_loot')
     out.mkdir(parents=True)
     cases = dict(reward720=(1280, 720, 'reward'), reward1080=(1920, 1080, 'reward'), rewardWide=(2560, 1080, 'reward'),
+                 defeat720=(1280, 720, 'defeat'), defeat1080=(1920, 1080, 'defeat'), defeatWide=(2560, 1080, 'defeat'),
+                 interrupted=(1280, 720, 'interrupted'),
                  result720=(1280, 720, 'result'), result1080=(1920, 1080, 'result'), resultWide=(2560, 1080, 'result'))
     for name in ('pending', 'pendingRetry', 'interaction', 'empty', 'loot', 'loot100', 'lootFar'):
         cases[name] = (1280, 720, name)
@@ -32,11 +34,19 @@ def main():
         command = [engine / 'Engine/Binaries/Win64/UnrealEditor.exe', ROOT / 'UPlayground.uproject', '/Game/Maps/RogueArena',
                    '-game', '-ExecCmds=t.MaxFPS 30,PGRewardProbe ' + mode, '-seconds=20', '-RenderOffscreen', '-windowed', '-ForceRes',
                    f'-ResX={width}', f'-ResY={height}', '-nosplash', '-nosound', '-unattended', '-nop4',
-                   '-culture=en', '-PGTestProfile=UI_' + uuid.uuid4().hex[:20], f'-abslog={out / (name + ".log")}']
+                   '-culture=ko', '-DisablePlugins=RiderLink', '-ddc=InstalledNoZenLocalFallback',
+                   '-PGTestProfile=UI_' + uuid.uuid4().hex[:20], f'-abslog={out / (name + ".log")}']
         code, timeout = run_process(command, ROOT, out / (name + '.stdout.log'), 120)
         path = out / (name + '.log')
         log = read_text(path) if path.is_file() else ''
         problems = unexpected_errors(log, name)
+        if mode in ('defeat', 'interrupted'):
+            reason = 'Player defeated.' if mode == 'defeat' else 'Missing enemy class: 99999'
+            expected = 'LogTemp: Error: Stage 3 failed: ' + reason
+            injected = [line for line in problems if line.endswith(expected)]
+            problems = [line for line in problems if not line.endswith(expected)]
+            if len(injected) != 1:
+                problems.append('Expected exactly one injected stage failure')
         if name in ('pending', 'pendingRetry'):
             expected = 'LogTemp: Error: Stage 6 failed: 클리어 기록과 전리품을 저장하지 못했습니다. 저장을 다시 시도해 주세요.'
             injected = [line for line in problems if line.endswith(expected)]

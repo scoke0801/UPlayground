@@ -16,7 +16,7 @@ public:
     FPGSubmitReward OnSubmit;
     FSimpleDelegate OnRetry;
     TWeakObjectPtr<class APGStageManager> StageOwner;
-    void SetStatus(const FText& Text, const FText& Action = FText()) { StatusText = Text; StatusAction = Action; bIsStatus = true; }
+    void SetStatus(const FText& Text, const FText& Action = FText()) { StatusText = Text; StatusAction = Action; bIsStatus = true; bIsResult = false; }
     void SetResult(const FPGRunResultView& View) { Result = View; bIsStatus = bIsResult = true; }
     void SetRewardId(int StageId);
     void SetChoices(FGuid InToken, const TArray<FPGStageReward>& InChoices);
@@ -40,6 +40,8 @@ private:
     TSharedPtr<class SBox> Frame;
     TSharedPtr<class SBorder> ResultBody;
     FSlateBrush LootBrush;
+    FSlateBrush FrameBrush;
+    UPROPERTY(Transient) TObjectPtr<UTexture2D> FrameTexture;
     UPROPERTY(Transient) TObjectPtr<UTexture2D> LootIcon;
     UPROPERTY(Transient) TArray<FPGStageReward> Choices;
     UPROPERTY(Transient) TArray<TObjectPtr<class UPGUIRewardCard>> Cards;
@@ -51,5 +53,6 @@ private:
     void RetryRun();
     TSharedRef<SWidget> MakeChoices();
     TSharedRef<SWidget> MakeResult();
+    TSharedRef<SWidget> MakeStatus();
     FText CountdownText() const;
 };

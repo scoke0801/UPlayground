@@ -105,7 +105,7 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
         + SHorizontalBox::Slot().FillWidth(.28f).Padding(0,0,14,0)
         [SNew(SBorder).BorderImage(&Style.Card).Padding(18)
             [SNew(SVerticalBox)
-                + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)[Text(TEXT("01  /  검술 라이브러리"),18,Style.Text,true)]
+                + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)[Text(TEXT("보유 검술"),18,Style.Text,true)]
                 + SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(SkillListRows,SVerticalBox)]]]]
         + SHorizontalBox::Slot().FillWidth(.39f).Padding(0,0,14,0)
         [SNew(SBorder).BorderImage(&Style.Card).Padding(22)
@@ -138,15 +138,18 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
                         [SNew(SImage).Image(Art(GetDefault<UPGUIStyleSettings>()->SanctuaryBackground.ToSoftObjectPath()))]]]
                 + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Fill).Padding(GetDefault<UPGUIStyleSettings>()->ScreenMargin)
                 [SAssignNew(Frame,SBox).WidthOverride(GetDefault<UPGUIStyleSettings>()->InventoryMaxWidth)
-                    [SNew(SBorder).BorderImage(&Style.Panel).BorderBackgroundColor(FLinearColor(1,1,1,.72f)).Padding(26)
+                    [SNew(SOverlay)
+                        + SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.004f,.008f,.022f,.78f)).Padding(0)]
+                        + SOverlay::Slot()[SNew(SImage).Image(Art(GetDefault<UPGUIStyleSettings>()->MenuFrame.ToSoftObjectPath())).Visibility(EVisibility::HitTestInvisible)]
+                        + SOverlay::Slot().Padding(FMargin(80,84,80,70))
                         [SNew(SVerticalBox)
                             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)
                             [SNew(SHorizontalBox)
                                 + SHorizontalBox::Slot().FillWidth(1)
                                 [SNew(SVerticalBox)
-                                    + SVerticalBox::Slot().AutoHeight()[Text(TEXT("M O O N L I T   /   S A N C T U A R Y"),12,Style.Mint,true)]
+                                    + SVerticalBox::Slot().AutoHeight()[Text(TEXT("달빛 성소"),12,Style.Mint,true)]
                                     + SVerticalBox::Slot().AutoHeight().Padding(0,4,0,0)[Text(TEXT("전투 준비"),30,Style.Text,true)]]
-                                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[Action(TEXT("닫기  ·  I / Esc"),[this](){return Close();})]]
+                                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[Action(TEXT("닫기"),[this](){return Close();})]]
                             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)
                             [SNew(SHorizontalBox)
                                 + SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)
@@ -391,9 +394,9 @@ void UPGUIInventory::RefreshBag()
         Cell.Brush.SetResourceObject(Icon); Cell.Brush.ImageSize=FVector2D(40,40);
         Cell.Brush.DrawAs=Icon ? ESlateBrushDrawType::Image : ESlateBrushDrawType::NoDrawType;
         if (Def && Def->IconPanel>=0 && Def->IconPanel<3) Cell.Brush.SetUVRegion(FBox2f(FVector2f(Def->IconPanel/3.f,0),FVector2f((Def->IconPanel+1)/3.f,1)));
-        Cell.Name->SetText(Def ? Def->DisplayName : FText::FromString(Item ? TEXT("알 수 없는 장비") : TEXT("빈 슬롯")));
+        Cell.Name->SetText(Def ? Def->DisplayName : FText::FromString(Item ? TEXT("알 수 없는 장비") : TEXT("")));
         Cell.Name->SetColorAndOpacity(Def ? Style.Text : Style.Muted);
-        Cell.Badge->SetText(FText::FromString(Equipped ? TEXT("장착 중") : Def ? RarityName(Def->Rarity).ToString() : TEXT("—")));
+        Cell.Badge->SetText(FText::FromString(Equipped ? TEXT("장착 중") : Def ? RarityName(Def->Rarity).ToString() : TEXT("")));
         Cell.Badge->SetColorAndOpacity(Equipped ? Style.Mint : Def ? Style.RarityColor(Def->Rarity) : Style.Muted);
         Cell.Button->SetToolTipText(Def ? Def->DisplayName : FText::GetEmpty());
     }
@@ -568,12 +571,17 @@ void UPGUIInventory::RefreshBuilds()
     }
     if (const auto* Row=TablesForSkills ? TablesForSkills->GetRowData<FPGSkillDataRow>(PreviewSkill) : nullptr)
     {
-        Line(SkillDetailRows,FText::FromString(TEXT("S K I L L   /   검술 상세")),Style.Lavender,12,true);
+        Line(SkillDetailRows,FText::FromString(TEXT("검술 상세")),Style.Lavender,12,true);
         SkillDetailRows->AddSlot().AutoHeight().HAlign(HAlign_Center).Padding(0,16,0,24)
             [SNew(SBox).WidthOverride(128).HeightOverride(128)[SNew(SImage).Image(Art(Row->SkillIconPath))]];
-        TArray<FString> Lines; PGPlayerSkillText::Describe(*Row).ParseIntoArrayLines(Lines);
-        for (int32 I=0; I<Lines.Num(); ++I)
-            Line(SkillDetailRows,FText::FromString(Lines[I]),I==0 ? Style.Text : Style.Muted,I==0 ? 23 : 16,I==0);
+        const auto View=PGPlayerSkillText::MakeView(*Row);
+        Line(SkillDetailRows,FText::FromString(View.Name),Style.Text,26,true);
+        Line(SkillDetailRows,FText::FromString(View.Description),Style.Text,17);
+        SkillDetailRows->AddSlot().AutoHeight().Padding(0,12,0,8)
+            [SNew(SBorder).BorderImage(&Style.Panel).Padding(14)
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight()[Text(View.Damage,17,Style.Mint,true)]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)[Text(View.Cooldown,16,Style.Muted)]]];
         auto Choices=SNew(SVerticalBox);
         for (int32 I=0;I<PGPlayerSkillSlots::Count;++I)
         {
@@ -595,7 +603,7 @@ void UPGUIInventory::RefreshBuilds()
         SkillDetailRows->AddSlot().AutoHeight().Padding(0,20,0,12)[Choices];
         Line(SkillDetailRows,FText::FromString(TEXT("다른 슬롯의 스킬을 선택하면 위치를 서로 바꿉니다.")),Style.Muted,13);
     }
-    Line(LoadoutRows,FText::FromString(bDraftDirty ? TEXT("02  /  적용 예정 슬롯") : TEXT("02  /  나의 장착 슬롯")),Style.Text,18,true);
+    Line(LoadoutRows,FText::FromString(bDraftDirty ? TEXT("변경할 검술") : TEXT("장착한 검술")),Style.Text,18,true);
     for (int32 I=0;I<DraftActiveSkills.Num();++I)
     {
         const auto* Row=TablesForSkills ? TablesForSkills->GetRowData<FPGSkillDataRow>(DraftActiveSkills[I]) : nullptr;
@@ -615,22 +623,27 @@ void UPGUIInventory::RefreshBuilds()
     LoadoutRows->AddSlot().AutoHeight()[Apply];
     if (bDraftDirty)
         LoadoutRows->AddSlot().AutoHeight().Padding(0,6,0,0)[Action(TEXT("변경 되돌리기"),[this](){bDraftDirty=false;bConfirmClose=false;DraftActiveSkills.Reset();RefreshBuilds();SetKeyboardFocus();return FReply::Handled();})];
-    Line(BuildRows,FText::FromString(TEXT("현재 빌드 · 장착 효과 포함")),Style.Text,20,true);
+    Line(BuildRows,FText::FromString(TEXT("이번 도전의 힘")),Style.Text,20,true);
     const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
     const auto* ASC=Player ? Player->GetPGAbilitySystemComponent() : nullptr;
     const auto* Tuning=ASC && ASC->CombatTuning ? ASC->CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
     const EPGCombatPerk Roots[]={EPGCombatPerk::Bleed,EPGCombatPerk::Shockwave,EPGCombatPerk::Frenzy};
-    const EPGCombatPerk Cores[]={EPGCombatPerk::BleedRecast,EPGCombatPerk::ShockFracture,EPGCombatPerk::FrenzyAfterimage};
+    int32 ActiveFamilies=0;
     for (int32 I=0;I<3;++I)
     {
-        int32 Branches=0; for (int32 N=1;N<=3;++N) if(Profile->GetEffectivePerk(EPGCombatPerk(uint8(Roots[I])+N))>0) ++Branches;
-        const bool Active=Profile->GetEffectivePerk(Roots[I])>0;
-        const FString Summary=FString::Printf(TEXT("%s  ·  %s  ·  전용 강화 %d/3  ·  %s"),*PGRewardText::PerkName(Roots[I]),Active ? TEXT("활성") : TEXT("미획득"),Branches,Profile->GetEffectivePerk(Cores[I])>0 ? TEXT("핵심 획득") : TEXT("핵심 미획득"));
-        Line(BuildRows,FText::FromString(Summary),Active ? Style.Mint : Style.Muted);
+        const int32 Value=Profile->GetEffectivePerk(Roots[I]);
+        if (Value<=0) continue;
+        ++ActiveFamilies;
+        Line(BuildRows,FText::FromString(PGRewardText::PerkName(Roots[I])),Style.Mint,17,true);
+        Line(BuildRows,FText::FromString(PGRewardText::Effect(Roots[I],Value,*Tuning)),Style.Muted,14);
     }
-    Line(BuildRows,FText::FromString(TEXT("획득한 강화")),Style.Text,18,true);
+    if (ActiveFamilies==0)
+    {
+        Line(BuildRows,FText::FromString(TEXT("새로운 힘을 얻을 차례입니다")),Style.Lavender,16,true);
+        Line(BuildRows,FText::FromString(TEXT("시련을 돌파하면 강화를 선택할 수 있습니다. 출혈, 충격파, 격분 중 원하는 전투 방식을 키워 보세요.")),Style.Muted,14);
+    }
     TArray<int32> RewardIds; Save->SelectedRewards.GetKeys(RewardIds); RewardIds.Sort();
-    if (RewardIds.IsEmpty()) Line(BuildRows,FText::FromString(TEXT("아직 선택한 강화가 없습니다. 구간을 완료하고 빌드를 성장시키세요.")),Style.Muted);
+    if (!RewardIds.IsEmpty()) Line(BuildRows,FText::FromString(TEXT("선택한 강화")),Style.Text,18,true);
     auto* Tables=UPGDataTableManager::Get(this);
     for (int32 Id : RewardIds)
         if (const auto* Reward=Tables ? Tables->GetRowData<FPGRewardStatDataRow>(Id) : nullptr)
@@ -639,7 +652,8 @@ void UPGUIInventory::RefreshBuilds()
             Line(BuildRows,FText::FromString(FString::Printf(TEXT("%s ×%d%s"),*Reward->DisplayName.ToString(),Save->SelectedRewards.FindRef(Id),Reward->bKeystone ? TEXT("  ·  핵심 강화") : TEXT(""))),Style.Lavender,0,true);
             Line(BuildRows,FText::FromString(Effect),Style.Muted);
         }
-    Line(BuildRows,FText::FromString(FString::Printf(TEXT("런 기록  ·  최고 구간 %d  ·  승리 %d회"),Save->BestStage,Save->CompletedRuns)),Style.Muted,12);
+    if (Save->BestStage>0 || Save->CompletedRuns>0)
+        Line(BuildRows,FText::FromString(FString::Printf(TEXT("최고 기록  %d구간  ·  돌파 %d회"),Save->BestStage,Save->CompletedRuns)),Style.Muted,12);
     BuildScroll->SetScrollOffset(Offset);
 }
 TArray<int32> UPGUIInventory::GetEquippedActiveSkills() const

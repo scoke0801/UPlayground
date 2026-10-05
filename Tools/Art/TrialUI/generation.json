@@ -1,0 +1,6 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Use case: stylized-concept\nAsset type: production game UI panel frame texture, landscape 3:2 ratio, 1536x1024.\nPrimary request: create one refined moonlit sanctuary interface panel for a Korean fantasy action RPG. Full rectangular panel occupies the whole image with straight front-facing edges, a very thin brushed silver perimeter, small elegant silver and muted lavender corner filigree, a subtle crescent moon ornament centered at the top. Interior is opaque deep midnight navy with a very subtle velvety texture, almost uniform and dark for excellent live text legibility. Restrained mint highlights along the upper edge. Premium delicate anime fantasy art direction, calm and sophisticated, understated ornament. Keep all decoration confined to the outer 8 percent; central 80 percent completely empty and dark, including lower center for a live button. This is the panel asset itself, not a screenshot or mockup. No text, letters, numerals, symbols resembling writing, characters, weapons, buttons, content boxes, outer environment, watermark, perspective, or heavy gold metal.",
+  "output": "T_TrialFrame.png",
+  "runtime": "/Game/DataCenter/UI/Moonlit/T_TrialFrame"
+}
