@@ -19,6 +19,8 @@ public:
     UFUNCTION(Exec) void PGStageStatus();
     UFUNCTION(Exec) void PGStartStage(int32 StageId = 1);
     UFUNCTION(Exec) void PGCombatStats();
+    UFUNCTION(Exec) void PGPotion(int32 Charges = 3, float HealthFraction = .25f);
+    UFUNCTION(Exec) void PGConsumableProbe();
     /** One disposable process per P0 comparison trial; never writes combat assets. */
     UFUNCTION(Exec) void PGSkillScenario(FString Scenario = TEXT("P0-M10"), int32 Seed = 173001, FString Variant = TEXT("p0"));
     UFUNCTION(Exec) void PGGuardianProbe(FString Action = TEXT("status"));

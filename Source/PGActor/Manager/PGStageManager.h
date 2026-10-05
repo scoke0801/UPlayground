@@ -140,6 +140,7 @@ private:
     double BossDefeatPresentationUntil = 0;
     bool bVictorySavePending = false;
       friend class FPGStageLifecycleTest;
+      friend class FPGConsumableLifecycleTest;
       friend class UPGCheatManager;
       friend class APGPlayerController;
       friend class APGGameModeStage;

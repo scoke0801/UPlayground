@@ -1,5 +1,6 @@
 ﻿#include "PGStageManager.h"
 #include "PGData/DataTable/Reward/PGRewardSelection.h"
+#include "PGActor/Components/Combat/PGConsumableComponent.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGActor/Progression/PGRunTelemetrySubsystem.h"
 #include "PGShared/Shared/Structure/PGRunRandom.h"
@@ -134,6 +135,8 @@ void APGStageManager::StartStage(int32 StageId)
     }
     SpawnFailureCount = 0;
     SpawnedMonsters = 0;
+    if (auto* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0)))
+        Player->GetConsumableComponent()->BeginStage(this);
     PrepareWave(0);
     OnStageStarted.Broadcast(StageId);
     if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
@@ -732,7 +735,13 @@ void APGStageManager::FailStage(const FString& Reason)
     CloseRewardWindow();
     UE_LOG(LogTemp, Error, TEXT("Stage %d failed: %s"), CurrentStageId, *Reason);
     if (auto* PC = Cast<APGPlayerController>(UGameplayStatics::GetPlayerController(this, 0))) PC->CloseInventory();
-    ShowStageStatus(FText::Format(NSLOCTEXT("PG", "StageFailed", "진행을 중단했습니다\n{0}"), FText::FromString(Reason)));
+    // Diagnostic reasons stay in telemetry/logs; only player-facing copy reaches the UI.
+    const FText Message = Reason == TEXT("Player defeated.")
+        ? NSLOCTEXT("PG", "RunDefeated", "쓰러졌습니다. 잠시 숨을 고르고 다시 도전하세요.")
+        : Reason.Contains(TEXT("save"), ESearchCase::IgnoreCase) || Reason.Contains(TEXT("저장"))
+        ? NSLOCTEXT("PG", "RunSaveFailed", "진행 상황을 저장하지 못했습니다. 다시 시도해 주세요.")
+        : NSLOCTEXT("PG", "RunInterrupted", "시련을 계속할 수 없어 도전을 중단했습니다. 다시 도전해 주세요.");
+    ShowStageStatus(Message);
     OnStageFailed.Broadcast(Reason);
 }
 
@@ -762,6 +771,8 @@ void APGStageManager::BeginBuildPhase()
         CurrentStageState = EPGStageState::Completed; GoToNextStage(); return;
     }
     CurrentStageState = EPGStageState::BuildPhase;
+    if (auto* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0)))
+        Player->GetConsumableComponent()->CompleteStage(this);
     RewardsRemaining = FMath::Clamp(CurrentStageDataCache.RewardSelections, 1, 3);
     if (auto* Profile = UPGProfileSubsystem::Get(this)) RewardsRemaining = FMath::Max(1, RewardsRemaining - Profile->GetProfile()->StageRewardCounts.FindRef(CurrentStageId));
     if (!CurrentStageDataCache.bManualReady)

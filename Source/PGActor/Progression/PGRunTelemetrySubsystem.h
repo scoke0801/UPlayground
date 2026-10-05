@@ -13,6 +13,11 @@ struct FPGStageTelemetry
     double DirectDamage = 0.;
     double SecondaryDamage = 0.;
     double DamageTaken = 0.;
+    int32 PotionUses = 0;
+    double PotionHealing = 0.;
+    double PotionOverheal = 0.;
+    int32 PotionsAtDeath = -1;
+    float PotionCooldownAtDeath = 0.f;
     TArray<int32> Rewards;
     FString Outcome = TEXT("Interrupted");
 };
@@ -31,6 +36,8 @@ public:
     void EndStage(const FString& Outcome);
     void MarkAssisted();
     void RecordReward(int32 RewardId);
+    void RecordPotion(float Requested, float Applied);
+    void RecordPotionAtDeath(int32 Charges, float Cooldown);
     // Capture this before GAS executes: a lethal hit can synchronously end a stage.
     int32 GetSampleIndex() const { return ActiveSample; }
     void RecordDamage(int32 Sample, float Applied, bool bPlayerSource, bool bPlayerTarget, bool bSecondary);

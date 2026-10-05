@@ -87,6 +87,11 @@ void UPGRunTelemetrySubsystem::Flush() const
         Row->SetNumberField(TEXT("direct_damage"), Sample.DirectDamage);
         Row->SetNumberField(TEXT("secondary_damage"), Sample.SecondaryDamage);
         Row->SetNumberField(TEXT("damage_taken"), Sample.DamageTaken);
+        Row->SetNumberField(TEXT("potion_uses"), Sample.PotionUses);
+        Row->SetNumberField(TEXT("potion_healing"), Sample.PotionHealing);
+        Row->SetNumberField(TEXT("potion_overheal"), Sample.PotionOverheal);
+        Row->SetNumberField(TEXT("potions_at_death"), Sample.PotionsAtDeath);
+        Row->SetNumberField(TEXT("potion_cooldown_at_death"), Sample.PotionCooldownAtDeath);
         TArray<TSharedPtr<FJsonValue>> Rewards;
         for (int32 Id : Sample.Rewards) Rewards.Add(MakeShared<FJsonValueNumber>(Id));
         Row->SetArrayField(TEXT("selected_rewards"), Rewards);
@@ -105,4 +110,20 @@ void UPGRunTelemetrySubsystem::Deinitialize()
     EndWave();
     Flush();
     Super::Deinitialize();
+}
+
+void UPGRunTelemetrySubsystem::RecordPotion(float Requested, float Applied)
+{
+    if (!Samples.IsValidIndex(ActiveSample) || !FMath::IsFinite(Requested) || !FMath::IsFinite(Applied) || Requested <= 0 || Applied <= 0) return;
+    auto& Sample = Samples[ActiveSample];
+    ++Sample.PotionUses;
+    Sample.PotionHealing += Applied;
+    Sample.PotionOverheal += FMath::Max(0.f, Requested - Applied);
+}
+
+void UPGRunTelemetrySubsystem::RecordPotionAtDeath(int32 Charges, float Cooldown)
+{
+    if (!Samples.IsValidIndex(ActiveSample)) return;
+    Samples[ActiveSample].PotionsAtDeath = Charges;
+    Samples[ActiveSample].PotionCooldownAtDeath = Cooldown;
 }

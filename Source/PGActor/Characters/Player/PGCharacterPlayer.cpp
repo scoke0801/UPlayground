@@ -2,6 +2,8 @@
 
 
 #include "PGCharacterPlayer.h"
+#include "PGActor/Components/Combat/PGConsumableComponent.h"
+#include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "PGActor/Components/Combat/PGPlayerDashComponent.h"
 #include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
@@ -43,6 +45,7 @@
 
 APGCharacterPlayer::APGCharacterPlayer()
 {
+    ConsumableComponent = CreateDefaultSubobject<UPGConsumableComponent>(TEXT("ConsumableComponent"));
     PlayerDashComponent = CreateDefaultSubobject<UPGPlayerDashComponent>(TEXT("PlayerDashComponent"));
     PlayerAttackComponent = CreateDefaultSubobject<UPGPlayerAttackComponent>(TEXT("PlayerAttackComponent"));
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
@@ -94,7 +97,10 @@ void APGCharacterPlayer::BeginPlay()
 	Super::BeginPlay();
     if (auto* Profile = UPGProfileSubsystem::Get(this)) Profile->RestorePlayer(this);
     PlayerAttackComponent->PrepareLoadout();
+    PlayerDashComponent->PrepareAfterimages();
     AbilitySystemComponent->RestoreHealth(AbilitySystemComponent->GetCombatStat(EPGStatType::Health));
+    const auto* ConsumableProfile = UPGProfileSubsystem::Get(this);
+    ConsumableComponent->Initialize(ConsumableProfile && ConsumableProfile->GetCatalog() ? ConsumableProfile->GetCatalog()->HealingPotion.Get() : nullptr);
     ConfigureQuarterView();
 
 	InitUIComponents();
@@ -135,6 +141,8 @@ void APGCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Look);
 	PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_Zoom,
 		ETriggerEvent::Triggered, this, &ThisClass::Input_Zoom);
+    PgInputComponent->BindNativeInputAction(InputConfigDataAsset, PGGamePlayTags::InputTag_HealingPotion,
+        ETriggerEvent::Started, this, &ThisClass::Input_HealingPotion);
 
 	PgInputComponent->BindAbilityInputAction(InputConfigDataAsset, this,
 		&ThisClass::Input_AbilityInputPressed, &ThisClass::input_AbilityInputReleased, &ThisClass::Input_AbilityInputHeld);
@@ -400,6 +408,7 @@ void APGCharacterPlayer::OnHealthChanged()
 {
     const bool bWasDead = bDeathStarted;
     Super::OnHealthChanged();
+    if (!bWasDead && bDeathStarted) ConsumableComponent->OnOwnerDied();
     if (!bWasDead && bDeathStarted && UPGMessageManager::Get(this)) UPGMessageManager::Get(this)->SendMessage(EPGPlayerMessageType::Died, nullptr);
     if (GetStatComponent()->GetCurrentHealth() <= 0.f) bIsCanControl = false;
     if (auto* Manager = UPGMessageManager::Get(this))
@@ -442,6 +451,19 @@ void APGCharacterPlayer::UpdateAim()
     if (bTrackAttackAim || !GetMesh()->GetAnimInstance() || !GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
         FaceAimDirection();
     else RefreshCursorAim();
+}
+bool APGCharacterPlayer::IsConsumableInputAllowed() const
+{
+    const auto* PC = Cast<APlayerController>(Controller);
+    // A potion does not change attack, dash or hit-reaction control locks.
+    if (!PC || !GetWorld() || GetWorld()->IsPaused() || bDeathStarted || PC->IsMoveInputIgnored()) return false;
+    if (const auto* UI = UPGUIManager::Get(this); UI && UI->IsWindowOpen()) return false;
+    const auto* Viewport = GetWorld()->GetGameViewport();
+    return !Viewport || !Viewport->Viewport || Viewport->Viewport->HasFocus();
+}
+void APGCharacterPlayer::Input_HealingPotion(const FInputActionValue& InputActionValue)
+{
+    ConsumableComponent->TryUse();
 }
 
 void APGCharacterPlayer::RefreshCursorAim()

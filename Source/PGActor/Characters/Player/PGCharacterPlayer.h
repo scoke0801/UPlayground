@@ -46,6 +46,8 @@ protected:
     void ConfigureQuarterView();
 public:
     bool IsGameplayInputAllowed() const;
+    bool IsConsumableInputAllowed() const;
+    class UPGConsumableComponent* GetConsumableComponent() const { return ConsumableComponent; }
     const UDataAsset_InputConfig* GetInputConfig() const { return InputConfigDataAsset; }
     void FaceAimDirection();
     bool GetGroundAimPoint(FVector& Point) const { Point = LastAimPoint; return bHasAimPoint; }
@@ -59,6 +61,8 @@ public:
     void ResetAttackHitStop() { EndHitStop(); }
     void ApplyProfileHitStop(float Seconds) { ApplyHitStop(Seconds); }
 private:
+    UPROPERTY(VisibleAnywhere, Category="PG|Consumables")
+    TObjectPtr<class UPGConsumableComponent> ConsumableComponent;
     UPROPERTY(VisibleAnywhere, Category="PG|Combat")
     TObjectPtr<class UPGPlayerDashComponent> PlayerDashComponent;
     UPROPERTY(VisibleAnywhere, Category="PG|Combat")
@@ -166,6 +170,7 @@ public:
 
 private:
 	void Input_Move(const FInputActionValue& InputActionValue);
+    void Input_HealingPotion(const FInputActionValue& InputActionValue);
     void Input_MoveReleased(const FInputActionValue& InputActionValue);
 	void Input_Look(const FInputActionValue& InputActionValue);
 	void Input_Zoom(const FInputActionValue& InputActionValue);

@@ -59,6 +59,7 @@ enum class EPGUIMessageType : uint8
     StageChanged,
     StagePresentation,
     BossPresentation,
+    ConsumableChanged,
     
     Max UMETA(Hidden)
 };

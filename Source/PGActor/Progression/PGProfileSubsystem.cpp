@@ -3,6 +3,7 @@
 #include "PGActor/Components/Rendering/PGCharacterAppearanceComponent.h"
 #include "PGRunTelemetrySubsystem.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
+#include "PGData/DataAsset/Progression/PGConsumableData.h"
 #include "PGData/DataAsset/Progression/PGLootRules.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
@@ -55,7 +56,7 @@ void UPGProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     Catalog = LoadObject<UPGProgressionData>(nullptr, TEXT("/Game/DataCenter/Progression/DA_PGProgression.DA_PGProgression"));
     Profile = NewObject<UPGProfileSave>(this);
     FString Error;
-    if (!ValidateCatalog(Error)) { bReadOnly = true; Status = Error; UE_LOG(LogTemp, Error, TEXT("PG profile: %s"), *Error); return; }
+    if (!ValidateCatalog(Error)) { bReadOnly = true; Status = TEXT("장비와 성장 정보를 불러오지 못했습니다. 게임을 다시 실행해 주세요."); UE_LOG(LogTemp, Error, TEXT("PG profile: %s"), *Error); return; }
     for (const auto& Build : Catalog->Builds)
         for (const auto& Entry : Build.Skills)
         {
@@ -108,6 +109,8 @@ bool UPGProfileSubsystem::RecoverSave()
 }
 bool UPGProfileSubsystem::ValidateCatalog(FString& Error) const
 {
+    if (Catalog && Catalog->HealingPotion && !Catalog->HealingPotion->IsValidDefinition())
+    { Error = TEXT("회복약 설정 범위 오류"); return false; }
     if (!Catalog || Catalog->Items.IsEmpty() || Catalog->Builds.IsEmpty() || Catalog->BagCapacity < 1 || Catalog->BagCapacity > 256 ||
         !FMath::IsFinite(Catalog->PickupRadius) || Catalog->PickupRadius <= 0 || !FMath::IsFinite(Catalog->DropChance) || Catalog->DropChance < 0 || Catalog->DropChance > 1)
     { Error = TEXT("파밍 설정 누락/범위 오류"); return false; }
