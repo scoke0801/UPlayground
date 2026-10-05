@@ -3,6 +3,7 @@
 
 #include "PGCharacterBase.h"
 #include "PGActor/Components/Rendering/PGCharacterAppearanceComponent.h"
+#include "PGActor/Components/Combat/PGEnemyPresentationComponent.h"
 #include "PGData/DataAsset/Combat/PGCombatFeedbackData.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 #include "Kismet/GameplayStatics.h"
@@ -189,6 +190,10 @@ void APGCharacterBase::PlayCombatFeedback(AActor* Source, EPGDamageType Type)
     const float Scale = FMath::Clamp(FeedbackIntensity, 0.f, 1.f) * FMath::Clamp(Impact.Intensity, 0.f, 3.f);
     const float Stop = FMath::Clamp(Impact.HitStop * Scale, 0.f, FMath::Clamp(Data->MaximumHitStop, 0.f, .15f));
     ApplyHitStop(Stop);
+    if (Source)
+        if (auto* Presentation = FindComponentByClass<UPGEnemyPresentationComponent>())
+            Presentation->PlayHitRecoil(GetActorLocation() - Source->GetActorLocation(),
+                Impact.RecoilDistance * Scale, Impact.RecoilDuration);
     if (Attacker && !Attacker->bProfileHitFeedback) Attacker->ApplyHitStop(Stop * FMath::Clamp(Attacker->FeedbackIntensity, 0.f, 1.f));
     auto* VFX = Impact.VFX ? Impact.VFX.Get() : Data->ImpactVFX.Get();
     auto* Sound = Impact.Sound ? Impact.Sound.Get() : Data->ImpactSound.Get();

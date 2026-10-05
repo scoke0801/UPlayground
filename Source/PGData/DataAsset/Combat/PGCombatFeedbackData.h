@@ -11,6 +11,9 @@ struct PGDATA_API FPGImpactFeedback
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TSubclassOf<class UCameraShakeBase> Shake;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="0.15")) float HitStop = .035f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="3")) float Intensity = 1.f;
+    // Cosmetic mesh recoil in world centimetres; never moves the collision capsule.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="20", Units="cm")) float RecoilDistance = 6.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0.02", ClampMax="0.3", Units="s")) float RecoilDuration = .14f;
 };
 UCLASS(BlueprintType)
 class PGDATA_API UPGCombatFeedbackData : public UDataAsset

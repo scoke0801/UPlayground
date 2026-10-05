@@ -17,6 +17,7 @@ public:
     void BeginRecovery();
     void ResetPresentation(bool bDead = false);
     bool PlayGuardImpact();
+    void PlayHitRecoil(const FVector& WorldDirection, float Distance, float Duration);
     void SetDissolve(float Amount);
     UFUNCTION(BlueprintPure) bool IsAimLocked() const { return bAimLocked; }
     UFUNCTION(BlueprintPure) float GetExposureAlpha() const { return ExposureAlpha; }
@@ -31,6 +32,14 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<class UMaterialInstanceDynamic>> Materials;
     UPROPERTY(Transient) TArray<TObjectPtr<UObject>> PreparedAssets;
     FTimerHandle UpdateTimer;
+    FTimerHandle RecoilTimer;
+    TWeakObjectPtr<class USkeletalMeshComponent> RecoilMesh;
+    FVector RecoilOffset = FVector::ZeroVector;
+    FVector RecoilPeak = FVector::ZeroVector;
+    double RecoilStartedAt = 0;
+    float RecoilSeconds = 0;
+    void UpdateHitRecoil();
+    void ClearHitRecoil();
     double WindupStartedAt = 0;
     double LastUpdateAt = 0;
     double NextGuardHitAt = 0;

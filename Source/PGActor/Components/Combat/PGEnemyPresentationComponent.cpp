@@ -1,6 +1,7 @@
 #include "PGEnemyPresentationComponent.h"
 #include "PGData/DataAsset/Combat/PGEnemyPresentationData.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
+#include "PGActor/Components/Rendering/PGCharacterAppearanceComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -83,9 +84,11 @@ void UPGEnemyPresentationComponent::BeginRecovery()
 
 void UPGEnemyPresentationComponent::ResetPresentation(bool bDead)
 {
-    if (!Data || bStopped) return;
+    ClearHitRecoil();
+    if (bStopped) return;
     bWindup = bAimLocked = false;
     bStopped = bDead;
+    if (!Data) return;
     if (bDead)
     {
         GetWorld()->GetTimerManager().ClearTimer(UpdateTimer);
@@ -94,6 +97,49 @@ void UPGEnemyPresentationComponent::ResetPresentation(bool bDead)
         ApplyAppearance(0.f);
     }
     else SetGuarding(bGuarding);
+}
+
+void UPGEnemyPresentationComponent::PlayHitRecoil(const FVector& WorldDirection, float Distance, float Duration)
+{
+    if (bStopped || !GetWorld() || WorldDirection.ContainsNaN() || !FMath::IsFinite(Distance) ||
+        !FMath::IsFinite(Duration) || Distance <= 0.f || Duration <= 0.f) return;
+    auto* Enemy = Cast<APGCharacterEnemy>(GetOwner());
+    if (!Enemy || Enemy->GetFeedbackIntensity() <= 0.f) return;
+    const FVector Direction = WorldDirection.GetSafeNormal2D();
+    if (Direction.IsNearlyZero()) return;
+    auto* Mesh = Enemy->AppearanceComponent->GetPresentationMesh();
+    if (!Mesh) Mesh = Enemy->GetMesh();
+    if (!Mesh || !Mesh->GetAttachParent()) return;
+
+    // Remove our previous offset before a new hit, without resetting other presentation transforms.
+    ClearHitRecoil();
+    RecoilMesh = Mesh;
+    RecoilPeak = Mesh->GetAttachParent()->GetComponentTransform().InverseTransformVector(
+        Direction * FMath::Clamp(Distance, 0.f, 20.f));
+    RecoilSeconds = FMath::Clamp(Duration, .02f, .3f);
+    RecoilStartedAt = GetWorld()->GetTimeSeconds();
+    RecoilOffset = RecoilPeak;
+    Mesh->SetRelativeLocation(Mesh->GetRelativeLocation() + RecoilOffset);
+    GetWorld()->GetTimerManager().SetTimer(RecoilTimer, this, &ThisClass::UpdateHitRecoil, 1.f / 60.f, true);
+}
+
+void UPGEnemyPresentationComponent::UpdateHitRecoil()
+{
+    auto* Mesh = RecoilMesh.Get();
+    const float Alpha = float(GetWorld()->GetTimeSeconds() - RecoilStartedAt) / RecoilSeconds;
+    if (!Mesh || Alpha >= 1.f) { ClearHitRecoil(); return; }
+    // A sharp contact followed by a soft return remains visible during attack montages/hit-stop.
+    const FVector Next = RecoilPeak * FMath::Square(1.f - FMath::Clamp(Alpha, 0.f, 1.f));
+    Mesh->SetRelativeLocation(Mesh->GetRelativeLocation() - RecoilOffset + Next);
+    RecoilOffset = Next;
+}
+
+void UPGEnemyPresentationComponent::ClearHitRecoil()
+{
+    if (auto* Mesh = RecoilMesh.Get()) Mesh->SetRelativeLocation(Mesh->GetRelativeLocation() - RecoilOffset);
+    RecoilMesh.Reset();
+    RecoilOffset = RecoilPeak = FVector::ZeroVector;
+    if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(RecoilTimer);
 }
 
 void UPGEnemyPresentationComponent::StartUpdating()
@@ -167,6 +213,7 @@ void UPGEnemyPresentationComponent::SetDissolve(float Amount)
 
 void UPGEnemyPresentationComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
+    ClearHitRecoil();
     if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(UpdateTimer);
     Super::EndPlay(Reason);
 }
