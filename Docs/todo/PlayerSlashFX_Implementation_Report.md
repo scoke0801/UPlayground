@@ -1,11 +1,27 @@
 # 플레이어 검기 FX 개선 — 2026-10-05
 
+## 무기 휘두름 FX 누락 보완
+
+- 저장된 8개 프로필을 조사한 결과 검기 참조는 모두 존재했다. 관통검기(114)의 발사 페이즈는 `PresentHit`에서 캐릭터 베기를 제외하고 투사체만 표시했다. 또한 기존 Niagara 생성/검증 도구가 113을 발사형으로 분류해 파쇄연격과 관통검기의 시스템 참조를 반대로 연결했다. 두 기존 시스템은 같은 원본을 사용하므로 참조 오분류 자체를 화면 누락 원인으로 단정하지 않는다.
+- `NS_PGPlayerCastSwing`을 기존 MixedVFX 원본에서 복제·설정해 생성한다. `ProjectileSwingVFX`와 `ProjectileSwingRadius`가 발사 순간의 캐릭터 베기를, `SlashVFX`가 이동하는 검기를 담당한다. 판정이 Projectile인 페이즈만 추가 표현을 사용하며 피해·판정 반경·모션·타격 시각은 유지한다.
+- 생성 도구는 스킬 번호 대신 `HitPhases.Shape`를 검사해 연결한다. 파쇄연격은 `NS_PGPlayerSlash`, 관통검기는 `NS_PGPlayerBlade`와 새 발사 베기 시스템을 사용한다. 장착 때 두 시스템을 사전 로드하고, 캐릭터 베기는 기존 논리 시계·히트스톱·종료/취소 정리를 따른다.
+- 첫 확장 검증의 관통검기 헛스윙에서 `Niagara slash has not simulated`를 재현했다. UE의 uncooked 시스템은 로드 후에도 컴파일을 첫 활성화까지 미룰 수 있으며 기존 PSO 준비만으로는 이를 완료하지 않는다. `PGPlayerSlashFX::Prepare`가 에디터 빌드에서 지연 컴파일을 장착 준비 때 완료하고, 장착 갱신 없이 주입된 프로필도 공격 시계 시작 전에 준비한다. cooked 실행에는 컴파일 대기를 추가하지 않는다.
+- `RunPlayerSlashFX.py --niagara --apply --all-phases`는 백업·생성·새 프로세스 재로드·PG 회귀 검사 후 총 12개 타격 페이즈를 적중/헛스윙으로 각각 렌더한다. 회전은 원호 2개, 관통검기는 캐릭터 베기+투사체 2개, 나머지는 1개의 실제 시뮬레이션을 요구한다. 모든 페이즈 캡처와 종료 후 활성 컴포넌트 0개도 검사한다.
+
+첫 실행 `Saved/QA/20261005T055822Z_e62abf_player_niagara_fx/report.json`은 생성·재로드·자동 테스트 45개·12개 적중 화면·P0 헛스윙을 통과했으나 위 첫 사용 재생 검사로 전체 FAIL이다. 실패 기록은 보존하며 후속 결과로 덮어쓰지 않는다. 백업은 `Saved/Backups/PlayerNiagara/20261005T055839341610Z`다.
+
+최종 코드의 `Saved/QA/20261005T061556Z_07b3e7_player_niagara_fx/report.json`은 전체 PASS다. 실제 DT_Skill 연결, 시스템 컴파일·저장 재로드, 원본/게임플레이 불변, 자동 테스트 45개(실패 0), 12개 페이즈 × 적중/헛스윙, 시전·투사체 종료 후 활성 FX 0개를 확인했다. 관통검기의 컴파일은 월드 준비 프레임에 완료되며, 첫 헛스윙도 캐릭터 베기와 투사체가 함께 시뮬레이션된다. Development와 DebugGame은 `Saved/Logs/PlayerSwingFX_Final_Development.log`, `PlayerSwingFX_Final_DebugGame.log`에서 Succeeded다.
+
+위 실행의 24장에는 프레임 지연으로 소멸 구간에 찍힌 113의 2타·112의 첫 헛스윙이 있어, `--all-phases` 캡처에 60Hz 고정 시뮬레이션 간격을 추가했다. 게임플레이의 프레임 처리 방식은 변경하지 않는다. 자동 정지 캡처와 직접 연속 플레이의 체감 평가는 구분하며, 무기 리본·청취·패키지 밀집 전투 성능은 별도 검수 대상이다.
+
+최종 화면은 `Saved/QA/20261005T062216Z_c7f65e_player_niagara_fx/report.json`의 고정 간격 렌더 4개 단계 모두 PASS다. `User/Saved/QA/HackSlashP0`의 24장과 `User/Saved/QA/PlayerSwingFX_Hits.png`, `PlayerSwingFX_Miss.png` 비교 시트를 확인했으며, 모든 타격 페이즈에서 검기 본체가 보인다. 관통검기의 발사 베기와 작은 투사체도 적중·헛스윙 양쪽에서 확인했다.
+
 ## Niagara 전환
 
 현재 8개 공격은 실제 Niagara 시스템을 사용한다. 아래의 Plane 셰이더 구현은 초기 단계의 기록이며, Niagara 참조가 없는 프로필의 대체 표현으로 남긴다.
 
 - 근접/회전: `/Game/Art/PlayerCombatFX/NS_PGPlayerSlash`
-- 발사형 113: `/Game/Art/PlayerCombatFX/NS_PGPlayerBlade`
+- 발사형 114: `/Game/Art/PlayerCombatFX/NS_PGPlayerBlade` (113 연결은 위 후속에서 수정)
 - 원본: `/Game/ExternalAssets/VFX/MixedVFX/Particles/Slashes/SeparateParts/Slashes/NS_HolySlash_OnlySlash`. 처음부터 새로 그린 효과가 아니라 프로젝트에 있던 MixedVFX를 복제·개조한 것이다. 원본 파일은 SHA-256으로 불변을 검사한다.
 - 검기 메시, 스파크, 연무 3개 이미터를 CPU 로컬 공간 시뮬레이션으로 구성하고 장식 깃털 이미터는 비활성화한다. Niagara 에디터에서 모듈·곡선·렌더러를 직접 편집할 수 있다.
 - `PGNiagaraFXTools`는 편집 전용 Python 브리지다. 실제 그래프의 `Color.Scale Color`/`Scale Alpha` 입력을 `User.SlashTint`(Vector3)/`User.SlashAlpha`(Float)에 연결한다. 런타임 편집 모듈 의존성은 없다.
@@ -34,7 +50,7 @@ Development·DebugGame 빌드는 `Saved/Logs/PlayerNiagara_Development.log`와 `
 기존 `M_PlayerSlash`의 고정 폭 발광 원호를 진행 방향이 있는 검기로 교체한다. 밝은 칼날 가장자리, 폭이 변하는 내부 면, 분리된 얇은 잔상과 시간에 따른 소멸을 하나의 Additive/Unlit 재질로 표현한다. 별도 텍스처·광원·파티클을 추가하지 않으며 기존 무충돌 Plane 컴포넌트를 재사용한다.
 
 - 기본 100/101/102는 청록 → 청보라 → 보라색 강타로 구분한다. 2타는 반대 방향이며 연타의 타격 페이즈마다 진행 방향이 교대한다.
-- 원형 스킬은 서로 반대편에 있는 두 원호가 진행한다. 발사형 113은 검기 형태를 유지하다 사거리/수명 끝부분에서 소멸한다.
+- 원형 스킬은 서로 반대편에 있는 두 원호가 진행한다. 발사형 114는 검기 형태를 유지하다 사거리/수명 끝부분에서 소멸한다.
 - `UPGPlayerSkillProfile`의 Presentation에서 `SlashTint`, `SlashDuration`, `SlashWidth`, `SlashIntensity`, `SlashHeight`, `bReverseSlash`를 조정한다. 근접 검기는 논리 시계를 사용해 공격 배속·히트스톱을 따른다. 취소/종료/사망 정리는 기존 컴포넌트 수명주기를 따른다.
 - 검기 머티리얼에 기존 `HalfAngleCos`/`Tint`와 `Progress`, `BladeWidth`, `Intensity`, `Direction`, `Projectile`을 전달한다. 발사형 검기의 움직임/적중/사거리 계산은 그대로다.
 - `PGHackSlashProbe`의 첫 타격 캡처 시각을 이전의 하드코딩된 시간 대신 현재 프로필에서 읽는다.

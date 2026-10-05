@@ -2,11 +2,31 @@
 #include "PGData/DataAsset/Combat/PGPlayerSkillProfile.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+
+void PGPlayerSlashFX::Prepare(UNiagaraSystem* System)
+{
+    if (!System) return;
+#if WITH_EDITOR
+    // Loading an uncooked system can defer compilation until first activation.
+    // PSO precaching alone does not flush that request; the first swing can expire
+    // before the component ever simulates. Cooked builds already have the VM data.
+    System->WaitForCompilationComplete(false, false);
+#endif
+    System->PrecacheAssetPSOs();
+}
 
 UNiagaraComponent* PGPlayerSlashFX::Spawn(const UObject* WorldContext, UNiagaraSystem* System,
     const UPGPlayerSkillProfile* Profile, float Radius, const FVector& Location,
     const FRotator& Rotation, bool bReverse)
 {
+#if !UE_BUILD_SHIPPING
+    if (Profile && FParse::Param(FCommandLine::Get(),TEXT("PGGripTrace")))
+        UE_LOG(LogTemp,Display,TEXT("PGGrip VFX Skill=%d Available=%d X=%.6f Y=%.6f Z=%.6f Pitch=%.6f Yaw=%.6f Roll=%.6f Radius=%.6f Reverse=%d"),
+            Profile->SkillID,System!=nullptr,Location.X,Location.Y,Location.Z,Rotation.Pitch,Rotation.Yaw,Rotation.Roll,Radius,bReverse);
+#endif
     if (!System || !Profile) return nullptr;
     const float Scale = Radius / FMath::Max(1.f, Profile->NiagaraReferenceRadius);
     const FRotator Orientation = (Rotation.Quaternion() * Profile->NiagaraRotation.Quaternion()).Rotator();

@@ -96,9 +96,10 @@ void UPGPlayerAttackComponent::PrepareLoadout()
             if (auto* Profile = Row->PlayerProfile.LoadSynchronous())
             {
                 PreparedLoadoutAssets.Add(Profile);
-                for (const auto& Path : {Profile->SlashMaterial.ToSoftObjectPath(), Profile->SlashVFX.ToSoftObjectPath(), Profile->SwingSound.ToSoftObjectPath()})
+                for (const auto& Path : {Profile->SlashMaterial.ToSoftObjectPath(), Profile->SlashVFX.ToSoftObjectPath(), Profile->ProjectileSwingVFX.ToSoftObjectPath(), Profile->SwingSound.ToSoftObjectPath()})
                     if (!Path.IsNull()) if (auto* Asset = Path.TryLoad()) PreparedLoadoutAssets.Add(Asset);
-                if (auto* System = Profile->SlashVFX.Get()) System->PrecacheAssetPSOs();
+                PGPlayerSlashFX::Prepare(Profile->SlashVFX.Get());
+                PGPlayerSlashFX::Prepare(Profile->ProjectileSwingVFX.Get());
                 // Prepare the actual primitive/material pipeline before the first short swing.
                 // Loading the material alone does not precache the static-mesh draw pipeline.
                 if (!SlashMesh && Profile->SlashVFX.IsNull())
@@ -174,6 +175,10 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     ActiveProfile = DuplicateObject<UPGPlayerSkillProfile>(Profile, this);
     ActiveMontage = Montage;
     PreparedVFX = Profile->SlashVFX.LoadSynchronous();
+    PreparedProjectileSwingVFX = Profile->ProjectileSwingVFX.LoadSynchronous();
+    // Also cover profiles injected without a loadout refresh (cheats/editor changes).
+    PGPlayerSlashFX::Prepare(PreparedVFX);
+    PGPlayerSlashFX::Prepare(PreparedProjectileSwingVFX);
     PreparedSound = Profile->SwingSound.LoadSynchronous();
     if (SlashMesh) SlashMesh->SetVisibility(false);
     SlashUntil = 0.; SlashStarted = 0.f;
@@ -250,7 +255,7 @@ void UPGPlayerAttackComponent::Stop(bool bNotify, bool bCancelled)
         }
         Player->GetCombatComponent()->ToggleWeaponCollision(false, EPGToggleDamageType::CurrentEquippedWeapon);
     }
-    ActiveProfile = nullptr; ActiveMontage = nullptr; PreparedVFX = nullptr; PreparedSound = nullptr;
+    ActiveProfile = nullptr; ActiveMontage = nullptr; PreparedVFX = nullptr; PreparedProjectileSwingVFX = nullptr; PreparedSound = nullptr;
     if (bNotify) Callback.ExecuteIfBound(bCancelled);
 }
 
@@ -479,6 +484,12 @@ void UPGPlayerAttackComponent::QueryHit(const FPGPlayerHitPhase& Hit)
 void UPGPlayerAttackComponent::PresentHit(const FPGPlayerHitPhase& Hit)
 {
     const auto* Player = CastChecked<APGCharacterPlayer>(GetOwner());
+    if (CVarPGSkillCast.GetValueOnGameThread())
+    {
+        const FVector Origin=Feet(Player)+FVector(0,0,ActiveProfile->SlashHeight);
+        UE_LOG(LogTemp,Log,TEXT("PGSkill Presentation Skill=%d Phase=%d Time=%.6f X=%.6f Y=%.6f Z=%.6f Yaw=%.6f Projectile=%d"),
+            ActiveProfile->SkillID,Hit.PhaseId,LogicalTime,Origin.X,Origin.Y,Origin.Z,LockedForward.Rotation().Yaw,Hit.Shape==EPGPlayerHitShape::Projectile);
+    }
     const FVector Center = Feet(Player) + FVector(0,0,10);
     if (!PreparedVFX && SlashMesh && SlashMID && Hit.Shape!=EPGPlayerHitShape::Projectile)
     {
@@ -494,11 +505,14 @@ void UPGPlayerAttackComponent::PresentHit(const FPGPlayerHitPhase& Hit)
         SlashStarted = LogicalTime;
         SlashMesh->SetVisibility(true); SlashUntil = LogicalTime + ActiveProfile->SlashDuration;
     }
-    if (PreparedVFX && Hit.Shape != EPGPlayerHitShape::Projectile)
+    const bool bProjectile = Hit.Shape == EPGPlayerHitShape::Projectile;
+    auto* SwingSystem = bProjectile ? PreparedProjectileSwingVFX.Get() : PreparedVFX.Get();
+    if (SwingSystem)
         for (int32 Side = 0; Side < (Hit.Shape == EPGPlayerHitShape::Disc ? 2 : 1); ++Side)
         {
             FRotator Rotation = LockedForward.Rotation(); Rotation.Yaw += Side * 180.f;
-            if (auto* FX = PGPlayerSlashFX::Spawn(this, PreparedVFX, ActiveProfile, Hit.Radius,
+            if (auto* FX = PGPlayerSlashFX::Spawn(this, SwingSystem, ActiveProfile,
+                bProjectile ? ActiveProfile->ProjectileSwingRadius : Hit.Radius,
                 Feet(Player) + FVector(0, 0, ActiveProfile->SlashHeight), Rotation,
                 ActiveProfile->bReverseSlash != bool(Hit.PhaseId % 2)))
             {

@@ -6,7 +6,8 @@ bool UPGPlayerSkillProfile::Validate(int32 ExpectedSkillID, FString& Error) cons
     const auto Fail = [&Error](const TCHAR* Reason) { Error = Reason; return false; };
     const auto TimeValid = [this](float Time) { return FMath::IsFinite(Time) && Time >= 0.f && Time <= Duration; };
     if (SkillID <= 0 || SkillID != ExpectedSkillID) return Fail(TEXT("SkillID mismatch"));
-    if (!FMath::IsFinite(NiagaraReferenceRadius) || NiagaraReferenceRadius < 1.f ||
+    if (!FMath::IsFinite(ProjectileSwingRadius) || ProjectileSwingRadius < 1.f || ProjectileSwingRadius > 1500.f ||
+        !FMath::IsFinite(NiagaraReferenceRadius) || NiagaraReferenceRadius < 1.f ||
         !FMath::IsFinite(NiagaraReferenceDuration) || NiagaraReferenceDuration < .05f || NiagaraReferenceDuration > 5.f ||
         NiagaraRotation.ContainsNaN()) return Fail(TEXT("Invalid Niagara authoring units"));
     if (!FMath::IsFinite(SlashDuration) || SlashDuration < .05f || SlashDuration > .5f ||

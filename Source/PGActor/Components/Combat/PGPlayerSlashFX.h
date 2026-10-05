@@ -14,6 +14,8 @@ struct FPGPlayerSlashFXInstance
 
 namespace PGPlayerSlashFX
 {
+    // Finish editor on-demand compilation before the short attack clock starts.
+    void Prepare(UNiagaraSystem* System);
     UNiagaraComponent* Spawn(const UObject* WorldContext, UNiagaraSystem* System,
         const UPGPlayerSkillProfile* Profile, float Radius, const FVector& Location,
         const FRotator& Rotation, bool bReverse);

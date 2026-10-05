@@ -38,6 +38,7 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<UObject>> PreparedLoadoutAssets;
     UPROPERTY(Transient) TObjectPtr<UAnimMontage> ActiveMontage;
     UPROPERTY(Transient) TObjectPtr<class UNiagaraSystem> PreparedVFX;
+    UPROPERTY(Transient) TObjectPtr<class UNiagaraSystem> PreparedProjectileSwingVFX;
     UPROPERTY(Transient) TObjectPtr<class USoundBase> PreparedSound;
     UPROPERTY(Transient) TObjectPtr<class UStaticMeshComponent> SlashMesh;
     UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> SlashMID;

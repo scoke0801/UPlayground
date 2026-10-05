@@ -73,6 +73,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FPGPlayerMovementSegment> MovementSegments;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FPGPlayerPoseKey> PoseKeys;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UNiagaraSystem> SlashVFX;
+    // Optional caster-side swing at projectile release; SlashVFX travels with the projectile.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Niagara") TSoftObjectPtr<class UNiagaraSystem> ProjectileSwingVFX;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Niagara", meta=(ClampMin="1", ClampMax="1500")) float ProjectileSwingRadius = 250.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class USoundBase> SwingSound;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UMaterialInterface> SlashMaterial;
     // Presentation only: the profile clock also freezes the slash during hit-stop.
