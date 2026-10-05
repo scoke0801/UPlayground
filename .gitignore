@@ -110,3 +110,32 @@ Script/**/*.png
 
 # Generated asset-pack manifests (clip names and local source paths)
 Tools/Art/ToonTest/**/*manifest.json
+/Tools/Validation
+/Tools/Validation
+/Tools/Validation
+Tools/Validation/RunHackSlashComparison.py
+Tools/Validation/RunInventoryPresentation.py
+Tools/Validation/TestHackSlashComparison.py
+Tools/Validation/ValidateHackSlashP0.py
+Tools/Validation/ValidatePlayerAttacks.py
+
+# Keep active-skill timing sources and their shared motion tools reviewable.
+!/Tools/Validation/
+/Tools/Validation/*
+!/Tools/Validation/ConfigureAttackMotion.py
+!/Tools/Validation/ConfigureHackSlashP1.py
+!/Tools/Validation/HackSlashP1.json
+!/Tools/Validation/RunHackSlashMotion.py
+!/Tools/Validation/ConfigurePlayableCharacters.py
+!/Tools/Validation/InspectPlayableCharacters.py
+!/Tools/Validation/ValidatePlayableCharacters.py
+!/Tools/Validation/RunPlayableCharacters.py
+!/Tools/Validation/ConfigurePlayableCharacters.py
+!/Tools/Validation/InspectPlayableCharacters.py
+!/Tools/Validation/ValidatePlayableCharacters.py
+!/Tools/Validation/RunPlayableCharacters.py
+Tools/Validation/RunHackSlashComparison.py
+Tools/Validation/RunInventoryPresentation.py
+Tools/Validation/TestHackSlashComparison.py
+Tools/Validation/ValidateHackSlashP0.py
+Tools/Validation/ValidatePlayerAttacks.py
