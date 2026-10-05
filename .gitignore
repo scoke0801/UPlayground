@@ -134,6 +134,7 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/ValidatePlayableCharacters.py
 !/Tools/Validation/RunPlayableCharacters.py
 !/Tools/Validation/PlayableCharacterPolish.py
+!/Tools/Validation/PlayableCharacterCatalog.py
 !/Tools/Validation/PlayableCharacterTransaction.py
 !/Tools/Validation/RunPlayableCharacterPolish.py
 !/Tools/Validation/ExportPlayableCharacterPolish.py
@@ -147,6 +148,7 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/CalibratePlayableCharacterGrip.py
 !/Tools/Validation/TestPlayableCharacterGrip.py
 !/Tools/Validation/AuditPlayerSwingFX.py
+!/Tools/Validation/AuditPlayerSwingMotions.py
 !/Tools/Validation/PlayerNiagaraData.py
 !/Tools/Validation/ConfigurePlayerNiagara.py
 !/Tools/Validation/ValidatePlayerNiagara.py
@@ -168,3 +170,19 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/ConfigureToonCharacterBatch.py
 !/Tools/Validation/PreviewToonCharacterBatch.py
 !/Tools/Validation/ValidateToonCharacterBatch.py
+/Tools/Art/P09Modular
+
+# Skeleton archer presentation migration and runtime validation.
+!/Tools/Validation/ConfigureSkeletonArcher.py
+!/Tools/Validation/ProbeSkeletonArcherPIE.py
+!/Tools/Validation/RunSkeletonArcher.py
+!/Tools/Validation/P09WaveRoster.py
+!/Tools/Validation/ConfigureP09Waves.py
+!/Tools/Validation/ProbeP09WavesPIE.py
+!/Tools/Validation/RunP09Waves.py
+
+# Authored playable weapon grips and their focused save/preview tools.
+!/Tools/Validation/ConfigurePlayableCharacterGrips.py
+!/Tools/Validation/RunGripPreview.py
+!/Tools/Validation/Data/PlayableCharacterGrip_Bokusei.json
+!/Tools/Validation/Data/PlayableCharacterGrip_Players.json
