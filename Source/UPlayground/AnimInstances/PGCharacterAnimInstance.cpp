@@ -34,6 +34,7 @@ void UPGCharacterAnimInstance::NativeBeginPlay()
 	if (OwningCharacter)
 	{
 		OwningMovementComponent = OwningCharacter->GetCharacterMovement();
+		CurrentWorldLocation = OwningCharacter->GetActorLocation();
 	}
 }
 
@@ -87,7 +88,10 @@ void UPGCharacterAnimInstance::UpdateDisplacementSpeed(float DeltaSeconds)
 	// 위치 기반 속도 계산 (필요한 경우)
 	const FVector NewWorldLocation = OwningCharacter->GetActorLocation();
 	DisplacementSinceLastUpdate = FVector::Dist2D(CurrentWorldLocation, NewWorldLocation);
-	DisplacementSpeed = DisplacementSinceLastUpdate / DeltaSeconds;
+	// Hit-stop intentionally updates the graph with zero animation delta. Never feed
+	// NaN/Inf into locomotion/distance matching, and consume the location even while held.
+	DisplacementSpeed = FMath::IsFinite(DeltaSeconds) && DeltaSeconds > SMALL_NUMBER
+		? DisplacementSinceLastUpdate / DeltaSeconds : 0.f;
     
 	// 다음 프레임을 위해 현재 위치 저장
 	CurrentWorldLocation = NewWorldLocation;

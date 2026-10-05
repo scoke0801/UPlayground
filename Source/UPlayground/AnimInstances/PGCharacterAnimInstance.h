@@ -26,6 +26,7 @@ UCLASS()
 class UPLAYGROUND_API UPGCharacterAnimInstance : public UPGBaseAnimInstance
 {
 	GENERATED_BODY()
+	friend class FPGAnimationHitStopDeltaTest;
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PG|Jump Settings")
