@@ -1,0 +1,38 @@
+// Embedded in M_PlayerSlash by PlayerSlashMaterial.py; no runtime file dependency.
+// XY plane: +U points along the cast. All layers remain inside the hit radius.
+float2 p = (UV - .5) * 2;
+float r = length(p);
+float a = atan2(p.y * Direction, p.x);
+float halfAngle = acos(clamp(CosAngle, -1., .999));
+float disc = step(3.13, halfAngle);
+float u = saturate((a + halfAngle) / (2 * halfAngle));
+// A circular skill paints two opposed crescents instead of a static complete ring.
+u = lerp(u, frac(u * 2), disc);
+float t = saturate(Progress);
+float tip = lerp(saturate(.32 + t * 1.9), 1., Projectile);
+float angularAA = max(fwidth(u), .006);
+float angularMask = 1 - smoothstep(halfAngle - .035, halfAngle, abs(a));
+angularMask = lerp(angularMask, 1., disc);
+float reveal = 1 - smoothstep(tip - angularAA, tip + angularAA, u);
+float tail = smoothstep(0., .14, u) * (1 - smoothstep(.88, 1., u));
+float taper = sqrt(saturate(sin(u * 3.14159265)));
+float width = max(.015, BladeWidth * taper);
+float outer = .84 + .08 * t;
+float radialAA = max(fwidth(r), .003);
+float radial = (outer - r) / width;
+float body = smoothstep(-radialAA, radialAA, outer - r)
+           * smoothstep(0., .35, 1 - radial);
+body *= saturate(1 - radial * .65);
+float core = 1 - smoothstep(.008, .024 + radialAA, abs(r - outer + .022));
+// Longitudinal streaks break up only the trailing edge, leaving a clean bright blade.
+float flow = sin(a * 23 + r * 61 - t * 18) * sin(a * 11 - r * 37 + t * 11);
+float erosion = smoothstep(-.55 + t * .8, .45 + t * .8, flow);
+body *= lerp(1., erosion, saturate(radial * 1.4 + t * .65));
+float echo = (1 - smoothstep(.007, .018 + radialAA, abs(r - (outer - width * 1.55))))
+           * (.35 + .65 * saturate(flow)) * .32;
+float head = exp2(-abs(u - tip + .035) * 38) * body;
+float fade = 1 - smoothstep(.35, 1., t);
+fade = lerp(fade, 1 - smoothstep(.78, 1., t), Projectile);
+float mask = saturate(body * .8 + core + echo + head) * angularMask * reveal * tail * fade;
+float3 color = lerp(Tint.rgb, float3(.85, .96, 1.), saturate(core * .85 + head * .5));
+return float4(color * Intensity * (1 + head * .45), mask);

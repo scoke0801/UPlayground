@@ -11,6 +11,7 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
+	"Plugins": [{ "Name": "Niagara", "Enabled": true }],
 	"Modules": [
 		{
 			"Name": "PGBlueprintUtil",

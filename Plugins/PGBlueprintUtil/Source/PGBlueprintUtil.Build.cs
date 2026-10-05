@@ -31,6 +31,8 @@ public class PGBlueprintUtil : ModuleRules
 				new string[]
 				{
 					"UnrealEd",
+					"Niagara",
+					"NiagaraEditor",
 					"ToolMenus",
 					"EditorStyle",
 					"EditorWidgets",
