@@ -1,4 +1,4 @@
-"""Author the seven selectable toon identities and four extensible P09 enemy templates.
+﻿"""Author selectable toon identities and four extensible P09 enemy templates.
 
 Run using UE 5.8 Python. Backs up every existing package before saving; source art,
 source animations and arena wave compositions are preserved.
@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT/'Tools/Validation'))
 from PlayableCharacterPolish import (read_source, preflight, packages, snapshot, digest, equivalent, STAMP,
     apply_rig, apply_retarget, apply_appearance, path as object_path)
 from PlayableCharacterTransaction import Transaction
+from PlayableCharacterCatalog import PLAYER_IDS
 OUT=ROOT/'Saved/PlayableCharacters'
 if 'PG_CHARACTER_RUN' not in os.environ:
     raise RuntimeError('Use RunPlayableCharacters.py --step configure for rollback and reload verification')
@@ -95,7 +96,7 @@ def main():
     unreal.log('PG polish planned packages: '+json.dumps(REPORT['planned_packages']))
     TRANSACTION.prepare(REPORT['planned_packages'], ROOT/'Tools/Validation/Data/PlayableCharacterPolish.json')
     players=[]
-    for identity in ['Bokusei','LianLian','Honoka','Hichi','Siuha','Lili','Nenmir']:
+    for identity in PLAYER_IDS:
         asset=appearance(identity)
         meshpath=asset.get_editor_property('mesh').get_path_name()
         players.append(asset)
@@ -113,7 +114,7 @@ def main():
     enemies,rows=table_rows('/Game/DataCenter/DataTables/Actor/DT_Enemy')
     for row in rows:
         if row['EnemyID'] in range(15201,15205):
-            assert row['ActorClass'].startswith(DEST+'/BP_PGEnemy_P09_'),'Enemy ID already belongs to another asset: '+str(row['EnemyID'])
+            assert row['ActorClass'].startswith((DEST+'/BP_PGEnemy_P09_','/Game/DataCenter/MonsterVariations/BP_')),'Enemy ID already belongs to another asset: '+str(row['EnemyID'])
     death_table,death_rows=table_rows('/Game/DataCenter/DataTables/Path/DT_Death')
     death_template=next((r for r in death_rows if r['ObjectTID']==15101),None)
     template=next(r for r in rows if r['EnemyID']==15101)

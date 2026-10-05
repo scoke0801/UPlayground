@@ -10,12 +10,12 @@ import re
 import math
 from pathlib import Path
 import unreal
+from PlayableCharacterCatalog import PLAYER_IDS, ENEMY_IDS
 
 ROOT = Path(unreal.Paths.project_dir()).resolve()
 SOURCE = ROOT / 'Tools/Validation/Data/PlayableCharacterPolish.json'
 DEST = '/Game/DataCenter/Characters'
-IDS = ['Bokusei', 'LianLian', 'Honoka', 'Hichi', 'Siuha', 'Lili', 'Nenmir',
-       'P09_Female', 'P09_Male', 'P09_Female_Armor007', 'P09_Male_Armor007']
+IDS = PLAYER_IDS + ENEMY_IDS
 STAMP = 'PG.Polish.Semantic.v1'
 OPS = {'IKRetargetPelvisMotionController': 'IKRetargetPelvisMotionOp',
        'IKRetargetFKChainsController': 'IKRetargetFKChainsOp'}

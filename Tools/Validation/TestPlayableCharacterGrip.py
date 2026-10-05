@@ -6,10 +6,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from RunPlayableCharacterGrip import SKILLS, inspect, compare, review
+from RunPlayableCharacterGrip import SKILLS, MOTION_PHASE_COUNTS, inspect, compare, review
 
 
-def fixture(stress=False):
+def fixture(stress=False, phase_counts=None):
     lines = [f'PGGrip Setup Identity=Bokusei Stress={int(stress)} Moved={10 if stress else 0}',
              'PGHackSlashProbe PASS skills=8 grip=1']
     for index, skill in enumerate(SKILLS):
@@ -22,7 +22,7 @@ def fixture(stress=False):
         for target in (0, 1):
             damage = 10 if target == 0 else 0
             lines.append(f'PGHackSlashProbe Skill={skill} Target={target} Damage={damage} Expected={damage} Move=0 Phases=1')
-        for phase in range(3 if skill == 113 else 2 if skill in (111, 112) else 1):
+        for phase in range(phase_counts[skill] if phase_counts else 3 if skill == 113 else 2 if skill in (111, 112) else 1):
             lines.append(f'PGSkill Presentation Skill={skill} Phase={phase} Time=0.2 X=0 Y=0 Z=0 Yaw=0 Projectile={int(skill==114)}')
             for _ in range(2 if skill in (110,112) else 1):
                 lines.append(f'PGGrip VFX Skill={skill} Available=1 X=0 Y=0 Z=0 Pitch=0 Yaw=0 Roll=0 Radius=100 Reverse=0')
@@ -38,6 +38,17 @@ class GripGateTests(unittest.TestCase):
 
     def test_unchanged_combat_accepts_real_stimulus(self):
         self.assertEqual(compare(self.before, self.after), [])
+
+    def test_motion_contacts_accept_valid_later_hit_and_reject_bad_or_missing_phase(self):
+        log = fixture(phase_counts=MOTION_PHASE_COUNTS).replace('HIT cast=c6 skill=113 phase=0', 'HIT cast=c6 skill=113 phase=4')
+        self.assertEqual(inspect(log, 'Bokusei', False, MOTION_PHASE_COUNTS)['errors'], [])
+        self.assertTrue(inspect(log, 'Bokusei', False)['errors'])
+        invalid = log.replace('HIT cast=c6 skill=113 phase=4', 'HIT cast=c6 skill=113 phase=5')
+        self.assertTrue(inspect(invalid, 'Bokusei', False, MOTION_PHASE_COUNTS)['errors'])
+        missing = log.replace('PGSkill Presentation Skill=110 Phase=4', 'Ignored Skill=110 Phase=4')
+        self.assertTrue(inspect(missing, 'Bokusei', False, MOTION_PHASE_COUNTS)['errors'])
+        duplicate = log.replace('PGSkill Presentation Skill=110 Phase=4', 'PGSkill Presentation Skill=110 Phase=3')
+        self.assertTrue(inspect(duplicate, 'Bokusei', False, MOTION_PHASE_COUNTS)['errors'])
 
     def test_damage_timing_and_displacement_regressions_fail(self):
         for field, value in [('direct_damage', 20), ('end', 4), ('displacement_cm', 1)]:

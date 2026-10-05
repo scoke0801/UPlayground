@@ -16,10 +16,14 @@ import uuid
 
 from RunPlayableCharacters import ROOT, FATAL, read_text, run_process
 from HackSlashMetrics import fields, parse_metrics
+from PlayableCharacterCatalog import PLAYER_IDS
 
-IDENTITIES = ['Bokusei', 'LianLian', 'Honoka', 'Hichi', 'Siuha', 'Lili', 'Nenmir']
+IDENTITIES = PLAYER_IDS
 SKILLS = [100, 101, 102, 110, 111, 112, 113, 114]
 TIME_TOLERANCE = 1 / 60 + .002  # Fixed 60 Hz observation; never auto-expanded.
+# Source montage P_HitPoint contacts audited by RunPlayerSlashFX --all-phases.
+# Explicit opt-in preserves interpretation of archived pre-migration runs.
+MOTION_PHASE_COUNTS = {skill: {110:5, 111:4, 112:6, 113:5}.get(skill, 1) for skill in SKILLS}
 SKILL_DEFINITIONS = {row['id']: row for name in ('HackSlashP0.json', 'HackSlashP1.json')
                      for row in json.loads(read_text(ROOT/'Tools/Validation'/name))['skills']}
 
@@ -78,13 +82,13 @@ def rows(log, marker):
             if 'LogTemp:' in line and marker in line]
 
 
-def inspect(log, identity, stress):
+def inspect(log, identity, stress, phase_counts=None):
     errors = []
     probes = rows(log, 'PGHackSlashProbe ')
     probes = [p for p in probes if 'Skill' in p]
     metrics, more = parse_metrics(log, dict(metrics='1', world='0', variant='p1'),
         [dict(target='0', loss=p['Damage']) for p in probes],
-        [dict(skill=str(skill)) for skill in SKILLS])
+        [dict(skill=str(skill)) for skill in SKILLS], profile_phase_counts=phase_counts)
     errors.extend(more)
     if len(probes) != 16:
         errors.append('Expected 16 independent target HP checks')
@@ -108,8 +112,8 @@ def inspect(log, identity, stress):
         errors.append('Missing dispatched combat notify observations')
     for skill in SKILLS:
         definition = SKILL_DEFINITIONS[skill]
-        expected = len(definition['hits'])
-        if sum(int(p['Skill']) == skill for p in presentation) != expected:
+        expected = phase_counts[skill] if phase_counts is not None else len(definition['hits'])
+        if sorted(int(p['Phase']) for p in presentation if int(p['Skill']) == skill) != list(range(expected)):
             errors.append(f'Missing/duplicate presentation phase: {skill}')
         if not any(int(c['Skill']) == skill for c in collisions):
             errors.append(f'Missing collision request observations: {skill}')
@@ -172,13 +176,15 @@ def compare(before, after):
     return errors
 
 
-def review(directory):
+def review(directory, phase_counts=None):
     """Re-evaluate preserved logs without altering the original run report.
 
     Process failures and changed-binary failures are carried forward, never
     inferred away from a PASS marker emitted before process shutdown.
     """
     original = json.loads(read_text(directory/'report.json'))
+    if phase_counts is None and original.get('phase_counts'):
+        phase_counts = {int(skill): count for skill, count in original['phase_counts'].items()}
     result = dict(status='FAIL', source_run=str(directory), comparisons=[],
                   original_report=original, replayed=False)
     for case in original['comparisons']:
@@ -187,7 +193,7 @@ def review(directory):
         for stress in (False, True):
             folder = directory/(identity+('_stress' if stress else '_baseline'))
             previous = json.loads(read_text(folder/'observations.json'))
-            current = inspect(read_text(folder/'engine.log'), identity, stress)
+            current = inspect(read_text(folder/'engine.log'), identity, stress, phase_counts)
             current['errors'].extend(e for e in previous['errors']
                                      if e.startswith(('Process exit=', 'Frozen module was not loaded:')))
             variants.append(current)
@@ -199,6 +205,7 @@ def review(directory):
     result['complete'] = complete
     result['validator_sha256'] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     result['skill_definitions'] = SKILL_DEFINITIONS
+    result['phase_counts'] = phase_counts
     (directory/'review.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
     print(result['status'], [(c['identity'],c['errors'][:3]) for c in result['comparisons']], flush=True)
     return 0 if result['status'] == 'PASS' else 1
@@ -206,14 +213,15 @@ def review(directory):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--identity', choices=IDENTITIES, action='append', help='Default: all seven')
+    parser.add_argument('--identity', choices=IDENTITIES, action='append', help='Default: all playable identities')
     parser.add_argument('--calibrate', type=Path, help='Authored contact-frame JSON; write a candidate without saving assets')
     parser.add_argument('--calibration-self-test', action='store_true')
     parser.add_argument('--review-run', type=Path, help='Re-evaluate complete archived observations; preserves original report')
+    parser.add_argument('--motion-contacts', action='store_true', help='Use the audited 24 source-motion contacts instead of the legacy 12 template phases')
     args = parser.parse_args(argv)
     if args.review_run:
         if args.identity or args.calibrate or args.calibration_self_test: parser.error('--review-run cannot be combined with execution options')
-        return review(args.review_run.resolve(strict=True))
+        return review(args.review_run.resolve(strict=True), MOTION_PHASE_COUNTS if args.motion_contacts else None)
     out = ROOT/'Saved/PlayableCharacters/Runs'/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'_grip')
     out.mkdir(parents=True)
     if args.calibrate or args.calibration_self_test:
@@ -235,6 +243,7 @@ def main(argv=None):
                   art_tuning=False, visual_acceptance=False, direct_input=False,
                   legacy_spatial_acceptance=False, rendered=False)
     result['requested_identities'] = args.identity or IDENTITIES
+    result['phase_counts'] = MOTION_PHASE_COUNTS if args.motion_contacts else None
     print(out, flush=True)
     try:
         project, copied, hashes = stage_project(out)
@@ -250,13 +259,13 @@ def main(argv=None):
                        '-ExecCmds=t.MaxFPS 60,pg.Skill.DebugCast 1,pg.Skill.Observe 1,PGHackSlashProbe',
                        '-PGGripIdentity='+identity, '-PGGripTrace', '-UseFixedTimeStep', '-FPS=60',
                        '-PGTestProfile=HackSlash_Grip_'+uuid.uuid4().hex[:12], '-UserDir='+str(folder/'User'),
-                       '-nullrhi', '-unattended', '-nosound', '-nop4', '-culture=en', '-DisablePlugins=RiderLink',
+                       '-nullrhi', '-unattended', '-nosound', '-nop4', '-culture=en', '-DisablePlugins=RiderLink', '-Multiprocess',
                        '-ddc=InstalledNoZenLocalFallback', '-abslog='+str(folder/'engine.log')]
                 if stress: cmd.append('-PGGripStress')
                 (folder/'command.json').write_text(json.dumps([str(c) for c in cmd], indent=2), encoding='utf-8')
                 code, timeout = run_process(cmd, ROOT, folder/'stdout.log', 240)
                 log = read_text(folder/'engine.log') if (folder/'engine.log').exists() else ''
-                observation = inspect(log, identity, stress)
+                observation = inspect(log, identity, stress, MOTION_PHASE_COUNTS if args.motion_contacts else None)
                 if code or timeout: observation['errors'].append(f'Process exit={code}, timeout={timeout}')
                 observation['process'] = dict(code=code, timeout=timeout)
                 for module in ('PGActor', 'UPlayground'):

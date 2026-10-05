@@ -70,7 +70,7 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
         auto* Profile = UPGProfileSubsystem::Get(W);
         if (!Player || !Profile || !Profile->GetCatalog() || !Player->GetSkillHandler() || Now-State->Started<4) return true;
         const auto& Catalog = Profile->GetCatalog()->PlayableCharacters;
-        if (Catalog.Num()!=7) return Finish(false,TEXT("expected seven playable identities"));
+        if (Catalog.Num()<2) return Finish(false,TEXT("expected multiple playable identities"));
         if (State->Phase==0)
         {
             if (FParse::Param(FCommandLine::Get(),TEXT("PGCharacterCapture")))
@@ -130,7 +130,9 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
             Player->AppearanceComponent->ResolveEquipmentAttachment(Socket, Grip.WeaponTag);
             if (!bGripOK) return Finish(false,TEXT("grip cache/offset/fallback regression"));
             UE_LOG(LogTemp,Display,TEXT("PGCharacterGrip Id=%s TagIsolation=1 Refresh=1 InvalidFallback=1 DuplicateFallback=1"),*Appearance->Id.ToString());
-            State->PhaseAt=Now; State->Phase=1; State->Travel=0; State->bCaptured=false;
+            // Synchronous mesh/rig loads above can exceed the settling interval.
+            // Start it after loading so the new anim instance evaluates first.
+            State->PhaseAt=FPlatformTime::Seconds(); State->Phase=1; State->Travel=0; State->bCaptured=false;
             return true;
         }
         if (State->Phase==1)
@@ -170,7 +172,7 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
             Player->GetPGAbilitySystemComponent()->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Normal);
             Player->GetPGAbilitySystemComponent()->OnAbilityInputReleased(PGGamePlayTags::InputTag_Skill_Normal);
             if (!Player->GetPlayerAttackComponent()->IsRunning()) return Finish(false,TEXT("GAS normal attack did not start"));
-            const FName Other=Catalog[(State->Index+1)%7].LoadSynchronous()->Id;
+            const FName Other=Catalog[(State->Index+1)%Catalog.Num()].LoadSynchronous()->Id;
             if (Profile->SelectCharacter(Other)) return Finish(false,TEXT("mid-attack selection accepted"));
             State->Phase=2; State->PhaseAt=Now; State->bCaptured=false;
             return true;
@@ -205,7 +207,7 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
             if (Now-State->PhaseAt<1.5 || Player->GetPlayerAttackComponent()->IsRunning()) return true;
             if (State->Travel<2) return Finish(false,TEXT("visible attack pose stayed static"));
             UE_LOG(LogTemp,Display,TEXT("PGCharacterProbe Player=%s Travel=%.3f SaveAtomic=1 AttackGuard=1"),*Profile->GetProfile()->CharacterId.ToString(),State->Travel);
-            if (++State->Index<7) { State->Phase=0; return true; }
+            if (++State->Index<Catalog.Num()) { State->Phase=0; return true; }
             State->Index=0; State->Phase=3;
         }
         if (State->Phase==3)
@@ -255,7 +257,7 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
                 State->Phase=5; State->PhaseAt=Now; State->bCaptured=false;
                 return true;
             }
-            return Finish(true,TEXT("players=7 monsters=4"));
+            return Finish(true,*FString::Printf(TEXT("players=%d monsters=4"),Catalog.Num()));
         }
         if (State->Phase==5 && Now-State->PhaseAt>.5)
         {
@@ -265,7 +267,7 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
                 State->bCaptured=true;
                 return true;
             }
-            if (Now-State->PhaseAt>1.5) return Finish(true,TEXT("players=7 monsters=4"));
+            if (Now-State->PhaseAt>1.5) return Finish(true,*FString::Printf(TEXT("players=%d monsters=4"),Catalog.Num()));
         }
         return true;
     }));

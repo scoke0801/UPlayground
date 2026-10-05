@@ -1,0 +1,1374 @@
+{
+  "schema_version": 1,
+  "description": "Eight playable rigs calibrated for existing SM_Sword, preserving world weapon scale. Right-hand reference-local finger rotations and per-rig contact frames. Bokusei remains in PlayableCharacterGrip_Bokusei.json. Hichi is the persistent identity for Yura. LianLian hands remain covered by the original long sleeves.",
+  "profiles": [
+    {
+      "identity": "LianLian",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_R",
+      "hand_contact": {
+        "translation": [
+          -5.155774065319218,
+          2.2896094506672036,
+          0.3944471084010725
+        ],
+        "rotation": [
+          -0.0667180048548875,
+          -0.0654070730332089,
+          0.7113909562484544,
+          -0.696558346438632
+        ],
+        "scale": 1
+      },
+      "weapon_contact": {
+        "translation": [
+          0,
+          0,
+          1.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1
+      },
+      "weapon_relative": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1.2345679
+      },
+      "anchor_scale": 1.0000000009999999,
+      "fingers": [
+        {
+          "bone": "Index_Proximal_R",
+          "reference_rotation_offset": [
+            0.5916,
+            59.9922,
+            -0.5523
+          ]
+        },
+        {
+          "bone": "Index_Intermediate_R",
+          "reference_rotation_offset": [
+            0.8018,
+            74.9905,
+            -0.5727
+          ]
+        },
+        {
+          "bone": "Index_Distal_R",
+          "reference_rotation_offset": [
+            0.7172,
+            68.9911,
+            -0.5712
+          ]
+        },
+        {
+          "bone": "Middle_Proximal_R",
+          "reference_rotation_offset": [
+            -9.7397,
+            65.5957,
+            -4.1652
+          ]
+        },
+        {
+          "bone": "Middle_Intermediate_R",
+          "reference_rotation_offset": [
+            -10.4175,
+            73.6888,
+            -5.3555
+          ]
+        },
+        {
+          "bone": "Middle_Distal_R",
+          "reference_rotation_offset": [
+            -9.9246,
+            67.616,
+            -4.4532
+          ]
+        },
+        {
+          "bone": "Ring_Proximal_R",
+          "reference_rotation_offset": [
+            -9.2594,
+            57.459,
+            -2.1924
+          ]
+        },
+        {
+          "bone": "Ring_Intermediate_R",
+          "reference_rotation_offset": [
+            -9.9843,
+            63.4938,
+            -2.9286
+          ]
+        },
+        {
+          "bone": "Ring_Distal_R",
+          "reference_rotation_offset": [
+            -10.2084,
+            65.5104,
+            -3.1911
+          ]
+        },
+        {
+          "bone": "Little_Proximal_R",
+          "reference_rotation_offset": [
+            -11.487,
+            38.4402,
+            -0.6511
+          ]
+        },
+        {
+          "bone": "Little_Intermediate_R",
+          "reference_rotation_offset": [
+            -15.7486,
+            55.322,
+            -3.2737
+          ]
+        },
+        {
+          "bone": "Little_Distal_R",
+          "reference_rotation_offset": [
+            -17.2509,
+            62.4288,
+            -4.729
+          ]
+        },
+        {
+          "bone": "Thumb_Proximal_R",
+          "reference_rotation_offset": [
+            19.1623,
+            41.4207,
+            18.627
+          ]
+        },
+        {
+          "bone": "Thumb_Intermediate_R",
+          "reference_rotation_offset": [
+            -29.3569,
+            -17.3899,
+            28.2558
+          ]
+        },
+        {
+          "bone": "Thumb_Distal_R",
+          "reference_rotation_offset": [
+            -42.3376,
+            -60.6856,
+            80.726
+          ]
+        }
+      ]
+    },
+    {
+      "identity": "Honoka",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_r",
+      "hand_contact": {
+        "translation": [
+          -0.02562772602487401,
+          -0.0627600832762982,
+          0.006429463985037109
+        ],
+        "rotation": [
+          -0.023103693810757834,
+          0.07106443339979986,
+          -0.02362634151878403,
+          0.996924200540995
+        ],
+        "scale": 1
+      },
+      "weapon_contact": {
+        "translation": [
+          0,
+          0,
+          1.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1
+      },
+      "weapon_relative": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1.2345679
+      },
+      "anchor_scale": 0.010000002393951189,
+      "fingers": [
+        {
+          "bone": "Index1_r",
+          "reference_rotation_offset": [
+            4.1432,
+            3.4366,
+            -59.6563
+          ]
+        },
+        {
+          "bone": "Index2_r",
+          "reference_rotation_offset": [
+            8.4059,
+            2.8578,
+            -74.3398
+          ]
+        },
+        {
+          "bone": "Index3_r",
+          "reference_rotation_offset": [
+            7.6841,
+            3.7187,
+            -68.2856
+          ]
+        },
+        {
+          "bone": "Middle1_r",
+          "reference_rotation_offset": [
+            -2.2063,
+            -5.598,
+            -65.6483
+          ]
+        },
+        {
+          "bone": "Middle2_r",
+          "reference_rotation_offset": [
+            -2.2216,
+            -4.8784,
+            -73.7387
+          ]
+        },
+        {
+          "bone": "Middle3_r",
+          "reference_rotation_offset": [
+            -0.7978,
+            -5.6579,
+            -67.7489
+          ]
+        },
+        {
+          "bone": "Ring1_r",
+          "reference_rotation_offset": [
+            -2.1579,
+            -3.8051,
+            -57.7775
+          ]
+        },
+        {
+          "bone": "Ring2_r",
+          "reference_rotation_offset": [
+            -2.6399,
+            -5.0289,
+            -63.6583
+          ]
+        },
+        {
+          "bone": "Ring3_r",
+          "reference_rotation_offset": [
+            -1.6749,
+            -2.4495,
+            -65.905
+          ]
+        },
+        {
+          "bone": "Little1_r",
+          "reference_rotation_offset": [
+            -3.2079,
+            -7.4899,
+            -38.9854
+          ]
+        },
+        {
+          "bone": "Little2_r",
+          "reference_rotation_offset": [
+            -6.8238,
+            -8.9852,
+            -55.4306
+          ]
+        },
+        {
+          "bone": "Little3_r",
+          "reference_rotation_offset": [
+            -8.0343,
+            -7.902,
+            -62.5512
+          ]
+        },
+        {
+          "bone": "Thumb1_r",
+          "reference_rotation_offset": [
+            -9.2718,
+            38.3371,
+            -28.1251
+          ]
+        },
+        {
+          "bone": "Thumb2_r",
+          "reference_rotation_offset": [
+            -14.7231,
+            -38.5212,
+            1.3227
+          ]
+        },
+        {
+          "bone": "Thumb3_r",
+          "reference_rotation_offset": [
+            -35.5581,
+            -84.3396,
+            21.085
+          ]
+        }
+      ]
+    },
+    {
+      "identity": "Hichi",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_R",
+      "hand_contact": {
+        "translation": [
+          0.007370854728458963,
+          0.010301319740899182,
+          0.07635784715798734
+        ],
+        "rotation": [
+          -0.45313854009410576,
+          0.5801872297661167,
+          -0.45384398502997003,
+          0.5020695959225356
+        ],
+        "scale": 1
+      },
+      "weapon_contact": {
+        "translation": [
+          0,
+          0,
+          1.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1
+      },
+      "weapon_relative": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1.2345679
+      },
+      "anchor_scale": 0.010000001202592736,
+      "fingers": [
+        {
+          "bone": "IndexProximal_R",
+          "reference_rotation_offset": [
+            8.0004,
+            -59.4948,
+            0.2596
+          ]
+        },
+        {
+          "bone": "IndexProximal_R_001",
+          "reference_rotation_offset": [
+            9.2554,
+            -74.6225,
+            -1.5577
+          ]
+        },
+        {
+          "bone": "IndexProximal_R_002",
+          "reference_rotation_offset": [
+            8.7095,
+            -68.5817,
+            -0.9402
+          ]
+        },
+        {
+          "bone": "MiddleProximal_R",
+          "reference_rotation_offset": [
+            0.6225,
+            -65.5651,
+            7.6105
+          ]
+        },
+        {
+          "bone": "MiddleProximal_R_001",
+          "reference_rotation_offset": [
+            -0.8691,
+            -73.8641,
+            5.4593
+          ]
+        },
+        {
+          "bone": "MiddleProximal_R_002",
+          "reference_rotation_offset": [
+            -1.0714,
+            -67.876,
+            5.0233
+          ]
+        },
+        {
+          "bone": "RingProximal_R",
+          "reference_rotation_offset": [
+            -0.904,
+            -57.8253,
+            5.144
+          ]
+        },
+        {
+          "bone": "RingProximal_R_001",
+          "reference_rotation_offset": [
+            -1.7952,
+            -63.9326,
+            3.8912
+          ]
+        },
+        {
+          "bone": "RingProximal_R_002",
+          "reference_rotation_offset": [
+            -1.7827,
+            -65.9325,
+            4.0191
+          ]
+        },
+        {
+          "bone": "LittleProximal_R",
+          "reference_rotation_offset": [
+            -5.0929,
+            -39.3904,
+            7.0971
+          ]
+        },
+        {
+          "bone": "LittleProximal_R_001",
+          "reference_rotation_offset": [
+            -8.161,
+            -56.5976,
+            6.0008
+          ]
+        },
+        {
+          "bone": "LittleProximal_R_002",
+          "reference_rotation_offset": [
+            -8.6759,
+            -63.6539,
+            7.1596
+          ]
+        },
+        {
+          "bone": "ThumbProximal_R",
+          "reference_rotation_offset": [
+            27.3027,
+            -38.6125,
+            -14.2497
+          ]
+        },
+        {
+          "bone": "ThumbProximal_R_001",
+          "reference_rotation_offset": [
+            -6.4716,
+            6.9885,
+            39.5316
+          ]
+        },
+        {
+          "bone": "ThumbProximal_R_002",
+          "reference_rotation_offset": [
+            -13.1601,
+            3.677,
+            84.6944
+          ]
+        }
+      ]
+    },
+    {
+      "identity": "Siuha",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_R",
+      "hand_contact": {
+        "translation": [
+          -0.01126021325602429,
+          -0.06620447577343624,
+          -0.02683676550219649
+        ],
+        "rotation": [
+          -0.003483823530863098,
+          0.6041619116278206,
+          0.04819881495771997,
+          -0.7953949470222292
+        ],
+        "scale": 1
+      },
+      "weapon_contact": {
+        "translation": [
+          0,
+          0,
+          1.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1
+      },
+      "weapon_relative": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1.2345679
+      },
+      "anchor_scale": 0.010000001202592736,
+      "fingers": [
+        {
+          "bone": "IndexProximal_R",
+          "reference_rotation_offset": [
+            1.0341,
+            -10.262,
+            -59.2813
+          ]
+        },
+        {
+          "bone": "IndexIntermediate_R",
+          "reference_rotation_offset": [
+            -0.0579,
+            -12.9844,
+            -74.0242
+          ]
+        },
+        {
+          "bone": "IndexDistal_R",
+          "reference_rotation_offset": [
+            3.4524,
+            -7.2439,
+            -68.8083
+          ]
+        },
+        {
+          "bone": "MiddleProximal_R",
+          "reference_rotation_offset": [
+            -5.0959,
+            -13.6014,
+            -63.9543
+          ]
+        },
+        {
+          "bone": "MiddleIntermediate_R",
+          "reference_rotation_offset": [
+            -7.0965,
+            -14.1823,
+            -71.6416
+          ]
+        },
+        {
+          "bone": "MiddleDistal_R",
+          "reference_rotation_offset": [
+            -5.7434,
+            -12.8041,
+            -66.0659
+          ]
+        },
+        {
+          "bone": "RingProximal_R",
+          "reference_rotation_offset": [
+            -4.6311,
+            -6.1204,
+            -57.2867
+          ]
+        },
+        {
+          "bone": "RingIntermediate_R",
+          "reference_rotation_offset": [
+            -5.3973,
+            -6.5651,
+            -63.1838
+          ]
+        },
+        {
+          "bone": "RingDistal_R",
+          "reference_rotation_offset": [
+            -1.0633,
+            3.6826,
+            -65.9354
+          ]
+        },
+        {
+          "bone": "LittleProximal_R",
+          "reference_rotation_offset": [
+            -3.5551,
+            -5.6917,
+            -39.2795
+          ]
+        },
+        {
+          "bone": "LittleIntermediate_R",
+          "reference_rotation_offset": [
+            -9.1712,
+            -5.2769,
+            -55.6689
+          ]
+        },
+        {
+          "bone": "LittleDistal_R",
+          "reference_rotation_offset": [
+            -5.1309,
+            3.4322,
+            -63.8871
+          ]
+        },
+        {
+          "bone": "ThumbProximal_R",
+          "reference_rotation_offset": [
+            -22.3491,
+            20.7294,
+            31.359
+          ]
+        },
+        {
+          "bone": "ThumbIntermediate_R",
+          "reference_rotation_offset": [
+            -17.4446,
+            7.5592,
+            -37.6799
+          ]
+        },
+        {
+          "bone": "ThumbDistal_R",
+          "reference_rotation_offset": [
+            -17.6961,
+            33.9842,
+            -84.1853
+          ]
+        }
+      ]
+    },
+    {
+      "identity": "Lili",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_R",
+      "hand_contact": {
+        "translation": [
+          -0.2813315412781159,
+          -6.2351165167164355,
+          -1.627405346312134
+        ],
+        "rotation": [
+          -0.04273215816823113,
+          -0.6725288935945553,
+          0.030773205676895357,
+          0.7381950011691601
+        ],
+        "scale": 1
+      },
+      "weapon_contact": {
+        "translation": [
+          0,
+          0,
+          1.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1
+      },
+      "weapon_relative": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1.2345679
+      },
+      "anchor_scale": 1.0000000009999999,
+      "fingers": [
+        {
+          "bone": "Index_Proximal_R",
+          "reference_rotation_offset": [
+            3.5612,
+            4.0952,
+            -59.6496
+          ]
+        },
+        {
+          "bone": "Index_Intermediate_R",
+          "reference_rotation_offset": [
+            4.9514,
+            4.3832,
+            -74.5613
+          ]
+        },
+        {
+          "bone": "Index_Distal_R",
+          "reference_rotation_offset": [
+            4.3881,
+            4.3117,
+            -68.594
+          ]
+        },
+        {
+          "bone": "Middle_Proximal_R",
+          "reference_rotation_offset": [
+            -2.9383,
+            -4.2449,
+            -65.7117
+          ]
+        },
+        {
+          "bone": "Middle_Intermediate_R",
+          "reference_rotation_offset": [
+            -3.5625,
+            -4.4565,
+            -73.6726
+          ]
+        },
+        {
+          "bone": "Middle_Distal_R",
+          "reference_rotation_offset": [
+            -3.0897,
+            -4.3071,
+            -67.7018
+          ]
+        },
+        {
+          "bone": "Ring_Proximal_R",
+          "reference_rotation_offset": [
+            -3.1429,
+            -3.52,
+            -57.7278
+          ]
+        },
+        {
+          "bone": "Ring_Intermediate_R",
+          "reference_rotation_offset": [
+            -3.7316,
+            -3.5799,
+            -63.6963
+          ]
+        },
+        {
+          "bone": "Ring_Distal_R",
+          "reference_rotation_offset": [
+            -3.8986,
+            -3.6124,
+            -65.6869
+          ]
+        },
+        {
+          "bone": "Little_Proximal_R",
+          "reference_rotation_offset": [
+            -4.1352,
+            -7.0777,
+            -38.93
+          ]
+        },
+        {
+          "bone": "Little_Intermediate_R",
+          "reference_rotation_offset": [
+            -7.337,
+            -8.8308,
+            -55.3632
+          ]
+        },
+        {
+          "bone": "Little_Distal_R",
+          "reference_rotation_offset": [
+            -8.7195,
+            -9.3177,
+            -62.1405
+          ]
+        },
+        {
+          "bone": "Thumb_Proximal_R",
+          "reference_rotation_offset": [
+            4.894,
+            40.0564,
+            -21.3585
+          ]
+        },
+        {
+          "bone": "Thumb_Intermediate_R",
+          "reference_rotation_offset": [
+            -28.5658,
+            -30.6613,
+            5.5777
+          ]
+        },
+        {
+          "bone": "Thumb_Distal_R",
+          "reference_rotation_offset": [
+            -48.4966,
+            -83.7021,
+            37.9453
+          ]
+        }
+      ]
+    },
+    {
+      "identity": "Nenmir",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_R",
+      "hand_contact": {
+        "translation": [
+          -5.155774065319218,
+          2.2896094506672036,
+          0.3944471084010725
+        ],
+        "rotation": [
+          -0.0667180048548875,
+          -0.0654070730332089,
+          0.7113909562484544,
+          -0.696558346438632
+        ],
+        "scale": 1
+      },
+      "weapon_contact": {
+        "translation": [
+          0,
+          0,
+          1.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1
+      },
+      "weapon_relative": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1.2345679
+      },
+      "anchor_scale": 1.0000000009999999,
+      "fingers": [
+        {
+          "bone": "Index_Proximal_R",
+          "reference_rotation_offset": [
+            0.5916,
+            59.9922,
+            -0.5523
+          ]
+        },
+        {
+          "bone": "Index_Intermediate_R",
+          "reference_rotation_offset": [
+            0.8018,
+            74.9905,
+            -0.5727
+          ]
+        },
+        {
+          "bone": "Index_Distal_R",
+          "reference_rotation_offset": [
+            0.7172,
+            68.9911,
+            -0.5712
+          ]
+        },
+        {
+          "bone": "Middle_Proximal_R",
+          "reference_rotation_offset": [
+            -9.7397,
+            65.5957,
+            -4.1652
+          ]
+        },
+        {
+          "bone": "Middle_Intermediate_R",
+          "reference_rotation_offset": [
+            -10.4175,
+            73.6888,
+            -5.3555
+          ]
+        },
+        {
+          "bone": "Middle_Distal_R",
+          "reference_rotation_offset": [
+            -9.9246,
+            67.616,
+            -4.4532
+          ]
+        },
+        {
+          "bone": "Ring_Proximal_R",
+          "reference_rotation_offset": [
+            -9.2594,
+            57.459,
+            -2.1924
+          ]
+        },
+        {
+          "bone": "Ring_Intermediate_R",
+          "reference_rotation_offset": [
+            -9.9843,
+            63.4938,
+            -2.9286
+          ]
+        },
+        {
+          "bone": "Ring_Distal_R",
+          "reference_rotation_offset": [
+            -10.2084,
+            65.5104,
+            -3.1911
+          ]
+        },
+        {
+          "bone": "Little_Proximal_R",
+          "reference_rotation_offset": [
+            -11.487,
+            38.4402,
+            -0.6511
+          ]
+        },
+        {
+          "bone": "Little_Intermediate_R",
+          "reference_rotation_offset": [
+            -15.7486,
+            55.322,
+            -3.2737
+          ]
+        },
+        {
+          "bone": "Little_Distal_R",
+          "reference_rotation_offset": [
+            -17.2509,
+            62.4288,
+            -4.729
+          ]
+        },
+        {
+          "bone": "Thumb_Proximal_R",
+          "reference_rotation_offset": [
+            19.1623,
+            41.4207,
+            18.627
+          ]
+        },
+        {
+          "bone": "Thumb_Intermediate_R",
+          "reference_rotation_offset": [
+            -29.3569,
+            -17.3899,
+            28.2558
+          ]
+        },
+        {
+          "bone": "Thumb_Distal_R",
+          "reference_rotation_offset": [
+            -42.3376,
+            -60.6856,
+            80.726
+          ]
+        }
+      ]
+    },
+    {
+      "identity": "Hwarin",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_r",
+      "hand_contact": {
+        "translation": [
+          0.007654510811488137,
+          0.025826680045919644,
+          0.06254068780723775
+        ],
+        "rotation": [
+          -0.5037547186602848,
+          0.532957834451707,
+          -0.5186027550813019,
+          0.4395887993865717
+        ],
+        "scale": 1
+      },
+      "weapon_contact": {
+        "translation": [
+          0,
+          0,
+          1.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1
+      },
+      "weapon_relative": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1.2345679
+      },
+      "anchor_scale": 0.010000001202592736,
+      "fingers": [
+        {
+          "bone": "Index1_r",
+          "reference_rotation_offset": [
+            5.9722,
+            -59.6604,
+            1.1381
+          ]
+        },
+        {
+          "bone": "Index2_r",
+          "reference_rotation_offset": [
+            7.2455,
+            -74.6855,
+            0.2315
+          ]
+        },
+        {
+          "bone": "Index3_r",
+          "reference_rotation_offset": [
+            6.467,
+            -68.7224,
+            0.1953
+          ]
+        },
+        {
+          "bone": "Middle1_r",
+          "reference_rotation_offset": [
+            -4.0595,
+            -65.9218,
+            4.0766
+          ]
+        },
+        {
+          "bone": "Middle2_r",
+          "reference_rotation_offset": [
+            -4.1306,
+            -73.9397,
+            4.8479
+          ]
+        },
+        {
+          "bone": "Middle3_r",
+          "reference_rotation_offset": [
+            -4.1263,
+            -67.9265,
+            4.2105
+          ]
+        },
+        {
+          "bone": "Ring1_r",
+          "reference_rotation_offset": [
+            -4.2697,
+            -57.9003,
+            2.3363
+          ]
+        },
+        {
+          "bone": "Ring2_r",
+          "reference_rotation_offset": [
+            -4.4732,
+            -63.9145,
+            2.882
+          ]
+        },
+        {
+          "bone": "Ring3_r",
+          "reference_rotation_offset": [
+            -4.5379,
+            -65.9197,
+            3.0533
+          ]
+        },
+        {
+          "bone": "Little1_r",
+          "reference_rotation_offset": [
+            -8.0792,
+            -39.2808,
+            1.3335
+          ]
+        },
+        {
+          "bone": "Little2_r",
+          "reference_rotation_offset": [
+            -10.8943,
+            -56.2692,
+            3.4982
+          ]
+        },
+        {
+          "bone": "Little3_r",
+          "reference_rotation_offset": [
+            -11.8465,
+            -63.338,
+            4.6265
+          ]
+        },
+        {
+          "bone": "Thumb1_r",
+          "reference_rotation_offset": [
+            32.8788,
+            -32.5472,
+            -21.0345
+          ]
+        },
+        {
+          "bone": "Thumb2_r",
+          "reference_rotation_offset": [
+            -5.5153,
+            -1.9618,
+            40.6924
+          ]
+        },
+        {
+          "bone": "Thumb3_r",
+          "reference_rotation_offset": [
+            -0.7235,
+            -16.1543,
+            84.8618
+          ]
+        }
+      ]
+    },
+    {
+      "identity": "Arin",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_R",
+      "hand_contact": {
+        "translation": [
+          -0.051557773927895734,
+          0.022896063979984,
+          0.003944445482762401
+        ],
+        "rotation": [
+          -0.06671763054083704,
+          -0.06540670886767629,
+          0.7113907443025984,
+          -0.6965586329453612
+        ],
+        "scale": 1
+      },
+      "weapon_contact": {
+        "translation": [
+          0,
+          0,
+          1.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1
+      },
+      "weapon_relative": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": 1.2345679
+      },
+      "anchor_scale": 0.01000000001,
+      "fingers": [
+        {
+          "bone": "Index_Proximal_R",
+          "reference_rotation_offset": [
+            0.6158,
+            59.9913,
+            -0.5956
+          ]
+        },
+        {
+          "bone": "Index_Intermediate_R",
+          "reference_rotation_offset": [
+            0.838,
+            74.9893,
+            -0.6211
+          ]
+        },
+        {
+          "bone": "Index_Distal_R",
+          "reference_rotation_offset": [
+            0.7484,
+            68.99,
+            -0.6179
+          ]
+        },
+        {
+          "bone": "Middle_Proximal_R",
+          "reference_rotation_offset": [
+            -9.714,
+            65.5992,
+            -4.2022
+          ]
+        },
+        {
+          "bone": "Middle_Intermediate_R",
+          "reference_rotation_offset": [
+            -10.3864,
+            73.6922,
+            -5.3942
+          ]
+        },
+        {
+          "bone": "Middle_Distal_R",
+          "reference_rotation_offset": [
+            -9.8976,
+            67.6195,
+            -4.4907
+          ]
+        },
+        {
+          "bone": "Ring_Proximal_R",
+          "reference_rotation_offset": [
+            -9.2384,
+            57.4633,
+            -2.2263
+          ]
+        },
+        {
+          "bone": "Ring_Intermediate_R",
+          "reference_rotation_offset": [
+            -9.9594,
+            63.4984,
+            -2.9645
+          ]
+        },
+        {
+          "bone": "Ring_Distal_R",
+          "reference_rotation_offset": [
+            -10.1821,
+            65.515,
+            -3.2275
+          ]
+        },
+        {
+          "bone": "Little_Proximal_R",
+          "reference_rotation_offset": [
+            -11.4768,
+            38.4449,
+            -0.6724
+          ]
+        },
+        {
+          "bone": "Little_Intermediate_R",
+          "reference_rotation_offset": [
+            -15.7301,
+            55.3287,
+            -3.3014
+          ]
+        },
+        {
+          "bone": "Little_Distal_R",
+          "reference_rotation_offset": [
+            -17.2284,
+            62.436,
+            -4.7584
+          ]
+        },
+        {
+          "bone": "Thumb_Proximal_R",
+          "reference_rotation_offset": [
+            39.3828,
+            6.156,
+            -21.8468
+          ]
+        },
+        {
+          "bone": "Thumb_Intermediate_R",
+          "reference_rotation_offset": [
+            -7.6891,
+            -40.3573,
+            4.6847
+          ]
+        },
+        {
+          "bone": "Thumb_Distal_R",
+          "reference_rotation_offset": [
+            -10.3653,
+            -85.8317,
+            14.266
+          ]
+        }
+      ]
+    }
+  ]
+}

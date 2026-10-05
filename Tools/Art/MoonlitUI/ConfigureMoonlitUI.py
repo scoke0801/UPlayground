@@ -1,16 +1,19 @@
-﻿"""Import ImageGen art and wire the seven character portraits. Run in UE Python."""
+﻿"""Import selected illustrations and wire playable character portraits. Run in UE Python."""
 import json
+import sys
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 import unreal
 
 ROOT=Path(unreal.Paths.project_dir()).resolve()
+sys.path.insert(0,str(ROOT/'Tools/Validation'))
+from PlayableCharacterCatalog import PLAYER_IDS, portrait_source
 DEST='/Game/DataCenter/UI/Moonlit'
 OUT=ROOT/'Saved/MoonlitUI'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')
 OUT.mkdir(parents=True)
 EAL=unreal.EditorAssetLibrary
-NAMES=['Bokusei','LianLian','Honoka','Hichi','Siuha','Lili','Nenmir']
+NAMES=PLAYER_IDS
 
 def backup(asset_path):
     relative=Path(asset_path.removeprefix('/Game/').split('.')[0]+'.uasset')
@@ -27,7 +30,7 @@ def run():
         path=DEST+'/T_'+name
         backup(path)
         task=unreal.AssetImportTask()
-        task.set_editor_property('filename',str(ROOT/'Tools/Art/MoonlitUI'/('T_'+name+'.png')))
+        task.set_editor_property('filename',str(portrait_source(ROOT,name)))
         task.set_editor_property('destination_path',DEST)
         task.set_editor_property('destination_name','T_'+name)
         task.set_editor_property('automated',True)
@@ -62,6 +65,6 @@ def run():
     assert sorted(wired)==sorted(NAMES),wired
     report=dict(status='PASS',textures=imported,portraits=wired)
     (OUT/'report.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
-    unreal.log(f'MoonlitUI IMPORT PASS textures={len(imported)} portraits=7 '+str(OUT))
+    unreal.log(f'MoonlitUI IMPORT PASS textures={len(imported)} portraits={len(NAMES)} '+str(OUT))
 
 run()

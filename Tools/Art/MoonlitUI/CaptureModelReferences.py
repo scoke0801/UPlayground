@@ -1,14 +1,17 @@
 """Capture actual selectable meshes/materials in a transient UE world, without saves."""
 import json
+import sys
 import time
 import traceback
 from pathlib import Path
 import unreal
 
 ROOT = Path(unreal.Paths.project_dir()).resolve()
+sys.path.insert(0,str(ROOT/'Tools/Validation'))
+from PlayableCharacterCatalog import PLAYER_IDS
 OUT = ROOT / 'Saved/MoonlitUI/ModelReferences'
 OUT.mkdir(parents=True, exist_ok=True)
-NAMES = ['Bokusei', 'LianLian', 'Honoka', 'Hichi', 'Siuha', 'Lili', 'Nenmir']
+NAMES = PLAYER_IDS
 REPORT = dict(status='RUNNING', characters=[], images=[])
 ACTORS = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 LEVEL = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)

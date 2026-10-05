@@ -9,6 +9,7 @@ import subprocess
 import re
 import csv
 import math
+from PlayableCharacterCatalog import PLAYER_IDS
 
 ROOT=Path(__file__).resolve().parents[2]
 FATAL=re.compile(r'Fatal error:|Assertion failed:|Unhandled Exception:|Ensure condition failed:',re.I)
@@ -66,14 +67,14 @@ def main():
         script={'inspect':'Inspect','configure':'Configure','validate':'Validate'}[args.step]+'PlayableCharacters.py'
         cmd+=['-EnablePlugins=PythonScriptPlugin','-run=pythonscript','-script='+str(ROOT/'Tools/Validation'/script)]
     cmd+=['-RenderOffscreen','-windowed','-ForceRes','-ResX=1280','-ResY=720'] if args.render else ['-nullrhi']
-    cmd+=['-unattended','-nosound','-nop4','-culture=en','-DisablePlugins=RiderLink','-ddc=InstalledNoZenLocalFallback','-abslog='+str(out/'engine.log')]
+    cmd+=['-unattended','-nosound','-nop4','-culture=en','-DisablePlugins=RiderLink','-Multiprocess','-ddc=InstalledNoZenLocalFallback','-abslog='+str(out/'engine.log')]
     (out/'command.json').write_text(json.dumps([str(x) for x in cmd],indent=2))
     code,timeout=run_process(cmd,ROOT,out/'stdout.log',900)
     log=read_text(out/'engine.log')
     ok=code==0 and not timeout and not FATAL.search(log)
     if args.step=='runtime':
-        ok=ok and 'PGCharacterProbe PASS players=7 monsters=4' in log
-        identities=['Bokusei','LianLian','Honoka','Hichi','Siuha','Lili','Nenmir']
+        ok=ok and f'PGCharacterProbe PASS players={len(PLAYER_IDS)} monsters=4' in log
+        identities=PLAYER_IDS
         ok=ok and all('PGCharacterGrip Id='+identity+' TagIsolation=1 Refresh=1 InvalidFallback=1 DuplicateFallback=1' in log for identity in identities)
         with (out/'pose-samples.csv').open(encoding='utf-8-sig') as stream: samples=list(csv.DictReader(stream))
         for identity in identities:

@@ -68,6 +68,8 @@ static FAutoConsoleCommandWithWorld PGGripPreview(TEXT("PGGripPreview"), TEXT("C
             }
             auto* Camera=W->SpawnActor<ACameraActor>();
             Camera->GetCameraComponent()->SetFieldOfView(35);
+            Camera->GetCameraComponent()->PostProcessSettings.bOverride_MotionBlurAmount=true;
+            Camera->GetCameraComponent()->PostProcessSettings.MotionBlurAmount=0;
             State->Camera=Camera;
             UGameplayStatics::GetPlayerController(W,0)->SetViewTarget(Camera);
             State->At=Now; State->Phase=1;
@@ -77,6 +79,27 @@ static FAutoConsoleCommandWithWorld PGGripPreview(TEXT("PGGripPreview"), TEXT("C
         auto* Weapon=Player->GetCombatComponent()->GetCharacterCarriedWeaponByTag(PGGamePlayTags::Weapon_Sword);
         if (!Mesh || !Weapon) return Finish(false);
         const FName Hand=Player->AppearanceComponent->GetAppearance()->EquipmentBones.FindRef(TEXT("hand_r"));
+        // Orbit the actual hand frame. Actor-relative views can sit inside long
+        // sleeves or skirts, and imported rigs use different hand axes/units.
+        const auto FrameCamera=[&](int32 View, double Distance)
+        {
+            const auto* Appearance=Player->AppearanceComponent->GetAppearance();
+            const auto& Ref=Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
+            const auto FingerBase=[&](const TCHAR* Key)
+            {
+                const int32 Index=Ref.FindBoneIndex(Appearance->EquipmentBones.FindRef(FName(Key)));
+                return Index!=INDEX_NONE ? Ref.GetRefBonePose()[Index].GetTranslation() : FVector::ZeroVector;
+            };
+            const FVector Forward=FingerBase(TEXT("middle_01_r")).GetSafeNormal();
+            const FVector Across=(FingerBase(TEXT("index_01_r"))-FingerBase(TEXT("pinky_01_r"))).GetSafeNormal();
+            const FVector Palm=FVector::CrossProduct(Forward,Across).GetSafeNormal();
+            const FVector Directions[]={Palm+Forward*.3, -Palm+Forward*.3, Across+Palm*.5+Forward*.3, -Across+Palm*.5+Forward*.3};
+            const FTransform HandWorld=Mesh->GetSocketTransform(Hand);
+            const FVector Target=HandWorld.TransformPosition(FingerBase(TEXT("middle_01_r"))*.8);
+            const FVector Offset=HandWorld.GetRotation().RotateVector(Directions[View%4].GetSafeNormal()*Distance);
+            State->Camera->SetActorLocation(Target+Offset);
+            State->Camera->SetActorRotation((-Offset).Rotation());
+        };
         if (State->Phase==1 && Now-State->At>.6)
         {
             TArray<FString> Lines;
@@ -114,12 +137,7 @@ static FAutoConsoleCommandWithWorld PGGripPreview(TEXT("PGGripPreview"), TEXT("C
         }
         if (State->Phase==2)
         {
-            const FVector Target=Mesh->GetSocketLocation(Hand);
-            const FVector Directions[]={FVector(1,-1,.3),FVector(1,1,.3),FVector(0,-1,.1),FVector(1,0,.05)};
-            auto* Camera=State->Camera.Get();
-            const FVector Offset=Player->GetActorQuat().RotateVector(Directions[State->View].GetSafeNormal()*65);
-            Camera->SetActorLocation(Target+Offset);
-            Camera->SetActorRotation((-Offset).Rotation());
+            FrameCamera(State->View,45);
             if (State->At==0) State->At=Now;
             if (Now-State->At>.6)
             {
@@ -176,9 +194,7 @@ static FAutoConsoleCommandWithWorld PGGripPreview(TEXT("PGGripPreview"), TEXT("C
         else if (State->Phase==5)
         {
             const FTransform HandWorld=Mesh->GetSocketTransform(Hand);
-            const FVector Offset=HandWorld.GetRotation().RotateVector(FVector(1,0,-.5).GetSafeNormal()*70);
-            State->Camera->SetActorLocation(HandWorld.GetLocation()+Offset);
-            State->Camera->SetActorRotation((-Offset).Rotation());
+            FrameCamera(0,50);
             const int32 Active=Player->AppearanceComponent->GetEquippedGripIndex();
             if (State->Skill<=8 || (State->Skill==10 && Now-State->At>.4))
             {

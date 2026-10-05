@@ -1,0 +1,44 @@
+﻿[
+    {
+        "name":  "Yura",
+        "file":  "Tools/Art/MoonlitUI/AdditionalPortraits_20261005/T_Yura_v2.png",
+        "status":  "PASS",
+        "width":  1024,
+        "height":  1536,
+        "alpha_min":  0,
+        "alpha_max":  254,
+        "transparent_pixels":  684684,
+        "top_and_side_edge_visible_pixels":  0,
+        "top_visible_pixel_y":  81,
+        "source_hash_matches":  true,
+        "sha256":  "3B23DB18E451270F46533E386EB82D0F9C902A666975106C8D1EB8FE83E5A92E"
+    },
+    {
+        "name":  "Hwarin",
+        "file":  "Tools/Art/MoonlitUI/AdditionalPortraits_20261005/T_Hwarin.png",
+        "status":  "PASS",
+        "width":  1024,
+        "height":  1536,
+        "alpha_min":  0,
+        "alpha_max":  254,
+        "transparent_pixels":  724226,
+        "top_and_side_edge_visible_pixels":  0,
+        "top_visible_pixel_y":  5,
+        "source_hash_matches":  true,
+        "sha256":  "84525800721A52F75AFA3BA52F6B0525E657E78D369D49BBCBB5DF9740AE5D6B"
+    },
+    {
+        "name":  "Arin",
+        "file":  "Tools/Art/MoonlitUI/AdditionalPortraits_20261005/T_Arin.png",
+        "status":  "PASS",
+        "width":  1024,
+        "height":  1536,
+        "alpha_min":  0,
+        "alpha_max":  254,
+        "transparent_pixels":  653050,
+        "top_and_side_edge_visible_pixels":  0,
+        "top_visible_pixel_y":  6,
+        "source_hash_matches":  true,
+        "sha256":  "D910D57181FB65BE0C0F1EC4289940C5DB06FF80685435E3C8A071DB1542613B"
+    }
+]

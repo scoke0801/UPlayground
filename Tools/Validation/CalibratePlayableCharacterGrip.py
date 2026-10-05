@@ -19,6 +19,7 @@ import unreal
 
 ROOT = Path(unreal.Paths.project_dir()).resolve()
 sys.path.insert(0, str(ROOT/'Tools/Validation'))
+from PlayableCharacterCatalog import PLAYER_IDS
 from PlayableCharacterPolish import read_source, preflight, snapshot, equivalent, validate_appearance
 from PlayableCharacterTransaction import write_json
 
@@ -46,7 +47,11 @@ def compose(a, b):
 
 def residual(a, b):
     distance = math.sqrt(sum((getattr(a.translation,k)-getattr(b.translation,k))**2 for k in 'xyz'))
-    dot = abs(sum(getattr(a.rotation,k)*getattr(b.rotation,k) for k in 'xyzw'))
+    # Reflected quaternion components can round through float precision. A raw
+    # dot product reports a false angle even for two identical rotations.
+    qa = [getattr(a.rotation,k) for k in 'xyzw']
+    qb = [getattr(b.rotation,k) for k in 'xyzw']
+    dot = abs(sum(x*y for x,y in zip(qa,qb))) / math.sqrt(sum(x*x for x in qa)*sum(y*y for y in qb))
     angle = math.degrees(2*math.acos(min(1., dot)))
     scale = max(abs(getattr(a.scale3d,k)-getattr(b.scale3d,k)) for k in 'xyz')
     return dict(local_position=distance, angle_degrees=angle, scale=scale)
@@ -70,6 +75,10 @@ def solve(hand, contact, relative, anchor_scale):
 
 def self_test():
     cases = []
+    precise = [-0.066718, -0.065407, 0.711391, -0.696558]
+    length = math.sqrt(sum(v*v for v in precise))
+    rounded = transform(dict(translation=[0,0,0], rotation=[v/length for v in precise], scale=1))
+    assert residual(rounded, rounded)['angle_degrees'] < 1e-6, 'Identical rounded quaternions reported rotation drift'
     for scale in (.01, 1., 100.):
         frame = lambda t, q, s: transform(dict(translation=t, rotation=q, scale=s))
         rotation = [0, 0, math.sin(.3), math.cos(.3)]
@@ -100,9 +109,9 @@ def main():
         data = json.loads(Path(input_path).read_text(encoding='utf-8-sig'))
     else:
         # Synthetic fixtures exercise reflected serialization and restoration on
-        # all seven actual rigs. They must never become a production candidate.
+        # all playable rigs. They must never become a production candidate.
         data = dict(schema_version=1, profiles=[])
-        for identity in ['Bokusei','LianLian','Honoka','Hichi','Siuha','Lili','Nenmir']:
+        for identity in PLAYER_IDS:
             target = source['assets']['/Game/DataCenter/Characters/DA_'+identity]['fields']['equipment_bones']['hand_r']
             frame = dict(translation=[1,2,3], rotation=[0,0,0,1], scale=1)
             data['profiles'].append(dict(identity=identity, weapon_tag='Weapon.Sword', source_socket='hand_r',

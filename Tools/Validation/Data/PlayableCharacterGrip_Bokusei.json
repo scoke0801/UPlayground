@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "description": "Bokusei / existing SM_Sword. Hand contact in Hand_R imported local units; weapon contact 1.5 cm above the actor origin on the handle. Grip scale preserves the existing weapon size. Finger angles are target reference-local offsets, not source animation changes.",
+  "profiles": [
+    {
+      "identity": "Bokusei",
+      "weapon_tag": "Weapon.Sword",
+      "source_socket": "RightWeaponSocket",
+      "target_socket": "Hand_R",
+      "hand_contact": {"translation": [-2.3, 6.3, 0], "rotation": [-1, 0, 0, 0], "scale": 1},
+      "weapon_contact": {"translation": [0, 0, 1.5], "rotation": [0, 0, 0, 1], "scale": 1},
+      "weapon_relative": {"translation": [0, 0, 0], "rotation": [0, 0, 0, 1], "scale": 1.2345679},
+      "anchor_scale": 1,
+      "fingers": [
+        {"bone": "IndexProximal_R", "reference_rotation_offset": [0, 60, 0]},
+        {"bone": "IndexIntermediate_R", "reference_rotation_offset": [0, 75, 0]},
+        {"bone": "IndexDistal_R", "reference_rotation_offset": [0, 69, 0]},
+        {"bone": "MiddleProximal_R", "reference_rotation_offset": [0, 66, 0]},
+        {"bone": "MiddleIntermediate_R", "reference_rotation_offset": [0, 74, 0]},
+        {"bone": "MiddleDistal_R", "reference_rotation_offset": [0, 68, 0]},
+        {"bone": "RingProximal_R", "reference_rotation_offset": [0, 58, 0]},
+        {"bone": "RingIntermediate_R", "reference_rotation_offset": [0, 64, 0]},
+        {"bone": "RingDistal_R", "reference_rotation_offset": [0, 66, 0]},
+        {"bone": "LittleProximal_R", "reference_rotation_offset": [0, 40, 0]},
+        {"bone": "LittleIntermediate_R", "reference_rotation_offset": [0, 57, 0]},
+        {"bone": "LittleDistal_R", "reference_rotation_offset": [0, 64, 0]},
+        {"bone": "ThumbProximal_R", "reference_rotation_offset": [14, -31, -36]},
+        {"bone": "ThumbIntermediate_R", "reference_rotation_offset": [0, 41, 0]},
+        {"bone": "ThumbDistal_R", "reference_rotation_offset": [0, 86, 0]}
+      ]
+    }
+  ]
+}

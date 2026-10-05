@@ -82,7 +82,7 @@ try:
 finally:
     assert ctl.remove_retarget_op(index)
 validate_source(source)
-write_json(output/'polish-validate.json', dict(status='PASS', assets=44, semantic_reload=True,
+write_json(output/'polish-validate.json', dict(status='PASS', assets=len(source['assets']), semantic_reload=True,
                                             unexported_edit_rejected=True, unknown_op_rejected=True,
                                             nonempty_grip_roundtrip=True, finger_pose_roundtrip=True,
                                             invalid_finger_bone_rejected=True, nonfinger_bone_rejected=True,

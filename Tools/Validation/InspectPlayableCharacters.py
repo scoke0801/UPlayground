@@ -8,6 +8,7 @@ OUT = ROOT / 'Saved/PlayableCharacters'
 OUT.mkdir(parents=True, exist_ok=True)
 paths = {n: '/Game/Art/ToonTest/'+n+'/SK_'+n+'_ToonTest' for n in ('Bokusei','LianLian','Honoka')}
 paths.update({n: '/Game/Art/ToonCharacters/'+n+'/SK_PG_'+n for n in ('Hichi','Suiha','lili','Nenmir')})
+paths.update({n: '/Game/Art/PlayerModels/'+n+'/SK_PG_'+n for n in ('Hwarin','Arin','Yura')})
 p09 = json.loads((ROOT/'Saved/P09Modular/configure.json').read_text(encoding='utf-8'))
 for sex in ('Female','Male'):
     paths['P09'+sex] = next(r['asset'] for r in p09['meshes'] if r['name']==sex+'_Face_01')

@@ -12,12 +12,13 @@ import shutil
 import struct
 import uuid
 from RunQA import ROOT, FATAL, read_text, run_process, unexpected_errors
+from PlayableCharacterCatalog import PLAYER_IDS
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cases', default='open720,open1080,wide,full,empty,build,build1080,buildwide,character,character1080,characterwide,failure,interaction,states,design,hud720,hud1080')
-    portraits = ['Bokusei', 'LianLian', 'Honoka', 'Hichi', 'Siuha', 'Lili', 'Nenmir']
+    portraits = PLAYER_IDS
     parser.add_argument('--portrait-previews', nargs='*', choices=portraits, default=[],
                         help='Also capture each requested portrait through its real gallery button at 1080p.')
     args = parser.parse_args()
@@ -57,7 +58,8 @@ def main():
         command = [engine / 'Engine/Binaries/Win64/UnrealEditor.exe', ROOT / 'UPlayground.uproject', '/Game/Maps/RogueArena',
                    '-game', '-ExecCmds=' + commands, '-seconds=90', '-testexit=Tracing Screenshot', '-RenderOffscreen', '-windowed', '-ForceRes',
                    f'-ResX={width}', f'-ResY={height}', '-nosplash', '-nosound', '-unattended', '-nop4',
-                   '-culture=en', '-PGTestProfile=' + profile, f'-abslog={out / (name + ".log")}']
+                   '-culture=ko', '-DisablePlugins=RiderLink', '-ddc=InstalledNoZenLocalFallback',
+                   '-PGTestProfile=' + profile, f'-abslog={out / (name + ".log")}']
         if mode == 'character':
             command.append('-PGValidatePortraits')
             if name.startswith('portrait_'):
@@ -74,7 +76,7 @@ def main():
             problems.append('No capture after asset compilation completed')
         if mode == 'character':
             preview = name.removeprefix('portrait_') if name.startswith('portrait_') else portraits[0]
-            if f'PGInventoryProbe PORTRAITS images=8 failures=0 preview={preview}' not in log:
+            if f'PGInventoryProbe PORTRAITS images={len(portraits)+1} failures=0 preview={preview}' not in log:
                 problems.append('Portrait aspect ratio, gallery coverage or unsaved preview check failed')
         if name == 'interaction' and 'PGInventoryProbe CHECK failures=0' not in log:
             problems.append('Interaction checks did not pass')

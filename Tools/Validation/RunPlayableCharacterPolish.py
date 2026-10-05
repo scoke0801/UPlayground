@@ -19,7 +19,7 @@ def editor(script, output, *, fail_after=0):
     engine = Path(os.environ.get('ProgramFiles', 'C:/Program Files'))/('Epic Games/UE_'+association)
     command = [str(engine/'Engine/Binaries/Win64/UnrealEditor-Cmd.exe'), str(ROOT/'UPlayground.uproject'),
         '-EnablePlugins=PythonScriptPlugin', '-run=pythonscript', '-script='+str(ROOT/'Tools/Validation'/script),
-        '-nullrhi', '-unattended', '-nosound', '-nop4', '-culture=en', '-DisablePlugins=RiderLink',
+        '-nullrhi', '-unattended', '-nosound', '-nop4', '-culture=en', '-DisablePlugins=RiderLink', '-Multiprocess',
         '-ddc=InstalledNoZenLocalFallback', '-abslog='+str(output/(Path(script).stem+'.log'))]
     environment = os.environ.copy()
     environment['PG_CHARACTER_RUN'] = str(output)
@@ -47,9 +47,9 @@ def editor(script, output, *, fail_after=0):
         raise RuntimeError(f'{script} failed (code={code}); see {output}')
 
 
-def configure(output, fail_after=0):
+def configure(output, fail_after=0, grips_only=False):
     try:
-        editor('ConfigurePlayableCharacters.py', output, fail_after=fail_after)
+        editor('ConfigurePlayableCharacterGrips.py' if grips_only else 'ConfigurePlayableCharacters.py', output, fail_after=fail_after)
         editor('ValidatePlayableCharacters.py', output)
         legacy = json.loads((ROOT/'Saved/PlayableCharacters/validate.json').read_text(encoding='utf-8'))
         assert legacy['status']=='PASS', legacy
@@ -73,7 +73,7 @@ def configure(output, fail_after=0):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--step', choices=['configure', 'polish-export', 'polish-validate', 'polish-check', 'polish-restore'], required=True)
+    parser.add_argument('--step', choices=['configure', 'configure-grips', 'polish-export', 'polish-validate', 'polish-check', 'polish-restore'], required=True)
     parser.add_argument('--restore-run', type=Path, help='Interrupted transaction directory; close its editor process before restoring')
     parser.add_argument('--inject-save-failure', type=int, default=0, help='Fail after N successful saves and restore the full transaction')
     args = parser.parse_args(argv)
@@ -133,8 +133,8 @@ def main(argv=None):
             write_json(SOURCE, data)
         elif args.step == 'polish-validate':
             editor('ValidatePlayableCharacterPolish.py', output)
-        elif args.step == 'configure':
-            configure(output, args.inject_save_failure)
+        elif args.step in ('configure', 'configure-grips'):
+            configure(output, args.inject_save_failure, grips_only=args.step == 'configure-grips')
         else:
             source_hash=sha256(SOURCE)
             for index in range(2):
