@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Styling/SlateBrush.h"
@@ -38,6 +38,17 @@ private:
     TSharedPtr<class STextBlock> StatusText;
     FGuid SelectedItem;
     FSlateBrush SelectedBrush;
+    UPROPERTY(Transient) TMap<FString, TObjectPtr<UTexture2D>> ArtTextures;
+    TMap<FString, TSharedPtr<FSlateBrush>> ArtBrushes;
+    TSharedPtr<class SVerticalBox> SkillListRows, SkillDetailRows, LoadoutRows, CharacterDetailRows;
+    TSharedPtr<class SUniformGridPanel> CharacterGrid;
+    FName PreviewCharacter;
+    int32 PreviewSkill = 0;
+    bool bDraftDirty = false;
+    bool bConfirmClose = false;
+    const FSlateBrush* Art(const FSoftObjectPath& Path);
+    TArray<int32> GetEquippedActiveSkills() const;
+    FReply ApplySkills();
     int32 MinRarity = 0;
     FGuid PendingDiscard;
     bool bConfirmRecovery = false;

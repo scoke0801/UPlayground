@@ -1,4 +1,4 @@
-#include "PGUIMainHUD.h"
+﻿#include "PGUIMainHUD.h"
 #include "PGUI/Style/PGUIStyle.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGMessage/Managaer/PGMessageManager.h"
@@ -82,7 +82,7 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeResource(bool bHealth)
 TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
 {
     const FLinearColor Accent = Index == 7 ? FPGUIStyle::Get().Lavender : FPGUIStyle::Get().Mint;
-    return SNew(SBox).WidthOverride(62).HeightOverride(64)
+    return SNew(SBox).WidthOverride(70).HeightOverride(76)
     .Visibility_Lambda([this,Index](){return SkillIds[Index] > 0 ? EVisibility::Visible : EVisibility::Collapsed;})
     [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(3)
         .IsEnabled_Lambda([this,Index](){return bCanAct && SkillIds[Index] > 0 && Cooldowns[Index] <= 0.f;})
@@ -149,14 +149,14 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(32,28)
         [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(FMargin(20,13))
             .OnClicked_Lambda([this](){if(auto* PC=Cast<APGPlayerController>(GetOwningPlayer())) PC->ToggleInventory(); return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(TEXT("장비 · 빌드"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))
+            [SNew(STextBlock).Text(FText::FromString(TEXT("I   전투 준비"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))
                 .ColorAndOpacity(FPGUIStyle::Get().Text)]]
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(32,92)
         [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(FMargin(20,13))
             .Visibility_Lambda([this](){ return Stage.IsValid() && Stage->IsManualReady() && Stage->CanReady() ? EVisibility::Visible : EVisibility::Collapsed; })
             .OnClicked_Lambda([this](){ if (Stage.IsValid()) Stage->ReadyForNextStage(); return FReply::Handled(); })
-            [SNew(STextBlock).Text(FText::FromString(TEXT("준비 완료 →"))).ColorAndOpacity(FPGUIStyle::Get().Mint)]]
-        + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center).Padding(32,100,0,0)
+            [SNew(STextBlock).Text(FText::FromString(TEXT("시련 시작  →"))).ColorAndOpacity(FPGUIStyle::Get().Mint)]]
+        + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(32,0,0,32)
         [SNew(SBox).WidthOverride(285).Visibility_Lambda([this](){return bRogueHUD ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
             [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Panel).Padding(14)
                 [SNew(SVerticalBox)
@@ -164,10 +164,10 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
                     [SNew(STextBlock).Text_Lambda([this](){return BuildSummary;}).WrapTextAt(255)
                         .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(FPGUIStyle::Get().Text)]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,10,0,0)
-                    [SNew(STextBlock).Text_Lambda([this](){return BuildStatus;}).WrapTextAt(255)
+                    [SNew(STextBlock).Visibility_Lambda([this](){return BuildStatus.IsEmpty() ? EVisibility::Collapsed : EVisibility::HitTestInvisible;}).Text_Lambda([this](){return BuildStatus;}).WrapTextAt(255)
                         .Font(FCoreStyle::GetDefaultFontStyle("Regular",12)).ColorAndOpacity(FPGUIStyle::Get().Muted)]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)
-                    [SNew(STextBlock).Text_Lambda([this](){return BuildProc;}).WrapTextAt(255)
+                    [SNew(STextBlock).Visibility_Lambda([this](){return BuildProc.IsEmpty() ? EVisibility::Collapsed : EVisibility::HitTestInvisible;}).Text_Lambda([this](){return BuildProc;}).WrapTextAt(255)
                         .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(FPGUIStyle::Get().Mint)]]]]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(24,0,24,30)
         [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
@@ -252,8 +252,8 @@ void UPGUIMainHUD::Refresh()
             if (ASC->GetPerkPercent(Roots[I]) > 0)
                 Summary.Add(FString::Printf(TEXT("%s · 전용 %d/3 · %s"),Names[I],Branches,ASC->GetPerkPercent(Cores[I])>0 ? TEXT("핵심 획득") : TEXT("성장 중")));
         }
-        BuildSummary = FText::FromString(Summary.IsEmpty() ? TEXT("현재 빌드\n강화를 선택해 계열을 완성하세요") : TEXT("현재 빌드 · 장착 효과 포함\n") + FString::Join(Summary,TEXT("\n")));
-        FString Status = State.TargetName.IsEmpty() ? TEXT("최근 적중 대상 없음") : State.TargetName;
+        BuildSummary = FText::FromString(Summary.IsEmpty() ? TEXT("현재 빌드\n강화를 선택해 계열을 완성하세요") : TEXT("빌드 공명\n") + FString::Join(Summary,TEXT("\n")));
+        FString Status = State.TargetName.IsEmpty() ? TEXT("") : State.TargetName;
         if (State.BleedStacks > 0) Status += FString::Printf(TEXT("\n출혈 %d중첩 · %.1f초"),State.BleedStacks,State.BleedSeconds);
         if (ASC->GetPerkPercent(EPGCombatPerk::ShockFracture) > 0 && !State.TargetName.IsEmpty())
             Status += State.WeaknessSeconds > 0 ? FString::Printf(TEXT("\n방어 약화 · %.1f초"),State.WeaknessSeconds) : FString::Printf(TEXT("\n공명 적중 %d/%d"),State.ShockHits,State.ShockHitsRequired);
@@ -307,7 +307,7 @@ void UPGUIMainHUD::Refresh()
         case EPGStageState::BuildPhase: Goal=Stage->IsManualReady() ? TEXT("구간 완료 · 강화와 장비를 정비하세요") : FString::Printf(TEXT("스테이지 완료 · 빌드 시간 %d초"),FMath::CeilToInt(Stage->GetBuildTimeRemaining()));break;
         case EPGStageState::RewardPhase: Goal=TEXT("보상을 선택해 빌드를 강화하세요");break;
         case EPGStageState::Failed: Goal=TEXT("시련 실패 · 재도전을 기다립니다");break;
-        case EPGStageState::RunPreparation: Goal=TEXT("장비 · 빌드에서 검술 선택 후 준비 완료\nWASD 이동 · 마우스 조준 · I 장비 · E 획득");break;
+        case EPGStageState::RunPreparation: Goal=TEXT("검술과 장비를 정비한 뒤 시련을 시작하세요.");break;
         case EPGStageState::Finished: Goal=TEXT("모든 시련을 완료했습니다");break;
         case EPGStageState::Completed: Goal=TEXT("시련 완료");break;
         default: break;

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
@@ -16,17 +16,18 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Text = FLinearColor(.93f,.96f,1.f);
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Muted = FLinearColor(.61f,.69f,.79f);
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Danger = FLinearColor(1.f,.42f,.43f);
-    UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Panel = FLinearColor(.006f,.012f,.025f,.98f);
-    UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Card = FLinearColor(.011f,.020f,.038f,.98f);
+    UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Panel = FLinearColor(.009f,.012f,.030f,.92f);
+    UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Card = FLinearColor(.018f,.025f,.052f,.88f);
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Rare = FLinearColor(1.f,.68f,.26f);
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Magic = FLinearColor(.35f,.76f,1.f);
-    UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="14", ClampMax="24")) int32 BodyFontSize = 18;
-    UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="960", ClampMax="1800")) float InventoryMaxWidth = 1680.f;
+    UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="14", ClampMax="24")) int32 BodyFontSize = 16;
+    UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="960", ClampMax="1800")) float InventoryMaxWidth = 1540.f;
     UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="8", ClampMax="48")) float ScreenMargin = 24.f;
     UPROPERTY(Config, EditAnywhere, Category="Rewards", meta=(ClampMin="960", ClampMax="1800")) float RewardMaxWidth = 1440.f;
     UPROPERTY(Config, EditAnywhere, Category="Rewards", meta=(ClampMin="0.05", ClampMax="1")) float RevealSeconds = .24f;
     UPROPERTY(Config, EditAnywhere, Category="Rewards", meta=(ClampMin="0", ClampMax="0.3")) float CardStaggerSeconds = .07f;
     UPROPERTY(Config, EditAnywhere, Category="Rewards", meta=(ClampMin="0.05", ClampMax="0.5")) float ConfirmSeconds = .18f;
+    UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> SanctuaryBackground;
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> RewardOpenSound;
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> RewardConfirmSound;
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> VictorySound;

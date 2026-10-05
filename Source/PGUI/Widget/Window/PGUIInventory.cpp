@@ -1,4 +1,4 @@
-#include "PGUIInventory.h"
+﻿#include "PGUIInventory.h"
 #include "PGData/DataAsset/Character/PGCharacterAppearance.h"
 #include "PGInventoryPresentation.h"
 #include "PGUI/Style/PGUIStyle.h"
@@ -9,6 +9,7 @@
 #include "PGActor/Progression/PGLootDrop.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
+#include "PGActor/Components/Rendering/PGCharacterAppearanceComponent.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
@@ -22,6 +23,7 @@
 #include "EngineUtils.h"
 #include "InputCoreTypes.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SSafeZone.h"
@@ -49,13 +51,13 @@ namespace PGInventoryUI
     using namespace PGInventoryPresentation;
     TSharedRef<STextBlock> Text(const FText& Value, int32 Size = 0, FLinearColor Color = FLinearColor::White, bool bBold = false)
     {
-        return SNew(STextBlock).Text(Value).Font(FPGUIStyle::Get().Font(Size>0 ? FMath::Max(16,Size) : 0,bBold)).ColorAndOpacity(Color).AutoWrapText(true);
+        return SNew(STextBlock).Text(Value).Font(FPGUIStyle::Get().Font(Size>0 ? Size : 0,bBold)).ColorAndOpacity(Color).AutoWrapText(true);
     }
     TSharedRef<STextBlock> Text(const FString& Value, int32 Size = 0, FLinearColor Color = FLinearColor::White, bool bBold = false)
     { return Text(FText::FromString(Value),Size,Color,bBold); }
     TSharedRef<SButton> Action(const FString& Label, TFunction<FReply()> Callback)
     {
-        return SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).ContentPadding(FMargin(12,10))
+        return SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).ContentPadding(FMargin(14,10))
             .OnClicked_Lambda(MoveTemp(Callback))
             [SNew(STextBlock).Text(FText::FromString(Label)).Font(FPGUIStyle::Get().Font(0,true))
                 .ColorAndOpacity(FPGUIStyle::Get().Text).OverflowPolicy(ETextOverflowPolicy::Ellipsis)];
@@ -99,10 +101,29 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
         + SHorizontalBox::Slot().FillWidth(.24f).Padding(0,0,10,0)[SNew(SBorder).BorderImage(&Style.Card).Padding(16)[Equipment]]
         + SHorizontalBox::Slot().FillWidth(.36f).Padding(0,0,10,0)[SNew(SBorder).BorderImage(&Style.Card).Padding(16)[Bag]]
         + SHorizontalBox::Slot().FillWidth(.40f)[SNew(SBorder).BorderImage(&Style.Card).Padding(18)[Comparison]];
-    auto BuildTab=SNew(SBorder).BorderImage(&Style.Card).Padding(20)
-        [SAssignNew(BuildScroll,SScrollBox)+SScrollBox::Slot()[SAssignNew(BuildRows,SVerticalBox)]];
-    auto CharacterTab=SNew(SBorder).BorderImage(&Style.Card).Padding(20)
-        [SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(CharacterRows,SVerticalBox)]];
+    auto BuildTab=SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().FillWidth(.28f).Padding(0,0,14,0)
+        [SNew(SBorder).BorderImage(&Style.Card).Padding(18)
+            [SNew(SVerticalBox)
+                + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)[Text(TEXT("01  /  검술 라이브러리"),18,Style.Text,true)]
+                + SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(SkillListRows,SVerticalBox)]]]]
+        + SHorizontalBox::Slot().FillWidth(.39f).Padding(0,0,14,0)
+        [SNew(SBorder).BorderImage(&Style.Card).Padding(22)
+            [SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(SkillDetailRows,SVerticalBox)]]]
+        + SHorizontalBox::Slot().FillWidth(.33f)
+        [SNew(SBorder).BorderImage(&Style.Card).Padding(18)
+            [SNew(SVerticalBox)
+                + SVerticalBox::Slot().AutoHeight()[SAssignNew(LoadoutRows,SVerticalBox)]
+                + SVerticalBox::Slot().FillHeight(1).Padding(0,18,0,0)
+                [SAssignNew(BuildScroll,SScrollBox)+SScrollBox::Slot()[SAssignNew(BuildRows,SVerticalBox)]]]];
+    auto CharacterTab=SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().FillWidth(.57f).Padding(0,0,20,0)
+        [SNew(SVerticalBox)
+            + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,16)[SAssignNew(CharacterRows,SVerticalBox)]
+            + SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox)+SScrollBox::Slot()
+                [SAssignNew(CharacterGrid,SUniformGridPanel).SlotPadding(FMargin(6))]]]
+        + SHorizontalBox::Slot().FillWidth(.43f)
+        [SNew(SBorder).BorderImage(&Style.Card).Padding(16)[SAssignNew(CharacterDetailRows,SVerticalBox)]];
     auto NearbyTab=SNew(SBorder).BorderImage(&Style.Card).Padding(20)
         [SNew(SVerticalBox)
             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,12)
@@ -112,36 +133,52 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
         .BorderBackgroundColor(FLinearColor(.004f,.008f,.018f,.85f)).Padding(0)
         [SNew(SSafeZone)
             [SNew(SOverlay)
+                + SOverlay::Slot()[SNew(SBox).Clipping(EWidgetClipping::ClipToBounds).Visibility(EVisibility::HitTestInvisible)
+                    [SNew(SScaleBox).Stretch(EStretch::ScaleToFill)
+                        [SNew(SImage).Image(Art(GetDefault<UPGUIStyleSettings>()->SanctuaryBackground.ToSoftObjectPath()))]]]
                 + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Fill).Padding(GetDefault<UPGUIStyleSettings>()->ScreenMargin)
                 [SAssignNew(Frame,SBox).WidthOverride(GetDefault<UPGUIStyleSettings>()->InventoryMaxWidth)
-                    [SNew(SBorder).BorderImage(&Style.Panel).Padding(20)
+                    [SNew(SBorder).BorderImage(&Style.Panel).BorderBackgroundColor(FLinearColor(1,1,1,.72f)).Padding(26)
                         [SNew(SVerticalBox)
                             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)
                             [SNew(SHorizontalBox)
                                 + SHorizontalBox::Slot().FillWidth(1)
                                 [SNew(SVerticalBox)
-                                    + SVerticalBox::Slot().AutoHeight()[Text(TEXT("E Q U I P M E N T  /  장비 · 빌드"),12,Style.Mint,true)]
-                                    + SVerticalBox::Slot().AutoHeight().Padding(0,4,0,0)[Text(TEXT("다음 전투를 준비하세요"),24,Style.Text,true)]]
+                                    + SVerticalBox::Slot().AutoHeight()[Text(TEXT("M O O N L I T   /   S A N C T U A R Y"),12,Style.Mint,true)]
+                                    + SVerticalBox::Slot().AutoHeight().Padding(0,4,0,0)[Text(TEXT("전투 준비"),30,Style.Text,true)]]
                                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[Action(TEXT("닫기  ·  I / Esc"),[this](){return Close();})]]
                             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)
                             [SNew(SHorizontalBox)
                                 + SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)
                                 [SNew(SBorder).BorderImage_Lambda([this](){return Tabs && Tabs->GetActiveWidgetIndex()==0 ? &FPGUIStyle::Get().Selected : &FPGUIStyle::Get().Card;}).Padding(1)
-                                    [Action(TEXT("장비"),[this](){SetBuildTab(false);return FReply::Handled();})]]
+                                    [Action(TEXT("01   장비"),[this](){SetBuildTab(false);return FReply::Handled();})]]
                                 + SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)
                                 [SNew(SBorder).BorderImage_Lambda([this](){return bBuildTab ? &FPGUIStyle::Get().Selected : &FPGUIStyle::Get().Card;}).Padding(1)
-                                    [Action(TEXT("강화 · 검술"),[this](){SetBuildTab(true);return FReply::Handled();})]]
+                                    [Action(TEXT("02   검술 · 강화"),[this](){SetBuildTab(true);return FReply::Handled();})]]
                                 + SHorizontalBox::Slot().AutoWidth()
-                                [Action(TEXT("근처 전리품"),[this](){bBuildTab=false;PendingDiscard.Invalidate();Tabs->SetActiveWidgetIndex(2);RefreshNearby();return FReply::Handled();})]
+                                [SNew(SBorder).BorderImage_Lambda([this](){return Tabs && Tabs->GetActiveWidgetIndex()==2 ? &FPGUIStyle::Get().Selected : &FPGUIStyle::Get().Card;}).Padding(1)
+                                    [Action(TEXT("03   전리품"),[this](){bBuildTab=false;PendingDiscard.Invalidate();Tabs->SetActiveWidgetIndex(2);RefreshNearby();return FReply::Handled();})]]
                                 + SHorizontalBox::Slot().AutoWidth().Padding(8,0,0,0)
                                 [SNew(SBorder).BorderImage_Lambda([this](){return Tabs && Tabs->GetActiveWidgetIndex()==3 ? &FPGUIStyle::Get().Selected : &FPGUIStyle::Get().Card;}).Padding(1)
-                                    [Action(TEXT("캐릭터"),[this](){SetCharacterTab();return FReply::Handled();})]]]
+                                    [Action(TEXT("04   캐릭터"),[this](){SetCharacterTab();return FReply::Handled();})]]]
                             + SVerticalBox::Slot().FillHeight(1)
                             [SAssignNew(Tabs,SWidgetSwitcher)
                                 + SWidgetSwitcher::Slot()[EquipmentTab]
                                 + SWidgetSwitcher::Slot()[BuildTab]
                                 + SWidgetSwitcher::Slot()[NearbyTab]
                                 + SWidgetSwitcher::Slot()[CharacterTab]]
+                            + SVerticalBox::Slot().AutoHeight().Padding(0,10,0,0)
+                            [SNew(SBorder).BorderImage(&Style.Selected).Padding(10)
+                                .Visibility_Lambda([this](){return bConfirmClose ? EVisibility::Visible : EVisibility::Collapsed;})
+                                [SNew(SHorizontalBox)
+                                    + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)[Text(TEXT("적용하지 않은 검술 변경이 있습니다."),16,Style.Text)]
+                                    + SHorizontalBox::Slot().AutoWidth().Padding(0,0,10,0)
+                                    [SNew(SButton).ButtonStyle(&Style.Button).ContentPadding(FMargin(14,10))
+                .IsEnabled_Lambda([this](){FString Reason; auto* P=UPGProfileSubsystem::Get(this); return P && P->CanChangeSkills(Reason) && P->GetCatalog()->IsValidActiveSelection(DraftActiveSkills);})
+                                        .OnClicked_Lambda([this](){ApplySkills(); if (!bActionFailed && !bDraftDirty) return Close(); return FReply::Handled();})
+                                        [SNew(STextBlock).Text(FText::FromString(TEXT("적용 후 닫기"))).Font(Style.Font(16,true)).ColorAndOpacity(Style.Mint)]]
+                                    + SHorizontalBox::Slot().AutoWidth()[Action(TEXT("계속 편집"),[this](){bConfirmClose=false;return FReply::Handled();})]
+                                    + SHorizontalBox::Slot().AutoWidth().Padding(10,0)[Action(TEXT("변경 취소 후 닫기"),[this](){bDraftDirty=false;return Close();})]]]
                             + SVerticalBox::Slot().AutoHeight().Padding(0,12,0,0)
                             [SNew(SHorizontalBox)
                                 + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)
@@ -189,6 +226,7 @@ FReply UPGUIInventory::NativeOnPreviewKeyDown(const FGeometry& Geometry,const FK
 }
 FReply UPGUIInventory::Close()
 {
+    if (bDraftDirty) { bConfirmClose=true; SetKeyboardFocus(); return FReply::Handled(); }
     if (auto* PC=Cast<APGPlayerController>(GetOwningPlayer())) PC->CloseInventory();
     return FReply::Handled();
 }
@@ -196,8 +234,9 @@ void UPGUIInventory::ReleaseSlateResources(bool bReleaseChildren)
 {
     Super::ReleaseSlateResources(bReleaseChildren);
     Cells.Empty(); BagGrid.Reset(); EquippedRows.Reset(); ComparisonRows.Reset(); BuildRows.Reset(); NearbyRows.Reset();
-    CharacterRows.Reset();
-    ComparisonScroll.Reset(); BuildScroll.Reset(); Tabs.Reset(); Frame.Reset(); CapacityText.Reset(); StatusText.Reset(); IconTextures.Empty();
+    CharacterRows.Reset(); CharacterGrid.Reset(); CharacterDetailRows.Reset();
+    SkillListRows.Reset(); SkillDetailRows.Reset(); LoadoutRows.Reset();
+    ComparisonScroll.Reset(); BuildScroll.Reset(); Tabs.Reset(); Frame.Reset(); CapacityText.Reset(); StatusText.Reset(); IconTextures.Empty(); ArtBrushes.Empty(); ArtTextures.Empty();
 }
 void UPGUIInventory::Refresh()
 {
@@ -223,38 +262,84 @@ void UPGUIInventory::SetCharacterTab()
     if (Tabs) Tabs->SetActiveWidgetIndex(3);
     RefreshCharacters();
 }
+const FSlateBrush* UPGUIInventory::Art(const FSoftObjectPath& Path)
+{
+    const FString Key=Path.ToString();
+    if (const auto* Existing=ArtBrushes.Find(Key)) return Existing->Get();
+    auto Brush=MakeShared<FSlateBrush>();
+    auto* Texture=Cast<UTexture2D>(Path.TryLoad());
+    ArtTextures.Add(Key,Texture);
+    Brush->SetResourceObject(Texture);
+    // GetSizeX/Y can still report the square placeholder during async texture compilation.
+    // The imported dimensions preserve the artwork's aspect ratio in editor and cooked builds.
+    const FIntPoint ImportedSize=Texture ? Texture->GetImportedSize() : FIntPoint::ZeroValue;
+    Brush->ImageSize=ImportedSize.X>0 && ImportedSize.Y>0 ? FVector2D(ImportedSize) : FVector2D(64,64);
+    Brush->DrawAs=Texture ? ESlateBrushDrawType::Image : ESlateBrushDrawType::NoDrawType;
+    ArtBrushes.Add(Key,Brush);
+    return &Brush.Get();
+}
 void UPGUIInventory::RefreshCharacters()
 {
     using namespace PGInventoryUI;
-    if (!CharacterRows) return;
-    CharacterRows->ClearChildren();
-    auto* Profile = UPGProfileSubsystem::Get(this);
+    if (!CharacterRows || !CharacterGrid || !CharacterDetailRows) return;
+    CharacterRows->ClearChildren(); CharacterGrid->ClearChildren(); CharacterDetailRows->ClearChildren();
+    auto* Profile=UPGProfileSubsystem::Get(this);
     if (!Profile || !Profile->GetCatalog() || !Profile->GetProfile()) return;
-    const auto& Style = FPGUIStyle::Get();
-    Line(CharacterRows, FText::FromString(TEXT("플레이어 캐릭터")), Style.Text, 22, true);
-    Line(CharacterRows, FText::FromString(TEXT("전투 준비·정비 중 선택할 수 있습니다. 검술·장비·강화는 그대로 사용하며, 선택은 다음 도전에도 유지됩니다.")), Style.Muted);
-    FString Reason;
-    if (!Profile->CanChangeSkills(Reason)) Line(CharacterRows, FText::FromString(Reason), Style.Muted);
+    const auto& Style=FPGUIStyle::Get();
+    Line(CharacterRows,FText::FromString(TEXT("함께할 캐릭터")),Style.Text,24,true);
+    Line(CharacterRows,FText::FromString(TEXT("초상화를 살펴보고 함께할 캐릭터를 선택하세요.")),Style.Muted,16);
+    FName CurrentCharacter=Profile->GetProfile()->CharacterId;
+    if (const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn()); Player && Player->AppearanceComponent)
+        if (const auto* Appearance=Player->AppearanceComponent->GetAppearance()) CurrentCharacter=Appearance->Id;
+    TArray<const UPGCharacterAppearance*> Appearances;
     for (const auto& Reference : Profile->GetCatalog()->PlayableCharacters)
+        if (const auto* Appearance=Reference.LoadSynchronous()) Appearances.Add(Appearance);
+    if (!Appearances.ContainsByPredicate([this](const auto* Entry){return Entry->Id==PreviewCharacter;}))
     {
-        const auto* Appearance = Reference.LoadSynchronous();
-        if (!Appearance) continue;
-        const FName Id = Appearance->Id;
-        const bool bSelected = Profile->GetProfile()->CharacterId == Id;
-        auto Button = Action(Appearance->DisplayName.ToString() + (bSelected ? TEXT("  ·  선택됨") : TEXT("  ·  선택")), [this, Id]()
-        {
-            if (auto* Current = UPGProfileSubsystem::Get(this)) bActionFailed = !Current->SelectCharacter(Id);
-            bRefreshPending = true;
-            return FReply::Handled();
-        });
-        Button->SetEnabled(TAttribute<bool>::CreateLambda([this, bSelected]()
-        {
-            FString Unused;
-            auto* Current = UPGProfileSubsystem::Get(this);
-            return !bSelected && Current && Current->CanChangeSkills(Unused);
-        }));
-        CharacterRows->AddSlot().AutoHeight().Padding(0,0,0,10)[Button];
+        const auto* Current=Appearances.FindByPredicate([CurrentCharacter](const auto* Entry){return Entry->Id==CurrentCharacter;});
+        PreviewCharacter=Current ? (*Current)->Id : Appearances.IsEmpty() ? NAME_None : Appearances[0]->Id;
     }
+    if (Appearances.IsEmpty())
+        Line(CharacterDetailRows,FText::FromString(TEXT("선택할 수 있는 캐릭터가 없습니다.")),Style.Muted);
+    else if (!Appearances.ContainsByPredicate([CurrentCharacter](const auto* Entry){return Entry->Id==CurrentCharacter;}))
+        Line(CharacterRows,FText::FromString(TEXT("현재 기본 외형 사용 중 · 캐릭터를 확정하면 다음 도전에도 유지됩니다.")),Style.Muted,13);
+    const UPGCharacterAppearance* Preview=nullptr;
+    int32 Index=0;
+    for (const auto* Appearance : Appearances)
+    {
+        const FName Id=Appearance->Id;
+        const bool Current=CurrentCharacter==Id;
+        const bool Selected=PreviewCharacter==Id;
+        if (Selected) Preview=Appearance;
+        CharacterGrid->AddSlot(Index%4,Index/4)
+        [SNew(SBorder).BorderImage(Selected ? &Style.Selected : &Style.Card).Padding(2)
+            [SNew(SButton).ButtonStyle(&Style.Button).ContentPadding(0)
+                .OnClicked_Lambda([this,Id](){PreviewCharacter=Id;RefreshCharacters();SetKeyboardFocus();return FReply::Handled();})
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight()
+                    [SNew(SBox).HeightOverride(172).Clipping(EWidgetClipping::ClipToBounds)
+                        [SNew(SScaleBox).Stretch(EStretch::ScaleToFill).VAlign(VAlign_Top)
+                            [SNew(SImage).Tag(Appearance->Id).Image(Art(Appearance->Portrait.ToSoftObjectPath()))]]]
+                    + SVerticalBox::Slot().AutoHeight().Padding(10,9,10,3)[Text(Appearance->DisplayName,16,Style.Text,true)]
+                    + SVerticalBox::Slot().AutoHeight().Padding(10,0,10,10)[Text(Current ? TEXT("사용 중") : Selected ? TEXT("미리보기") : TEXT("살펴보기"),12,Current ? Style.Mint : Style.Muted)]]]];
+        ++Index;
+    }
+    if (!Preview) return;
+    CharacterDetailRows->AddSlot().FillHeight(1)
+        [SNew(SBox).Clipping(EWidgetClipping::ClipToBounds)
+            [SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SNew(SImage).Tag(Preview->Id).Image(Art(Preview->Portrait.ToSoftObjectPath()))]]];
+    CharacterDetailRows->AddSlot().AutoHeight().Padding(8,12)[Text(Preview->DisplayName,30,Style.Text,true)];
+    Line(CharacterDetailRows,FText::FromString(TEXT("검술 · 장비 · 강화 공유  /  다음 도전에도 유지")),Style.Muted,14);
+    FString Reason; const bool CanChange=Profile->CanChangeSkills(Reason);
+    const bool Current=CurrentCharacter==Preview->Id;
+    if (!CanChange) Line(CharacterDetailRows,FText::FromString(Reason),Style.Rare,14);
+    auto Confirm=Action(Current ? TEXT("현재 함께하는 캐릭터") : TEXT("이 캐릭터와 함께하기  →"),[this,Id=Preview->Id]()
+    {
+        if (auto* P=UPGProfileSubsystem::Get(this)) bActionFailed=!P->SelectCharacter(Id);
+        bRefreshPending=true; return FReply::Handled();
+    });
+    Confirm->SetEnabled(CanChange && !Current && bCanWrite);
+    CharacterDetailRows->AddSlot().AutoHeight()[Confirm];
 }
 UTexture2D* UPGUIInventory::GetIcon(int32 DefinitionId)
 {
@@ -429,63 +514,107 @@ void UPGUIInventory::RefreshBuilds()
     using namespace PGInventoryUI;
     if (!BuildRows) return;
     const float Offset=BuildScroll->GetScrollOffset(); BuildRows->ClearChildren();
+    if (!UPGProfileSubsystem::Get(this) || !UPGProfileSubsystem::Get(this)->GetProfile()) return;
     auto* Profile=UPGProfileSubsystem::Get(this); const auto* Save=Profile->GetProfile(); const auto* Catalog=Profile->GetCatalog(); const auto& Style=FPGUIStyle::Get();
-    Line(BuildRows,FText::FromString(TEXT("검술 선택")),Style.Text,20,true);
-    Line(BuildRows,FText::FromString(Catalog->bRoguelikeRuns ? TEXT("검술은 도전 시작 전에 선택합니다. 획득한 강화와 장비 효과는 아래에서 확인할 수 있습니다.") : TEXT("클리어 조건을 달성하면 새로운 검술을 선택할 수 있습니다.")),Style.Muted);
+    SkillListRows->ClearChildren(); SkillDetailRows->ClearChildren(); LoadoutRows->ClearChildren();
+    FString Reason;
+    const bool CanEdit=Profile->CanChangeSkills(Reason) && bCanWrite;
+    const TArray<int32> EquippedSkills=GetEquippedActiveSkills();
+    if (DraftActiveSkills.Num()!=PGPlayerSkillSlots::Count || !bDraftDirty) DraftActiveSkills=EquippedSkills;
+    bDraftDirty=DraftActiveSkills!=EquippedSkills;
+    if (!bDraftDirty) bConfirmClose=false;
+    auto* TablesForSkills=UPGDataTableManager::Get(this);
+    if (!Catalog->SelectableActiveSkills.Contains(PreviewSkill) && !Catalog->SelectableActiveSkills.IsEmpty()) PreviewSkill=Catalog->SelectableActiveSkills[0];
+    for (int32 Id : Catalog->SelectableActiveSkills)
+    {
+        const auto* Row=TablesForSkills ? TablesForSkills->GetRowData<FPGSkillDataRow>(Id) : nullptr;
+        if (!Row) continue;
+        FString Name=Row->Desc;
+        const int32 Break=Name.Find(TEXT("·"));
+        if (Break!=INDEX_NONE) Name=Name.Left(Break).TrimEnd();
+        const int32 AssignedSlot=DraftActiveSkills.Find(Id);
+        const int32 EquippedSlot=EquippedSkills.Find(Id);
+        FString Assignment;
+        if (EquippedSlot!=INDEX_NONE) Assignment=FString::Printf(TEXT("슬롯 %d · 장착 중"),EquippedSlot+1);
+        if (AssignedSlot!=INDEX_NONE && AssignedSlot!=EquippedSlot)
+            Assignment+=(Assignment.IsEmpty() ? TEXT("") : TEXT("\n"))+FString::Printf(TEXT("슬롯 %d · 적용 예정"),AssignedSlot+1);
+        else if (EquippedSlot!=INDEX_NONE && AssignedSlot==INDEX_NONE) Assignment+=TEXT("\n적용 시 해제");
+        if (Assignment.IsEmpty()) Assignment=FString::Printf(TEXT("재사용 %d초"),Row->SkillCoolTime);
+        auto Card=SNew(SButton).ButtonStyle(&Style.Button).ContentPadding(8)
+            .OnClicked_Lambda([this,Id](){PreviewSkill=Id;RefreshBuilds();SetKeyboardFocus();return FReply::Handled();})
+            [SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                [SNew(SBox).WidthOverride(48).HeightOverride(48)[SNew(SImage).Image(Art(Row->SkillIconPath))]]
+                + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center).Padding(12,0,0,0)
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight()[Text(Name,16,Style.Text,true)]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,5,0,0)
+                    [Text(Assignment,12,AssignedSlot!=INDEX_NONE ? Style.Mint : Style.Muted)]]];
+        SkillListRows->AddSlot().AutoHeight().Padding(0,0,0,8)
+            [SNew(SBorder).BorderImage(PreviewSkill==Id ? &Style.Selected : &Style.Card).Padding(2)[Card]];
+    }
+    Line(SkillListRows,FText::FromString(TEXT("검술 프리셋")),Style.Lavender,14,true);
     for (const auto& Build : Catalog->Builds)
     {
         const bool Unlocked=Save->ClearedStages>=Build.RequiredClears;
         const bool CanChange=!Catalog->bRoguelikeRuns || (Save->Checkpoint<=1 && Save->SelectedRewards.IsEmpty());
-        FString Label=Build.DisplayName.ToString();
-        Label+=Build.Id==Save->BuildId && Save->CustomActiveSkills.IsEmpty() ? TEXT("  ·  선택됨") : !Unlocked ? FString::Printf(TEXT("  ·  잠김 / 클리어 %d회 필요"),Build.RequiredClears) : !CanChange ? TEXT("  ·  다음 도전에서 변경") : TEXT("  ·  선택 가능");
-        if (Build.Skills.Num()>1) Label+=FString::Printf(TEXT("\n액티브 스킬 대기시간 %.0f%% 감소"),(1.f-Build.Skills[1].CooldownScale)*100.f);
-        auto Button=Action(Label,[this,Id=Build.Id](){if(auto* P=UPGProfileSubsystem::Get(this)) bActionFailed=!P->SelectBuild(Id);if(!bActionFailed) DraftActiveSkills.Reset();Refresh();SetKeyboardFocus();return FReply::Handled();});
-        FString ChangeReason;
-        Button->SetEnabled(bCanWrite && Unlocked && CanChange && Profile->CanChangeSkills(ChangeReason) && (Build.Id!=Save->BuildId || !Save->CustomActiveSkills.IsEmpty()));
-        BuildRows->AddSlot().AutoHeight().Padding(0,0,0,10)[Button];
+        const bool Current=Build.Id==Save->BuildId && Save->CustomActiveSkills.IsEmpty();
+        auto Button=Action(Build.DisplayName.ToString(),[this,Id=Build.Id]()
+        { if (auto* P=UPGProfileSubsystem::Get(this)) bActionFailed=!P->SelectBuild(Id); if (!bActionFailed) {DraftActiveSkills.Reset();bDraftDirty=false;bConfirmClose=false;} Refresh();return FReply::Handled(); });
+        Button->SetEnabled(CanEdit && Unlocked && CanChange && !Current && !bDraftDirty);
+        Button->SetToolTipText(FText::FromString(!Unlocked ? FString::Printf(TEXT("클리어 %d회 필요"),Build.RequiredClears) : bDraftDirty ? TEXT("먼저 변경 중인 스킬을 적용하거나 되돌려 주세요.") : !CanChange ? TEXT("다음 도전 시작 전에 변경할 수 있습니다.") : Current ? TEXT("사용 중인 프리셋") : TEXT("이 검술 프리셋을 즉시 적용합니다.")));
+        SkillListRows->AddSlot().AutoHeight().Padding(0,0,0,6)[Button];
+        if (!Unlocked || !CanChange) Line(SkillListRows,FText::FromString(!Unlocked ? FString::Printf(TEXT("클리어 %d회 필요"),Build.RequiredClears) : TEXT("다음 도전에서 변경")),Style.Muted,12);
     }
-    if (!Catalog->SelectableActiveSkills.IsEmpty())
+    if (const auto* Row=TablesForSkills ? TablesForSkills->GetRowData<FPGSkillDataRow>(PreviewSkill) : nullptr)
     {
-        FString Reason;
-        const bool CanEdit = Profile->CanChangeSkills(Reason);
-        Line(BuildRows,FText::FromString(TEXT("자유 장착 · 서로 다른 액티브 2개")),Style.Text,20,true);
-        Line(BuildRows,FText::FromString(CanEdit ? TEXT("선택 후 적용하면 두 슬롯을 함께 저장합니다. 기본 공격과 회피는 고정됩니다.") : Reason),Style.Muted);
-        if (DraftActiveSkills.Num() != 2)
+        Line(SkillDetailRows,FText::FromString(TEXT("S K I L L   /   검술 상세")),Style.Lavender,12,true);
+        SkillDetailRows->AddSlot().AutoHeight().HAlign(HAlign_Center).Padding(0,16,0,24)
+            [SNew(SBox).WidthOverride(128).HeightOverride(128)[SNew(SImage).Image(Art(Row->SkillIconPath))]];
+        TArray<FString> Lines; PGPlayerSkillText::Describe(*Row).ParseIntoArrayLines(Lines);
+        for (int32 I=0; I<Lines.Num(); ++I)
+            Line(SkillDetailRows,FText::FromString(Lines[I]),I==0 ? Style.Text : Style.Muted,I==0 ? 23 : 16,I==0);
+        auto Choices=SNew(SVerticalBox);
+        for (int32 I=0;I<PGPlayerSkillSlots::Count;++I)
         {
-            DraftActiveSkills = Save->CustomActiveSkills;
-            if (DraftActiveSkills.Num() != 2)
-                if (auto* Pawn = Cast<APGCharacterPlayer>(GetOwningPlayerPawn()); Pawn && Pawn->GetSkillHandler())
-                {
-                    const auto* First=Pawn->GetSkillHandler()->GetSkillData(EPGSkillSlot::SkillSlot_1);
-                    const auto* Second=Pawn->GetSkillHandler()->GetSkillData(EPGSkillSlot::SkillSlot_2);
-                    DraftActiveSkills = { First ? First->SkillId : 0, Second ? Second->SkillId : 0 };
-                }
-        }
-        auto* SkillTables = UPGDataTableManager::Get(this);
-        for (int32 Id : Catalog->SelectableActiveSkills)
-        {
-            const auto* Row = SkillTables ? SkillTables->GetRowData<FPGSkillDataRow>(Id) : nullptr;
-            if (!Row) continue;
-            Line(BuildRows,FText::FromString(PGPlayerSkillText::Describe(*Row)),Style.Muted);
-            auto Slots = SNew(SHorizontalBox);
-            for (int32 Index=0; Index<2; ++Index)
+            const bool Selected=DraftActiveSkills.IsValidIndex(I) && DraftActiveSkills[I]==PreviewSkill;
+            auto Button=Action(FString::Printf(TEXT("슬롯 %d%s"),I+1,Selected ? TEXT(" 선택됨") : TEXT("에 배치")),[this,I]()
             {
-                const bool Selected = DraftActiveSkills.IsValidIndex(Index) && DraftActiveSkills[Index] == Id;
-                const auto* Pawn=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
-                const auto* Equipped=Pawn && Pawn->GetSkillHandler() ? Pawn->GetSkillHandler()->GetSkillData(Index==0 ? EPGSkillSlot::SkillSlot_1 : EPGSkillSlot::SkillSlot_2) : nullptr;
-                const bool Current=Equipped && Equipped->SkillId==Id;
-                auto Button = Action(FString::Printf(TEXT("슬롯 %d%s"),Index+1,Selected ? Current ? TEXT(" · 장착 중") : TEXT(" · 적용 예정") : Current ? TEXT("에 선택 · 현재 장착") : TEXT("에 선택")),[this,Index,Id]()
-                { if(DraftActiveSkills.Num()==2) DraftActiveSkills[Index]=Id; RefreshBuilds(); return FReply::Handled(); });
-                Button->SetEnabled(CanEdit && !Selected);
-                Slots->AddSlot().FillWidth(1).Padding(0,0,8,8)[Button];
-            }
-            BuildRows->AddSlot().AutoHeight()[Slots];
+                if (DraftActiveSkills.Num()==PGPlayerSkillSlots::Count)
+                {
+                    const int32 Other=DraftActiveSkills.Find(PreviewSkill);
+                    if (Other!=INDEX_NONE) Swap(DraftActiveSkills[I],DraftActiveSkills[Other]);
+                    else DraftActiveSkills[I]=PreviewSkill;
+                    bDraftDirty=true; bConfirmClose=false;
+                }
+                RefreshBuilds(); SetKeyboardFocus(); return FReply::Handled();
+            });
+            Button->SetEnabled(CanEdit && !Selected);
+            Choices->AddSlot().AutoHeight().Padding(0,I==0 ? 0 : 6,0,0)[Button];
         }
-        auto Apply = Action(TEXT("두 스킬 적용 · 저장"),[this]()
-        { if(auto* P=UPGProfileSubsystem::Get(this); P && DraftActiveSkills.Num()==2) bActionFailed=!P->SelectActiveSkills(DraftActiveSkills[0],DraftActiveSkills[1]); Refresh(); return FReply::Handled(); });
-        Apply->SetEnabled(CanEdit && DraftActiveSkills.Num()==2 && DraftActiveSkills[0]!=DraftActiveSkills[1] && DraftActiveSkills!=Save->CustomActiveSkills);
-        BuildRows->AddSlot().AutoHeight().Padding(0,0,0,14)[Apply];
+        SkillDetailRows->AddSlot().AutoHeight().Padding(0,20,0,12)[Choices];
+        Line(SkillDetailRows,FText::FromString(TEXT("다른 슬롯의 스킬을 선택하면 위치를 서로 바꿉니다.")),Style.Muted,13);
     }
+    Line(LoadoutRows,FText::FromString(bDraftDirty ? TEXT("02  /  적용 예정 슬롯") : TEXT("02  /  나의 장착 슬롯")),Style.Text,18,true);
+    for (int32 I=0;I<DraftActiveSkills.Num();++I)
+    {
+        const auto* Row=TablesForSkills ? TablesForSkills->GetRowData<FPGSkillDataRow>(DraftActiveSkills[I]) : nullptr;
+        FString Name=Row ? Row->Desc : TEXT("미선택");
+        const int32 Separator=Name.Find(TEXT("·"));
+        if (Separator!=INDEX_NONE) Name=Name.Left(Separator).TrimEnd();
+        LoadoutRows->AddSlot().AutoHeight().Padding(0,0,0,8)
+            [SNew(SBorder).BorderImage(&Style.Selected).Padding(10)
+                [SNew(SHorizontalBox)
+                    + SHorizontalBox::Slot().AutoWidth()[SNew(SBox).WidthOverride(40).HeightOverride(40)[SNew(SImage).Image(Row ? Art(Row->SkillIconPath) : nullptr)]]
+                    + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center).Padding(12,0,0,0)
+                    [Text(FString::Printf(TEXT("%d  /  %s"),I+1,*Name),14,Style.Text,true)]]];
+    }
+    Line(LoadoutRows,FText::FromString(CanEdit ? bDraftDirty ? TEXT("변경한 검술을 적용해 주세요.") : TEXT("현재 장착 구성입니다.") : Reason),CanEdit ? Style.Muted : Style.Rare,13);
+    auto Apply=Action(bDraftDirty ? TEXT("변경 적용 · 저장  →") : TEXT("장착 완료"),[this](){return ApplySkills();});
+    Apply->SetEnabled(CanEdit && bDraftDirty && Catalog->IsValidActiveSelection(DraftActiveSkills));
+    LoadoutRows->AddSlot().AutoHeight()[Apply];
+    if (bDraftDirty)
+        LoadoutRows->AddSlot().AutoHeight().Padding(0,6,0,0)[Action(TEXT("변경 되돌리기"),[this](){bDraftDirty=false;bConfirmClose=false;DraftActiveSkills.Reset();RefreshBuilds();SetKeyboardFocus();return FReply::Handled();})];
     Line(BuildRows,FText::FromString(TEXT("현재 빌드 · 장착 효과 포함")),Style.Text,20,true);
     const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
     const auto* ASC=Player ? Player->GetPGAbilitySystemComponent() : nullptr;
@@ -512,6 +641,29 @@ void UPGUIInventory::RefreshBuilds()
         }
     Line(BuildRows,FText::FromString(FString::Printf(TEXT("런 기록  ·  최고 구간 %d  ·  승리 %d회"),Save->BestStage,Save->CompletedRuns)),Style.Muted,12);
     BuildScroll->SetScrollOffset(Offset);
+}
+TArray<int32> UPGUIInventory::GetEquippedActiveSkills() const
+{
+    if (const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn()); Player && Player->GetSkillHandler())
+    {
+        TArray<int32> Skills;
+        for (int32 Index=0;Index<PGPlayerSkillSlots::Count;++Index)
+            if (const auto* Skill=Player->GetSkillHandler()->GetSkillData(PGPlayerSkillSlots::Get(Index))) Skills.Add(Skill->SkillId);
+        if (Skills.Num()==PGPlayerSkillSlots::Count) return Skills;
+    }
+    const auto* Profile=UPGProfileSubsystem::Get(this);
+    return Profile && Profile->GetProfile() && Profile->GetCatalog()
+        ? Profile->GetCatalog()->ResolveActiveSkills(Profile->GetProfile()->CustomActiveSkills,Profile->GetProfile()->BuildId) : TArray<int32>();
+}
+FReply UPGUIInventory::ApplySkills()
+{
+    bActionFailed=true;
+    if (auto* P=UPGProfileSubsystem::Get(this); P && DraftActiveSkills.Num()==PGPlayerSkillSlots::Count)
+    {
+        bActionFailed=!P->SelectActiveSkills(DraftActiveSkills);
+        if (!bActionFailed) { bDraftDirty=false; bConfirmClose=false; }
+    }
+    Refresh(); SetKeyboardFocus(); return FReply::Handled();
 }
 void UPGUIInventory::RefreshNearby()
 {
