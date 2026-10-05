@@ -40,6 +40,15 @@ struct PGDATA_API FPGAppearancePart
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform RelativeTransform;
 };
 
+USTRUCT(BlueprintType)
+struct PGDATA_API FPGAppearanceAttachment
+{
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UStaticMesh> Mesh;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FName AttachBone;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform RelativeTransform;
+};
+
 /** Cosmetic identity only: abilities, collision, stats and combat clocks stay on the owner. */
 UCLASS(BlueprintType)
 class PGDATA_API UPGCharacterAppearance : public UDataAsset
@@ -60,6 +69,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FVector HeadForwardAxis = FVector::ForwardVector;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FVector HeadRightAxis = FVector::RightVector;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FPGAppearancePart> Parts;
+    // Fixed monster loadout visuals; damage and grade stats belong to enemy data.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FPGAppearanceAttachment> Attachments;
     // Map gameplay skeleton bones to the visible rig for weapon/sheath attachment.
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TMap<FName, FName> EquipmentBones;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Polish|Grip") TArray<FPGAppearanceGripProfile> GripProfiles;

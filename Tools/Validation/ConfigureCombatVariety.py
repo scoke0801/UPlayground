@@ -127,6 +127,8 @@ for path, data in [(SKILLS,skills),(ENEMIES,enemies)]:
     assert unreal.DataTableFunctionLibrary.fill_data_table_from_json_string(table, json.dumps(data,ensure_ascii=False))
     assert unreal.EditorAssetLibrary.save_loaded_asset(table, only_if_is_dirty=False)
 from ValidateCombatVariety import validate_combat_variety
+from ConfigureSkeletonArcher import apply as configure_skeleton_archer
+configure_skeleton_archer()
 result = validate_combat_variety({r['EnemyID']:r for r in rows(ENEMIES)}, {r['SkillID']:r for r in rows(SKILLS)})
 (BACKUP / 'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2), encoding='utf-8')
 unreal.log('PGCombatVariety MIGRATION PASS ' + json.dumps(dict(result,backup=str(BACKUP))))

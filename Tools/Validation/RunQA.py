@@ -74,12 +74,27 @@ def check_cycle(log):
 
 
 def check_loot_cycle(log):
-    """Version 1 authored encounter counts: four elites and one final boss."""
+    """Check guaranteed pools against the authored roster, never numeric ID ordering."""
     rolls = re.findall(r'PGLoot rolled enemy=(\d+) pool=(\S+) seed=(-?\d+) item=(\d+) guid=([0-9A-Fa-f]+) result=([01])', log)
     problems = []
-    guaranteed = Counter(int(row[0]) for row in rolls if int(row[0]) >= 15104)
-    if guaranteed != Counter({15104: 2, 15105: 2, 15106: 1}):
+    guaranteed_pools = {'Rogue.Crusher', 'Rogue.Warden', 'Rogue.Boss'}
+    guaranteed = Counter(int(row[0]) for row in rolls if row[1] in guaranteed_pools)
+    expected = Counter({15104: 2, 15105: 2, 15106: 1})
+    from MonsterVariationRoster import SPEC, CREATURE_IDS
+    if any(int(row[0]) in CREATURE_IDS for row in rolls):
+        guaranteed_ids = {i for grade in SPEC['p09_grades'] if grade['grade']=='Elite' for i in grade['ids']}
+        guaranteed_ids.update(c['id'] for c in SPEC['creatures'] if c['base'] in (15104,15105))
+        expected = Counter({15106:1})
+        for waves in SPEC['waves'].values():
+            for wave in waves:
+                for eid,count in wave:
+                    if eid in guaranteed_ids: expected[eid]+=count
+    if guaranteed != expected:
         problems.append(f'Guaranteed loot count mismatch: {dict(guaranteed)}')
+    # result means routing to the victory screen, not drop-roll success.
+    # A "rolled" line is emitted only after RollDrop succeeds.
+    if any(row[5] != ('1' if row[1]=='Rogue.Boss' else '0') for row in rolls):
+        problems.append('Loot routed to the wrong ground/result destination')
     if len({row[4] for row in rolls}) != len(rolls):
         problems.append('Duplicate loot identity spawned')
     boss = [row for row in rolls if row[0] == '15106']

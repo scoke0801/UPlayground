@@ -37,6 +37,7 @@ private:
     UPROPERTY(Transient) TObjectPtr<UPGCharacterAppearance> CurrentAppearance;
     UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> VisibleMesh;
     UPROPERTY(Transient) TArray<TObjectPtr<USkeletalMeshComponent>> Parts;
+    UPROPERTY(Transient) TArray<TObjectPtr<class UStaticMeshComponent>> Attachments;
     UPROPERTY(Transient) TArray<TObjectPtr<UPGToonPresentationComponent>> Presentations;
     UPROPERTY(Transient) TArray<FPGAppearanceEquipmentAnchor> EquipmentAnchors;
     void ClearPresentation();

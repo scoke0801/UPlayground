@@ -28,7 +28,7 @@ def validate_content_milestone(enemies, skills, stages):
         cls = unreal.load_class(None, enemy['ActorClass'])
         controller = unreal.get_default_object(cls).get_editor_property('ai_controller_class')
         assert controller == unreal.PGRoleAIController.static_class(), (eid, str(controller))
-    assert unreal.load_class(None, skills[15102]['ProjectileClass']) == unreal.PGPatternProjectile.static_class()
+    assert isinstance(unreal.get_default_object(unreal.load_class(None, skills[15102]['ProjectileClass'])), unreal.PGPatternProjectile)
     assert 0 < enemies[15103]['GuardReduction'] < 1 and 0 < enemies[15103]['GuardHalfAngle'] < 180
     assert enemies[15103]['TurnSpeed'] < enemies[15101]['TurnSpeed']
     assert enemies[15102]['PreferredDistance'] + enemies[15102]['DistanceTolerance'] < skills[15102]['SkillRange']
@@ -37,7 +37,12 @@ def validate_content_milestone(enemies, skills, stages):
     by_id = {row['Id']: row for row in stages}
     for sid, counts in expected.items():
         assert [sum(s['SpawnCount'] for s in w['MonsterSpawnInfos']) for w in by_id[sid]['Waves']] == counts, sid
-    wave_ids = lambda sid: {s['MonsterId'] for w in by_id[sid]['Waves'] for s in w['MonsterSpawnInfos']}
+    from P09WaveRoster import role_id, validate_roster, P09_IDS
+    if any(s['MonsterId'] in P09_IDS for stage in stages for w in stage['Waves'] for s in w['MonsterSpawnInfos']):
+        validate_roster(stages)
+        assert P09_IDS <= enemies.keys()
+        assert all(enemies[eid]['Role']=='Chaser' for eid in P09_IDS)
+    wave_ids = lambda sid: {role_id(s['MonsterId']) for w in by_id[sid]['Waves'] for s in w['MonsterSpawnInfos']}
     assert wave_ids(1) == {15101, 15102}
     assert {15103, 15104} <= wave_ids(2) and 15105 not in wave_ids(2)
     assert 15105 in wave_ids(4) and set(roles) == wave_ids(5)
@@ -72,5 +77,9 @@ def validate_content_milestone(enemies, skills, stages):
         from ValidateCombatVariety import validate_combat_variety
         validate_combat_variety(enemies, skills)
         schema = 3
+    if unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/MonsterVariations/BP_15301'):
+        from ConfigureMonsterVariations import validate as validate_monster_variations
+        validate_monster_variations()
+        schema = 4
     unreal.log('PGContent VALIDATION PASS ' + json.dumps(dict(schema=schema, roles=5, boss_attacks=4 if variety else 3 if schema==2 else 0, waves=15, wave_counts=expected)))
     return schema

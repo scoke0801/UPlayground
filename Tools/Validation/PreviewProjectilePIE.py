@@ -95,7 +95,7 @@ def tick(delta):
             assert len(projectiles) == 1
             bolt = projectiles[0]
             component = bolt.get_editor_property('mesh_component')
-            assert component.get_editor_property('static_mesh').get_path_name() == '/Game/Art/Projectiles/SM_PG_CrystalBolt.SM_PG_CrystalBolt'
+            assert component.get_editor_property('static_mesh').get_path_name() == '/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/Weapon/Bow/Arrow/SM_Arrow.SM_Arrow'
             assert component.get_collision_enabled() == unreal.CollisionEnabled.NO_COLLISION
             box = bolt.get_editor_property('projectile_collision_box').get_unscaled_box_extent()
             assert abs(box.y-22.0) < .01

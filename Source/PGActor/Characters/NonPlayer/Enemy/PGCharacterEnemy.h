@@ -92,6 +92,9 @@ private:
 
 public:
 	APGCharacterEnemy();
+    /** Locomotion asset for the native imported-creature animation graph. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|Motion")
+    TObjectPtr<class UBlendSpace> CreatureLocomotion;
     // Assigned once by the stage before combat; independent of kill order and spawn retries.
     int32 LootSeed = 0;
     FGuid LootGuid;

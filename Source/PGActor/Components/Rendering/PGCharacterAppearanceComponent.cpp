@@ -3,10 +3,13 @@
 #include "PGToonPresentationComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
+#include "PGActor/Components/Combat/PGPlayerDashComponent.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGData/DataAsset/Character/PGCharacterAppearance.h"
 #include "GameFramework/Character.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Engine/DirectionalLight.h"
@@ -38,6 +41,9 @@ bool UPGCharacterAppearanceComponent::CanApply(UPGCharacterAppearance* Appearanc
         if (Part.AttachBone.IsNone() && PartMesh->GetSkeleton() != Mesh->GetSkeleton()) return false;
         if (!Part.AttachBone.IsNone() && Mesh->GetRefSkeleton().FindBoneIndex(Part.AttachBone) == INDEX_NONE) return false;
     }
+    for (const auto& Attachment : Appearance->Attachments)
+        if (!Attachment.Mesh.LoadSynchronous() || !Attachment.RelativeTransform.IsValid() ||
+            Mesh->GetRefSkeleton().FindBoneIndex(Attachment.AttachBone) == INDEX_NONE) return false;
     return true;
 }
 
@@ -106,7 +112,23 @@ bool UPGCharacterAppearanceComponent::ApplyAppearance(UPGCharacterAppearance* Ap
         AddToon(Part, Appearance);
         Parts.Add(Part);
     }
+    for (const auto& Definition : Appearance->Attachments)
+    {
+        auto* Part = NewObject<UStaticMeshComponent>(Character);
+        Part->SetupAttachment(VisibleMesh, Definition.AttachBone);
+        Part->SetRelativeTransform(Definition.RelativeTransform);
+        Part->SetStaticMesh(Definition.Mesh.LoadSynchronous());
+        Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Part->SetGenerateOverlapEvents(false);
+        Part->SetCanEverAffectNavigation(false);
+        Part->SetRenderCustomDepth(true);
+        Part->SetCustomDepthStencilValue(73);
+        Part->SetReceivesDecals(false);
+        Part->RegisterComponent();
+        Attachments.Add(Part);
+    }
     CurrentAppearance = Appearance;
+    if (auto* Dash = Character->FindComponentByClass<UPGPlayerDashComponent>()) Dash->PrepareAfterimages();
     for (auto* Actor : Attached)
         if (auto* Root = Actor->GetRootComponent(); Root && Root->GetAttachParent() == Source)
         {
@@ -220,6 +242,8 @@ void UPGCharacterAppearanceComponent::ClearPresentation()
     Presentations.Reset();
     for (USkeletalMeshComponent* Part : Parts) if (Part) Part->DestroyComponent();
     Parts.Reset();
+    for (UStaticMeshComponent* Part : Attachments) if (Part) Part->DestroyComponent();
+    Attachments.Reset();
     if (VisibleMesh) VisibleMesh->DestroyComponent();
     VisibleMesh = nullptr;
     CurrentAppearance = nullptr;

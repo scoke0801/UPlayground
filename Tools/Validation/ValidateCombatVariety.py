@@ -34,7 +34,8 @@ def validate_combat_variety(enemies, skills):
         for key,value in definition.items():
             if key != 'base':
                 assert math.isclose(row[key],value,rel_tol=1e-5) if isinstance(value,(int,float)) else row[key] == value, (definition['SkillID'],key)
-    assert skills[15112]['ProjectileCount'] == 3 and skills[15112]['ProjectileSpreadHalfAngle'] >= 20
+    for sid in (15102, 15112):
+        assert skills[sid]['ProjectileCount'] == 1 and skills[sid]['ProjectileSpreadHalfAngle'] == 0
     assert skills[15109]['MinimumBossPhase'] == 2 and skills[15109]['RecoveryDuration'] >= 1.5
     result = dict(schema=1,enemies=6,skills=len(ids),new_skills=len(spec['new_skills']),boss_attacks=4)
     unreal.log('PGCombatVariety VALIDATION PASS ' + json.dumps(result))

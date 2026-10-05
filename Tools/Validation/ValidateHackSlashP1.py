@@ -8,11 +8,28 @@ def validate_hack_slash_p1(rows):
     spec=json.loads((root/'Tools/Validation/HackSlashP1.json').read_text(encoding='utf-8'))
     by_id={r['SkillID']:r for r in rows}
     baseline=json.loads((root/'Tools/Validation/Baselines/HackSlashP1_Skills.json').read_text(encoding='utf-8'))
-    assert len(rows)==len(baseline)
+    from MonsterVariationRoster import SPEC as monster_spec
+    additional={s['id'] for s in monster_spec['skills']}
+    assert len(rows)==len(by_id) and set(by_id)-{r['SkillID'] for r in baseline} <= additional
+    # Later migrations own only these fields; validate their current contracts
+    # instead of comparing them against an obsolete P1 snapshot.
+    overrides={}
+    from ConfigurePlayerDash import MONTAGE as dash_montage, path_ref, validate as validate_dash
+    if unreal.EditorAssetLibrary.does_asset_exist(dash_montage):
+        validate_dash()
+        overrides[10000]=dict(Desc='대시',MontagePath=path_ref(dash_montage),
+            SkillIconPath=path_ref('/Game/UI/SkillIcons/T_Skill_Dash'))
+    from ConfigureSkeletonArcher import MONTAGE as bow_montage, IDS as bow_ids, skill_patch, validate as validate_archer
+    if unreal.EditorAssetLibrary.does_asset_exist(bow_montage):
+        validate_archer()
+        overrides.update({sid:skill_patch() for sid in bow_ids})
+        overrides[15112]['Desc']='별빛 정밀 사격'
     for old in baseline:
         for key,value in old.items():
             if old['SkillID'] in (110,113,114) and key in ('PlayerProfile','SkillCoolTime','Desc'): continue
-            assert by_id[old['SkillID']][key]==value,(old['SkillID'],key)
+            expected=overrides.get(old['SkillID'],{}).get(key,value)
+            actual=by_id[old['SkillID']][key]
+            assert abs(actual-expected)<1.e-6 if isinstance(expected,float) else actual==expected,(old['SkillID'],key)
     for item in spec['skills']:
         row=by_id[item['id']]
         assert row['PlayerProfile'].startswith('/Game/DataCenter/HackSlashP1/')

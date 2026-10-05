@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shutil
+import sys
 import unreal
 from datetime import datetime, timezone
 
@@ -151,5 +152,16 @@ target_skills = {definition[0] for definition in definitions}
 assert [r for r in enemies if r['EnemyID'] not in target_enemies] == [r for r in original_enemies if r['EnemyID'] not in target_enemies]
 assert [r for r in skills if r['SkillID'] not in target_skills] == [r for r in original_skills if r['SkillID'] not in target_skills]
 write(skill_path,skills); write(enemy_path,enemies)
-if STEP == 1: write(stage_path,stages)
+if STEP == 1:
+    sys.path.insert(0, os.path.join(ROOT, 'Tools/Validation'))
+    from P09WaveRoster import compose, P09_IDS
+    from MonsterVariationRoster import compose as compose_variations, IDS as VARIATION_IDS
+    registered={r['EnemyID'] for r in enemies}
+    if VARIATION_IDS <= registered: stages=compose_variations(stages)
+    elif P09_IDS <= registered: stages = compose(stages)
+    write(stage_path,stages)
+if STEP == 1:
+    sys.path.insert(0, os.path.join(ROOT, 'Tools/Validation'))
+    from ConfigureSkeletonArcher import apply as configure_skeleton_archer
+    configure_skeleton_archer()
 unreal.log('PGContent MIGRATION PASS step='+str(STEP))

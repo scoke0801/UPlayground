@@ -14,9 +14,24 @@
 - P09: 같은 폴더의 `BP_PGEnemy_P09_Female`, `BP_PGEnemy_P09_Male`, `BP_PGEnemy_P09_Female_Armor007`, `BP_PGEnemy_P09_Male_Armor007`.
 - P09 적 ID는 순서대로 `15201–15204`. `DT_Enemy`, `DT_CharacterStat`, 원본 사망 행이 있으면 `DT_Death`에 연결한다. 기존 추격자 `15101`의 BT/스킬/스탯을 출발점으로 사용한다.
 - P09 변형은 블루프린트의 `CharacterAppearance.DefaultAppearance` 및 해당 외형의 `Parts`를 편집한다. 같은 스켈레톤 의상은 Leader Pose, 별도 헤어 리그는 Head 부착과 기준 포즈 역변환을 사용한다.
-- 실제 웨이브에 넣으려면 `DT_StageData`의 해당 `MonsterSpawnInfos`에 위 적 ID를 지정한다. 기존 웨이브 구성은 자동 변경하지 않는다.
+- 현재 `DT_StageData.Waves.MonsterSpawnInfos`에 P09 4종을 편성했다. 1~2스테이지는 남녀 기본형, 3~5스테이지는 Armor007도 섞는다. 기존 추격자 총 20마리를 대체하며 적 총수·다른 역할·6스테이지 보스는 유지한다. 편성 원본은 `Tools/Validation/P09WaveRoster.py`, 적용·검증은 `RunP09Waves.py --apply`다.
 
 ## 런타임 구조
+
+### 2026-10-05 P09 웨이브 편성 검증
+
+| 스테이지 | 편성한 P09 | 대체한 추격자 수 |
+|---|---|---:|
+| 1 | 남녀 기본형 | 5 |
+| 2 | 남녀 기본형 | 3 |
+| 3 | 남녀 기본형·Armor007 | 4 |
+| 4 | 여성 기본형·남녀 Armor007 | 4 |
+| 5 | 남성 기본형·남녀 Armor007 | 4 |
+| 6 | 기존 보스 유지 | 0 |
+
+`ConfigureP09Waves.py`는 스테이지 테이블만 수정하며 원본 패키지와 전후 JSON은 `Saved/Backups/P09Waves/20261005T103004473815Z`에 보존했다. 수정 후 P09를 원래 추격자로 합산했을 때 전체 스테이지 JSON이 수정 전과 동일함을 확인했다. 반복 적용도 동일한 편성을 유지한다. P09의 기존 드롭 풀은 `Rogue.Chaser`다.
+
+`RunP09Waves.py` 결과는 `Saved/QA/P09Waves_20261005T103120/report.json`에 있다. 새 프로세스 에셋 재로드·콘텐츠/드롭 데이터 검증 PASS, 실제 스테이지 매니저를 통한 1~6스테이지 첫 웨이브의 36마리 스폰 수/ID 검사 PASS다. P09 4종 모두 컨트롤러와 표시 메시 연결을 확인했다. 각 단계는 실제 저장된 웨이브를 사용하며 검사 중 AI 판단만 멈춘다. 전 웨이브 구성은 정적으로 검사했고, 전 웨이브 처치/보상 진행·렌더링·밀집 전투 성능을 이번 검사에서 재수행한 것은 아니다.
 
 `PGData/PGCharacterAppearance`가 외형 데이터, `PGActor/PGCharacterAppearanceComponent`가 표시 메시·모듈러 부위·툰 동기화·무기 부착을 소유한다. 원래 메시의 AnimBP와 몽타주는 숨긴 상태로 계속 평가하고, 네이티브 `PGAppearanceAnimInstance`가 UE IKRig의 Retarget Pose From Mesh 노드로 표시 포즈를 만든다. 원본 평가 후 표시 메시가 평가되도록 틱 선행 관계를 지정한다.
 
@@ -58,4 +73,4 @@ python Tools/Validation/RunPlayableCharacters.py --step automation
 
 손 그립·발 고정·헤어 및 의상 물리의 후속 구조, 구현 순서와 수용 기준은 [캐릭터 폴리싱 설계](PlayableToonCharacters_Polishing_Design.md)를 따른다. 설계 문서 작성은 해당 기능의 구현 완료를 의미하지 않는다.
 
-공유 전투 세트의 FK 리타게팅 연결이다. 캐릭터별 고유 스킬·밸런스, 발 고정 IK, 손가락 그립 미세 조정, 헤어·의상 보조 물리는 별도 폴리싱 범위다. P09는 확장 가능한 적 템플릿이며 기존 아레나 웨이브의 몬스터 교체나 신규 역할 밸런싱을 의미하지 않는다. 원본·표시 포즈를 함께 평가하므로 다수 P09 동시 전투의 패키지 성능 수용 검사는 별도로 필요하다.
+공유 전투 세트의 FK 리타게팅 연결이다. 캐릭터별 고유 스킬·밸런스, 발 고정 IK, 손가락 그립 미세 조정, 헤어·의상 보조 물리는 별도 폴리싱 범위다. P09는 기존 추격자 역할로 아레나에 편성했으며 신규 전투 역할을 추가한 것은 아니다. 원본·표시 포즈를 함께 평가하므로 다수 P09 동시 전투의 패키지 성능 수용 검사는 별도로 필요하다.

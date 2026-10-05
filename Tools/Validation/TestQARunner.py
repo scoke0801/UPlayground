@@ -5,7 +5,8 @@ from RunQA import check_automation, check_cycle, check_loot_cycle, check_retry, 
 
 class QAEvidenceTests(unittest.TestCase):
     def test_loot_requires_guaranteed_drops_and_atomic_boss_result(self):
-        rows = [f'PGLoot rolled enemy={eid} pool=Rogue.Test seed=1 item=15004 guid={index:032X} result={int(eid == 15106)}'
+        pools={15104:'Rogue.Crusher',15105:'Rogue.Warden',15106:'Rogue.Boss'}
+        rows = [f'PGLoot rolled enemy={eid} pool={pools[eid]} seed=1 item=15004 guid={index:032X} result={int(eid==15106)}'
                 for index, eid in enumerate((15104, 15105, 15104, 15105, 15106), 1)]
         rows.append(f'PGLoot boss committed item=15004 guid={5:032X} wins=1')
         complete = '\n'.join(rows)
@@ -14,6 +15,14 @@ class QAEvidenceTests(unittest.TestCase):
         self.assertTrue(check_loot_cycle('\n'.join(rows[1:])))
         self.assertTrue(check_loot_cycle(complete + '\n' + rows[0]))
         self.assertTrue(check_loot_cycle(complete.replace('wins=1', 'wins=2')))
+        self.assertTrue(check_loot_cycle(complete.replace('result=0','result=1',1)))
+
+    def test_normal_p09_ids_are_not_mistaken_for_guaranteed_elites(self):
+        pools={15104:'Rogue.Crusher',15105:'Rogue.Warden',15106:'Rogue.Boss',15201:'Rogue.Chaser'}
+        rows=[f'PGLoot rolled enemy={eid} pool={pools[eid]} seed=1 item=15004 guid={index:032X} result={int(eid==15106)}'
+              for index,eid in enumerate((15104,15105,15104,15105,15106,15201),1)]
+        rows.append(f'PGLoot boss committed item=15004 guid={5:032X} wins=1')
+        self.assertEqual(check_loot_cycle('\n'.join(rows)),[])
 
     def test_telemetry_requires_assisted_commits_and_finite_samples(self):
         rows = [dict(stage=stage, run_seed=173001, assisted=True, outcome="Cleared",

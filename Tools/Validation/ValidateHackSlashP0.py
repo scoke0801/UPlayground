@@ -53,7 +53,9 @@ def validate_hack_slash_p0(rows=None):
         backup = Path(backup_marker.read_text(encoding='utf-8'))
         old_rows = json.loads((backup/'skills.json').read_text(encoding='utf-8'))
         allowed = {s['id'] for s in spec['skills']}
-        assert len(rows) == len(old_rows)
+        from MonsterVariationRoster import SPEC as monster_spec
+        additional={s['id'] for s in monster_spec['skills']}
+        assert len(rows)==len(by_id) and set(by_id)-{r['SkillID'] for r in old_rows} <= additional
         for old in old_rows:
             current = regression_rows[old['SkillID']]
             for field in old:
