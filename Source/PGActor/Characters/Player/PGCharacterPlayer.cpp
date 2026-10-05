@@ -2,6 +2,7 @@
 
 
 #include "PGCharacterPlayer.h"
+#include "PGActor/Components/Combat/PGPlayerDashComponent.h"
 #include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGData/DataAsset/Input/PGQuarterViewData.h"
@@ -42,6 +43,7 @@
 
 APGCharacterPlayer::APGCharacterPlayer()
 {
+    PlayerDashComponent = CreateDefaultSubobject<UPGPlayerDashComponent>(TEXT("PlayerDashComponent"));
     PlayerAttackComponent = CreateDefaultSubobject<UPGPlayerAttackComponent>(TEXT("PlayerAttackComponent"));
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
 
@@ -483,6 +485,7 @@ FVector APGCharacterPlayer::GetDodgeDirection()
 bool APGCharacterPlayer::CanStartSkill(bool bDodge) const
 {
     if (!IsGameplayInputAllowed()) return false;
+    if (PlayerDashComponent->IsDashing()) return false;
     if (PlayerAttackComponent->IsRunning()) return PlayerAttackComponent->CanCancel(bDodge);
     const UAnimInstance* Anim = GetMesh()->GetAnimInstance();
     if (!Anim) return false;

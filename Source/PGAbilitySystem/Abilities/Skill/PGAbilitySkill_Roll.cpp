@@ -1,98 +1,88 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "PGAbilitySkill_Roll.h"
-
-#include "MotionWarpingComponent.h"
-#include "Kismet/KismetMathLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
-#include "PGActor/Characters/PGCharacterBase.h"
+#include "Abilities/Tasks/AbilityTask_ApplyRootMotionConstantForce.h"
+#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Components/Combat/PGPlayerDashComponent.h"
+#include "PGActor/Handler/Skill/PGSkillHandler.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "PGData/PGDataTableManager.h"
+#include "PGData/DataTable/Skill/PGSkillDataRow.h"
+
+// Preserve the reflected class/slot identity for startup abilities and saves.
+UPGAbilitySkill_Roll::UPGAbilitySkill_Roll()
+{
+    InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+    bRetriggerInstancedAbility = false;
+}
+
+bool UPGAbilitySkill_Roll::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
+    const FGameplayAbilityActorInfo* Info, const FGameplayTagContainer* Source,
+    const FGameplayTagContainer* Target, FGameplayTagContainer* Relevant) const
+{
+    const auto* Player = Info ? Cast<APGCharacterPlayer>(Info->AvatarActor.Get()) : nullptr;
+    if (!Player || !Player->GetCharacterMovement()->IsMovingOnGround()) return false;
+    const auto* Dash = Player->GetPlayerDashComponent();
+    return FMath::IsFinite(Dash->Duration) && Dash->Duration >= .15f && Dash->Duration <= 1.f &&
+        FMath::IsFinite(Dash->Distance) && Dash->Distance >= 50.f && Dash->Distance <= 1000.f &&
+        Super::CanActivateAbility(Handle, Info, Source, Target, Relevant);
+}
 
 void UPGAbilitySkill_Roll::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-                                           const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-                                           const FGameplayEventData* TriggerEventData)
+    const FGameplayAbilityActorInfo* Info, const FGameplayAbilityActivationInfo Activation,
+    const FGameplayEventData* Event)
 {
-	CachedSpecHandle = Handle;
-    CachedActorInfo = ActorInfo;
-    CachedActivationInfo = ActivationInfo;
-
-	CachedCharacter = Cast<APGCharacterBase>(GetOwningActorFromActorInfo());
-	if (nullptr == CachedCharacter)
-	{
-		EndAbilitySelf();
-		return;
-	}
-	
-	CachedMotionWarpingComponent = CachedCharacter->GetComponentByClass<UMotionWarpingComponent>();
-	if (nullptr == CachedMotionWarpingComponent)
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	if (false == ComputeRollDirection())
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	if (false == ComputeRollDistance())
-	{
-		EndAbilitySelf();
-		return;
-	}
-
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+    // Dash owns movement/lifetime instead of the old base skill's root-motion roll.
+    UPGGameplayAbility::ActivateAbility(Handle, Info, Activation, Event);
+    auto* Player = Cast<APGCharacterPlayer>(GetCharacter());
+    auto* Handler = Player ? Player->GetSkillHandler() : nullptr;
+    const auto* Row = Handler && PGData() ? PGData()->GetRowData<FPGSkillDataRow>(Handler->GetSkillID(SlotIndex)) : nullptr;
+    DashMontage = Row ? Cast<UAnimMontage>(Row->MontagePath.TryLoad()) : nullptr;
+    if (!Row || !DashMontage || !Player->GetMesh()->GetAnimInstance()) { EndAbilitySelf(); return; }
+    auto* Dash = Player->GetPlayerDashComponent();
+    auto* Movement = Player->GetCharacterMovement();
+    const FVector Direction = Player->GetDodgeDirection().GetSafeNormal2D();
+    if (Direction.IsNearlyZero() || !CommitAbility(Handle, Info, Activation)) { EndAbilitySelf(); return; }
+    Player->ResetAttackHitStop();
+    Player->SetActorRotation(Direction.Rotation());
+    Player->SetSkillCancelPolicy(0.f, 0.f);
+    bSavedLedgePolicy = Movement->bCanWalkOffLedges;
+    bMovementOwned = true;
+    Movement->bCanWalkOffLedges = false;
+    Movement->StopMovementImmediately();
+    Dash->Start();
+    Handler->UseSkill(SlotIndex);
+    Player->GetPGAbilitySystemComponent()->OnDodgeCommitted();
+    auto* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+        this, NAME_None, DashMontage, DashMontage->GetPlayLength() / Dash->Duration,
+        NAME_None, true);
+    MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageInterrupted);
+    MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageInterrupted);
+    MontageTask->ReadyForActivation();
+    if (!IsActive()) return;
+    auto* MoveTask = UAbilityTask_ApplyRootMotionConstantForce::ApplyRootMotionConstantForce(
+        this, TEXT("PlayerDash"), Direction, Dash->Distance / Dash->Duration, Dash->Duration,
+        false, nullptr, ERootMotionFinishVelocityMode::SetVelocity, FVector::ZeroVector, 0.f, true);
+    MoveTask->OnFinish.AddDynamic(this, &ThisClass::OnMontageCompleted);
+    MoveTask->ReadyForActivation();
 }
 
-bool UPGAbilitySkill_Roll::ComputeRollDirection()
+void UPGAbilitySkill_Roll::EndAbility(const FGameplayAbilitySpecHandle Handle,
+    const FGameplayAbilityActorInfo* Info, const FGameplayAbilityActivationInfo Activation,
+    bool bReplicate, bool bCancelled)
 {
-	APGCharacterBase* Character = Cast<APGCharacterBase>(GetOwningActorFromActorInfo());
-	if (nullptr == Character)
-	{
-		return false;
-	}
-
-    auto* Player = Cast<APGCharacterPlayer>(Character);
-    RollingDirection = Player ? Player->GetDodgeDirection() : Character->GetLastMovementInputVector();
-	if (RollingDirection.IsNearlyZero()) RollingDirection = Character->GetActorForwardVector();
-    RollingDirection.Normalize(0.0001);
-
-	FRotator TargetRot = UKismetMathLibrary::MakeRotFromX(RollingDirection);
-	CachedMotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(
-		RollingDirectionName, Character->GetActorLocation(), TargetRot);
-
-	return true;
-}
-
-bool UPGAbilitySkill_Roll::ComputeRollDistance()
-{
-	int32 Level = GetAbilityLevel();
-	
-	float Distance = RollingDistanceScalableFloat.GetValueAtLevel(Level);
-
-	FVector RollingOffset = RollingDirection * Distance;
-	FVector StartLocation = GetOwningActorFromActorInfo()->GetActorLocation() + RollingOffset;
-
-	FVector ActorUpVector = GetOwningActorFromActorInfo()->GetActorUpVector();
-	FVector DownVector = ActorUpVector * -1.0f;  // 위쪽 벡터를 뒤집어서 아래쪽으로
-	FVector DownOffset = DownVector * 500.0f;    // 500 유닛 아래로
-
-	FVector EndLocation = StartLocation + DownOffset;
-	
-	const TArray<AActor*> ActorsToIgnore;
-	FHitResult OutHit;
-	bool Result = UKismetSystemLibrary::LineTraceSingleForObjects(GetOwningActorFromActorInfo(),
-		StartLocation, EndLocation,ObjectTypes, false, ActorsToIgnore,EDrawDebugTrace::Type::None, OutHit, true);
-
-	if (false == Result)
-	{
-		return false;
-	}
-
-	CachedMotionWarpingComponent->AddOrUpdateWarpTargetFromLocation(
-		RollTargetLocationName, OutHit.ImpactPoint);
-
-	return true;
+    if (bMovementOwned)
+    {
+        bMovementOwned = false;
+        if (auto* Player = Cast<APGCharacterPlayer>(GetCharacter()))
+        {
+            Player->GetCharacterMovement()->bCanWalkOffLedges = bSavedLedgePolicy;
+            Player->GetPlayerDashComponent()->Stop(bCancelled);
+        }
+    }
+    // Removes the movement source on every completion, death and interruption.
+    Super::EndAbility(Handle, Info, Activation, bReplicate, bCancelled);
+    DashMontage = nullptr;
 }

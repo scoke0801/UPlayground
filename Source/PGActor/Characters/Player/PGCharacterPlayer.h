@@ -55,9 +55,12 @@ public:
     bool CanStartSkill(bool bDodge) const;
     void SetSkillCancelPolicy(float AttackFraction, float DodgeFraction);
     class UPGPlayerAttackComponent* GetPlayerAttackComponent() const { return PlayerAttackComponent; }
+    class UPGPlayerDashComponent* GetPlayerDashComponent() const { return PlayerDashComponent; }
     void ResetAttackHitStop() { EndHitStop(); }
     void ApplyProfileHitStop(float Seconds) { ApplyHitStop(Seconds); }
 private:
+    UPROPERTY(VisibleAnywhere, Category="PG|Combat")
+    TObjectPtr<class UPGPlayerDashComponent> PlayerDashComponent;
     UPROPERTY(VisibleAnywhere, Category="PG|Combat")
     TObjectPtr<class UPGPlayerAttackComponent> PlayerAttackComponent;
     friend class FPGDodgeDirectionTest;
