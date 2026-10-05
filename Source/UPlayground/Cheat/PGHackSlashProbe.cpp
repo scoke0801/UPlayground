@@ -70,6 +70,7 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
         bool bSwingMiss=FParse::Param(FCommandLine::Get(),TEXT("PGSwingFXMiss"));
         int32 CapturePhase=0;
         TArray<FPGPlayerHitPhase> CapturePhases;
+        float CaptureFXDuration=0.f;
         int32 Index=0;
         bool bReady=false, bPlaced=false, bCaptured=false;
         bool bCapturePaused=false;
@@ -330,8 +331,18 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
             if (const auto* Row=UPGDataTableManager::Get(Player)->GetRowData<FPGSkillDataRow>(State->Skills[State->Index]))
                 if (const auto* SkillProfile=Row->PlayerProfile.LoadSynchronous(); SkillProfile && !SkillProfile->HitPhases.IsEmpty())
                 {
-                    State->CapturePhases=SkillProfile->HitPhases;
-                    State->CaptureAt=SkillProfile->HitPhases[0].Start+.04f;
+                    State->CapturePhases=SkillProfile->ResolveHitPhases(Cast<UAnimMontage>(Row->MontagePath.TryLoad()));
+                    State->CaptureFXDuration=SkillProfile->SlashDuration;
+                    if (State->bSwingFX)
+                    {
+                        State->CapturePhases.Reset();
+                        for (const auto& Cue : Attack->GetSwingCues())
+                        {
+                            auto Phase = Cue.Presentation; Phase.Start = Cue.Time;
+                            State->CapturePhases.Add(Phase);
+                        }
+                    }
+                    State->CaptureAt=State->CapturePhases[0].Start+.04f;
                 }
             State->PreviousPose.Reset();
             return true;
@@ -363,6 +374,14 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
                 Target->bCanDropLoot=false; Target->GetCharacterMovement()->DisableMovement();
                 Target->GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel1);
                 Target->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+                if (State->bSwingFX && Skill!=114)
+                {
+                    // A small target on either side stays in the authored fan throughout a dash/leap.
+                    // These are real query-only capsules; no hit events or damage are injected.
+                    Target->GetCapsuleComponent()->SetCapsuleRadius(5.f);
+                    Target->AttachToComponent(Player->GetRootComponent(),FAttachmentTransformRules::KeepWorldTransform);
+                    Target->SetActorRelativeLocation(FVector(180.f,Index?80.f:-80.f,0.f));
+                }
                 auto* TargetASC=Target->GetPGAbilitySystemComponent(); TargetASC->InitAbilityActorInfo(Target,Target);
                 TargetASC->InitializeCombatStats({{EPGStatType::Health,10000},{EPGStatType::Defense,0}});
                 TargetASC->SetNumericAttributeBase(UPGAtrributeSet::GetMaxHealthAttribute(),10000.f);
@@ -398,12 +417,38 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
                 {
                     const auto& Phase=State->CapturePhases[State->CapturePhase];
                     const bool bProjectile=Phase.Shape==EPGPlayerHitShape::Projectile;
-                    const int32 Expected=Phase.Shape==EPGPlayerHitShape::Disc || bProjectile ? 2 : 1;
-                    if (Systems!=Expected || CastSwings!=(bProjectile?1:0) || Blades!=(bProjectile?1:0))
+                    // Count overlapping source strokes as well as the new slash.
+                    int32 Expected=bProjectile?1:0;
+                    for (const auto& Cue : State->CapturePhases)
+                        if (Cue.Start<=Attack->GetLogicalTime() && Attack->GetLogicalTime()-Cue.Start<State->CaptureFXDuration)
+                            Expected+=Cue.Shape==EPGPlayerHitShape::Disc?2:1;
+                    if (Systems!=Expected || Attack->GetPresentedSwingCount()!=State->CapturePhase+1 ||
+                        CastSwings!=(bProjectile?1:0) || Blades!=(bProjectile?1:0))
                         return Finish(false,TEXT("Niagara swing phase count or projectile pairing mismatch"));
                     UE_LOG(LogTemp,Display,TEXT("PGPlayerSwingFX Skill=%d Phase=%d Miss=%d PASS Systems=%d Clock=%.4f"),
                         State->Skills[State->Index],State->CapturePhase,State->bSwingMiss,Systems,Attack->GetLogicalTime());
                 }
+            }
+            if (State->bSwingFX)
+            {
+                const auto& Phase=State->CapturePhases[State->CapturePhase];
+                float Expected=0.f;
+                for (int32 Index=0;Index<=State->CapturePhase;++Index)
+                    Expected+=State->CapturePhases[Index].DamageMultiplier*State->Context->Attack;
+                if (!State->bSwingMiss)
+                {
+                    const auto* HitTargets=State->Context->HitTargets.Find(Phase.PhaseId);
+                    if (!HitTargets || State->Targets.IsEmpty() || !HitTargets->Contains(State->Targets[0].Get()))
+                        return Finish(false,TEXT("visible stroke did not hit the in-range target"));
+                    const float Actual=10000.f-State->Targets[0]->GetPGAbilitySystemComponent()->GetHealth();
+                    if (!FMath::IsNearlyEqual(Actual,Expected,.1f))
+                        return Finish(false,TEXT("per-stroke damage differs from accumulated profile damage"));
+                }
+                else
+                    for (const auto& Pair : State->Context->HitTargets)
+                        if (!Pair.Value.IsEmpty()) return Finish(false,TEXT("miss produced a hit"));
+                UE_LOG(LogTemp,Display,TEXT("PGMotionDamage Skill=%d Phase=%d Miss=%d PASS Damage=%.2f"),
+                    State->Skills[State->Index],State->CapturePhase,State->bSwingMiss,State->bSwingMiss?0.f:Expected);
             }
             State->bCaptured=true;
             State->bCapturePaused=UGameplayStatics::SetGamePaused(W,true);
@@ -426,12 +471,23 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
             }
             if(!State->bPlaced) return Finish(false,TEXT("cast ended before first phase"));
             const int32 Skill=State->Skills[State->Index];
-            const float Power=Skill==110?220.f:Skill==113?285.f:Skill==114?160.f:Skill==100?90.f:Skill==102?150.f:Skill==111?90.f:Skill==112?200.f:100.f;
             for(int32 Index=0;Index<State->Targets.Num();++Index)
             {
                 auto* Target=State->Targets[Index].Get(); if(!Target) return Finish(false,TEXT("target destroyed"));
                 const float Damage=10000-Target->GetPGAbilitySystemComponent()->GetHealth();
-                const float Expected=Index==1 && (Skill<110 || Skill==113)?0.f:Power;
+                float Expected=0.f;
+                for (const auto& Phase : State->CapturePhases)
+                {
+                    const auto* HitTargets=State->Context->HitTargets.Find(Phase.PhaseId);
+                    if (State->bSwingFX || (HitTargets && HitTargets->Contains(Target)))
+                        Expected+=Phase.DamageMultiplier*State->Context->Attack;
+                }
+                if (!State->bSwingFX)
+                {
+                    // Preserve the stationary front/back geometry check for ordinary spatial probes.
+                    const bool ShouldHit=!(Index==1 && (Skill<110 || Skill==113));
+                    if (ShouldHit != (Expected>0.f)) return Finish(false,TEXT("front/back spatial eligibility mismatch"));
+                }
                 UE_LOG(LogTemp,Display,TEXT("PGHackSlashProbe Skill=%d Target=%d Damage=%.1f Expected=%.1f Move=%.1f Phases=%d"),
                     Skill,Index,Damage,Expected,FVector::Dist2D(Player->GetActorLocation(),State->Origin),State->Context->HitTargets.Num());
                 if(!FMath::IsNearlyEqual(Damage,Expected,.1f)) return Finish(false,TEXT("spatial damage mismatch"));

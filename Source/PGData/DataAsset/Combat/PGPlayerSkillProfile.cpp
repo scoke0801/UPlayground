@@ -1,5 +1,64 @@
 #include "PGPlayerSkillProfile.h"
+#include "Animation/AnimMontage.h"
 #include "Misc/DataValidation.h"
+
+TArray<FPGPlayerHitPhase> UPGPlayerSkillProfile::ResolveHitPhases(const UAnimMontage* Montage) const
+{
+    // Projectile release remains authored: source markers must not create extra projectiles.
+    if (!Montage || SwingNotifyName.IsNone() || HitPhases.IsEmpty() || PoseKeys.Num() < 2 ||
+        HitPhases.ContainsByPredicate([](const auto& Hit){ return Hit.Shape == EPGPlayerHitShape::Projectile; }))
+        return HitPhases;
+    TArray<float> Contacts;
+    const auto AddContact = [&](float Time)
+    {
+        if (FMath::IsFinite(Time) && Time >= PoseKeys[0].MontageSeconds && Time < PoseKeys.Last().MontageSeconds &&
+            !Contacts.ContainsByPredicate([Time](float Existing){ return FMath::IsNearlyEqual(Time, Existing, .0001f); }))
+            Contacts.Add(Time);
+    };
+    for (const auto& Notify : Montage->Notifies)
+        if (Notify.NotifyName == SwingNotifyName) AddContact(Notify.GetTime());
+    for (const auto& Slot : Montage->SlotAnimTracks)
+        for (const auto& Segment : Slot.AnimTrack.AnimSegments)
+            if (const auto* Sequence = Segment.GetAnimReference().Get())
+            {
+                const float Rate = Segment.GetValidPlayRate();
+                const float Span = Segment.AnimEndTime - Segment.AnimStartTime;
+                if (!FMath::IsFinite(Rate) || FMath::IsNearlyZero(Rate) || Span <= 0.f) continue;
+                for (const auto& Notify : Sequence->Notifies)
+                    if (Notify.NotifyName == SwingNotifyName &&
+                        Notify.GetTime() >= Segment.AnimStartTime && Notify.GetTime() <= Segment.AnimEndTime)
+                        for (int32 Loop = 0; Loop < Segment.LoopingCount; ++Loop)
+                        {
+                            const float Offset = Rate > 0.f ? Notify.GetTime() - Segment.AnimStartTime : Segment.AnimEndTime - Notify.GetTime();
+                            AddContact(Segment.StartPos + (Loop * Span + Offset) / FMath::Abs(Rate));
+                        }
+            }
+    if (Contacts.IsEmpty()) return HitPhases;
+    Contacts.Sort();
+    TArray<FPGPlayerHitPhase> Result;
+    for (float Contact : Contacts)
+    {
+        float Low = 0.f, High = Duration;
+        for (int32 Iteration = 0; Iteration < 24; ++Iteration)
+        {
+            const float Middle = (Low + High) * .5f;
+            if (GetMontagePosition(Middle) < Contact) Low = Middle; else High = Middle;
+        }
+        const float Time = (Low + High) * .5f;
+        const FPGPlayerHitPhase* Template = &HitPhases[0];
+        for (const auto& Hit : HitPhases)
+            if (FMath::Abs(Hit.Start - Time) < FMath::Abs(Template->Start - Time)) Template = &Hit;
+        auto Hit = *Template;
+        Hit.PhaseId = Result.Num(); // Once per target per actual stroke, not once per template.
+        Hit.Start = Time;
+        Hit.End = FMath::Min(Duration, Time + (Template->End - Template->Start));
+        Result.Add(Hit);
+    }
+    // Consecutive strokes cannot keep an earlier damage window open through the next contact.
+    for (int32 Index = 0; Index + 1 < Result.Num(); ++Index)
+        Result[Index].End = FMath::Min(Result[Index].End, Result[Index + 1].Start);
+    return Result;
+}
 
 bool UPGPlayerSkillProfile::Validate(int32 ExpectedSkillID, FString& Error) const
 {

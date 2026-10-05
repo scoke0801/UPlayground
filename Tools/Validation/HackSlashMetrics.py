@@ -15,7 +15,7 @@ def number(row, key):
     return value
 
 
-def parse_metrics(log, begin, health, uses):
+def parse_metrics(log, begin, health, uses, profile_phase_counts=None):
     if begin.get('metrics') != '1':
         return dict(status='UNAVAILABLE', reason='Legacy log without cast observations'), []
     errors, casts = [], {}
@@ -57,7 +57,9 @@ def parse_metrics(log, begin, health, uses):
                 if damage <= 0 or row['behind'] not in ('0', '1'):
                     raise ValueError('Invalid direct hit')
                 if cast['profile']:
-                    if phase not in ((0,1,2) if cast['skill']==113 else (0, 1) if cast['skill'] in (111, 112) else (0,)):
+                    allowed_phases = (range(profile_phase_counts[cast['skill']]) if profile_phase_counts is not None else
+                                      (0,1,2) if cast['skill']==113 else (0, 1) if cast['skill'] in (111, 112) else (0,))
+                    if phase not in allowed_phases:
                         raise ValueError('Unexpected profile hit phase')
                     if any(h['phase'] == phase and h['target'] == row['target'] for h in cast['hits']):
                         raise ValueError('Duplicate profile target/phase')

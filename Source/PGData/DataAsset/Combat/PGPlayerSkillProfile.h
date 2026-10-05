@@ -69,10 +69,13 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float ProjectileLifetime = .7f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float AttackSpeed = 1.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 FrenzyPerCastCap = 3;
+    // Authored phases; when SwingNotifyName contacts exist, the closest phase supplies each stroke's damage/shape/window.
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FPGPlayerHitPhase> HitPhases;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FPGPlayerMovementSegment> MovementSegments;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FPGPlayerPoseKey> PoseKeys;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UNiagaraSystem> SlashVFX;
+    // Source contacts drive a shared damage + Niagara schedule. None uses authored HitPhases.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Motion") FName SwingNotifyName = TEXT("P_HitPoint");
     // Optional caster-side swing at projectile release; SlashVFX travels with the projectile.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Niagara") TSoftObjectPtr<class UNiagaraSystem> ProjectileSwingVFX;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Niagara", meta=(ClampMin="1", ClampMax="1500")) float ProjectileSwingRadius = 250.f;
@@ -92,6 +95,7 @@ public:
 
     bool Validate(int32 ExpectedSkillID, FString& Error) const;
     float GetMontagePosition(float Time) const;
+    TArray<FPGPlayerHitPhase> ResolveHitPhases(const class UAnimMontage* Montage) const;
 #if WITH_EDITOR
     virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
 #endif

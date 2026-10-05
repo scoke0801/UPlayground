@@ -8,6 +8,13 @@
 
 DECLARE_DELEGATE_OneParam(FPGPlayerAttackEnded, bool /* cancelled */);
 
+struct FPGPlayerSwingCue
+{
+    float Time = 0.f;
+    float MontageSeconds = 0.f;
+    FPGPlayerHitPhase Presentation;
+};
+
 // Owns the single logical clock, spatial queries and reversible movement state.
 UCLASS()
 class PGACTOR_API UPGPlayerAttackComponent : public UActorComponent
@@ -24,6 +31,9 @@ public:
     float GetLogicalTime() const { return LogicalTime; }
     float GetExpectedSeconds() const;
     const TSharedPtr<FPGSkillCastContext>& GetCastContext() const { return CastContext; }
+    static TArray<FPGPlayerSwingCue> BuildSwingCues(const UPGPlayerSkillProfile* Profile, const UAnimMontage* Montage);
+    const TArray<FPGPlayerSwingCue>& GetSwingCues() const { return SwingCues; }
+    int32 GetPresentedSwingCount() const { return NextSwingCue; }
     // Geometry helper shared with deterministic boundary tests. Targets use capsule footprints.
     static bool ContainsTarget(const FPGPlayerHitPhase& Hit, const FVector& Origin, const FVector& Forward,
         const FVector& TargetFeet, float CapsuleRadius);
@@ -53,6 +63,8 @@ private:
     uint8 SavedRootMotionMode = 0;
     FVector LockedForward = FVector::ForwardVector;
     TSet<int32> PresentedPhases;
+    TArray<FPGPlayerSwingCue> SwingCues;
+    int32 NextSwingCue = 0;
     bool bAimLocked = false;
     float LeapDistance = 0.f;
     FVector SavedMeshLocation = FVector::ZeroVector;

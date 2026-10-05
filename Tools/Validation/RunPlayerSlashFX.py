@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--render-only', action='store_true', help='Capture saved assets without repeating reload/automation gates')
     parser.add_argument('--niagara', action='store_true', help='Configure/validate the Niagara implementation')
     parser.add_argument('--all-phases', action='store_true', help='Capture every swing, including a second run without targets')
+    parser.add_argument('--configuration', choices=('Development', 'DebugGame'), default='Development')
     args = parser.parse_args()
     if args.apply and args.render_only:
         parser.error('--apply and --render-only are mutually exclusive')
@@ -31,7 +32,8 @@ def main():
     (out/'Temp').mkdir()
     # Turnkey launches Build.bat during editor startup; isolate its temporary lock.
     os.environ['TMP'] = os.environ['TEMP'] = str(out/'Temp')
-    common = [engine/'Engine/Binaries/Win64/UnrealEditor-Cmd.exe', ROOT/'UPlayground.uproject']
+    editor = 'UnrealEditor-Win64-DebugGame-Cmd.exe' if args.configuration == 'DebugGame' else 'UnrealEditor-Cmd.exe'
+    common = [engine/'Engine/Binaries/Win64'/editor, ROOT/'UPlayground.uproject']
     flags = ['-unattended', '-nop4', '-nosound', '-culture=en', '-DisablePlugins=RiderLink',
              '-ddc=InstalledNoZenLocalFallback', '-PGTestProfile=HackSlash_FX_'+run_id,
              '-UserDir='+str(out/'User')]
@@ -85,11 +87,14 @@ def main():
                 if args.niagara and f'PGPlayerNiagara Cleanup Skill={skill} PASS' not in log:
                     errors.append(f'Missing Niagara cleanup verification: {skill}')
                 if args.all_phases:
-                    phase_count = {111: 2, 112: 2, 113: 3}.get(skill, 1)
+                    phase_count = {110: 5, 111: 4, 112: 6, 113: 5}.get(skill, 1)
                     for phase in range(phase_count):
                         marker = f'PGPlayerSwingFX Skill={skill} Phase={phase} Miss={int(bool(suffix))} PASS'
                         if marker not in log:
                             errors.append('Missing swing verification: '+marker)
+                        damage_marker = f'PGMotionDamage Skill={skill} Phase={phase} Miss={int(bool(suffix))} PASS'
+                        if damage_marker not in log:
+                            errors.append('Missing per-stroke damage verification: '+damage_marker)
                         phase_path = path if phase == 0 else path.with_name(f'Skill_{skill}{suffix}_Phase_{phase}.png')
                         if not phase_path.exists() or struct.unpack('>II', phase_path.read_bytes()[16:24]) != (1280, 720):
                             errors.append(f'Missing or incorrect phase screenshot: {skill}/{phase}')
@@ -97,6 +102,7 @@ def main():
             report = out/'Automation/index.json'
             if report.exists():
                 more, _ = check_automation(json.loads(read_text(report)), ['PG.HackSlash.ProfileValidation',
+                    'PG.HackSlash.MotionSwingCues',
                     'PG.HackSlash.SpatialClockAndCancellation', 'PG.HackSlash.ProjectileLifetimeAndSweep'])
                 errors.extend(more)
             else:
@@ -109,6 +115,8 @@ def main():
     result = dict(status='FAIL' if any(g['errors'] for g in gates) else 'PASS', gates=gates,
                   render_only=args.render_only, screenshot_time_paused=True,
                   all_phases=args.all_phases, includes_misses=args.all_phases,
+                  configuration=args.configuration,
+                  per_stroke_damage_verified=args.all_phases and not any(g['errors'] for g in gates),
                   fixed_capture_timestep=args.all_phases,
                   direct_play_verified=False, packaged_performance_verified=False)
     (out/'report.json').write_text(json.dumps(result, indent=2), encoding='utf-8')

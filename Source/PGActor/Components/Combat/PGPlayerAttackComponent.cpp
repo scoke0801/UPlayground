@@ -64,6 +64,14 @@ UPGPlayerAttackComponent::UPGPlayerAttackComponent()
     PrimaryComponentTick.TickGroup = TG_PrePhysics;
 }
 
+TArray<FPGPlayerSwingCue> UPGPlayerAttackComponent::BuildSwingCues(const UPGPlayerSkillProfile* Profile, const UAnimMontage* Montage)
+{
+    TArray<FPGPlayerSwingCue> Result;
+    if (Profile)
+        for (const auto& Hit : Profile->ResolveHitPhases(Montage))
+            Result.Add({Hit.Start, Profile->GetMontagePosition(Hit.Start), Hit});
+    return Result;
+}
 void UPGPlayerAttackComponent::BeginPlay()
 {
     Super::BeginPlay();
@@ -173,6 +181,8 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     auto* ASC = Player->GetPGAbilitySystemComponent();
     // Snapshot the complete profile, not an editor asset that could change mid-cast.
     ActiveProfile = DuplicateObject<UPGPlayerSkillProfile>(Profile, this);
+    // Damage and Niagara use the same resolved source-contact schedule for this cast.
+    ActiveProfile->HitPhases = Profile->ResolveHitPhases(Montage);
     ActiveMontage = Montage;
     PreparedVFX = Profile->SlashVFX.LoadSynchronous();
     PreparedProjectileSwingVFX = Profile->ProjectileSwingVFX.LoadSynchronous();
@@ -202,6 +212,7 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     LogicalTime = 0.f;
     Speed = FMath::Clamp(Profile->AttackSpeed * ASC->GetFrenzyRate(), .75f, 1.75f);
     bAimLocked = false; PresentedPhases.Reset();
+    SwingCues = BuildSwingCues(ActiveProfile, nullptr); NextSwingCue = 0;
     Player->FaceAimDirection(); LockedForward = Player->GetActorForwardVector();
     FindLeapDistance(ActiveProfile,LockedForward,LeapDistance);
     SavedMeshLocation = Player->GetMesh()->GetRelativeLocation();
@@ -236,6 +247,7 @@ void UPGPlayerAttackComponent::Stop(bool bNotify, bool bCancelled)
     CastContext.Reset();
     for (const auto& Slash : NiagaraSlashes) PGPlayerSlashFX::Release(Slash.Component.Get());
     NiagaraSlashes.Reset();
+    SwingCues.Reset(); NextSwingCue = 0;
     if (SlashMesh) SlashMesh->SetVisibility(false);
     SetComponentTickEnabled(false);
     if (auto* Player = Cast<APGCharacterPlayer>(GetOwner()))
@@ -319,6 +331,7 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
         float Next = FMath::Min(Until, LogicalTime + 1.f / 120.f);
         const auto Boundary = [&](float Value) { if (Value > LogicalTime + SMALL_NUMBER) Next = FMath::Min(Next, Value); };
         Boundary(ActiveProfile->AimLock);
+        if (SwingCues.IsValidIndex(NextSwingCue)) Boundary(SwingCues[NextSwingCue].Time);
         for (const auto& Hit : ActiveProfile->HitPhases) { Boundary(Hit.Start); Boundary(Hit.End); }
         for (const auto& Move : ActiveProfile->MovementSegments) { Boundary(Move.Start); Boundary(Move.End); }
         if (!bAimLocked)
@@ -330,13 +343,20 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
         const float Previous = LogicalTime;
         if (!MoveBetween(Previous, Next)) { Stop(true); return; }
         LogicalTime = Next;
+        while (SwingCues.IsValidIndex(NextSwingCue) && Next >= SwingCues[NextSwingCue].Time)
+        {
+            const auto& Cue = SwingCues[NextSwingCue++];
+            PresentHit(Cue.Presentation);
+        }
         for (const auto& Hit : ActiveProfile->HitPhases)
         {
-            if (Next >= Hit.Start && Next <= Hit.End)
+            // Also enter instantaneous contacts at time zero or within boundary epsilon.
+            const bool bEnteringPhase = !PresentedPhases.Contains(Hit.PhaseId) && Previous <= Hit.Start;
+            if (Next >= Hit.Start && (Next <= Hit.End || bEnteringPhase))
             {
                 if (!PresentedPhases.Contains(Hit.PhaseId))
                 {
-                    PresentedPhases.Add(Hit.PhaseId); PresentHit(Hit);
+                    PresentedPhases.Add(Hit.PhaseId);
                     if (Hit.Shape==EPGPlayerHitShape::Projectile)
                     {
                         FActorSpawnParameters Params; Params.Owner=Player; Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

@@ -14,6 +14,8 @@
 #include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
 #include "PGActor/Components/Combat/PGPlayerSkillProjectile.h"
 #include "PGData/DataAsset/Combat/PGPlayerSkillProfile.h"
+#include "Animation/AnimMontage.h"
+#include "Animation/AnimComposite.h"
 
 namespace
 {
@@ -42,6 +44,48 @@ void Stats(APGCharacterBase* Character, int32 HP=10000)
     auto* ASC=Character->GetPGAbilitySystemComponent(); ASC->InitAbilityActorInfo(Character,Character);
     ASC->InitializeCombatStats({{EPGStatType::Health,HP},{EPGStatType::Attack,100},{EPGStatType::Defense,0},{EPGStatType::CriticalRate,0}});
 }
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGPlayerMotionSwingTest,"PG.HackSlash.MotionSwingCues",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPGPlayerMotionSwingTest::RunTest(const FString&)
+{
+    auto* Profile = TestProfile();
+    auto* Montage = NewObject<UAnimMontage>();
+    Montage->SlotAnimTracks.Reset();
+    auto* Sequence = NewObject<UAnimComposite>();
+    for (float Time : {.1f, .3f, .5f, .7f, .9f})
+    {
+        auto& Notify = Sequence->Notifies.AddDefaulted_GetRef();
+        Notify.NotifyName = TEXT("P_HitPoint"); Notify.SetTime(Time);
+    }
+    FAnimSegment Segment; Segment.SetAnimReference(Sequence);
+    Segment.AnimStartTime = .2f; Segment.AnimEndTime = .8f;
+    Segment.StartPos = .1f; Segment.AnimPlayRate = 2.f; Segment.LoopingCount = 2;
+    Montage->SlotAnimTracks.AddDefaulted_GetRef().AnimTrack.AnimSegments.Add(Segment);
+    // Duplicate slots must not double-spawn. Three trimmed contacts x two loops = six cues.
+    const auto DuplicateSlot = Montage->SlotAnimTracks[0];
+    Montage->SlotAnimTracks.Add(DuplicateSlot);
+    const auto Cues = UPGPlayerAttackComponent::BuildSwingCues(Profile, Montage);
+    TestEqual(TEXT("All six motion strokes have FX"), Cues.Num(), 6);
+    const auto Hits = Profile->ResolveHitPhases(Montage);
+    TestEqual(TEXT("Every source stroke has a damage phase"), Hits.Num(), 6);
+    TestEqual(TEXT("Saved damage templates remain unchanged"), Profile->HitPhases.Num(), 2);
+    for (int32 Index = 0; Index < Cues.Num(); ++Index)
+    {
+        TestEqual(TEXT("Trim, offset, playback rate and loop mapping"), Cues[Index].MontageSeconds, .15f + Index * .1f, .0001f);
+        TestEqual(TEXT("Presentation agrees with sampled pose clock"), Profile->GetMontagePosition(Cues[Index].Time), Cues[Index].MontageSeconds, .0001f);
+        TestEqual(TEXT("Damage and Niagara start together"), Hits[Index].Start, Cues[Index].Time);
+        TestEqual(TEXT("Each stroke has an independent damage ID"), Hits[Index].PhaseId, Index);
+        TestEqual(TEXT("Each stroke retains its template damage"), Hits[Index].DamageMultiplier, 1.f);
+    }
+    Montage->SlotAnimTracks[0].AnimTrack.AnimSegments[0].AnimPlayRate = -2.f;
+    Montage->SlotAnimTracks.SetNum(1);
+    TestEqual(TEXT("Reverse playback retains all contacts"), UPGPlayerAttackComponent::BuildSwingCues(Profile, Montage).Num(), 6);
+    Profile->SwingNotifyName = NAME_None;
+    const auto Fallback = UPGPlayerAttackComponent::BuildSwingCues(Profile, Montage);
+    TestEqual(TEXT("Unmarked motions retain authored phase FX"), Fallback.Num(), 2);
+    TestEqual(TEXT("Fallback time unchanged"), Fallback[0].Time, Profile->HitPhases[0].Start);
+    return true;
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGPlayerProfileDataTest,"PG.HackSlash.ProfileValidation",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -212,14 +256,27 @@ bool FPGPlayerProfileLifecycleTest::RunTest(const FString&)
         Attack->CastContext=MakeShared<FPGSkillCastContext>(); Attack->CastContext->Caster=Player;
         Attack->CastContext->SkillID=112; Attack->CastContext->Attack=100;
         Attack->SavedWalkSpeed=600; Attack->LockedForward=FVector::ForwardVector; Attack->bAimLocked=true;
+        Attack->SwingCues=UPGPlayerAttackComponent::BuildSwingCues(Attack->ActiveProfile,nullptr);
+        Attack->NextSwingCue=0;
     };
     Begin(); auto Context=Attack->CastContext;
+    auto* Montage=NewObject<UAnimMontage>();
+    for (float Time : {0.f,.35f,.48f})
+    {
+        auto& Notify=Montage->Notifies.AddDefaulted_GetRef();
+        Notify.NotifyName=TEXT("P_HitPoint"); Notify.SetTime(Attack->ActiveProfile->GetMontagePosition(Time));
+    }
+    Attack->ActiveProfile->HitPhases=Attack->ActiveProfile->ResolveHitPhases(Montage);
+    Attack->ActiveProfile->HitPhases[0].End=Attack->ActiveProfile->HitPhases[0].Start;
+    Attack->SwingCues=UPGPlayerAttackComponent::BuildSwingCues(Attack->ActiveProfile,nullptr);
     Attack->Advance(.6f);
-    TestEqual(TEXT("600ms hitch evaluates both actual spatial windows"),Enemy->GetPGAbilitySystemComponent()->GetHealth(),9800.f);
-    TestEqual(TEXT("Two separate target sets"),Context->HitTargets.Num(),2);
+    TestEqual(TEXT("600ms hitch presents every motion stroke once"),Attack->GetPresentedSwingCount(),3);
+    TestEqual(TEXT("Every stroke deals damage once, including the middle thrust"),Enemy->GetPGAbilitySystemComponent()->GetHealth(),9700.f);
+    TestEqual(TEXT("Three separate target sets"),Context->HitTargets.Num(),3);
     Attack->Stop(); Begin();
     Attack->Advance(.27f); Attack->Stop(); Attack->Advance(.5f);
-    TestEqual(TEXT("Cancellation eliminates future hit"),Enemy->GetPGAbilitySystemComponent()->GetHealth(),9700.f);
+    TestTrue(TEXT("Cancellation clears pending motion FX"),Attack->GetSwingCues().IsEmpty());
+    TestEqual(TEXT("Cancellation eliminates future hit"),Enemy->GetPGAbilitySystemComponent()->GetHealth(),9600.f);
     TestEqual(TEXT("Movement speed restored"),Player->GetCharacterMovement()->MaxWalkSpeed,600.f);
     TestFalse(TEXT("No active tick after stop"),Attack->IsComponentTickEnabled());
     auto* Wall=World->SpawnActor<AActor>(); auto* Box=NewObject<UBoxComponent>(Wall);
@@ -227,7 +284,7 @@ bool FPGPlayerProfileLifecycleTest::RunTest(const FString&)
     Box->SetCollisionObjectType(ECC_WorldStatic); Box->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     Box->SetCollisionResponseToAllChannels(ECR_Block); Box->RegisterComponent(); Wall->SetActorLocation(FVector(75,0,50));
     Begin(); Attack->Advance(.6f);
-    TestEqual(TEXT("World wall occludes disc hits"),Enemy->GetPGAbilitySystemComponent()->GetHealth(),9700.f);
+    TestEqual(TEXT("World wall occludes disc hits"),Enemy->GetPGAbilitySystemComponent()->GetHealth(),9600.f);
     Attack->Stop(); Wall->Destroy(); Enemy->Destroy();
     auto* Floor=World->SpawnActor<AActor>(); auto* Ground=NewObject<UBoxComponent>(Floor);
     Floor->SetRootComponent(Ground); Ground->SetBoxExtent(FVector(2000,2000,50));
