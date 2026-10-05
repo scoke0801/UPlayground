@@ -21,7 +21,7 @@ public:
     bool Discard(FGuid Guid);
     bool SelectBuild(FName Id);
     bool SelectCharacter(FName Id);
-    bool SelectActiveSkills(int32 First, int32 Second);
+    bool SelectActiveSkills(const TArray<int32>& Skills);
     bool CanChangeSkills(FString& Reason) const;
     bool CommitReward(FGuid Token, int32 NextStage, EPGStatType Stat, int32 Amount, EPGCombatPerk Perk = EPGCombatPerk::None, int32 PerkPercent = 0, int32 RewardId = 0, bool bAdvance = true);
     bool EndRun(bool bVictory, int32 Stage);

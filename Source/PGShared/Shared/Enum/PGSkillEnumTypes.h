@@ -25,6 +25,12 @@ enum class EPGSkillSlot : uint8
 	SkillSlot_10,
 };
 
+namespace PGPlayerSkillSlots
+{
+	inline constexpr int32 Count = 4;
+	inline EPGSkillSlot Get(int32 Index) { return static_cast<EPGSkillSlot>(static_cast<int32>(EPGSkillSlot::SkillSlot_1) + Index); }
+}
+
 UENUM(BlueprintType)
 enum class EPGSkillNotifyType : uint8
 {

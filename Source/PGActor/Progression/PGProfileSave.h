@@ -17,7 +17,7 @@ public:
     UPROPERTY(SaveGame) FName BuildId;
     // Additive v1 field; an empty identity retains the original player appearance.
     UPROPERTY(SaveGame) FName CharacterId;
-    // Empty preserves the previous preset exactly. Additive version-1 migration.
+    // Empty retains preset choices; legacy pairs gain default extra slots when applied.
     UPROPERTY(SaveGame) TArray<int32> CustomActiveSkills;
     UPROPERTY(SaveGame) int32 Checkpoint = 1;
     UPROPERTY(SaveGame) int32 ClearedStages = 0;

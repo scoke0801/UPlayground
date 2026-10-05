@@ -135,9 +135,7 @@ bool UPGProfileSubsystem::ValidateCatalog(FString& Error) const
         { Error=TEXT("자유 장착 스킬 정의 누락/중복/프로필 오류"); return false; }
         Selectable.Add(Id);
     }
-    if (!Catalog->DefaultActiveSkills.IsEmpty() && (Catalog->DefaultActiveSkills.Num()!=2 ||
-        Catalog->DefaultActiveSkills[0]==Catalog->DefaultActiveSkills[1] ||
-        !Selectable.Contains(Catalog->DefaultActiveSkills[0]) || !Selectable.Contains(Catalog->DefaultActiveSkills[1])))
+    if (!Catalog->DefaultActiveSkills.IsEmpty() && !Catalog->IsValidActiveSelection(Catalog->DefaultActiveSkills))
     { Error=TEXT("기본 액티브 장착 정의 오류"); return false; }
     for (const auto& Build : Catalog->Builds)
     {
@@ -158,8 +156,7 @@ bool UPGProfileSubsystem::Validate(const UPGProfileSave* Candidate) const
     if (!Candidate || Candidate->Version != 1 || Candidate->Revision < 0 || Candidate->Checkpoint < 1 || Candidate->ClearedStages < 0 || Candidate->Items.Num() > 256) return false;
     if (!Candidate->CustomActiveSkills.IsEmpty())
     {
-        if (!Catalog || Candidate->CustomActiveSkills.Num() != 2 || Candidate->CustomActiveSkills[0] == Candidate->CustomActiveSkills[1]) return false;
-        for (int32 Id : Candidate->CustomActiveSkills) if (!Catalog->SelectableActiveSkills.Contains(Id)) return false;
+        if (!Catalog || !Catalog->IsValidActiveSelection(Candidate->CustomActiveSkills, true)) return false;
     }
     TSet<FGuid> Ids;
     for (const auto& Item : Candidate->Items)
@@ -286,12 +283,13 @@ bool UPGProfileSubsystem::CanChangeSkills(FString& Reason) const
     }
     return false;
 }
-bool UPGProfileSubsystem::SelectActiveSkills(int32 First, int32 Second)
+bool UPGProfileSubsystem::SelectActiveSkills(const TArray<int32>& Skills)
 {
     if (!CanChangeSkills(Status)) return false;
+    if (!Catalog->IsValidActiveSelection(Skills)) { Status = TEXT("서로 다른 액티브 스킬 4개를 선택하세요"); return false; }
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
-    Next->CustomActiveSkills = { First, Second };
-    if (!Validate(Next)) { Status = TEXT("서로 다른 액티브 스킬 2개를 선택하세요"); return false; }
+    Next->CustomActiveSkills = Skills;
+    if (!Validate(Next)) return false;
     auto* Tables = UPGDataTableManager::Get(this);
     for (int32 Id : Next->CustomActiveSkills)
     {
@@ -465,15 +463,17 @@ bool UPGProfileSubsystem::RestorePlayer(APGCharacterPlayer* Player)
     if (!Build) { Build = &Catalog->Builds[0]; Status = TEXT("이전 빌드 ID를 찾지 못해 기본 빌드를 적용했습니다"); }
     auto* Handler = Player->GetSkillHandler();
     TArray<FPGLoadoutEntry> Entries = Build->Skills;
-    if (Profile->CustomActiveSkills.Num() == 2)
-        for (int32 Index = 0; Index < 2; ++Index)
+    const auto ActiveSkills = Catalog->ResolveActiveSkills(Profile->CustomActiveSkills, Build->Id);
+    for (int32 Index = 0; Index < ActiveSkills.Num(); ++Index)
         {
-            const auto Slot = Index == 0 ? EPGSkillSlot::SkillSlot_1 : EPGSkillSlot::SkillSlot_2;
+            const auto Slot = PGPlayerSkillSlots::Get(Index);
+            // Preserve authored preset cooldowns, including legacy saves with no custom selection.
+            if (Profile->CustomActiveSkills.IsEmpty() && Entries.ContainsByPredicate([&](const auto& E){ return E.Slot == Slot && E.SkillId == ActiveSkills[Index]; })) continue;
             Entries.RemoveAll([Slot](const auto& E){ return E.Slot == Slot; });
-            FPGLoadoutEntry Entry; Entry.Slot = Slot; Entry.SkillId = Profile->CustomActiveSkills[Index]; Entries.Add(Entry);
+            FPGLoadoutEntry Entry; Entry.Slot = Slot; Entry.SkillId = ActiveSkills[Index]; Entries.Add(Entry);
         }
     bool bMappingChanged = false;
-    // Capture both old IDs before installing either new slot (including A/B swaps).
+    // Capture all old IDs before installing new slots (including swaps).
     for (const auto& Entry : Entries)
         if (const auto* Existing=Handler->GetSkillData(Entry.Slot); Existing && Existing->SkillId!=Entry.SkillId)
         { Handler->RemoveSkill(Entry.Slot); bMappingChanged=true; }

@@ -62,7 +62,7 @@ for item in SPEC['skills']:
     mapping.append({'skill':item['id'],'montage':montage.get_path_name(),'length':length,'pose':pose,'continuous_review_complete':False})
 assert unreal.DataTableFunctionLibrary.fill_data_table_from_json_string(table,json.dumps(rows,ensure_ascii=False))
 save(table); catalog.set_editor_property('selectable_active_skills',[110,111,112,113,114])
-catalog.set_editor_property('default_active_skills',[111,112]); save(catalog)
+catalog.set_editor_property('default_active_skills',[111,112,110,114]); save(catalog)
 current=json.loads(unreal.DataTableFunctionLibrary.export_data_table_to_json_string(table))
 for old,new in zip(before,current):
     for key in old:

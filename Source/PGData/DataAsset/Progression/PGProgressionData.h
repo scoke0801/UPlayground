@@ -66,6 +66,34 @@ public:
     UPROPERTY(EditAnywhere, Category="Characters") TArray<TSoftObjectPtr<class UPGCharacterAppearance>> PlayableCharacters;
     UPROPERTY(EditAnywhere, Category="Skills") TArray<int32> SelectableActiveSkills;
     UPROPERTY(EditAnywhere, Category="Skills") TArray<int32> DefaultActiveSkills;
+    bool IsValidActiveSelection(const TArray<int32>& Skills, bool bAllowLegacyPair = false) const
+    {
+        if (Skills.Num() != PGPlayerSkillSlots::Count && !(bAllowLegacyPair && Skills.Num() == 2)) return false;
+        TSet<int32> Seen;
+        for (int32 Id : Skills)
+        {
+            if (!SelectableActiveSkills.Contains(Id) || Seen.Contains(Id)) return false;
+            Seen.Add(Id);
+        }
+        return true;
+    }
+    // Preserve saved choices/preset order, filling older two-slot loadouts from authored defaults.
+    TArray<int32> ResolveActiveSkills(const TArray<int32>& Selection, FName BuildId) const
+    {
+        TArray<int32> Result;
+        auto Append = [&](int32 Id)
+        {
+            if (Result.Num() < PGPlayerSkillSlots::Count && SelectableActiveSkills.Contains(Id)) Result.AddUnique(Id);
+        };
+        for (int32 Id : Selection) Append(Id);
+        if (Selection.IsEmpty())
+            if (const auto* Build = Builds.FindByPredicate([BuildId](const auto& B){ return B.Id == BuildId; }))
+                for (int32 Index = 0; Index < PGPlayerSkillSlots::Count; ++Index)
+                    if (const auto* Entry = Build->Skills.FindByPredicate([Index](const auto& E){ return E.Slot == PGPlayerSkillSlots::Get(Index); })) Append(Entry->SkillId);
+        for (int32 Id : DefaultActiveSkills) Append(Id);
+        for (int32 Id : SelectableActiveSkills) Append(Id);
+        return Result;
+    }
     const FPGItemDataRow* FindItem(int32 Id) const { return Items.FindByPredicate([Id](const auto& I){ return I.Id == Id; }); }
     const FPGDropPool* FindDropPool(FName Id) const { return DropPools.FindByPredicate([Id](const auto& Pool){ return Pool.Id == Id; }); }
 };
