@@ -1,0 +1,4373 @@
+{
+  "schema_version": 1,
+  "engine_association": "5.8",
+  "assets": {
+    "/Game/DataCenter/Characters/DA_Bokusei": {
+      "kind": "appearance",
+      "fields": {
+        "id": "Bokusei",
+        "display_name": "Bokusei",
+        "reconstruct_scaled_translations": false,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=-0.000000,Y=-0.130523,Z=0.991445)",
+        "head_right_axis": "(X=1.000000,Y=0.000000,Z=0.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_05": "UpperChest",
+          "neck_01": "Neck",
+          "neck_02": "Neck",
+          "head": "head",
+          "clavicle_l": "Shoulder_L",
+          "upperarm_l": "upperarm_l",
+          "hand_l": "hand_l",
+          "thigh_l": "UpperLeg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_L",
+          "thumb_01_l": "ThumbProximal_L",
+          "thumb_03_l": "ThumbDistal_L",
+          "index_01_l": "IndexProximal_L",
+          "index_03_l": "IndexDistal_L",
+          "middle_01_l": "MiddleProximal_L",
+          "middle_03_l": "MiddleDistal_L",
+          "ring_01_l": "RingProximal_L",
+          "ring_03_l": "RingDistal_L",
+          "pinky_01_l": "LittleProximal_L",
+          "pinky_03_l": "LittleDistal_L",
+          "clavicle_r": "Shoulder_R",
+          "upperarm_r": "upperarm_r",
+          "hand_r": "hand_r",
+          "thigh_r": "UpperLeg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_R",
+          "thumb_01_r": "ThumbProximal_R",
+          "thumb_03_r": "ThumbDistal_R",
+          "index_01_r": "IndexProximal_R",
+          "index_03_r": "IndexDistal_R",
+          "middle_01_r": "MiddleProximal_R",
+          "middle_03_r": "MiddleDistal_R",
+          "ring_01_r": "RingProximal_R",
+          "ring_03_r": "RingDistal_R",
+          "pinky_01_r": "LittleProximal_R",
+          "pinky_03_r": "LittleDistal_R"
+        },
+        "parts": [],
+        "mesh": "/Game/Art/ToonTest/Bokusei/SK_Bokusei_ToonTest.SK_Bokusei_ToonTest",
+        "source_mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "retargeter": "/Game/DataCenter/Characters/RTG_Bokusei.RTG_Bokusei",
+        "grip_profiles": [
+          "(WeaponTag=(TagName=\"Weapon.Sword\"),SourceSocket=\"RightWeaponSocket\",TargetSocket=\"Hand_R\",GripOffset=(Rotation=(X=-1.000000,Y=0.000000,Z=0.000000,W=0.000000),Translation=(X=-2.300000,Y=6.300000,Z=1.851852),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),Fingers=((Bone=\"IndexProximal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=60.000000,Roll=0.000000)),(Bone=\"IndexIntermediate_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=75.000000,Roll=0.000000)),(Bone=\"IndexDistal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=69.000000,Roll=0.000000)),(Bone=\"MiddleProximal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=66.000000,Roll=0.000000)),(Bone=\"MiddleIntermediate_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=74.000000,Roll=0.000000)),(Bone=\"MiddleDistal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=68.000000,Roll=0.000000)),(Bone=\"RingProximal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=58.000000,Roll=0.000000)),(Bone=\"RingIntermediate_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=64.000000,Roll=0.000000)),(Bone=\"RingDistal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=66.000000,Roll=0.000000)),(Bone=\"LittleProximal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=40.000000,Roll=0.000000)),(Bone=\"LittleIntermediate_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=57.000000,Roll=0.000000)),(Bone=\"LittleDistal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=64.000000,Roll=0.000000)),(Bone=\"ThumbProximal_R\",ReferenceRotationOffset=(Pitch=14.000000,Yaw=-31.000000,Roll=-36.000000)),(Bone=\"ThumbIntermediate_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=41.000000,Roll=0.000000)),(Bone=\"ThumbDistal_R\",ReferenceRotationOffset=(Pitch=0.000000,Yaw=86.000000,Roll=0.000000))))"
+        ]
+      }
+    },
+    "/Game/DataCenter/Characters/IK_Bokusei_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_05",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_02",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_Bokusei_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/ToonTest/Bokusei/SK_Bokusei_ToonTest.SK_Bokusei_ToonTest",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "UpperChest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Shoulder_L",
+          "end": "Shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "UpperArm_L",
+          "end": "Hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "UpperLeg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_L",
+          "end": "Toes_L",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "ThumbProximal_L",
+          "end": "ThumbDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "IndexProximal_L",
+          "end": "IndexDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "MiddleProximal_L",
+          "end": "MiddleDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "RingProximal_L",
+          "end": "RingDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "LittleProximal_L",
+          "end": "LittleDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Shoulder_R",
+          "end": "Shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "UpperArm_R",
+          "end": "Hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "UpperLeg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_R",
+          "end": "Toes_R",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "ThumbProximal_R",
+          "end": "ThumbDistal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "IndexProximal_R",
+          "end": "IndexDistal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "MiddleProximal_R",
+          "end": "MiddleDistal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "RingProximal_R",
+          "end": "RingDistal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "LittleProximal_R",
+          "end": "LittleDistal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_Bokusei": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Bokusei_Target.IK_Bokusei_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Bokusei_Source.IK_Bokusei_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Bokusei_Target.IK_Bokusei_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_Bokusei_Source.IK_Bokusei_Source",
+        "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_Bokusei_Target.IK_Bokusei_Target",
+        "mesh": "/Game/Art/ToonTest/Bokusei/SK_Bokusei_ToonTest.SK_Bokusei_ToonTest",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "LowerLeg_R": "(X=-0.005304,Y=0.000000,Z=-0.001535,W=0.999985)",
+              "UpperLeg_R": "(X=-0.044517,Y=0.000000,Z=0.004992,W=0.998996)",
+              "LowerLeg_L": "(X=-0.005304,Y=0.000000,Z=0.001535,W=0.999985)",
+              "UpperLeg_L": "(X=-0.044517,Y=-0.000000,Z=-0.004993,W=0.998996)",
+              "LittleIntermediate_R": "(X=-0.026773,Y=-0.001919,Z=0.117223,W=0.992743)",
+              "LittleProximal_R": "(X=0.074135,Y=-0.006241,Z=0.384252,W=0.920226)",
+              "RingIntermediate_R": "(X=-0.007114,Y=-0.000278,Z=0.016563,W=0.999837)",
+              "RingProximal_R": "(X=-0.018554,Y=-0.005535,Z=0.345324,W=0.938284)",
+              "MiddleIntermediate_R": "(X=0.004924,Y=-0.000871,Z=0.053758,W=0.998541)",
+              "MiddleProximal_R": "(X=-0.049453,Y=-0.004925,Z=0.298166,W=0.953219)",
+              "IndexIntermediate_R": "(X=-0.002709,Y=-0.001057,Z=0.067227,W=0.997733)",
+              "IndexProximal_R": "(X=-0.121044,Y=-0.004350,Z=0.252248,W=0.960052)",
+              "ThumbIntermediate_R": "(X=-0.002620,Y=-0.002220,Z=0.146728,W=0.989171)",
+              "ThumbProximal_R": "(X=-0.101001,Y=0.000001,Z=0.059494,W=0.993106)",
+              "LowerArm_R": "(X=-0.053137,Y=-0.000000,Z=0.007133,W=0.998562)",
+              "UpperArm_R": "(X=-0.002802,Y=-0.000000,Z=0.346683,W=0.937978)",
+              "LittleIntermediate_L": "(X=-0.026761,Y=-0.001912,Z=0.117282,W=0.992736)",
+              "LittleProximal_L": "(X=0.074142,Y=-0.006245,Z=0.384304,W=0.920203)",
+              "RingIntermediate_L": "(X=-0.007121,Y=-0.000280,Z=0.016843,W=0.999833)",
+              "RingProximal_L": "(X=-0.018560,Y=-0.005536,Z=0.345294,W=0.938295)",
+              "MiddleIntermediate_L": "(X=0.004943,Y=-0.000875,Z=0.053913,W=0.998533)",
+              "MiddleProximal_L": "(X=-0.049462,Y=-0.004927,Z=0.298133,W=0.953229)",
+              "IndexIntermediate_L": "(X=-0.002743,Y=-0.001059,Z=0.067258,W=0.997731)",
+              "IndexProximal_L": "(X=-0.121042,Y=-0.004346,Z=0.252292,W=0.960041)",
+              "ThumbIntermediate_L": "(X=-0.002682,Y=-0.002218,Z=0.146452,W=0.989212)",
+              "ThumbProximal_L": "(X=-0.100986,Y=0.000016,Z=0.059626,W=0.993099)",
+              "LowerArm_L": "(X=-0.053137,Y=0.000000,Z=0.007136,W=0.998562)",
+              "UpperArm_L": "(X=-0.002801,Y=0.000000,Z=0.346677,W=0.937980)",
+              "Chest": "(X=0.021269,Y=-0.000000,Z=0.000000,W=0.999774)",
+              "Spine": "(X=-0.040650,Y=0.000000,Z=-0.000000,W=0.999173)",
+              "Hips": "(X=-0.032715,Y=0.000000,Z=0.000000,W=0.999465)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_LianLian": {
+      "kind": "appearance",
+      "fields": {
+        "id": "LianLian",
+        "display_name": "LianLian",
+        "reconstruct_scaled_translations": false,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=0.000000,Y=0.000000,Z=1.000000)",
+        "head_right_axis": "(X=1.000000,Y=0.000000,Z=0.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_05": "Chest",
+          "neck_01": "Neck",
+          "neck_02": "Neck",
+          "head": "head",
+          "clavicle_l": "Shoulder_L",
+          "upperarm_l": "Upper_Arm_L",
+          "hand_l": "hand_l",
+          "thigh_l": "Upper_Leg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_L",
+          "thumb_01_l": "Thumb_Proximal_L",
+          "thumb_03_l": "Thumb_Distal_L",
+          "index_01_l": "Index_Proximal_L",
+          "index_03_l": "Index_Distal_L",
+          "middle_01_l": "Middle_Proximal_L",
+          "middle_03_l": "Middle_Distal_L",
+          "ring_01_l": "Ring_Proximal_L",
+          "ring_03_l": "Ring_Distal_L",
+          "pinky_01_l": "Little_Proximal_L",
+          "pinky_03_l": "Little_Distal_L",
+          "clavicle_r": "Shoulder_R",
+          "upperarm_r": "Upper_Arm_R",
+          "hand_r": "hand_r",
+          "thigh_r": "Upper_Leg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_R",
+          "thumb_01_r": "Thumb_Proximal_R",
+          "thumb_03_r": "Thumb_Distal_R",
+          "index_01_r": "Index_Proximal_R",
+          "index_03_r": "Index_Distal_R",
+          "middle_01_r": "Middle_Proximal_R",
+          "middle_03_r": "Middle_Distal_R",
+          "ring_01_r": "Ring_Proximal_R",
+          "ring_03_r": "Ring_Distal_R",
+          "pinky_01_r": "Little_Proximal_R",
+          "pinky_03_r": "Little_Distal_R"
+        },
+        "parts": [],
+        "mesh": "/Game/Art/ToonTest/LianLian/SK_LianLian_ToonTest.SK_LianLian_ToonTest",
+        "source_mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "retargeter": "/Game/DataCenter/Characters/RTG_LianLian.RTG_LianLian",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_LianLian_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_05",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_02",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_LianLian_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/ToonTest/LianLian/SK_LianLian_ToonTest.SK_LianLian_ToonTest",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "Chest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Shoulder_L",
+          "end": "Shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "Upper_Arm_L",
+          "end": "Hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "Upper_Leg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_L",
+          "end": "Toes_L",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "Thumb_Proximal_L",
+          "end": "Thumb_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "Index_Proximal_L",
+          "end": "Index_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "Middle_Proximal_L",
+          "end": "Middle_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "Ring_Proximal_L",
+          "end": "Ring_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "Little_Proximal_L",
+          "end": "Little_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Shoulder_R",
+          "end": "Shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "Upper_Arm_R",
+          "end": "Hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "Upper_Leg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_R",
+          "end": "Toes_R",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "Thumb_Proximal_R",
+          "end": "Thumb_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "Index_Proximal_R",
+          "end": "Index_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "Middle_Proximal_R",
+          "end": "Middle_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "Ring_Proximal_R",
+          "end": "Ring_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "Little_Proximal_R",
+          "end": "Little_Distal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_LianLian": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_LianLian_Target.IK_LianLian_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_LianLian_Source.IK_LianLian_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_LianLian_Target.IK_LianLian_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_LianLian_Source.IK_LianLian_Source",
+        "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_LianLian_Target.IK_LianLian_Target",
+        "mesh": "/Game/Art/ToonTest/LianLian/SK_LianLian_ToonTest.SK_LianLian_ToonTest",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "Lower_Leg_R": "(X=0.015977,Y=-0.000000,Z=0.002924,W=0.999868)",
+              "Upper_Leg_R": "(X=0.052998,Y=-0.000000,Z=-0.004994,W=0.998582)",
+              "Lower_Leg_L": "(X=0.015977,Y=-0.000000,Z=-0.002924,W=0.999868)",
+              "Upper_Leg_L": "(X=0.052998,Y=-0.000000,Z=0.004995,W=0.998582)",
+              "Little_Intermediate_R": "(X=0.000006,Y=0.021441,Z=0.036498,W=0.999104)",
+              "Little_Proximal_R": "(X=-0.000000,Y=0.009192,Z=0.423591,W=0.905807)",
+              "Ring_Intermediate_R": "(X=0.000002,Y=0.005036,Z=0.008026,W=0.999955)",
+              "Ring_Proximal_R": "(X=-0.000010,Y=0.056290,Z=0.374234,W=0.925624)",
+              "Middle_Intermediate_R": "(X=-0.000000,Y=0.003633,Z=0.045846,W=0.998942)",
+              "Middle_Proximal_R": "(X=0.000019,Y=0.084419,Z=0.314124,W=0.945621)",
+              "Index_Intermediate_R": "(X=-0.000000,Y=0.001705,Z=0.056169,W=0.998420)",
+              "Index_Proximal_R": "(X=0.000019,Y=0.118576,Z=0.287984,W=0.950266)",
+              "Thumb_Intermediate_R": "(X=0.000023,Y=0.101295,Z=0.140991,W=0.984815)",
+              "Thumb_Proximal_R": "(X=0.000001,Y=0.139975,Z=-0.001082,W=0.990154)",
+              "Lower_Arm_R": "(X=0.000021,Y=0.056493,Z=0.003717,W=0.998396)",
+              "Upper_Arm_R": "(X=0.001903,Y=0.061374,Z=-0.341661,W=0.937815)",
+              "Little_Intermediate_L": "(X=0.000000,Y=-0.021451,Z=0.036350,W=0.999109)",
+              "Little_Proximal_L": "(X=0.000000,Y=-0.009193,Z=0.423623,W=0.905792)",
+              "Ring_Intermediate_L": "(X=0.000000,Y=-0.005034,Z=0.007755,W=0.999957)",
+              "Ring_Proximal_L": "(X=0.000000,Y=-0.056303,Z=0.374339,W=0.925581)",
+              "Middle_Intermediate_L": "(X=-0.000000,Y=-0.003616,Z=0.046013,W=0.998934)",
+              "Middle_Proximal_L": "(X=0.000000,Y=-0.084427,Z=0.314017,W=0.945656)",
+              "Index_Intermediate_L": "(X=-0.000000,Y=-0.001726,Z=0.056320,W=0.998411)",
+              "Index_Proximal_L": "(X=0.000000,Y=-0.118563,Z=0.287921,W=0.950287)",
+              "Thumb_Intermediate_L": "(X=0.000000,Y=-0.101360,Z=0.140978,W=0.984810)",
+              "Thumb_Proximal_L": "(X=0.000000,Y=-0.139981,Z=-0.001064,W=0.990154)",
+              "Lower_Arm_L": "(X=0.000021,Y=-0.056494,Z=-0.003715,W=0.998396)",
+              "Upper_Arm_L": "(X=0.001903,Y=-0.061372,Z=0.341655,W=0.937817)",
+              "Spine": "(X=-0.084428,Y=0.000000,Z=-0.000000,W=0.996430)",
+              "Hips": "(X=-0.054276,Y=0.000000,Z=0.000000,W=0.998526)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_Honoka": {
+      "kind": "appearance",
+      "fields": {
+        "id": "Honoka",
+        "display_name": "Honoka",
+        "reconstruct_scaled_translations": false,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=-23.500000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=0.000000,Y=0.000000,Z=1.000000)",
+        "head_right_axis": "(X=1.000000,Y=-0.000000,Z=-0.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_05": "Chest",
+          "neck_01": "Neck",
+          "neck_02": "Neck",
+          "head": "head",
+          "clavicle_l": "Shoulder_l",
+          "upperarm_l": "upperarm_l",
+          "hand_l": "hand_l",
+          "thigh_l": "UpperLeg_l",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_l",
+          "thumb_01_l": "Thumb1_l",
+          "thumb_03_l": "Thumb3_l",
+          "index_01_l": "Index1_l",
+          "index_03_l": "Index3_l",
+          "middle_01_l": "Middle1_l",
+          "middle_03_l": "Middle3_l",
+          "ring_01_l": "Ring1_l",
+          "ring_03_l": "Ring3_l",
+          "pinky_01_l": "Little1_l",
+          "pinky_03_l": "Little3_l",
+          "clavicle_r": "Shoulder_r",
+          "upperarm_r": "upperarm_r",
+          "hand_r": "hand_r",
+          "thigh_r": "UpperLeg_r",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_r",
+          "thumb_01_r": "Thumb1_r",
+          "thumb_03_r": "Thumb3_r",
+          "index_01_r": "Index1_r",
+          "index_03_r": "Index3_r",
+          "middle_01_r": "Middle1_r",
+          "middle_03_r": "Middle3_r",
+          "ring_01_r": "Ring1_r",
+          "ring_03_r": "Ring3_r",
+          "pinky_01_r": "Little1_r",
+          "pinky_03_r": "Little3_r"
+        },
+        "parts": [],
+        "mesh": "/Game/Art/ToonTest/Honoka/SK_Honoka_ToonTest.SK_Honoka_ToonTest",
+        "source_mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "retargeter": "/Game/DataCenter/Characters/RTG_Honoka.RTG_Honoka",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_Honoka_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_05",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_02",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_Honoka_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/ToonTest/Honoka/SK_Honoka_ToonTest.SK_Honoka_ToonTest",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "Chest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Shoulder_l",
+          "end": "Shoulder_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "UpperArm_l",
+          "end": "Hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "UpperLeg_l",
+          "end": "Foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_l",
+          "end": "Toes_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "Thumb1_l",
+          "end": "Thumb3_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "Index1_l",
+          "end": "Index3_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "Middle1_l",
+          "end": "Middle3_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "Ring1_l",
+          "end": "Ring3_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "Little1_l",
+          "end": "Little3_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Shoulder_r",
+          "end": "Shoulder_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "UpperArm_r",
+          "end": "Hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "UpperLeg_r",
+          "end": "Foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_r",
+          "end": "Toes_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "Thumb1_r",
+          "end": "Thumb3_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "Index1_r",
+          "end": "Index3_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "Middle1_r",
+          "end": "Middle3_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "Ring1_r",
+          "end": "Ring3_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "Little1_r",
+          "end": "Little3_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_Honoka": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Honoka_Target.IK_Honoka_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Honoka_Source.IK_Honoka_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Honoka_Target.IK_Honoka_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_Honoka_Source.IK_Honoka_Source",
+        "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_Honoka_Target.IK_Honoka_Target",
+        "mesh": "/Game/Art/ToonTest/Honoka/SK_Honoka_ToonTest.SK_Honoka_ToonTest",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "LowerLeg_r": "(X=0.100854,Y=-0.000000,Z=0.055354,W=0.993352)",
+              "UpperLeg_r": "(X=-0.056007,Y=-0.000219,Z=-0.047431,W=0.997297)",
+              "LowerLeg_l": "(X=0.100854,Y=0.000000,Z=-0.055354,W=0.993352)",
+              "UpperLeg_l": "(X=-0.056007,Y=0.000219,Z=0.047431,W=0.997297)",
+              "Little2_r": "(X=0.136827,Y=0.000000,Z=-0.068342,W=0.988131)",
+              "Little1_r": "(X=0.494922,Y=-0.000000,Z=-0.043093,W=0.866766)",
+              "Ring2_r": "(X=0.095602,Y=0.000000,Z=-0.070904,W=0.992840)",
+              "Ring1_r": "(X=0.444519,Y=0.000000,Z=-0.080353,W=0.891302)",
+              "Middle2_r": "(X=0.130910,Y=0.000000,Z=-0.007995,W=0.991263)",
+              "Middle1_r": "(X=0.389847,Y=-0.000001,Z=-0.118332,W=0.912613)",
+              "Index2_r": "(X=0.113764,Y=-0.000000,Z=-0.033857,W=0.992866)",
+              "Index1_r": "(X=0.357890,Y=-0.000001,Z=-0.137206,W=0.923106)",
+              "Thumb2_r": "(X=0.099502,Y=-0.000000,Z=-0.124999,W=0.987011)",
+              "Thumb1_r": "(X=-0.036003,Y=-0.000000,Z=-0.122549,W=0.991783)",
+              "LowerArm_r": "(X=-0.010148,Y=0.000000,Z=0.081874,W=0.996561)",
+              "UpperArm_r": "(X=-0.075779,Y=-0.000000,Z=-0.345209,W=0.935078)",
+              "Little2_l": "(X=0.136827,Y=-0.000000,Z=0.068338,W=0.988131)",
+              "Little1_l": "(X=0.494935,Y=0.000000,Z=0.043089,W=0.866759)",
+              "Ring2_l": "(X=0.095629,Y=-0.000000,Z=0.070899,W=0.992838)",
+              "Ring1_l": "(X=0.444544,Y=-0.000000,Z=0.080360,W=0.891289)",
+              "Middle2_l": "(X=0.130952,Y=-0.000000,Z=0.007940,W=0.991258)",
+              "Middle1_l": "(X=0.389847,Y=0.000001,Z=0.118338,W=0.912613)",
+              "Index2_l": "(X=0.113757,Y=0.000000,Z=0.033910,W=0.992865)",
+              "Index1_l": "(X=0.357901,Y=0.000001,Z=0.137191,W=0.923104)",
+              "Thumb2_l": "(X=0.099430,Y=0.000000,Z=0.124963,W=0.987023)",
+              "Thumb1_l": "(X=-0.035952,Y=0.000000,Z=0.122586,W=0.991780)",
+              "LowerArm_l": "(X=-0.010155,Y=-0.000000,Z=-0.081873,W=0.996561)",
+              "UpperArm_l": "(X=-0.075777,Y=0.000000,Z=0.345203,W=0.935080)",
+              "Spine": "(X=-0.154959,Y=0.000000,Z=0.000000,W=0.987921)",
+              "Hips": "(X=-0.000519,Y=-0.000000,Z=0.000000,W=0.998652)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_Hichi": {
+      "kind": "appearance",
+      "fields": {
+        "id": "Hichi",
+        "display_name": "Hichi",
+        "reconstruct_scaled_translations": false,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=-0.000000,Y=0.008097,Z=0.999967)",
+        "head_right_axis": "(X=1.000000,Y=-0.000000,Z=0.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_05": "Chest",
+          "neck_01": "Neck",
+          "neck_02": "Neck",
+          "head": "head",
+          "clavicle_l": "Shoulder_L",
+          "upperarm_l": "upperarm_l",
+          "hand_l": "hand_l",
+          "thigh_l": "UpperLeg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toe_L",
+          "thumb_01_l": "ThumbProximal_L",
+          "thumb_03_l": "ThumbProximal_L_002",
+          "index_01_l": "IndexProximal_L",
+          "index_03_l": "IndexProximal_L_002",
+          "middle_01_l": "MiddleProximal_L",
+          "middle_03_l": "MiddleProximal_L_002",
+          "ring_01_l": "RingProximal_L",
+          "ring_03_l": "RingProximal_L_002",
+          "pinky_01_l": "LittleProximal_L",
+          "pinky_03_l": "LittleProximal_L_002",
+          "clavicle_r": "Shoulder_R",
+          "upperarm_r": "upperarm_r",
+          "hand_r": "hand_r",
+          "thigh_r": "UpperLeg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toe_R",
+          "thumb_01_r": "ThumbProximal_R",
+          "thumb_03_r": "ThumbProximal_R_002",
+          "index_01_r": "IndexProximal_R",
+          "index_03_r": "IndexProximal_R_002",
+          "middle_01_r": "MiddleProximal_R",
+          "middle_03_r": "MiddleProximal_R_002",
+          "ring_01_r": "RingProximal_R",
+          "ring_03_r": "RingProximal_R_002",
+          "pinky_01_r": "LittleProximal_R",
+          "pinky_03_r": "LittleProximal_R_002"
+        },
+        "parts": [],
+        "mesh": "/Game/Art/ToonCharacters/Hichi/SK_PG_Hichi.SK_PG_Hichi",
+        "source_mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "retargeter": "/Game/DataCenter/Characters/RTG_Hichi.RTG_Hichi",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_Hichi_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_05",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_02",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_Hichi_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/ToonCharacters/Hichi/SK_PG_Hichi.SK_PG_Hichi",
+      "root": "None",
+      "pelvis": "Hip",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "Chest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Shoulder_L",
+          "end": "Shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "UpperArm_L",
+          "end": "Hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "UpperLeg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toe_l",
+          "end": "Toe_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "ThumbProximal_L",
+          "end": "ThumbProximal_L_002",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "IndexProximal_L",
+          "end": "IndexProximal_L_002",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "MiddleProximal_L",
+          "end": "MiddleProximal_L_002",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "RingProximal_L",
+          "end": "RingProximal_L_002",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "LittleProximal_L",
+          "end": "LittleProximal_L_002",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Shoulder_R",
+          "end": "Shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "UpperArm_R",
+          "end": "Hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "UpperLeg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toe_r",
+          "end": "Toe_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "ThumbProximal_R",
+          "end": "ThumbProximal_R_002",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "IndexProximal_R",
+          "end": "IndexProximal_R_002",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "MiddleProximal_R",
+          "end": "MiddleProximal_R_002",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "RingProximal_R",
+          "end": "RingProximal_R_002",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "LittleProximal_R",
+          "end": "LittleProximal_R_002",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_Hichi": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hip\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Hichi_Target.IK_Hichi_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Hichi_Source.IK_Hichi_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Hichi_Target.IK_Hichi_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_Hichi_Source.IK_Hichi_Source",
+        "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_Hichi_Target.IK_Hichi_Target",
+        "mesh": "/Game/Art/ToonCharacters/Hichi/SK_PG_Hichi.SK_PG_Hichi",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "LowerLeg_R": "(X=-0.073473,Y=0.000000,Z=-0.000361,W=0.997297)",
+              "UpperLeg_R": "(X=-0.018874,Y=0.000000,Z=0.012745,W=0.999741)",
+              "LittleProximal_R_001": "(X=0.156989,Y=0.000000,Z=-0.005326,W=0.987586)",
+              "LittleProximal_R": "(X=0.374939,Y=0.000000,Z=-0.007340,W=0.927021)",
+              "RingProximal_R_001": "(X=0.026233,Y=0.000000,Z=0.006253,W=0.999636)",
+              "RingProximal_R": "(X=0.356353,Y=0.000001,Z=-0.055378,W=0.932709)",
+              "MiddleProximal_R_001": "(X=0.090762,Y=0.000000,Z=-0.000094,W=0.995873)",
+              "MiddleProximal_R": "(X=0.287430,Y=-0.000000,Z=-0.089895,W=0.953574)",
+              "IndexProximal_R_001": "(X=0.079217,Y=0.000000,Z=-0.016628,W=0.996719)",
+              "IndexProximal_R": "(X=0.281316,Y=-0.000001,Z=-0.121269,W=0.951922)",
+              "ThumbProximal_R_001": "(X=0.063848,Y=0.000001,Z=-0.168116,W=0.983697)",
+              "ThumbProximal_R": "(X=-0.049610,Y=0.000000,Z=-0.003305,W=0.998763)",
+              "LowerArm_R": "(X=-0.060365,Y=0.000030,Z=-0.000767,W=0.998176)",
+              "UpperArm_R": "(X=-0.051635,Y=0.000745,Z=-0.340882,W=0.938687)",
+              "LittleProximal_L_001": "(X=0.156978,Y=0.000000,Z=0.005320,W=0.987588)",
+              "LittleProximal_L": "(X=0.374956,Y=0.000000,Z=0.007340,W=0.927013)",
+              "RingProximal_L_001": "(X=0.026240,Y=-0.000000,Z=-0.006249,W=0.999636)",
+              "RingProximal_L": "(X=0.356380,Y=0.000000,Z=0.055388,W=0.932698)",
+              "MiddleProximal_L_001": "(X=0.090789,Y=0.000000,Z=0.000070,W=0.995870)",
+              "MiddleProximal_L": "(X=0.287431,Y=-0.000000,Z=0.089906,W=0.953573)",
+              "IndexProximal_L_001": "(X=0.079207,Y=-0.000000,Z=0.016657,W=0.996719)",
+              "IndexProximal_L": "(X=0.281329,Y=-0.000002,Z=0.121258,W=0.951919)",
+              "ThumbProximal_L_001": "(X=0.063806,Y=-0.000000,Z=0.168058,W=0.983710)",
+              "ThumbProximal_L": "(X=-0.049577,Y=0.000000,Z=0.003348,W=0.998765)",
+              "LowerArm_L": "(X=-0.060366,Y=-0.000030,Z=0.000768,W=0.998176)",
+              "UpperArm_L": "(X=-0.051633,Y=-0.000745,Z=0.340876,W=0.938689)",
+              "Spine": "(X=-0.084428,Y=0.000000,Z=-0.000000,W=0.996430)",
+              "LowerLeg_L": "(X=-0.073473,Y=-0.000000,Z=0.000361,W=0.997297)",
+              "UpperLeg_L": "(X=-0.018874,Y=-0.000000,Z=-0.012745,W=0.999741)",
+              "Hip": "(X=-0.049021,Y=0.000000,Z=0.000000,W=0.998798)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_Siuha": {
+      "kind": "appearance",
+      "fields": {
+        "id": "Siuha",
+        "display_name": "Siuha",
+        "reconstruct_scaled_translations": false,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=-0.000000,Y=-0.024573,Z=0.999698)",
+        "head_right_axis": "(X=1.000000,Y=-0.000000,Z=0.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_05": "Chest",
+          "neck_01": "Neck",
+          "neck_02": "Neck",
+          "head": "head",
+          "clavicle_l": "Shoulder_L",
+          "upperarm_l": "upperarm_l",
+          "hand_l": "hand_l",
+          "thigh_l": "UpperLeg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toe_L",
+          "thumb_01_l": "ThumbProximal_L",
+          "thumb_03_l": "ThumbDistal_L",
+          "index_01_l": "IndexProximal_L",
+          "index_03_l": "IndexDistal_L",
+          "middle_01_l": "MiddleProximal_L",
+          "middle_03_l": "MiddleDistal_L",
+          "ring_01_l": "RingProximal_L",
+          "ring_03_l": "RingDistal_L",
+          "pinky_01_l": "LittleProximal_L",
+          "pinky_03_l": "LittleDistal_L",
+          "clavicle_r": "Shoulder_R",
+          "upperarm_r": "upperarm_r",
+          "hand_r": "hand_r",
+          "thigh_r": "UpperLeg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toe_R",
+          "thumb_01_r": "ThumbProximal_R",
+          "thumb_03_r": "ThumbDistal_R",
+          "index_01_r": "IndexProximal_R",
+          "index_03_r": "IndexDistal_R",
+          "middle_01_r": "MiddleProximal_R",
+          "middle_03_r": "MiddleDistal_R",
+          "ring_01_r": "RingProximal_R",
+          "ring_03_r": "RingDistal_R",
+          "pinky_01_r": "LittleProximal_R",
+          "pinky_03_r": "LittleDistal_R"
+        },
+        "parts": [],
+        "mesh": "/Game/Art/ToonCharacters/Suiha/SK_PG_Suiha.SK_PG_Suiha",
+        "source_mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "retargeter": "/Game/DataCenter/Characters/RTG_Siuha.RTG_Siuha",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_Siuha_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_05",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_02",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_Siuha_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/ToonCharacters/Suiha/SK_PG_Suiha.SK_PG_Suiha",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "Chest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Shoulder_L",
+          "end": "Shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "UpperArm_L",
+          "end": "Hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "UpperLeg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toe_l",
+          "end": "Toe_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "ThumbProximal_L",
+          "end": "ThumbDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "IndexProximal_L",
+          "end": "IndexDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "MiddleProximal_L",
+          "end": "MiddleDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "RingProximal_L",
+          "end": "RingDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "LittleProximal_L",
+          "end": "LittleDistal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Shoulder_R",
+          "end": "Shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "UpperArm_R",
+          "end": "Hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "UpperLeg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toe_r",
+          "end": "Toe_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "ThumbProximal_R",
+          "end": "ThumbDistal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "IndexProximal_R",
+          "end": "IndexDistal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "MiddleProximal_R",
+          "end": "MiddleDistal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "RingProximal_R",
+          "end": "RingDistal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "LittleProximal_R",
+          "end": "LittleDistal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_Siuha": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Siuha_Target.IK_Siuha_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Siuha_Source.IK_Siuha_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Siuha_Target.IK_Siuha_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_Siuha_Source.IK_Siuha_Source",
+        "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_Siuha_Target.IK_Siuha_Target",
+        "mesh": "/Game/Art/ToonCharacters/Suiha/SK_PG_Suiha.SK_PG_Suiha",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "LowerLeg_R": "(X=-0.086261,Y=-0.000000,Z=0.035259,W=0.995645)",
+              "UpperLeg_R": "(X=0.076757,Y=0.000000,Z=-0.023761,W=0.996765)",
+              "LowerLeg_L": "(X=-0.086260,Y=0.000000,Z=-0.035260,W=0.995645)",
+              "UpperLeg_L": "(X=0.076756,Y=0.000000,Z=0.023762,W=0.996765)",
+              "LittleIntermediate_R": "(X=0.145469,Y=0.000001,Z=-0.030178,W=0.988794)",
+              "LittleProximal_R": "(X=0.405162,Y=0.000001,Z=0.078745,W=0.909983)",
+              "RingIntermediate_R": "(X=0.064805,Y=0.000005,Z=-0.072893,W=0.995203)",
+              "RingProximal_R": "(X=0.360565,Y=-0.000000,Z=0.008708,W=0.932051)",
+              "MiddleIntermediate_R": "(X=0.098190,Y=0.000000,Z=-0.002393,W=0.995109)",
+              "MiddleProximal_R": "(X=0.292804,Y=-0.000003,Z=-0.067079,W=0.953433)",
+              "ThumbIntermediate_R": "(X=0.017754,Y=-0.000009,Z=0.132012,W=0.991031)",
+              "ThumbProximal_R": "(X=0.011467,Y=0.000002,Z=0.120901,W=0.992558)",
+              "IndexIntermediate_R": "(X=0.105485,Y=0.000001,Z=-0.019961,W=0.994159)",
+              "IndexProximal_R": "(X=0.256014,Y=0.000001,Z=-0.127237,W=0.957966)",
+              "LowerArm_R": "(X=-0.021854,Y=0.000000,Z=-0.098197,W=0.994912)",
+              "UpperArm_R": "(X=0.353244,Y=-0.003498,Z=-0.073411,W=0.932238)",
+              "LittleIntermediate_L": "(X=0.145463,Y=-0.000001,Z=0.030169,W=0.988795)",
+              "LittleProximal_L": "(X=0.405154,Y=-0.000000,Z=-0.078743,W=0.909987)",
+              "RingIntermediate_L": "(X=0.065072,Y=-0.000003,Z=0.072654,W=0.995203)",
+              "RingProximal_L": "(X=0.360573,Y=-0.000001,Z=-0.008694,W=0.932048)",
+              "MiddleIntermediate_L": "(X=0.098203,Y=0.000000,Z=0.002348,W=0.995108)",
+              "MiddleProximal_L": "(X=0.292775,Y=-0.000000,Z=0.067089,W=0.953441)",
+              "ThumbIntermediate_L": "(X=0.017778,Y=0.000000,Z=-0.131990,W=0.991033)",
+              "ThumbProximal_L": "(X=0.011467,Y=0.000005,Z=-0.120914,W=0.992556)",
+              "IndexIntermediate_L": "(X=0.105446,Y=-0.000002,Z=0.020010,W=0.994162)",
+              "IndexProximal_L": "(X=0.256038,Y=0.000005,Z=0.127225,W=0.957961)",
+              "LowerArm_L": "(X=-0.021841,Y=0.000000,Z=0.098198,W=0.994912)",
+              "UpperArm_L": "(X=0.353236,Y=0.003498,Z=0.073407,W=0.932242)",
+              "Spine": "(X=-0.156758,Y=-0.000000,Z=-0.000000,W=0.987637)",
+              "Hips": "(X=-0.000531,Y=-0.000000,Z=-0.000000,W=0.998591)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_Lili": {
+      "kind": "appearance",
+      "fields": {
+        "id": "Lili",
+        "display_name": "Lili",
+        "reconstruct_scaled_translations": false,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=0.000000,Y=-0.029474,Z=0.999566)",
+        "head_right_axis": "(X=1.000000,Y=0.000000,Z=0.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_05": "Chest",
+          "neck_01": "Neck",
+          "neck_02": "Neck",
+          "head": "head",
+          "clavicle_l": "Shoulder_L",
+          "upperarm_l": "Upper_Arm_L",
+          "hand_l": "hand_l",
+          "thigh_l": "Upper_Leg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_L",
+          "thumb_01_l": "Thumb_Proximal_L",
+          "thumb_03_l": "Thumb_Distal_L",
+          "index_01_l": "Index_Proximal_L",
+          "index_03_l": "Index_Distal_L",
+          "middle_01_l": "Middle_Proximal_L",
+          "middle_03_l": "Middle_Distal_L",
+          "ring_01_l": "Ring_Proximal_L",
+          "ring_03_l": "Ring_Distal_L",
+          "pinky_01_l": "Little_Proximal_L",
+          "pinky_03_l": "Little_Distal_L",
+          "clavicle_r": "Shoulder_R",
+          "upperarm_r": "Upper_Arm_R",
+          "hand_r": "hand_r",
+          "thigh_r": "Upper_Leg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_R",
+          "thumb_01_r": "Thumb_Proximal_R",
+          "thumb_03_r": "Thumb_Distal_R",
+          "index_01_r": "Index_Proximal_R",
+          "index_03_r": "Index_Distal_R",
+          "middle_01_r": "Middle_Proximal_R",
+          "middle_03_r": "Middle_Distal_R",
+          "ring_01_r": "Ring_Proximal_R",
+          "ring_03_r": "Ring_Distal_R",
+          "pinky_01_r": "Little_Proximal_R",
+          "pinky_03_r": "Little_Distal_R"
+        },
+        "parts": [],
+        "mesh": "/Game/Art/ToonCharacters/lili/SK_PG_lili.SK_PG_lili",
+        "source_mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "retargeter": "/Game/DataCenter/Characters/RTG_Lili.RTG_Lili",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_Lili_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_05",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_02",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_Lili_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/ToonCharacters/lili/SK_PG_lili.SK_PG_lili",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "Chest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Shoulder_L",
+          "end": "Shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "Upper_Arm_L",
+          "end": "Hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "Upper_Leg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_L",
+          "end": "Toes_L",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "Thumb_Proximal_L",
+          "end": "Thumb_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "Index_Proximal_L",
+          "end": "Index_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "Middle_Proximal_L",
+          "end": "Middle_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "Ring_Proximal_L",
+          "end": "Ring_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "Little_Proximal_L",
+          "end": "Little_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Shoulder_R",
+          "end": "Shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "Upper_Arm_R",
+          "end": "Hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "Upper_Leg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_R",
+          "end": "Toes_R",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "Thumb_Proximal_R",
+          "end": "Thumb_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "Index_Proximal_R",
+          "end": "Index_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "Middle_Proximal_R",
+          "end": "Middle_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "Ring_Proximal_R",
+          "end": "Ring_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "Little_Proximal_R",
+          "end": "Little_Distal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_Lili": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Lili_Target.IK_Lili_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Lili_Source.IK_Lili_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Lili_Target.IK_Lili_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_Lili_Source.IK_Lili_Source",
+        "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_Lili_Target.IK_Lili_Target",
+        "mesh": "/Game/Art/ToonCharacters/lili/SK_PG_lili.SK_PG_lili",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "Lower_Leg_R": "(X=-0.013604,Y=0.000000,Z=0.002802,W=0.999904)",
+              "Upper_Leg_R": "(X=0.107746,Y=-0.000000,Z=-0.005017,W=0.994166)",
+              "Lower_Leg_L": "(X=-0.013604,Y=0.000000,Z=-0.002802,W=0.999904)",
+              "Upper_Leg_L": "(X=0.107746,Y=-0.000000,Z=0.005017,W=0.994166)",
+              "Little_Intermediate_R": "(X=0.070826,Y=-0.000008,Z=-0.041685,W=0.996617)",
+              "Little_Proximal_R": "(X=0.428043,Y=0.000006,Z=-0.046969,W=0.902537)",
+              "Ring_Intermediate_R": "(X=0.008402,Y=0.000000,Z=-0.000431,W=0.999965)",
+              "Ring_Proximal_R": "(X=0.375994,Y=-0.000067,Z=-0.092011,W=0.922043)",
+              "Middle_Intermediate_R": "(X=0.025773,Y=-0.000000,Z=-0.003446,W=0.999662)",
+              "Middle_Proximal_R": "(X=0.317839,Y=-0.000009,Z=-0.117606,W=0.940823)",
+              "Index_Intermediate_R": "(X=0.042711,Y=0.000001,Z=-0.003794,W=0.999080)",
+              "Index_Proximal_R": "(X=0.287768,Y=0.000000,Z=-0.150314,W=0.945830)",
+              "Thumb_Intermediate_R": "(X=0.168020,Y=-0.000023,Z=-0.044344,W=0.984786)",
+              "Thumb_Proximal_R": "(X=0.114463,Y=0.000002,Z=-0.164169,W=0.979769)",
+              "Lower_Arm_R": "(X=-0.007158,Y=-0.000028,Z=-0.036800,W=0.999297)",
+              "Upper_Arm_R": "(X=0.330654,Y=-0.000002,Z=-0.085149,W=0.939903)",
+              "Little_Intermediate_L": "(X=0.070687,Y=0.000000,Z=0.041693,W=0.996627)",
+              "Little_Proximal_L": "(X=0.428117,Y=-0.000000,Z=0.046971,W=0.902502)",
+              "Ring_Intermediate_L": "(X=0.008637,Y=-0.000000,Z=0.000437,W=0.999963)",
+              "Ring_Proximal_L": "(X=0.375892,Y=0.000041,Z=0.092018,W=0.922083)",
+              "Middle_Intermediate_L": "(X=0.025738,Y=0.000000,Z=0.003435,W=0.999663)",
+              "Middle_Proximal_L": "(X=0.317822,Y=0.000004,Z=0.117616,W=0.940827)",
+              "Index_Intermediate_L": "(X=0.042789,Y=-0.000000,Z=0.003811,W=0.999077)",
+              "Index_Proximal_L": "(X=0.287781,Y=-0.000000,Z=0.150303,W=0.945828)",
+              "Thumb_Intermediate_L": "(X=0.168041,Y=-0.000000,Z=0.044348,W=0.984782)",
+              "Thumb_Proximal_L": "(X=0.114514,Y=-0.000000,Z=0.164232,W=0.979752)",
+              "Lower_Arm_L": "(X=-0.007147,Y=0.000028,Z=0.036801,W=0.999297)",
+              "Upper_Arm_L": "(X=0.330638,Y=0.000000,Z=0.085147,W=0.939909)",
+              "Spine": "(X=-0.084428,Y=-0.000000,Z=-0.000000,W=0.996430)",
+              "Hips": "(X=-0.086658,Y=-0.000000,Z=0.000000,W=0.996238)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_Nenmir": {
+      "kind": "appearance",
+      "fields": {
+        "id": "Nenmir",
+        "display_name": "Nenmir",
+        "reconstruct_scaled_translations": false,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=0.000000,Y=0.000000,Z=1.000000)",
+        "head_right_axis": "(X=1.000000,Y=0.000000,Z=0.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_05": "Chest",
+          "neck_01": "Neck",
+          "neck_02": "Neck",
+          "head": "head",
+          "clavicle_l": "Shoulder_L",
+          "upperarm_l": "Upper_Arm_L",
+          "hand_l": "hand_l",
+          "thigh_l": "Upper_Leg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_L",
+          "thumb_01_l": "Thumb_Proximal_L",
+          "thumb_03_l": "Thumb_Distal_L",
+          "index_01_l": "Index_Proximal_L",
+          "index_03_l": "Index_Distal_L",
+          "middle_01_l": "Middle_Proximal_L",
+          "middle_03_l": "Middle_Distal_L",
+          "ring_01_l": "Ring_Proximal_L",
+          "ring_03_l": "Ring_Distal_L",
+          "pinky_01_l": "Little_Proximal_L",
+          "pinky_03_l": "Little_Distal_L",
+          "clavicle_r": "Shoulder_R",
+          "upperarm_r": "Upper_Arm_R",
+          "hand_r": "hand_r",
+          "thigh_r": "Upper_Leg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_R",
+          "thumb_01_r": "Thumb_Proximal_R",
+          "thumb_03_r": "Thumb_Distal_R",
+          "index_01_r": "Index_Proximal_R",
+          "index_03_r": "Index_Distal_R",
+          "middle_01_r": "Middle_Proximal_R",
+          "middle_03_r": "Middle_Distal_R",
+          "ring_01_r": "Ring_Proximal_R",
+          "ring_03_r": "Ring_Distal_R",
+          "pinky_01_r": "Little_Proximal_R",
+          "pinky_03_r": "Little_Distal_R"
+        },
+        "parts": [],
+        "mesh": "/Game/Art/ToonCharacters/Nenmir/SK_PG_Nenmir.SK_PG_Nenmir",
+        "source_mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "retargeter": "/Game/DataCenter/Characters/RTG_Nenmir.RTG_Nenmir",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_Nenmir_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_05",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_02",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_Nenmir_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/ToonCharacters/Nenmir/SK_PG_Nenmir.SK_PG_Nenmir",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "Chest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Shoulder_L",
+          "end": "Shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "Upper_Arm_L",
+          "end": "Hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "Upper_Leg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_L",
+          "end": "Toes_L",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "Thumb_Proximal_L",
+          "end": "Thumb_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "Index_Proximal_L",
+          "end": "Index_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "Middle_Proximal_L",
+          "end": "Middle_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "Ring_Proximal_L",
+          "end": "Ring_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "Little_Proximal_L",
+          "end": "Little_Distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Shoulder_R",
+          "end": "Shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "Upper_Arm_R",
+          "end": "Hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "Upper_Leg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_R",
+          "end": "Toes_R",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "Thumb_Proximal_R",
+          "end": "Thumb_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "Index_Proximal_R",
+          "end": "Index_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "Middle_Proximal_R",
+          "end": "Middle_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "Ring_Proximal_R",
+          "end": "Ring_Distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "Little_Proximal_R",
+          "end": "Little_Distal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_Nenmir": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Nenmir_Target.IK_Nenmir_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Nenmir_Source.IK_Nenmir_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_Nenmir_Target.IK_Nenmir_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_Nenmir_Source.IK_Nenmir_Source",
+        "mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/SK_ElfSelena.SK_ElfSelena",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_Nenmir_Target.IK_Nenmir_Target",
+        "mesh": "/Game/Art/ToonCharacters/Nenmir/SK_PG_Nenmir.SK_PG_Nenmir",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "Lower_Leg_R": "(X=0.015977,Y=-0.000000,Z=0.002924,W=0.999868)",
+              "Upper_Leg_R": "(X=0.052998,Y=-0.000000,Z=-0.004994,W=0.998582)",
+              "Lower_Leg_L": "(X=0.015977,Y=-0.000000,Z=-0.002924,W=0.999868)",
+              "Upper_Leg_L": "(X=0.052998,Y=-0.000000,Z=0.004995,W=0.998582)",
+              "Little_Intermediate_R": "(X=0.000006,Y=0.021441,Z=0.036498,W=0.999104)",
+              "Little_Proximal_R": "(X=-0.000000,Y=0.009193,Z=0.423590,W=0.905807)",
+              "Ring_Intermediate_R": "(X=0.000002,Y=0.005036,Z=0.008026,W=0.999955)",
+              "Ring_Proximal_R": "(X=-0.000010,Y=0.056290,Z=0.374233,W=0.925625)",
+              "Middle_Intermediate_R": "(X=-0.000000,Y=0.003633,Z=0.045846,W=0.998942)",
+              "Middle_Proximal_R": "(X=0.000019,Y=0.084419,Z=0.314124,W=0.945621)",
+              "Index_Intermediate_R": "(X=-0.000000,Y=0.001705,Z=0.056169,W=0.998420)",
+              "Index_Proximal_R": "(X=0.000019,Y=0.118576,Z=0.287983,W=0.950266)",
+              "Thumb_Intermediate_R": "(X=0.000023,Y=0.101295,Z=0.140991,W=0.984815)",
+              "Thumb_Proximal_R": "(X=0.000001,Y=0.139974,Z=-0.001082,W=0.990155)",
+              "Lower_Arm_R": "(X=0.000021,Y=0.056493,Z=0.003716,W=0.998396)",
+              "Upper_Arm_R": "(X=0.001903,Y=0.061374,Z=-0.341661,W=0.937815)",
+              "Little_Intermediate_L": "(X=0.000000,Y=-0.021451,Z=0.036350,W=0.999109)",
+              "Little_Proximal_L": "(X=0.000000,Y=-0.009193,Z=0.423623,W=0.905792)",
+              "Ring_Intermediate_L": "(X=0.000000,Y=-0.005034,Z=0.007755,W=0.999957)",
+              "Ring_Proximal_L": "(X=0.000000,Y=-0.056303,Z=0.374339,W=0.925581)",
+              "Middle_Intermediate_L": "(X=-0.000000,Y=-0.003616,Z=0.046013,W=0.998934)",
+              "Middle_Proximal_L": "(X=0.000000,Y=-0.084427,Z=0.314017,W=0.945656)",
+              "Index_Intermediate_L": "(X=-0.000000,Y=-0.001726,Z=0.056320,W=0.998411)",
+              "Index_Proximal_L": "(X=0.000000,Y=-0.118563,Z=0.287921,W=0.950286)",
+              "Thumb_Intermediate_L": "(X=0.000000,Y=-0.101360,Z=0.140978,W=0.984810)",
+              "Thumb_Proximal_L": "(X=0.000000,Y=-0.139981,Z=-0.001064,W=0.990154)",
+              "Lower_Arm_L": "(X=0.000021,Y=-0.056493,Z=-0.003715,W=0.998396)",
+              "Upper_Arm_L": "(X=0.001903,Y=-0.061372,Z=0.341655,W=0.937817)",
+              "Spine": "(X=-0.084428,Y=0.000000,Z=-0.000000,W=0.996430)",
+              "Hips": "(X=-0.054276,Y=0.000000,Z=0.000000,W=0.998526)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_P09_Female": {
+      "kind": "appearance",
+      "fields": {
+        "id": "P09_Female",
+        "display_name": "P09 Female",
+        "reconstruct_scaled_translations": true,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=1.000000,Y=0.000001,Z=-0.000002)",
+        "head_right_axis": "(X=-0.000002,Y=-0.000000,Z=-1.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_03": "UpperChest",
+          "neck_01": "Neck",
+          "head": "head",
+          "clavicle_l": "shoulder_L",
+          "upperarm_l": "Arm_L",
+          "hand_l": "hand_l",
+          "thigh_l": "Upper_Leg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_L",
+          "thumb_01_l": "finger_thumbs_proximal_L",
+          "thumb_03_l": "finger_thumbs_distal_L",
+          "index_01_l": "finger_index_proximal_L",
+          "index_03_l": "finger_index_distal_L",
+          "middle_01_l": "finger_middle_proximal_L",
+          "middle_03_l": "finger_middle_distal_L",
+          "ring_01_l": "finger_ring_proximal_L",
+          "ring_03_l": "finger_ring_distal_L",
+          "pinky_01_l": "finger_little_proximal_L",
+          "pinky_03_l": "finger_little_distal_L",
+          "clavicle_r": "shoulder_R",
+          "upperarm_r": "Arm_R",
+          "hand_r": "hand_r",
+          "thigh_r": "Upper_Leg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_R",
+          "thumb_01_r": "finger_thumbs_proximal_R",
+          "thumb_03_r": "finger_thumbs_distal_R",
+          "index_01_r": "finger_index_proximal_R",
+          "index_03_r": "finger_index_distal_R",
+          "middle_01_r": "finger_middle_proximal_R",
+          "middle_03_r": "finger_middle_distal_R",
+          "ring_01_r": "finger_ring_proximal_R",
+          "ring_03_r": "finger_ring_distal_R",
+          "pinky_01_r": "finger_little_proximal_R",
+          "pinky_03_r": "finger_little_distal_R"
+        },
+        "parts": [
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_003_Head.SK_P09_Fem_Armor_003_Head\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_003_Waist.SK_P09_Fem_Armor_003_Waist\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Hair_01.SK_P09_Hair_01\",AttachBone=\"Head\",RelativeTransform=(Rotation=(X=0.499999,Y=0.500001,Z=-0.500000,W=0.500000),Translation=(X=0.016537,Y=1.361285,Z=-0.000000),Scale3D=(X=0.010000,Y=0.010000,Z=0.010000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_003_Leg.SK_P09_Fem_Armor_003_Leg\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_003_Chest.SK_P09_Fem_Armor_003_Chest\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_003_Arm.SK_P09_Fem_Armor_003_Arm\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))"
+        ],
+        "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Female_Face_01.SK_P09_Female_Face_01",
+        "source_mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+        "retargeter": "/Game/DataCenter/Characters/RTG_P09_Female.RTG_P09_Female",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_P09_Female_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_03",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_01",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_P09_Female_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Female_Face_01.SK_P09_Female_Face_01",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "UpperChest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "shoulder_L",
+          "end": "shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "Arm_l",
+          "end": "hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "Upper_Leg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_L",
+          "end": "Toes_L",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "finger_thumbs_proximal_L",
+          "end": "finger_thumbs_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "finger_index_proximal_L",
+          "end": "finger_index_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "finger_middle_proximal_L",
+          "end": "finger_middle_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "finger_ring_proximal_L",
+          "end": "finger_ring_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "finger_little_proximal_L",
+          "end": "finger_little_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "shoulder_R",
+          "end": "shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "Arm_r",
+          "end": "hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "Upper_Leg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_R",
+          "end": "Toes_R",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "finger_thumbs_proximal_R",
+          "end": "finger_thumbs_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "finger_index_proximal_R",
+          "end": "finger_index_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "finger_middle_proximal_R",
+          "end": "finger_middle_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "finger_ring_proximal_R",
+          "end": "finger_ring_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "finger_little_proximal_R",
+          "end": "finger_little_distal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_P09_Female": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Female_Target.IK_P09_Female_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Female_Source.IK_P09_Female_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Female_Target.IK_P09_Female_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_P09_Female_Source.IK_P09_Female_Source",
+        "mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_P09_Female_Target.IK_P09_Female_Target",
+        "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Female_Face_01.SK_P09_Female_Face_01",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "Lower_Leg_R": "(X=-0.011009,Y=0.000000,Z=-0.124003,W=0.992221)",
+              "Upper_Leg_R": "(X=0.080653,Y=-0.003764,Z=-0.068455,W=0.994382)",
+              "Lower_Leg_L": "(X=-0.011011,Y=-0.000000,Z=0.123997,W=0.992222)",
+              "Upper_Leg_L": "(X=0.080654,Y=0.003765,Z=0.068460,W=0.994381)",
+              "finger_little_intermediate_R": "(X=0.050969,Y=0.000000,Z=-0.018388,W=0.998531)",
+              "finger_little_proximal_R": "(X=0.306883,Y=-0.000000,Z=0.105956,W=0.945831)",
+              "finger_ring_intermediate_R": "(X=0.058161,Y=0.000000,Z=-0.012720,W=0.998226)",
+              "finger_ring_proximal_R": "(X=0.270946,Y=0.000000,Z=0.060258,W=0.960707)",
+              "finger_middle_intermediate_R": "(X=0.019092,Y=0.000000,Z=-0.002461,W=0.999815)",
+              "finger_middle_proximal_R": "(X=0.253051,Y=0.000000,Z=0.001665,W=0.967451)",
+              "finger_index_intermediate_R": "(X=0.058891,Y=0.000000,Z=0.001555,W=0.998263)",
+              "finger_index_proximal_R": "(X=0.201895,Y=0.000000,Z=-0.064597,W=0.977275)",
+              "finger_thumbs_intermediate_R": "(X=-0.065177,Y=-0.000001,Z=0.111139,W=0.991665)",
+              "finger_thumbs_proximal_R": "(X=0.138382,Y=-0.000000,Z=0.063937,W=0.988313)",
+              "forearm_R": "(X=0.015848,Y=-0.000000,Z=-0.122345,W=0.992361)",
+              "Arm_R": "(X=0.486864,Y=0.000000,Z=0.022794,W=0.873180)",
+              "finger_little_intermediate_L": "(X=0.050965,Y=0.000000,Z=0.018389,W=0.998531)",
+              "finger_little_proximal_L": "(X=0.306886,Y=-0.000001,Z=-0.105956,W=0.945830)",
+              "finger_ring_intermediate_L": "(X=0.058164,Y=0.000000,Z=0.012720,W=0.998226)",
+              "finger_ring_proximal_L": "(X=0.270944,Y=0.000000,Z=-0.060259,W=0.960707)",
+              "finger_middle_intermediate_L": "(X=0.019094,Y=-0.000000,Z=0.002462,W=0.999815)",
+              "finger_middle_proximal_L": "(X=0.253051,Y=0.000000,Z=-0.001665,W=0.967451)",
+              "finger_index_intermediate_L": "(X=0.058892,Y=-0.000000,Z=-0.001555,W=0.998263)",
+              "finger_index_proximal_L": "(X=0.201893,Y=0.000000,Z=0.064597,W=0.977275)",
+              "finger_thumbs_intermediate_L": "(X=-0.065186,Y=0.000002,Z=-0.111134,W=0.991665)",
+              "finger_thumbs_proximal_L": "(X=0.138384,Y=0.000000,Z=-0.063939,W=0.988312)",
+              "forearm_L": "(X=0.015850,Y=0.000000,Z=0.122346,W=0.992361)",
+              "Arm_L": "(X=0.486864,Y=0.000000,Z=-0.022793,W=0.873181)",
+              "Chest": "(X=0.000000,Y=-0.000000,Z=0.086339,W=0.996266)",
+              "Spine": "(X=-0.000000,Y=0.000000,Z=-0.028466,W=0.999595)",
+              "Hips": "(X=-0.000000,Y=0.000000,Z=0.107801,W=0.994172)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_P09_Male": {
+      "kind": "appearance",
+      "fields": {
+        "id": "P09_Male",
+        "display_name": "P09 Male",
+        "reconstruct_scaled_translations": true,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=1.000000,Y=0.000001,Z=-0.000002)",
+        "head_right_axis": "(X=-0.000002,Y=-0.000000,Z=-1.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_03": "UpperChest",
+          "neck_01": "Neck",
+          "head": "head",
+          "clavicle_l": "shoulder_L",
+          "upperarm_l": "Arm_L",
+          "hand_l": "hand_l",
+          "thigh_l": "Upper_Leg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_L",
+          "thumb_01_l": "finger_thumbs_proximal_L",
+          "thumb_03_l": "finger_thumbs_distal_L",
+          "index_01_l": "finger_index_proximal_L",
+          "index_03_l": "finger_index_distal_L",
+          "middle_01_l": "finger_middle_proximal_L",
+          "middle_03_l": "finger_middle_distal_L",
+          "ring_01_l": "finger_ring_proximal_L",
+          "ring_03_l": "finger_ring_distal_L",
+          "pinky_01_l": "finger_little_proximal_L",
+          "pinky_03_l": "finger_little_distal_L",
+          "clavicle_r": "shoulder_R",
+          "upperarm_r": "Arm_R",
+          "hand_r": "hand_r",
+          "thigh_r": "Upper_Leg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_R",
+          "thumb_01_r": "finger_thumbs_proximal_R",
+          "thumb_03_r": "finger_thumbs_distal_R",
+          "index_01_r": "finger_index_proximal_R",
+          "index_03_r": "finger_index_distal_R",
+          "middle_01_r": "finger_middle_proximal_R",
+          "middle_03_r": "finger_middle_distal_R",
+          "ring_01_r": "finger_ring_proximal_R",
+          "ring_03_r": "finger_ring_distal_R",
+          "pinky_01_r": "finger_little_proximal_R",
+          "pinky_03_r": "finger_little_distal_R"
+        },
+        "parts": [
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_003_Waist.SK_P09_Male_Armor_003_Waist\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_003_Leg.SK_P09_Male_Armor_003_Leg\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_003_Arm.SK_P09_Male_Armor_003_Arm\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_003_Head.SK_P09_Male_Armor_003_Head\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_003_Chest.SK_P09_Male_Armor_003_Chest\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Hair_01.SK_P09_Hair_01\",AttachBone=\"Head\",RelativeTransform=(Rotation=(X=0.499999,Y=0.500001,Z=-0.500000,W=0.500000),Translation=(X=0.016537,Y=1.361285,Z=-0.000000),Scale3D=(X=0.010000,Y=0.010000,Z=0.010000)))"
+        ],
+        "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Male_Face_01.SK_P09_Male_Face_01",
+        "source_mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+        "retargeter": "/Game/DataCenter/Characters/RTG_P09_Male.RTG_P09_Male",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_P09_Male_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_03",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_01",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_P09_Male_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Male_Face_01.SK_P09_Male_Face_01",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "UpperChest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "shoulder_L",
+          "end": "shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "Arm_l",
+          "end": "hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "Upper_Leg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_L",
+          "end": "Toes_L",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "finger_thumbs_proximal_L",
+          "end": "finger_thumbs_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "finger_index_proximal_L",
+          "end": "finger_index_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "finger_middle_proximal_L",
+          "end": "finger_middle_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "finger_ring_proximal_L",
+          "end": "finger_ring_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "finger_little_proximal_L",
+          "end": "finger_little_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "shoulder_R",
+          "end": "shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "Arm_r",
+          "end": "hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "Upper_Leg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_R",
+          "end": "Toes_R",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "finger_thumbs_proximal_R",
+          "end": "finger_thumbs_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "finger_index_proximal_R",
+          "end": "finger_index_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "finger_middle_proximal_R",
+          "end": "finger_middle_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "finger_ring_proximal_R",
+          "end": "finger_ring_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "finger_little_proximal_R",
+          "end": "finger_little_distal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_P09_Male": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Male_Target.IK_P09_Male_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Male_Source.IK_P09_Male_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Male_Target.IK_P09_Male_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_P09_Male_Source.IK_P09_Male_Source",
+        "mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_P09_Male_Target.IK_P09_Male_Target",
+        "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Male_Face_01.SK_P09_Male_Face_01",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "Lower_Leg_R": "(X=-0.011009,Y=0.000000,Z=-0.124003,W=0.992221)",
+              "Upper_Leg_R": "(X=0.080653,Y=-0.003764,Z=-0.068455,W=0.994382)",
+              "Lower_Leg_L": "(X=-0.011011,Y=-0.000000,Z=0.123997,W=0.992222)",
+              "Upper_Leg_L": "(X=0.080654,Y=0.003765,Z=0.068460,W=0.994381)",
+              "finger_little_intermediate_R": "(X=0.050969,Y=0.000000,Z=-0.018388,W=0.998531)",
+              "finger_little_proximal_R": "(X=0.306883,Y=-0.000000,Z=0.105956,W=0.945831)",
+              "finger_ring_intermediate_R": "(X=0.058161,Y=0.000000,Z=-0.012720,W=0.998226)",
+              "finger_ring_proximal_R": "(X=0.270946,Y=0.000000,Z=0.060258,W=0.960707)",
+              "finger_middle_intermediate_R": "(X=0.019092,Y=0.000000,Z=-0.002461,W=0.999815)",
+              "finger_middle_proximal_R": "(X=0.253051,Y=0.000000,Z=0.001665,W=0.967451)",
+              "finger_index_intermediate_R": "(X=0.058891,Y=0.000000,Z=0.001555,W=0.998263)",
+              "finger_index_proximal_R": "(X=0.201895,Y=0.000000,Z=-0.064597,W=0.977275)",
+              "finger_thumbs_intermediate_R": "(X=-0.065177,Y=-0.000001,Z=0.111139,W=0.991665)",
+              "finger_thumbs_proximal_R": "(X=0.138382,Y=-0.000000,Z=0.063937,W=0.988313)",
+              "forearm_R": "(X=0.015848,Y=-0.000000,Z=-0.122345,W=0.992361)",
+              "Arm_R": "(X=0.486864,Y=0.000000,Z=0.022794,W=0.873180)",
+              "finger_little_intermediate_L": "(X=0.050965,Y=0.000000,Z=0.018389,W=0.998531)",
+              "finger_little_proximal_L": "(X=0.306886,Y=-0.000001,Z=-0.105956,W=0.945830)",
+              "finger_ring_intermediate_L": "(X=0.058164,Y=0.000000,Z=0.012720,W=0.998226)",
+              "finger_ring_proximal_L": "(X=0.270944,Y=0.000000,Z=-0.060259,W=0.960707)",
+              "finger_middle_intermediate_L": "(X=0.019094,Y=-0.000000,Z=0.002462,W=0.999815)",
+              "finger_middle_proximal_L": "(X=0.253051,Y=0.000000,Z=-0.001665,W=0.967451)",
+              "finger_index_intermediate_L": "(X=0.058892,Y=-0.000000,Z=-0.001555,W=0.998263)",
+              "finger_index_proximal_L": "(X=0.201893,Y=0.000000,Z=0.064597,W=0.977275)",
+              "finger_thumbs_intermediate_L": "(X=-0.065186,Y=0.000002,Z=-0.111134,W=0.991665)",
+              "finger_thumbs_proximal_L": "(X=0.138384,Y=0.000000,Z=-0.063939,W=0.988312)",
+              "forearm_L": "(X=0.015850,Y=0.000000,Z=0.122346,W=0.992361)",
+              "Arm_L": "(X=0.486864,Y=0.000000,Z=-0.022793,W=0.873181)",
+              "Chest": "(X=0.000000,Y=-0.000000,Z=0.086339,W=0.996266)",
+              "Spine": "(X=-0.000000,Y=0.000000,Z=-0.028466,W=0.999595)",
+              "Hips": "(X=-0.000000,Y=0.000000,Z=0.107801,W=0.994172)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_P09_Female_Armor007": {
+      "kind": "appearance",
+      "fields": {
+        "id": "P09_Female_Armor007",
+        "display_name": "P09 Female_Armor007",
+        "reconstruct_scaled_translations": true,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=1.000000,Y=0.000001,Z=-0.000002)",
+        "head_right_axis": "(X=-0.000002,Y=-0.000000,Z=-1.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_03": "UpperChest",
+          "neck_01": "Neck",
+          "head": "head",
+          "clavicle_l": "shoulder_L",
+          "upperarm_l": "Arm_L",
+          "hand_l": "hand_l",
+          "thigh_l": "Upper_Leg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_L",
+          "thumb_01_l": "finger_thumbs_proximal_L",
+          "thumb_03_l": "finger_thumbs_distal_L",
+          "index_01_l": "finger_index_proximal_L",
+          "index_03_l": "finger_index_distal_L",
+          "middle_01_l": "finger_middle_proximal_L",
+          "middle_03_l": "finger_middle_distal_L",
+          "ring_01_l": "finger_ring_proximal_L",
+          "ring_03_l": "finger_ring_distal_L",
+          "pinky_01_l": "finger_little_proximal_L",
+          "pinky_03_l": "finger_little_distal_L",
+          "clavicle_r": "shoulder_R",
+          "upperarm_r": "Arm_R",
+          "hand_r": "hand_r",
+          "thigh_r": "Upper_Leg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_R",
+          "thumb_01_r": "finger_thumbs_proximal_R",
+          "thumb_03_r": "finger_thumbs_distal_R",
+          "index_01_r": "finger_index_proximal_R",
+          "index_03_r": "finger_index_distal_R",
+          "middle_01_r": "finger_middle_proximal_R",
+          "middle_03_r": "finger_middle_distal_R",
+          "ring_01_r": "finger_ring_proximal_R",
+          "ring_03_r": "finger_ring_distal_R",
+          "pinky_01_r": "finger_little_proximal_R",
+          "pinky_03_r": "finger_little_distal_R"
+        },
+        "parts": [
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Hair_09.SK_P09_Hair_09\",AttachBone=\"Head\",RelativeTransform=(Rotation=(X=0.499999,Y=0.500001,Z=-0.500000,W=0.500000),Translation=(X=0.016537,Y=1.361285,Z=-0.000000),Scale3D=(X=0.010000,Y=0.010000,Z=0.010000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_007_Arm.SK_P09_Fem_Armor_007_Arm\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_007_Chest.SK_P09_Fem_Armor_007_Chest\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_007_Chest_Cloak.SK_P09_Fem_Armor_007_Chest_Cloak\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_007_Head.SK_P09_Fem_Armor_007_Head\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_007_Leg.SK_P09_Fem_Armor_007_Leg\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Fem_Armor_007_Waist.SK_P09_Fem_Armor_007_Waist\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))"
+        ],
+        "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Female_Face_01.SK_P09_Female_Face_01",
+        "source_mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+        "retargeter": "/Game/DataCenter/Characters/RTG_P09_Female_Armor007.RTG_P09_Female_Armor007",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_P09_Female_Armor007_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_03",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_01",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_P09_Female_Armor007_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Female_Face_01.SK_P09_Female_Face_01",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "UpperChest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "shoulder_L",
+          "end": "shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "Arm_l",
+          "end": "hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "Upper_Leg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_L",
+          "end": "Toes_L",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "finger_thumbs_proximal_L",
+          "end": "finger_thumbs_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "finger_index_proximal_L",
+          "end": "finger_index_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "finger_middle_proximal_L",
+          "end": "finger_middle_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "finger_ring_proximal_L",
+          "end": "finger_ring_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "finger_little_proximal_L",
+          "end": "finger_little_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "shoulder_R",
+          "end": "shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "Arm_r",
+          "end": "hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "Upper_Leg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_R",
+          "end": "Toes_R",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "finger_thumbs_proximal_R",
+          "end": "finger_thumbs_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "finger_index_proximal_R",
+          "end": "finger_index_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "finger_middle_proximal_R",
+          "end": "finger_middle_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "finger_ring_proximal_R",
+          "end": "finger_ring_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "finger_little_proximal_R",
+          "end": "finger_little_distal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_P09_Female_Armor007": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Female_Armor007_Target.IK_P09_Female_Armor007_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Female_Armor007_Source.IK_P09_Female_Armor007_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Female_Armor007_Target.IK_P09_Female_Armor007_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_P09_Female_Armor007_Source.IK_P09_Female_Armor007_Source",
+        "mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_P09_Female_Armor007_Target.IK_P09_Female_Armor007_Target",
+        "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Female_Face_01.SK_P09_Female_Face_01",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "Lower_Leg_R": "(X=-0.011009,Y=0.000000,Z=-0.124003,W=0.992221)",
+              "Upper_Leg_R": "(X=0.080653,Y=-0.003764,Z=-0.068455,W=0.994382)",
+              "Lower_Leg_L": "(X=-0.011011,Y=-0.000000,Z=0.123997,W=0.992222)",
+              "Upper_Leg_L": "(X=0.080654,Y=0.003765,Z=0.068460,W=0.994381)",
+              "finger_little_intermediate_R": "(X=0.050969,Y=0.000000,Z=-0.018388,W=0.998531)",
+              "finger_little_proximal_R": "(X=0.306883,Y=-0.000000,Z=0.105956,W=0.945831)",
+              "finger_ring_intermediate_R": "(X=0.058161,Y=0.000000,Z=-0.012720,W=0.998226)",
+              "finger_ring_proximal_R": "(X=0.270946,Y=0.000000,Z=0.060258,W=0.960707)",
+              "finger_middle_intermediate_R": "(X=0.019092,Y=0.000000,Z=-0.002461,W=0.999815)",
+              "finger_middle_proximal_R": "(X=0.253051,Y=0.000000,Z=0.001665,W=0.967451)",
+              "finger_index_intermediate_R": "(X=0.058891,Y=0.000000,Z=0.001555,W=0.998263)",
+              "finger_index_proximal_R": "(X=0.201895,Y=0.000000,Z=-0.064597,W=0.977275)",
+              "finger_thumbs_intermediate_R": "(X=-0.065177,Y=-0.000001,Z=0.111139,W=0.991665)",
+              "finger_thumbs_proximal_R": "(X=0.138382,Y=-0.000000,Z=0.063937,W=0.988313)",
+              "forearm_R": "(X=0.015848,Y=-0.000000,Z=-0.122345,W=0.992361)",
+              "Arm_R": "(X=0.486864,Y=0.000000,Z=0.022794,W=0.873180)",
+              "finger_little_intermediate_L": "(X=0.050965,Y=0.000000,Z=0.018389,W=0.998531)",
+              "finger_little_proximal_L": "(X=0.306886,Y=-0.000001,Z=-0.105956,W=0.945830)",
+              "finger_ring_intermediate_L": "(X=0.058164,Y=0.000000,Z=0.012720,W=0.998226)",
+              "finger_ring_proximal_L": "(X=0.270944,Y=0.000000,Z=-0.060259,W=0.960707)",
+              "finger_middle_intermediate_L": "(X=0.019094,Y=-0.000000,Z=0.002462,W=0.999815)",
+              "finger_middle_proximal_L": "(X=0.253051,Y=0.000000,Z=-0.001665,W=0.967451)",
+              "finger_index_intermediate_L": "(X=0.058892,Y=-0.000000,Z=-0.001555,W=0.998263)",
+              "finger_index_proximal_L": "(X=0.201893,Y=0.000000,Z=0.064597,W=0.977275)",
+              "finger_thumbs_intermediate_L": "(X=-0.065186,Y=0.000002,Z=-0.111134,W=0.991665)",
+              "finger_thumbs_proximal_L": "(X=0.138384,Y=0.000000,Z=-0.063939,W=0.988312)",
+              "forearm_L": "(X=0.015850,Y=0.000000,Z=0.122346,W=0.992361)",
+              "Arm_L": "(X=0.486864,Y=0.000000,Z=-0.022793,W=0.873181)",
+              "Chest": "(X=0.000000,Y=-0.000000,Z=0.086339,W=0.996266)",
+              "Spine": "(X=-0.000000,Y=0.000000,Z=-0.028466,W=0.999595)",
+              "Hips": "(X=-0.000000,Y=0.000000,Z=0.107801,W=0.994172)"
+            }
+          }
+        }
+      }
+    },
+    "/Game/DataCenter/Characters/DA_P09_Male_Armor007": {
+      "kind": "appearance",
+      "fields": {
+        "id": "P09_Male_Armor007",
+        "display_name": "P09 Male_Armor007",
+        "reconstruct_scaled_translations": true,
+        "head_bone": "Head",
+        "mesh_transform": "(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+        "head_forward_axis": "(X=1.000000,Y=0.000001,Z=-0.000002)",
+        "head_right_axis": "(X=-0.000002,Y=-0.000000,Z=-1.000000)",
+        "equipment_bones": {
+          "spine_01": "Spine",
+          "spine_03": "UpperChest",
+          "neck_01": "Neck",
+          "head": "head",
+          "clavicle_l": "shoulder_L",
+          "upperarm_l": "Arm_L",
+          "hand_l": "hand_l",
+          "thigh_l": "Upper_Leg_L",
+          "foot_l": "foot_l",
+          "ball_l": "Toes_L",
+          "thumb_01_l": "finger_thumbs_proximal_L",
+          "thumb_03_l": "finger_thumbs_distal_L",
+          "index_01_l": "finger_index_proximal_L",
+          "index_03_l": "finger_index_distal_L",
+          "middle_01_l": "finger_middle_proximal_L",
+          "middle_03_l": "finger_middle_distal_L",
+          "ring_01_l": "finger_ring_proximal_L",
+          "ring_03_l": "finger_ring_distal_L",
+          "pinky_01_l": "finger_little_proximal_L",
+          "pinky_03_l": "finger_little_distal_L",
+          "clavicle_r": "shoulder_R",
+          "upperarm_r": "Arm_R",
+          "hand_r": "hand_r",
+          "thigh_r": "Upper_Leg_R",
+          "foot_r": "foot_r",
+          "ball_r": "Toes_R",
+          "thumb_01_r": "finger_thumbs_proximal_R",
+          "thumb_03_r": "finger_thumbs_distal_R",
+          "index_01_r": "finger_index_proximal_R",
+          "index_03_r": "finger_index_distal_R",
+          "middle_01_r": "finger_middle_proximal_R",
+          "middle_03_r": "finger_middle_distal_R",
+          "ring_01_r": "finger_ring_proximal_R",
+          "ring_03_r": "finger_ring_distal_R",
+          "pinky_01_r": "finger_little_proximal_R",
+          "pinky_03_r": "finger_little_distal_R"
+        },
+        "parts": [
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Hair_09.SK_P09_Hair_09\",AttachBone=\"Head\",RelativeTransform=(Rotation=(X=0.499999,Y=0.500001,Z=-0.500000,W=0.500000),Translation=(X=0.016537,Y=1.361285,Z=-0.000000),Scale3D=(X=0.010000,Y=0.010000,Z=0.010000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_007_Arm.SK_P09_Male_Armor_007_Arm\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_007_Chest.SK_P09_Male_Armor_007_Chest\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_007_Chest_Cloak.SK_P09_Male_Armor_007_Chest_Cloak\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_007_Head.SK_P09_Male_Armor_007_Head\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_007_Leg.SK_P09_Male_Armor_007_Leg\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))",
+          "(Mesh=\"/Game/Art/P09Modular/Meshes/SK_P09_Male_Armor_007_Waist.SK_P09_Male_Armor_007_Waist\",AttachBone=\"\",RelativeTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.000000,W=1.000000),Translation=(X=0.000000,Y=0.000000,Z=0.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)))"
+        ],
+        "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Male_Face_01.SK_P09_Male_Face_01",
+        "source_mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+        "retargeter": "/Game/DataCenter/Characters/RTG_P09_Male_Armor007.RTG_P09_Male_Armor007",
+        "grip_profiles": []
+      }
+    },
+    "/Game/DataCenter/Characters/IK_P09_Male_Armor007_Source": {
+      "kind": "rig",
+      "mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+      "root": "None",
+      "pelvis": "pelvis",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "spine_01",
+          "end": "spine_03",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "neck_01",
+          "end": "neck_01",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "Clavicle_l",
+          "end": "Clavicle_l",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "upperarm_l",
+          "end": "hand_l",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "thigh_l",
+          "end": "foot_l",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "ball_l",
+          "end": "ball_l",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "thumb_01_l",
+          "end": "thumb_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "index_01_l",
+          "end": "index_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "middle_01_l",
+          "end": "middle_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "ring_01_l",
+          "end": "ring_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "pinky_01_l",
+          "end": "pinky_03_l",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "Clavicle_r",
+          "end": "Clavicle_r",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "upperarm_r",
+          "end": "hand_r",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "thigh_r",
+          "end": "foot_r",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "ball_r",
+          "end": "ball_r",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "thumb_01_r",
+          "end": "thumb_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "index_01_r",
+          "end": "index_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "middle_01_r",
+          "end": "middle_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "ring_01_r",
+          "end": "ring_03_r",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "pinky_01_r",
+          "end": "pinky_03_r",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/IK_P09_Male_Armor007_Target": {
+      "kind": "rig",
+      "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Male_Face_01.SK_P09_Male_Face_01",
+      "root": "None",
+      "pelvis": "Hips",
+      "chains": [
+        {
+          "name": "Spine",
+          "start": "Spine",
+          "end": "UpperChest",
+          "goal": "None"
+        },
+        {
+          "name": "Neck",
+          "start": "Neck",
+          "end": "Neck",
+          "goal": "None"
+        },
+        {
+          "name": "Head",
+          "start": "Head",
+          "end": "Head",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_l",
+          "start": "shoulder_L",
+          "end": "shoulder_L",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_l",
+          "start": "Arm_l",
+          "end": "hand_L",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_l",
+          "start": "Upper_Leg_L",
+          "end": "Foot_L",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_l",
+          "start": "Toes_L",
+          "end": "Toes_L",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_l",
+          "start": "finger_thumbs_proximal_L",
+          "end": "finger_thumbs_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "index_l",
+          "start": "finger_index_proximal_L",
+          "end": "finger_index_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "middle_l",
+          "start": "finger_middle_proximal_L",
+          "end": "finger_middle_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "ring_l",
+          "start": "finger_ring_proximal_L",
+          "end": "finger_ring_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_l",
+          "start": "finger_little_proximal_L",
+          "end": "finger_little_distal_L",
+          "goal": "None"
+        },
+        {
+          "name": "Clavicle_r",
+          "start": "shoulder_R",
+          "end": "shoulder_R",
+          "goal": "None"
+        },
+        {
+          "name": "Arm_r",
+          "start": "Arm_r",
+          "end": "hand_R",
+          "goal": "None"
+        },
+        {
+          "name": "Leg_r",
+          "start": "Upper_Leg_R",
+          "end": "Foot_R",
+          "goal": "None"
+        },
+        {
+          "name": "Toe_r",
+          "start": "Toes_R",
+          "end": "Toes_R",
+          "goal": "None"
+        },
+        {
+          "name": "thumb_r",
+          "start": "finger_thumbs_proximal_R",
+          "end": "finger_thumbs_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "index_r",
+          "start": "finger_index_proximal_R",
+          "end": "finger_index_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "middle_r",
+          "start": "finger_middle_proximal_R",
+          "end": "finger_middle_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "ring_r",
+          "start": "finger_ring_proximal_R",
+          "end": "finger_ring_distal_R",
+          "goal": "None"
+        },
+        {
+          "name": "pinky_r",
+          "start": "finger_little_proximal_R",
+          "end": "finger_little_distal_R",
+          "goal": "None"
+        }
+      ]
+    },
+    "/Game/DataCenter/Characters/RTG_P09_Male_Armor007": {
+      "kind": "retarget",
+      "ops": [
+        {
+          "type": "IKRetargetPelvisMotionOp",
+          "name": "Pelvis Motion",
+          "parent": "None",
+          "settings": "(SourcePelvisBone=(BoneName=\"pelvis\"),TargetPelvisBone=(BoneName=\"Hips\"),BlendToAbsoluteOffset=(X=0.000000,Y=0.000000,Z=0.000000),FloorConstraintWeight=0.000000,SourceCrotchOffset=0.000000,TargetCrotchOffset=0.000000,bUseGroundFalloff=False,GroundFalloffHeightPercent=0.900000,RotationAlpha=1.000000,RotationOffsetLocal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),RotationOffsetGlobal=(Pitch=0.000000,Yaw=0.000000,Roll=0.000000),TranslationAlpha=1.000000,TranslationOffsetLocal=(X=0.000000,Y=0.000000,Z=0.000000),TranslationOffsetGlobal=(X=0.000000,Y=0.000000,Z=0.000000),BlendToSourceTranslation=0.000000,BlendToSourceTranslationWeights=(X=1.000000,Y=1.000000,Z=1.000000),ScaleHorizontal=1.000000,ScaleVertical=1.000000,AffectIKHorizontal=1.000000,AffectIKVertical=0.000000,DebugDrawSize=5.000000,DebugDrawThickness=5.000000,bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        },
+        {
+          "type": "IKRetargetFKChainsOp",
+          "name": "FK Chains",
+          "parent": "None",
+          "settings": "(IKRigAsset=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Male_Armor007_Target.IK_P09_Male_Armor007_Target'\",ChainsToRetarget=((TargetChainName=\"Spine\"),(TargetChainName=\"Neck\"),(TargetChainName=\"Head\"),(TargetChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\"),(TargetChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\"),(TargetChainName=\"thumb_l\"),(TargetChainName=\"index_l\"),(TargetChainName=\"middle_l\"),(TargetChainName=\"ring_l\"),(TargetChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\"),(TargetChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\"),(TargetChainName=\"thumb_r\"),(TargetChainName=\"index_r\"),(TargetChainName=\"middle_r\"),(TargetChainName=\"ring_r\"),(TargetChainName=\"pinky_r\")),bDrawChainLines=True,bDrawSingleBoneChains=True,ChainDrawThickness=1.000000,ChainDrawSize=1.000000,ChainMapping=(ChainMap=((TargetChainName=\"Spine\",SourceChainName=\"Spine\"),(TargetChainName=\"Neck\",SourceChainName=\"Neck\"),(TargetChainName=\"Head\",SourceChainName=\"Head\"),(TargetChainName=\"Clavicle_l\",SourceChainName=\"Clavicle_l\"),(TargetChainName=\"Arm_l\",SourceChainName=\"Arm_l\"),(TargetChainName=\"thumb_l\",SourceChainName=\"thumb_l\"),(TargetChainName=\"index_l\",SourceChainName=\"index_l\"),(TargetChainName=\"middle_l\",SourceChainName=\"middle_l\"),(TargetChainName=\"ring_l\",SourceChainName=\"ring_l\"),(TargetChainName=\"pinky_l\",SourceChainName=\"pinky_l\"),(TargetChainName=\"Clavicle_r\",SourceChainName=\"Clavicle_r\"),(TargetChainName=\"Arm_r\",SourceChainName=\"Arm_r\"),(TargetChainName=\"thumb_r\",SourceChainName=\"thumb_r\"),(TargetChainName=\"index_r\",SourceChainName=\"index_r\"),(TargetChainName=\"middle_r\",SourceChainName=\"middle_r\"),(TargetChainName=\"ring_r\",SourceChainName=\"ring_r\"),(TargetChainName=\"pinky_r\",SourceChainName=\"pinky_r\"),(TargetChainName=\"Leg_l\",SourceChainName=\"Leg_l\"),(TargetChainName=\"Toe_l\",SourceChainName=\"Toe_l\"),(TargetChainName=\"Leg_r\",SourceChainName=\"Leg_r\"),(TargetChainName=\"Toe_r\",SourceChainName=\"Toe_r\")),SourceIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Male_Armor007_Source.IK_P09_Male_Armor007_Source'\",TargetIKRig=\"/Script/IKRig.IKRigDefinition'/Game/DataCenter/Characters/IK_P09_Male_Armor007_Target.IK_P09_Male_Armor007_Target'\"),bEnabled=True,LODThreshold=-1,bDebugDraw=True)"
+        }
+      ],
+      "source": {
+        "rig": "/Game/DataCenter/Characters/IK_P09_Male_Armor007_Source.IK_P09_Male_Armor007_Source",
+        "mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton.SK_Skeleton",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {}
+          }
+        }
+      },
+      "target": {
+        "rig": "/Game/DataCenter/Characters/IK_P09_Male_Armor007_Target.IK_P09_Male_Armor007_Target",
+        "mesh": "/Game/Art/P09Modular/Meshes/SK_P09_Male_Face_01.SK_P09_Male_Face_01",
+        "current_pose": "Default Pose",
+        "poses": {
+          "Default Pose": {
+            "root": "(X=0.000000,Y=0.000000,Z=0.000000)",
+            "rotations": {
+              "Lower_Leg_R": "(X=-0.011009,Y=0.000000,Z=-0.124003,W=0.992221)",
+              "Upper_Leg_R": "(X=0.080653,Y=-0.003764,Z=-0.068455,W=0.994382)",
+              "Lower_Leg_L": "(X=-0.011011,Y=-0.000000,Z=0.123997,W=0.992222)",
+              "Upper_Leg_L": "(X=0.080654,Y=0.003765,Z=0.068460,W=0.994381)",
+              "finger_little_intermediate_R": "(X=0.050969,Y=0.000000,Z=-0.018388,W=0.998531)",
+              "finger_little_proximal_R": "(X=0.306883,Y=-0.000000,Z=0.105956,W=0.945831)",
+              "finger_ring_intermediate_R": "(X=0.058161,Y=0.000000,Z=-0.012720,W=0.998226)",
+              "finger_ring_proximal_R": "(X=0.270946,Y=0.000000,Z=0.060258,W=0.960707)",
+              "finger_middle_intermediate_R": "(X=0.019092,Y=0.000000,Z=-0.002461,W=0.999815)",
+              "finger_middle_proximal_R": "(X=0.253051,Y=0.000000,Z=0.001665,W=0.967451)",
+              "finger_index_intermediate_R": "(X=0.058891,Y=0.000000,Z=0.001555,W=0.998263)",
+              "finger_index_proximal_R": "(X=0.201895,Y=0.000000,Z=-0.064597,W=0.977275)",
+              "finger_thumbs_intermediate_R": "(X=-0.065177,Y=-0.000001,Z=0.111139,W=0.991665)",
+              "finger_thumbs_proximal_R": "(X=0.138382,Y=-0.000000,Z=0.063937,W=0.988313)",
+              "forearm_R": "(X=0.015848,Y=-0.000000,Z=-0.122345,W=0.992361)",
+              "Arm_R": "(X=0.486864,Y=0.000000,Z=0.022794,W=0.873180)",
+              "finger_little_intermediate_L": "(X=0.050965,Y=0.000000,Z=0.018389,W=0.998531)",
+              "finger_little_proximal_L": "(X=0.306886,Y=-0.000001,Z=-0.105956,W=0.945830)",
+              "finger_ring_intermediate_L": "(X=0.058164,Y=0.000000,Z=0.012720,W=0.998226)",
+              "finger_ring_proximal_L": "(X=0.270944,Y=0.000000,Z=-0.060259,W=0.960707)",
+              "finger_middle_intermediate_L": "(X=0.019094,Y=-0.000000,Z=0.002462,W=0.999815)",
+              "finger_middle_proximal_L": "(X=0.253051,Y=0.000000,Z=-0.001665,W=0.967451)",
+              "finger_index_intermediate_L": "(X=0.058892,Y=-0.000000,Z=-0.001555,W=0.998263)",
+              "finger_index_proximal_L": "(X=0.201893,Y=0.000000,Z=0.064597,W=0.977275)",
+              "finger_thumbs_intermediate_L": "(X=-0.065186,Y=0.000002,Z=-0.111134,W=0.991665)",
+              "finger_thumbs_proximal_L": "(X=0.138384,Y=0.000000,Z=-0.063939,W=0.988312)",
+              "forearm_L": "(X=0.015850,Y=0.000000,Z=0.122346,W=0.992361)",
+              "Arm_L": "(X=0.486864,Y=0.000000,Z=-0.022793,W=0.873181)",
+              "Chest": "(X=0.000000,Y=-0.000000,Z=0.086339,W=0.996266)",
+              "Spine": "(X=-0.000000,Y=0.000000,Z=-0.028466,W=0.999595)",
+              "Hips": "(X=-0.000000,Y=0.000000,Z=0.107801,W=0.994172)"
+            }
+          }
+        }
+      }
+    }
+  }
+}

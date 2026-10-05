@@ -11,6 +11,7 @@ class PGACTOR_API UPGAppearanceAnimInstance : public UAnimInstance
 public:
     UPROPERTY(Transient) TObjectPtr<class UIKRetargeter> Retargeter;
     UPROPERTY(Transient) bool bReconstructScaledTranslations = false;
+    UPROPERTY(Transient) TObjectPtr<class UPGCharacterAppearance> Appearance;
 protected:
     virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override;
     virtual void DestroyAnimInstanceProxy(FAnimInstanceProxy* Proxy) override;

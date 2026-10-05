@@ -1,6 +1,9 @@
 #include "PGCharacterAppearanceComponent.h"
 #include "PGAppearanceAnimInstance.h"
 #include "PGToonPresentationComponent.h"
+#include "PGActor/Characters/PGCharacterBase.h"
+#include "PGActor/Components/Combat/PGPawnCombatComponent.h"
+#include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGData/DataAsset/Character/PGCharacterAppearance.h"
 #include "GameFramework/Character.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -68,8 +71,8 @@ bool UPGCharacterAppearanceComponent::ApplyAppearance(UPGCharacterAppearance* Ap
     for (auto* Actor : Attached)
         if (auto* Root = Actor->GetRootComponent())
             for (const auto& Pair : EquipmentAnchors)
-                if (Root->GetAttachParent() == Pair.Value)
-                { Actor->AttachToComponent(Source, FAttachmentTransformRules::KeepRelativeTransform, Pair.Key); break; }
+                if (Root->GetAttachParent() == Pair.Component)
+                { Actor->AttachToComponent(Source, FAttachmentTransformRules::KeepRelativeTransform, Pair.SourceSocket); break; }
     ClearPresentation();
     // Keep the existing AnimBP, montage notifies, hit-stop and GAS authority intact.
     TArray<USkeletalMeshComponent*> ExistingMeshes;
@@ -88,6 +91,7 @@ bool UPGCharacterAppearanceComponent::ApplyAppearance(UPGCharacterAppearance* Ap
     auto* Anim = CastChecked<UPGAppearanceAnimInstance>(VisibleMesh->GetAnimInstance());
     Anim->Retargeter = CastChecked<UIKRetargeter>(Appearance->Retargeter.ResolveObject());
     Anim->bReconstructScaledTranslations = Appearance->bReconstructScaledTranslations;
+    Anim->Appearance = Appearance;
     // Initialize only after assigning the retarget asset.
     Anim->InitializeAnimation();
     AddToon(VisibleMesh, Appearance);
@@ -107,18 +111,53 @@ bool UPGCharacterAppearanceComponent::ApplyAppearance(UPGCharacterAppearance* Ap
         if (auto* Root = Actor->GetRootComponent(); Root && Root->GetAttachParent() == Source)
         {
             FName Socket = Root->GetAttachSocketName();
-            auto* Attachment = ResolveEquipmentAttachment(Socket);
+            const auto* PGCharacter = Cast<APGCharacterBase>(Character);
+            const auto* Combat = PGCharacter ? PGCharacter->GetCombatComponent() : nullptr;
+            const FGameplayTag WeaponTag = Combat ? Combat->GetCarriedWeaponTag(Cast<APGWeaponBase>(Actor)) : FGameplayTag();
+            auto* Attachment = ResolveEquipmentAttachment(Socket, WeaponTag);
             Actor->AttachToComponent(Attachment, FAttachmentTransformRules::KeepRelativeTransform, Socket);
         }
     return true;
 }
 
-USceneComponent* UPGCharacterAppearanceComponent::ResolveEquipmentAttachment(FName& Socket)
+USceneComponent* UPGCharacterAppearanceComponent::ResolveEquipmentAttachment(FName& Socket, const FGameplayTag& WeaponTag)
 {
     auto* Character = Cast<ACharacter>(GetOwner());
     auto* Source = Character ? Character->GetMesh() : nullptr;
     if (!Source || !VisibleMesh || !CurrentAppearance || Socket.IsNone()) return Source;
-    if (const auto* Existing = EquipmentAnchors.Find(Socket)) { Socket = NAME_None; return Existing->Get(); }
+    // Include the carried weapon tag in the cache key. Re-resolve the local transform
+    // on each equip so a reused socket cannot retain another weapon's calibration.
+    auto* Existing = EquipmentAnchors.FindByPredicate([&](const FPGAppearanceEquipmentAnchor& Entry)
+        { return Entry.SourceSocket == Socket && Entry.WeaponTag == WeaponTag; });
+    const auto MakeAnchor = [&](FName TargetSocket, const FTransform& Local) -> USceneComponent*
+    {
+        auto* Anchor = Existing ? Existing->Component.Get() : nullptr;
+        if (!IsValid(Anchor))
+        {
+            Anchor = NewObject<USceneComponent>(Character);
+            Anchor->SetupAttachment(VisibleMesh, TargetSocket);
+            Anchor->RegisterComponent();
+            if (Existing) Existing->Component = Anchor;
+            else
+            {
+                auto& Entry = EquipmentAnchors.AddDefaulted_GetRef();
+                Entry.SourceSocket = Socket; Entry.WeaponTag = WeaponTag; Entry.Component = Anchor;
+            }
+        }
+        else Anchor->AttachToComponent(VisibleMesh, FAttachmentTransformRules::KeepRelativeTransform, TargetSocket);
+        Anchor->SetRelativeTransform(Local);
+        Socket = NAME_None;
+        return Anchor;
+    };
+    const FPGAppearanceGripProfile* Grip = nullptr;
+    int32 Matches = 0;
+    for (const auto& Profile : CurrentAppearance->GripProfiles)
+        if (WeaponTag.IsValid() && Profile.WeaponTag == WeaponTag && Profile.SourceSocket == Socket)
+        { Grip = &Profile; ++Matches; }
+    // Duplicate/invalid optional data disables that correction only. Explicit target
+    // sockets replace the automatic anchor transform rather than compounding it.
+    if (Matches == 1 && Grip->GripOffset.IsValid() && !Grip->TargetSocket.IsNone() && VisibleMesh->DoesSocketExist(Grip->TargetSocket))
+        return MakeAnchor(Grip->TargetSocket, Grip->GripOffset);
     const auto* SourceAsset = Source->GetSkeletalMeshAsset();
     const auto* TargetAsset = VisibleMesh->GetSkeletalMeshAsset();
     const FReferenceSkeleton& SourceRef = SourceAsset->GetRefSkeleton();
@@ -146,18 +185,36 @@ USceneComponent* UPGCharacterAppearanceComponent::ResolveEquipmentAttachment(FNa
     const FTransform SourceBoneRef = RefTransform(SourceRef, Index);
     const FTransform TargetBoneRef = RefTransform(TargetRef, TargetIndex);
     SocketRef.SetTranslation(TargetBoneRef.GetTranslation() + SocketRef.GetTranslation() - SourceBoneRef.GetTranslation());
-    auto* Anchor = NewObject<USceneComponent>(Character);
-    Anchor->SetupAttachment(VisibleMesh, *TargetBone);
-    Anchor->SetRelativeTransform(SocketRef.GetRelativeTransform(TargetBoneRef));
-    Anchor->RegisterComponent();
-    EquipmentAnchors.Add(Socket, Anchor);
-    Socket = NAME_None;
-    return Anchor;
+    return MakeAnchor(*TargetBone, SocketRef.GetRelativeTransform(TargetBoneRef));
+}
+
+int32 UPGCharacterAppearanceComponent::GetEquippedGripIndex() const
+{
+    const auto* Character = Cast<APGCharacterBase>(GetOwner());
+    const auto* Combat = Character ? Character->GetCombatComponent() : nullptr;
+    const auto* Weapon = Combat ? Combat->GetCharacterCurrentEquippedWeapon() : nullptr;
+    if (!Weapon || !CurrentAppearance || !VisibleMesh) return INDEX_NONE;
+    const auto* Root = Weapon->GetRootComponent();
+    const auto* Anchor = EquipmentAnchors.FindByPredicate([Root](const FPGAppearanceEquipmentAnchor& Entry)
+        { return Root && Root->GetAttachParent() == Entry.Component; });
+    if (!Anchor || Anchor->Component->GetAttachParent() != VisibleMesh) return INDEX_NONE;
+    int32 Index = INDEX_NONE;
+    for (int32 I = 0; I < CurrentAppearance->GripProfiles.Num(); ++I)
+    {
+        const auto& Grip = CurrentAppearance->GripProfiles[I];
+        if (Grip.WeaponTag != Anchor->WeaponTag || Grip.SourceSocket != Anchor->SourceSocket) continue;
+        if (Index != INDEX_NONE) return INDEX_NONE;
+        Index = I;
+    }
+    if (Index == INDEX_NONE) return INDEX_NONE;
+    const auto& Grip = CurrentAppearance->GripProfiles[Index];
+    return Grip.GripOffset.IsValid() && !Grip.TargetSocket.IsNone() && VisibleMesh->DoesSocketExist(Grip.TargetSocket) &&
+        Anchor->Component->GetAttachSocketName() == Grip.TargetSocket ? Index : INDEX_NONE;
 }
 
 void UPGCharacterAppearanceComponent::ClearPresentation()
 {
-    for (const auto& Pair : EquipmentAnchors) if (Pair.Value) Pair.Value->DestroyComponent();
+    for (const auto& Pair : EquipmentAnchors) if (Pair.Component) Pair.Component->DestroyComponent();
     EquipmentAnchors.Reset();
     for (UPGToonPresentationComponent* Toon : Presentations) if (Toon) { Toon->Initialize(nullptr); Toon->DestroyComponent(); }
     Presentations.Reset();

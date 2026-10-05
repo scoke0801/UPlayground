@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
+#include "GameplayTagContainer.h"
 #include "PGCharacterBase.generated.h"
 
 enum class EPGDamageType : uint8;
@@ -54,7 +55,7 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="PG|Appearance")
     TObjectPtr<class UPGCharacterAppearanceComponent> AppearanceComponent;
-    USceneComponent* ResolveEquipmentAttachment(FName& Socket) const;
+    USceneComponent* ResolveEquipmentAttachment(FName& Socket, const FGameplayTag& WeaponTag = FGameplayTag()) const;
 
 public:
 	virtual void BeginPlay() override;

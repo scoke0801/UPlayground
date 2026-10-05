@@ -39,7 +39,7 @@ python Tools/Validation/RunPlayableCharacters.py --step runtime --render
 python Tools/Validation/RunPlayableCharacters.py --step automation
 ```
 
-`configure`는 저장 전 기존 패키지를 `Saved/PlayableCharacters/<시각>/backup`에 복사한다. 결과와 로그는 `Saved/PlayableCharacters`에 남긴다. 런타임 검증은 별도 `Characters_` 프로필을 사용하고 일반 사용자 저장을 수정하지 않는다.
+`configure`는 현재 `PlayableCharacterPolish.json`을 원본으로 사용하고, 모든 대상 패키지를 `Saved/PlayableCharacters/Runs/<실행>/backup`에 먼저 복사한다. 새 프로세스 재로드·의미 비교와 실패 복구, 편집값 내보내기는 [폴리싱 1차 기록](PlayableToonCharacters_Polishing_Implementation_Report.md)을 따른다. 런타임 검증은 별도 `Characters_` 프로필을 사용하고 일반 사용자 저장을 수정하지 않는다.
 
 `PGCharacterProbe`는 7종 선택, 저장 실패 원자성, 알 수 없는 ID 거부, 공격 중 선택 차단, 실제 GAS 기본 공격의 표시 본 이동, P09 4종의 AI/GAS/표시 포즈를 검사한다. 기존 프로필 자동 테스트에는 캐릭터 ID 직렬화와 새 도전 보존 검사를 추가한다.
 
@@ -55,5 +55,7 @@ python Tools/Validation/RunPlayableCharacters.py --step automation
 저장소의 기존 `/Content` 제외 정책은 유지했다. 생성된 `.uasset`은 현재 워크스페이스에 저장되어 있으며, 재생성 도구 4개는 `.gitignore` 예외로 등록했다. 다른 체크아웃에서는 기존 원본 아트와 P09 manifest/configure 기록을 갖춘 뒤 `configure`를 실행해야 한다.
 
 ## 품질 범위
+
+손 그립·발 고정·헤어 및 의상 물리의 후속 구조, 구현 순서와 수용 기준은 [캐릭터 폴리싱 설계](PlayableToonCharacters_Polishing_Design.md)를 따른다. 설계 문서 작성은 해당 기능의 구현 완료를 의미하지 않는다.
 
 공유 전투 세트의 FK 리타게팅 연결이다. 캐릭터별 고유 스킬·밸런스, 발 고정 IK, 손가락 그립 미세 조정, 헤어·의상 보조 물리는 별도 폴리싱 범위다. P09는 확장 가능한 적 템플릿이며 기존 아레나 웨이브의 몬스터 교체나 신규 역할 밸런싱을 의미하지 않는다. 원본·표시 포즈를 함께 평가하므로 다수 P09 동시 전투의 패키지 성능 수용 검사는 별도로 필요하다.

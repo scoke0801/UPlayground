@@ -20,9 +20,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
 
-USceneComponent* APGCharacterBase::ResolveEquipmentAttachment(FName& Socket) const
+USceneComponent* APGCharacterBase::ResolveEquipmentAttachment(FName& Socket, const FGameplayTag& WeaponTag) const
 {
-    return AppearanceComponent->ResolveEquipmentAttachment(Socket);
+    return AppearanceComponent->ResolveEquipmentAttachment(Socket, WeaponTag);
 }
 
 const FName DissolveEdgeColorName = FName("DissolveEdgeColor");

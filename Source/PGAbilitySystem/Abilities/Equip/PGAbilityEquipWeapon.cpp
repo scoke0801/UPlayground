@@ -120,7 +120,7 @@ void UPGAbilityEquipWeapon::OnEventReceived(FGameplayEventData Payload)
 
 	FAttachmentTransformRules Rule(LocationRule, RotationRule, ScaleRule, true);
     FName Socket = AttachSocketName;
-    auto* Attachment = Parent->ResolveEquipmentAttachment(Socket);
+    auto* Attachment = Parent->ResolveEquipmentAttachment(Socket, WeaponTag);
 	if (Weapon->AttachToComponent(Attachment, Rule, Socket))
 	{
 		HandleEquipWeapon(Weapon);

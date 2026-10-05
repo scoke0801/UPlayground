@@ -9,6 +9,8 @@
 
 #include "GameplayTagContainer.h"
 #include "Components/BoxComponent.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "PGActor/Weapon/PGWeaponBase.h"
 #include "PGShared/Shared/Enum/PGEnumDamageTypes.h"
 
@@ -35,6 +37,14 @@ APGWeaponBase* UPGPawnCombatComponent::GetCharacterCarriedWeaponByTag(FGameplayT
 	}
 
 	return nullptr;
+}
+
+FGameplayTag UPGPawnCombatComponent::GetCarriedWeaponTag(const APGWeaponBase* Weapon) const
+{
+    if (Weapon)
+        for (const auto& Pair : CharacterCarriedWeaponMap)
+            if (Pair.Value == Weapon) return Pair.Key;
+    return FGameplayTag();
 }
 
 void UPGPawnCombatComponent::RegisterSpawnedWeapon(FGameplayTag InWeaponTagToRegister,
@@ -80,8 +90,21 @@ void UPGPawnCombatComponent::SetCurrentEquippedWeaponTag(FGameplayTag WeaponTag)
 
 void UPGPawnCombatComponent::ToggleWeaponCollision(bool bShouldEnable, EPGToggleDamageType ToggleDamageType)
 {
+#if !UE_BUILD_SHIPPING
+    const bool bRequested=bShouldEnable;
+#endif
     if (const auto* Player = Cast<APGCharacterPlayer>(GetOwner()))
         if (Player->GetPlayerAttackComponent()->IsRunning()) bShouldEnable = false;
+#if !UE_BUILD_SHIPPING
+    if (FParse::Param(FCommandLine::Get(),TEXT("PGGripTrace")))
+        if (const auto* Player=Cast<APGCharacterPlayer>(GetOwner()))
+        {
+            const auto* Attack=Player->GetPlayerAttackComponent();
+            const auto Context=Attack->GetCastContext();
+            UE_LOG(LogTemp,Display,TEXT("PGGrip Collision Skill=%d Requested=%d Effective=%d Time=%.6f Type=%d"),
+                Context?Context->SkillID:0,bRequested,bShouldEnable,Attack->GetLogicalTime(),static_cast<int32>(ToggleDamageType));
+        }
+#endif
 	if (EPGToggleDamageType::CurrentEquippedWeapon == ToggleDamageType)
 	{
 		ToggleWeaponCollisionBoxCollision(bShouldEnable);

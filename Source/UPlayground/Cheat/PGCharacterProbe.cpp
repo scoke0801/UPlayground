@@ -6,6 +6,7 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
 #include "UnrealClient.h"
 #include "Animation/AnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -27,6 +28,7 @@
 #include "PGUI/Widget/Window/PGUIInventory.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
+#include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
 static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
     TEXT("Validate character selection, retargeted combat and P09 spawning in a disposable Characters_ profile."),
@@ -42,15 +44,26 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
         float Travel = 0;
         bool bCaptured = false;
         TArray<FTransform> InitialPose;
+        TArray<int32> SampleSourceBones, SampleTargetBones;
+        TArray<FString> PoseSamples;
         TWeakObjectPtr<APGCharacterEnemy> Enemy;
     };
     auto State = MakeShared<FState>();
+    State->PoseSamples.Add(TEXT("identity,seconds,logical_seconds,bone,source_x,source_y,source_z,target_x,target_y,target_z,target_sx,target_sy,target_sz"));
     TWeakObjectPtr<UWorld> WeakWorld = World;
     FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([State,WeakWorld](float)
     {
         auto* W = WeakWorld.Get(); if (!W) return false;
-        const auto Finish=[](bool OK,const TCHAR* Reason)
-        { UE_LOG(LogTemp,Display,TEXT("PGCharacterProbe %s %s"),OK?TEXT("PASS"):TEXT("FAIL"),Reason); FPlatformMisc::RequestExit(false); return false; };
+        const auto Finish=[State](bool OK,const TCHAR* Reason)
+        {
+            FString Output;
+            if (!FParse::Value(FCommandLine::Get(),TEXT("PGCharacterProbeOutput="),Output))
+                Output = FPaths::ProjectSavedDir()/TEXT("PlayableCharacters/pose-samples.csv");
+            OK &= FFileHelper::SaveStringArrayToFile(State->PoseSamples, *Output);
+            UE_LOG(LogTemp,Display,TEXT("PGCharacterProbe Samples=%d CSV=%s"),State->PoseSamples.Num()-1,*Output);
+            UE_LOG(LogTemp,Display,TEXT("PGCharacterProbe %s %s"),OK?TEXT("PASS"):TEXT("FAIL"),Reason);
+            FPlatformMisc::RequestExit(false); return false;
+        };
         const double Now = FPlatformTime::Seconds();
         if (Now-State->Started>150) return Finish(false,TEXT("timeout"));
         auto* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(W,0));
@@ -82,6 +95,41 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
             auto* Mesh=Player->AppearanceComponent->GetPresentationMesh();
             if (!Mesh || !Mesh->IsVisible() || Player->GetMesh()->IsVisible() || !Mesh->GetAnimInstance())
                 return Finish(false,TEXT("missing visible retarget mesh"));
+            // Exercise explicit grips without moving the actual gameplay weapon or
+            // saving the asset. Reusing a socket must not reuse another tag's offset.
+            const FName* Hand = Appearance->EquipmentBones.Find(TEXT("hand_r"));
+            if (!Hand) return Finish(false,TEXT("missing right-hand mapping"));
+            FName Socket(TEXT("hand_r"));
+            auto* Fallback = Player->AppearanceComponent->ResolveEquipmentAttachment(Socket, PGGamePlayTags::Weapon_Sword);
+            const FTransform FallbackLocal = Fallback->GetRelativeTransform();
+            const auto SavedGrips = Appearance->GripProfiles;
+            FPGAppearanceGripProfile Grip;
+            Grip.WeaponTag = PGGamePlayTags::Weapon_Sword;
+            Grip.SourceSocket = TEXT("hand_r"); Grip.TargetSocket = *Hand;
+            Grip.GripOffset = FTransform(FRotator(5,10,15),FVector(1,2,3));
+            Appearance->GripProfiles = {Grip};
+            Socket = Grip.SourceSocket;
+            auto* Explicit = Player->AppearanceComponent->ResolveEquipmentAttachment(Socket, Grip.WeaponTag);
+            bool bGripOK = Explicit == Fallback && Socket.IsNone() && Explicit->GetRelativeTransform().Equals(Grip.GripOffset);
+            Socket = Grip.SourceSocket;
+            auto* Other = Player->AppearanceComponent->ResolveEquipmentAttachment(Socket, PGGamePlayTags::Weapon_Bow);
+            bGripOK &= Other != Explicit && Other->GetRelativeTransform().Equals(FallbackLocal);
+            Appearance->GripProfiles[0].GripOffset.SetTranslation(FVector(4,5,6));
+            Socket = Grip.SourceSocket;
+            auto* Refreshed = Player->AppearanceComponent->ResolveEquipmentAttachment(Socket, Grip.WeaponTag);
+            bGripOK &= Refreshed == Explicit && Refreshed->GetRelativeLocation().Equals(FVector(4,5,6));
+            Appearance->GripProfiles[0].TargetSocket = TEXT("PGMissingGripSocket");
+            Socket = Grip.SourceSocket;
+            auto* Invalid = Player->AppearanceComponent->ResolveEquipmentAttachment(Socket, Grip.WeaponTag);
+            bGripOK &= Invalid->GetRelativeTransform().Equals(FallbackLocal);
+            Appearance->GripProfiles = {Grip, Grip};
+            Socket = Grip.SourceSocket;
+            bGripOK &= Player->AppearanceComponent->ResolveEquipmentAttachment(Socket, Grip.WeaponTag)->GetRelativeTransform().Equals(FallbackLocal);
+            Appearance->GripProfiles = SavedGrips;
+            Socket = Grip.SourceSocket;
+            Player->AppearanceComponent->ResolveEquipmentAttachment(Socket, Grip.WeaponTag);
+            if (!bGripOK) return Finish(false,TEXT("grip cache/offset/fallback regression"));
+            UE_LOG(LogTemp,Display,TEXT("PGCharacterGrip Id=%s TagIsolation=1 Refresh=1 InvalidFallback=1 DuplicateFallback=1"),*Appearance->Id.ToString());
             State->PhaseAt=Now; State->Phase=1; State->Travel=0; State->bCaptured=false;
             return true;
         }
@@ -101,6 +149,15 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
             UE_LOG(LogTemp,Display,TEXT("PGCharacterPose Id=%s Head=%s"),*Player->AppearanceComponent->GetAppearance()->Id.ToString(),
                 *Mesh->GetSocketTransform(Player->AppearanceComponent->GetAppearance()->HeadBone,RTS_Component).GetTranslation().ToString());
             State->InitialPose=Mesh->GetComponentSpaceTransforms();
+            State->SampleSourceBones.Reset(); State->SampleTargetBones.Reset();
+            const auto* Selected = Player->AppearanceComponent->GetAppearance();
+            for (const FName Bone : {FName(TEXT("hand_r")),FName(TEXT("foot_l")),FName(TEXT("foot_r")),FName(TEXT("head"))})
+                if (const FName* Target = Selected->EquipmentBones.Find(Bone))
+                {
+                    const int32 SourceIndex = Player->GetMesh()->GetBoneIndex(Bone), TargetIndex = Mesh->GetBoneIndex(*Target);
+                    if (SourceIndex != INDEX_NONE && TargetIndex != INDEX_NONE)
+                    { State->SampleSourceBones.Add(SourceIndex); State->SampleTargetBones.Add(TargetIndex); }
+                }
             const auto& Ref=Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
             const int32 Head=Ref.FindBoneIndex(Player->AppearanceComponent->GetAppearance()->HeadBone);
             if (Head==INDEX_NONE) return Finish(false,TEXT("missing head bone"));
@@ -127,6 +184,18 @@ static FAutoConsoleCommandWithWorld PGCharacterProbe(TEXT("PGCharacterProbe"),
             {
                 if (Pose[Bone].ContainsNaN() || Pose[Bone].GetTranslation().Size()>2000) return Finish(false,TEXT("nonfinite or exploded pose"));
                 State->Travel=FMath::Max(State->Travel,static_cast<float>(FVector::Distance(Pose[Bone].GetTranslation(),State->InitialPose[Bone].GetTranslation())));
+            }
+            const auto& SourcePose = Player->GetMesh()->GetComponentSpaceTransforms();
+            for (int32 Sample=0; Sample<State->SampleSourceBones.Num(); ++Sample)
+            {
+                const int32 SourceIndex = State->SampleSourceBones[Sample], TargetIndex = State->SampleTargetBones[Sample];
+                if (!SourcePose.IsValidIndex(SourceIndex) || !Pose.IsValidIndex(TargetIndex)) continue;
+                const FVector A = Player->GetMesh()->GetComponentTransform().TransformPosition(SourcePose[SourceIndex].GetTranslation());
+                const FTransform TargetWorld = Pose[TargetIndex]*Mesh->GetComponentTransform();
+                const FVector B = TargetWorld.GetTranslation(), S = TargetWorld.GetScale3D();
+                State->PoseSamples.Add(FString::Printf(TEXT("%s,%.6f,%.6f,%s,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f"),
+                    *Player->AppearanceComponent->GetAppearance()->Id.ToString(),Now-State->PhaseAt,Player->GetPlayerAttackComponent()->GetLogicalTime(),
+                    *Player->GetMesh()->GetBoneName(SourceIndex).ToString(),A.X,A.Y,A.Z,B.X,B.Y,B.Z,S.X,S.Y,S.Z));
             }
             if (!State->bCaptured && Now-State->PhaseAt>.25 && FParse::Param(FCommandLine::Get(),TEXT("PGCharacterCapture")))
             {

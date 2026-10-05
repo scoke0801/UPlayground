@@ -78,7 +78,7 @@ void UPGAbilityUnEquipWeapon::OnEventReceived(FGameplayEventData Payload)
 	USkeletalMeshComponent* Mesh = GetOwningComponentFromActorInfo();
 	FAttachmentTransformRules Rule(LocationRule, RotationRule, ScaleRule, true);
     FName Socket = AttachSocketName;
-    auto* Attachment = Parent->ResolveEquipmentAttachment(Socket);
+    auto* Attachment = Parent->ResolveEquipmentAttachment(Socket, CombatComponent->GetCarriedWeaponTag(Weapon));
 	if (Weapon->AttachToComponent(Attachment, Rule, Socket))
 	{
 		HandleUnEquipWeapon(Weapon);

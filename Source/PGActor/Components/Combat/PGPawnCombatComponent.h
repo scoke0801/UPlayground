@@ -49,6 +49,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PG|Combat")
 	APGWeaponBase* GetCharacterCarriedWeaponByTag(FGameplayTag InWeaponTagToGet) const;
 
+    FGameplayTag GetCarriedWeaponTag(const APGWeaponBase* Weapon) const;
+
 	/**
 	 * 생성된 무기를 등록하는 함수
 	 * @param InWeaponTagToRegister 등록할 무기의 태그

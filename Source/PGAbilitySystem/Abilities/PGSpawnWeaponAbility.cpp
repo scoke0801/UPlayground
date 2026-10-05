@@ -45,7 +45,7 @@ void UPGSpawnWeaponAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);
         FName Socket = SocketNameToAttachTo;
         auto* Character = Cast<APGCharacterBase>(AvatarActor);
-        USceneComponent* Attachment = Character ? Character->ResolveEquipmentAttachment(Socket) : OwningComponent;
+        USceneComponent* Attachment = Character ? Character->ResolveEquipmentAttachment(Socket, WeaponTagToRegister) : OwningComponent;
 		SpawnedWeapon->AttachToComponent(Attachment,Rule,Socket);
 	}
 
