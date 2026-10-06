@@ -90,6 +90,7 @@ struct FPGAppearanceAnimProxy : FAnimInstanceProxy
 {
     explicit FPGAppearanceAnimProxy(UAnimInstance* Instance) : FAnimInstanceProxy(Instance) {}
     FPGAppearanceRetargetNode RetargetNode;
+    int32 EquipmentGripCount = 0;
     virtual FAnimNode_Base* GetCustomRootNode() override { return &RetargetNode; }
     virtual void GetCustomNodes(TArray<FAnimNode_Base*>& Nodes) override { Nodes.Add(&RetargetNode); }
     virtual void Initialize(UAnimInstance* Instance) override
@@ -98,6 +99,16 @@ struct FPGAppearanceAnimProxy : FAnimInstanceProxy
         RetargetNode.bReconstructScaledTranslations = CastChecked<UPGAppearanceAnimInstance>(Instance)->bReconstructScaledTranslations;
         const auto* Appearance = CastChecked<UPGAppearanceAnimInstance>(Instance)->Appearance.Get();
         RetargetNode.GripProfiles = Appearance ? Appearance->GripProfiles : TArray<FPGAppearanceGripProfile>();
+        EquipmentGripCount = RetargetNode.GripProfiles.Num();
+        if (Appearance)
+            for (const auto& Attachment : Appearance->Attachments)
+                if (!Attachment.Fingers.IsEmpty())
+                {
+                    FPGAppearanceGripProfile Grip;
+                    Grip.TargetSocket = Attachment.AttachBone;
+                    Grip.Fingers = Attachment.Fingers;
+                    RetargetNode.GripProfiles.Add(MoveTemp(Grip));
+                }
         RetargetNode.Grips.Reset();
         FAnimInstanceProxy::Initialize(Instance);
     }
@@ -108,7 +119,8 @@ struct FPGAppearanceAnimProxy : FAnimInstanceProxy
         const auto* Appearance = Owner ? Owner->FindComponentByClass<UPGCharacterAppearanceComponent>() : nullptr;
         const int32 Active = Appearance ? Appearance->GetEquippedGripIndex() : INDEX_NONE;
         for (int32 I = 0; I < RetargetNode.Grips.Num(); ++I)
-            RetargetNode.Grips[I].Weight = FMath::FInterpConstantTo(RetargetNode.Grips[I].Weight, I == Active ? 1.f : 0.f, DeltaSeconds, 1.f / .12f);
+            RetargetNode.Grips[I].Weight = FMath::FInterpConstantTo(RetargetNode.Grips[I].Weight,
+                I >= EquipmentGripCount || I == Active ? 1.f : 0.f, DeltaSeconds, 1.f / .12f);
         FAnimInstanceProxy::PreUpdate(Instance, DeltaSeconds);
     }
 };

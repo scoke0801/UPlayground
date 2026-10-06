@@ -1,5 +1,6 @@
 #include "PGCharacterAppearanceComponent.h"
 #include "PGAppearanceAnimInstance.h"
+#include "PGModularAppearanceMeshComponent.h"
 #include "PGToonPresentationComponent.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Components/Combat/PGPawnCombatComponent.h"
@@ -86,7 +87,8 @@ bool UPGCharacterAppearanceComponent::ApplyAppearance(UPGCharacterAppearance* Ap
     for (auto* Mesh : ExistingMeshes) { Mesh->SetVisibility(false); Mesh->SetHiddenInGame(true); Mesh->SetCastShadow(false); }
     Source->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
     Source->bEnableUpdateRateOptimizations = false;
-    VisibleMesh = NewObject<USkeletalMeshComponent>(Character, MakeUniqueObjectName(Character, USkeletalMeshComponent::StaticClass(), TEXT("PGAppearanceMesh")));
+    UClass* MeshClass = Appearance->Parts.IsEmpty() ? USkeletalMeshComponent::StaticClass() : UPGModularAppearanceMeshComponent::StaticClass();
+    VisibleMesh = NewObject<USkeletalMeshComponent>(Character, MeshClass, MakeUniqueObjectName(Character, MeshClass, TEXT("PGAppearanceMesh")));
     VisibleMesh->SetupAttachment(Source);
     VisibleMesh->SetRelativeTransform(Appearance->MeshTransform);
     VisibleMesh->SetSkeletalMesh(Appearance->Mesh.LoadSynchronous());
@@ -107,6 +109,8 @@ bool UPGCharacterAppearanceComponent::ApplyAppearance(UPGCharacterAppearance* Ap
         Part->SetupAttachment(VisibleMesh, Definition.AttachBone);
         Part->SetRelativeTransform(Definition.RelativeTransform);
         Part->SetSkeletalMesh(Definition.Mesh.LoadSynchronous());
+        // Same-pose parts share the full animated body bounds, not their tiny rest bounds.
+        Part->bUseAttachParentBound = Definition.AttachBone.IsNone();
         Part->RegisterComponent();
         if (Definition.AttachBone.IsNone()) Part->SetLeaderPoseComponent(VisibleMesh);
         AddToon(Part, Appearance);

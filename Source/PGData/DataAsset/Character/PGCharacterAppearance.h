@@ -47,6 +47,8 @@ struct PGDATA_API FPGAppearanceAttachment
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UStaticMesh> Mesh;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FName AttachBone;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform RelativeTransform;
+    // Optional finger pose while this fixed loadout attachment is present (e.g. shield).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FPGAppearanceGripFinger> Fingers;
 };
 
 /** Cosmetic identity only: abilities, collision, stats and combat clocks stay on the owner. */

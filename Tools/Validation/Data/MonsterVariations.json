@@ -1,0 +1,400 @@
+{
+  "schema": 1,
+  "attachments": {
+    "Sword": {
+      "bone": "hand_r",
+      "profiles": {
+        "Female": {
+          "translation": [
+            -0.064,
+            -0.055,
+            -0.03
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ],
+          "scale": [
+            0.01,
+            0.01,
+            0.01
+          ],
+          "mesh_contact_cm": [
+            0,
+            -5.5,
+            0
+          ],
+          "hand_contact": [
+            -0.009,
+            -0.055,
+            -0.03
+          ]
+        },
+        "Male": {
+          "translation": [
+            -0.064,
+            -0.06,
+            -0.033
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ],
+          "scale": [
+            0.01,
+            0.01,
+            0.01
+          ],
+          "mesh_contact_cm": [
+            0,
+            -5.5,
+            0
+          ],
+          "hand_contact": [
+            -0.009,
+            -0.06,
+            -0.033
+          ]
+        }
+      }
+    },
+    "Shield": {
+      "bone": "hand_l",
+      "profiles": {
+        "Female": {
+          "translation": [
+            0.009,
+            0.03111,
+            -0.10918
+          ],
+          "rotation": [
+            0,
+            90,
+            90
+          ],
+          "scale": [
+            0.01,
+            0.01,
+            0.01
+          ],
+          "fingers": [
+            {
+              "bone": "finger_thumbs_proximal_L",
+              "rotation": [
+                -40.38515,
+                3.12892,
+                -34.66796
+              ]
+            },
+            {
+              "bone": "finger_thumbs_intermediate_L",
+              "rotation": [
+                2.83902,
+                -42.3995,
+                0.39774
+              ]
+            },
+            {
+              "bone": "finger_thumbs_distal_L",
+              "rotation": [
+                -0.74781,
+                -14.96495,
+                -3.14345
+              ]
+            },
+            {
+              "bone": "finger_index_proximal_L",
+              "rotation": [
+                -0.57748,
+                6.05248,
+                -96.45014
+              ]
+            },
+            {
+              "bone": "finger_index_intermediate_L",
+              "rotation": [
+                -1.66448,
+                -1.92142,
+                -80.16945
+              ]
+            },
+            {
+              "bone": "finger_index_distal_L",
+              "rotation": [
+                -2.71787,
+                -3.30861,
+                -72.76995
+              ]
+            },
+            {
+              "bone": "finger_middle_proximal_L",
+              "rotation": [
+                7.56712,
+                3.42,
+                -100.06952
+              ]
+            },
+            {
+              "bone": "finger_middle_intermediate_L",
+              "rotation": [
+                5.34377,
+                7.05213,
+                -74.307
+              ]
+            },
+            {
+              "bone": "finger_middle_distal_L",
+              "rotation": [
+                4.77184,
+                6.8891,
+                -69.25035
+              ]
+            },
+            {
+              "bone": "finger_ring_proximal_L",
+              "rotation": [
+                10.65967,
+                -0.78326,
+                -98.4244
+              ]
+            },
+            {
+              "bone": "finger_ring_intermediate_L",
+              "rotation": [
+                8.64535,
+                11.77764,
+                -72.64329
+              ]
+            },
+            {
+              "bone": "finger_ring_distal_L",
+              "rotation": [
+                7.98148,
+                11.86639,
+                -67.3657
+              ]
+            },
+            {
+              "bone": "finger_little_proximal_L",
+              "rotation": [
+                16.59535,
+                -2.27138,
+                -95.12603
+              ]
+            },
+            {
+              "bone": "finger_little_intermediate_L",
+              "rotation": [
+                14.46497,
+                21.29759,
+                -67.46241
+              ]
+            },
+            {
+              "bone": "finger_little_distal_L",
+              "rotation": [
+                10.75321,
+                20.99835,
+                -54.19065
+              ]
+            }
+          ],
+          "mesh_contact_cm": [
+            -8.611,
+            -7.918,
+            0
+          ],
+          "hand_contact": [
+            0.009,
+            -0.055,
+            -0.03
+          ]
+        },
+        "Male": {
+          "translation": [
+            0.01,
+            0.02611,
+            -0.11218
+          ],
+          "rotation": [
+            0,
+            90,
+            90
+          ],
+          "scale": [
+            0.01,
+            0.01,
+            0.01
+          ],
+          "fingers": [
+            {
+              "bone": "finger_thumbs_proximal_L",
+              "rotation": [
+                -40.38514,
+                3.12891,
+                -34.66795
+              ]
+            },
+            {
+              "bone": "finger_thumbs_intermediate_L",
+              "rotation": [
+                2.8358,
+                -41.80084,
+                0.54681
+              ]
+            },
+            {
+              "bone": "finger_thumbs_distal_L",
+              "rotation": [
+                -0.7247,
+                -14.66385,
+                -3.08242
+              ]
+            },
+            {
+              "bone": "finger_index_proximal_L",
+              "rotation": [
+                -0.56235,
+                6.05072,
+                -96.01966
+              ]
+            },
+            {
+              "bone": "finger_index_intermediate_L",
+              "rotation": [
+                -1.6492,
+                -1.91871,
+                -79.72636
+              ]
+            },
+            {
+              "bone": "finger_index_distal_L",
+              "rotation": [
+                -2.69025,
+                -3.30142,
+                -72.31662
+              ]
+            },
+            {
+              "bone": "finger_middle_proximal_L",
+              "rotation": [
+                7.51668,
+                3.43173,
+                -99.64164
+              ]
+            },
+            {
+              "bone": "finger_middle_intermediate_L",
+              "rotation": [
+                5.29032,
+                7.03682,
+                -73.87226
+              ]
+            },
+            {
+              "bone": "finger_middle_distal_L",
+              "rotation": [
+                4.71849,
+                6.86865,
+                -68.80715
+              ]
+            },
+            {
+              "bone": "finger_ring_proximal_L",
+              "rotation": [
+                10.56665,
+                -0.77161,
+                -98.00183
+              ]
+            },
+            {
+              "bone": "finger_ring_intermediate_L",
+              "rotation": [
+                8.55514,
+                11.74874,
+                -72.20376
+              ]
+            },
+            {
+              "bone": "finger_ring_distal_L",
+              "rotation": [
+                7.88857,
+                11.82722,
+                -66.92023
+              ]
+            },
+            {
+              "bone": "finger_little_proximal_L",
+              "rotation": [
+                16.44674,
+                -2.25196,
+                -94.71986
+              ]
+            },
+            {
+              "bone": "finger_little_intermediate_L",
+              "rotation": [
+                14.30961,
+                21.23058,
+                -67.05553
+              ]
+            },
+            {
+              "bone": "finger_little_distal_L",
+              "rotation": [
+                10.61188,
+                20.89299,
+                -53.8128
+              ]
+            }
+          ],
+          "mesh_contact_cm": [
+            -8.611,
+            -7.918,
+            0
+          ],
+          "hand_contact": [
+            0.01,
+            -0.06,
+            -0.033
+          ]
+        }
+      }
+    }
+  },
+  "p09_grades": [
+    {"grade": "Normal", "title": "용병", "ids": [15201,15202], "armor": "003", "sword": "001", "shield": null, "base": 15101, "skills": [15211], "stats": {"Health":1300,"Attack":85,"Defense":35,"MovementSpeed":380}},
+    {"grade": "Veteran", "title": "숙련 검투사", "ids": [15203,15204], "armor": "007", "sword": "003", "shield": null, "base": 15101, "skills": [15211,15212], "stats": {"Health":2100,"Attack":125,"Defense":70,"MovementSpeed":365}},
+    {"grade": "Elite", "title": "정예 철갑기사", "ids": [15205,15206], "armor": "012", "sword": "005", "shield": "005", "base": 15103, "skills": [15213,15212], "stats": {"Health":4300,"Attack":185,"Defense":120,"MovementSpeed":300}}
+  ],
+  "creatures": [
+    {"id":15301,"key":"SpiderMinion","name":"새끼 거미","source":102,"base":15101,"skills":[15301],"scale":0.85,"stats":{"Health":800,"Attack":65,"Defense":15,"MovementSpeed":430}},
+    {"id":15302,"key":"SpiderQueen","name":"거미 여왕","source":101,"base":15105,"skills":[15302,15303],"scale":0.65,"stats":{"Health":6500,"Attack":205,"Defense":65,"MovementSpeed":265}},
+    {"id":15303,"key":"Lich","name":"망령 리치","source":401,"base":15102,"skills":[15304,15305],"scale":0.9,"stats":{"Health":1900,"Attack":130,"Defense":30,"MovementSpeed":300}},
+    {"id":15304,"key":"Ent","name":"고목 엔트","source":301,"base":15103,"skills":[15306,15307],"scale":0.55,"stats":{"Health":3200,"Attack":165,"Defense":100,"MovementSpeed":215}},
+    {"id":15305,"key":"Golem","name":"돌격 골렘","source":15101,"base":15104,"skills":[15308,15309],"scale":1.25,"stats":{"Health":5800,"Attack":210,"Defense":130,"MovementSpeed":255}}
+  ],
+  "skills": [
+    {"id":15211,"base":15101,"name":"용병의 검격","montage":"Skeleton/Anim/AM_Skeleton_Sword_Attack_1","patch":{"TelegraphDuration":0.6,"RecoveryDuration":0.6,"SkillRange":260,"TelegraphRadius":230,"bHeavyImpactFeedback":false}},
+    {"id":15212,"base":15111,"name":"검투사의 찌르기","montage":"Skeleton/Anim/AM_Skeleton_Sword_Attack_2","patch":{"TelegraphDuration":0.85,"TravelDistance":380,"RecoveryDuration":1.1,"SkillCoolTime":5}},
+    {"id":15213,"base":15103,"name":"철갑기사의 강타","montage":"Skeleton/Anim/AM_Skeleton_Sword_Attack_2","patch":{"TelegraphDuration":1.0,"RecoveryDuration":1.4}},
+    {"id":15301,"base":15101,"name":"거미의 물어뜯기","montage":"SpiderMinion/Anim/AM_SpiderMinion_Anim_Attack","patch":{"TelegraphDuration":0.45,"TelegraphRadius":170,"SkillRange":210,"RecoveryDuration":0.55,"bHeavyImpactFeedback":false}},
+    {"id":15302,"base":15103,"name":"여왕의 앞발 휩쓸기","montage":"SpiderQueen/Anim/AM_SpiderQueen_Attack_1","patch":{"TelegraphRadius":380,"SkillRange":430,"TelegraphDuration":1.0,"HalfAngleDegrees":80}},
+    {"id":15303,"base":15105,"name":"여왕의 거미줄 지대","montage":"SpiderQueen/Anim/AM_SpiderQueen_Throw_a_web","patch":{"TelegraphRadius":180,"HazardCount":3,"HazardSpacing":200,"SkillCoolTime":7}},
+    {"id":15304,"base":15102,"name":"리치의 망령탄","montage":"Lich/Anim/AM_Lich_Attack_Right","patch":{"ProjectileClass":"/Script/PGActor.PGPatternProjectile","TelegraphDuration":0.95,"TravelSpeed":720,"LineHalfWidth":26}},
+    {"id":15305,"base":15105,"name":"리치의 저주 파동","montage":"Lich/Anim/AM_Lich_Spell","patch":{"HazardCount":3,"TelegraphRadius":150,"HazardSpacing":180,"SkillCoolTime":7}},
+    {"id":15306,"base":15103,"name":"엔트의 가지 휩쓸기","montage":"Ent/Anim/AM_Ent_Hand_Attack_R","patch":{"TelegraphRadius":330,"SkillRange":370,"TelegraphDuration":1.2,"RecoveryDuration":1.7}},
+    {"id":15307,"base":15114,"name":"엔트의 뿌리 강타","montage":"Ent/Anim/AM_Ent_Leg_Attack_R","patch":{"TelegraphRadius":340,"SkillRange":390,"TelegraphDuration":1.3,"RecoveryDuration":1.8}},
+    {"id":15308,"base":15104,"name":"골렘의 돌진 분쇄","sequence":"/Game/ExternalAssets/Characters/Fantasy_Pack/Animations/1With_Weapon/Anim_Warrior_Attack_5","patch":{"TravelDistance":500,"TravelSpeed":750,"TelegraphRadius":300,"TelegraphDuration":1.25,"RecoveryDuration":1.8}},
+    {"id":15309,"base":15114,"name":"골렘의 지면 강타","sequence":"/Game/ExternalAssets/Characters/Fantasy_Pack/Animations/1With_Weapon/Anim_Warrior_Attack_6","patch":{"TelegraphRadius":340,"SkillRange":390,"TelegraphDuration":1.15,"RecoveryDuration":1.7}}
+  ],
+  "waves": {
+    "1": [[[15201,1],[15301,2],[15102,2]],[[15202,2],[15301,2],[15102,2]],[[15201,1],[15202,1],[15301,1],[15102,1]]],
+    "2": [[[15201,1],[15202,1],[15301,1],[15304,1],[15103,2]],[[15304,2],[15103,1],[15102,2],[15201,1],[15301,1]],[[15304,2],[15103,1],[15102,2],[15305,1]]],
+    "3": [[[15203,1],[15204,1],[15301,1],[15303,2],[15102,2]],[[15203,2],[15204,1],[15301,1],[15303,2],[15102,2]],[[15304,1],[15103,1],[15303,2],[15102,1]]],
+    "4": [[[15203,2],[15204,2],[15301,1],[15303,2],[15102,1]],[[15205,1],[15206,1],[15304,2],[15103,1],[15303,2],[15102,1],[15204,1]],[[15304,2],[15205,1],[15103,1],[15303,1],[15102,1],[15302,1]]],
+    "5": [[[15203,2],[15204,2],[15303,2],[15102,1],[15205,1],[15206,1]],[[15205,1],[15206,1],[15304,1],[15103,1],[15303,3],[15102,1],[15203,1],[15204,1]],[[15205,1],[15304,1],[15303,1],[15102,1],[15305,1],[15302,1]]]
+  }
+}
