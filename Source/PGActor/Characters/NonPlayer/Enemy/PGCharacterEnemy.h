@@ -118,6 +118,10 @@ public:
     bool bPatternStriking = false;
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="PG|Pattern")
     bool bGuarding = false;
+    // Only a committed guard profile may opt a boss into directional defense.
+    bool bBossPatternGuard = false;
+    int32 CompletedAttackPatterns = 0;
+    double NextCombatActionAt = 0;
     int32 ActivePatternID = 0;
     float GetDirectionalDamageScale(const AActor* Attacker) const;
     void ClearPatternHitboxes();

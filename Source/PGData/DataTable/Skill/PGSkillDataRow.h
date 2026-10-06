@@ -5,6 +5,7 @@
 #include "UObject/SoftObjectPath.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGAttackPattern.h"
+#include "PGData/Combat/PGEnemyAttackProfile.h"
 #include "PGSkillDataRow.generated.h"
 
 USTRUCT(BlueprintType)
@@ -71,6 +72,10 @@ public:
     // A positive duration opts into a timed attack; zero keeps the original montage path.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern")
     EPGAttackPattern Pattern = EPGAttackPattern::LegacySlam;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern")
+    TSoftObjectPtr<UPGEnemyAttackProfile> EnemyProfile;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="0.01"))
+    float EnemyDamageMultiplier = 1.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="1", ClampMax="180"))
     float HalfAngleDegrees = 65.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="0"))
@@ -132,6 +137,8 @@ public:
     /** Reject malformed imported data before committing cooldowns or starting timers. */
     bool IsPatternValid() const
     {
+        if (!FMath::IsFinite(EnemyDamageMultiplier) || EnemyDamageMultiplier <= 0.f ||
+            (!EnemyProfile.IsNull() && (!EnemyProfile.LoadSynchronous() || !EnemyProfile.Get()->IsValid()))) return false;
         if (!FMath::IsFinite(SkillRange) || SkillRange < 0.f ||
             !FMath::IsFinite(MinimumActivationRange) || MinimumActivationRange < 0.f ||
             MinimumActivationRange >= GetPatternActivationRange() ||

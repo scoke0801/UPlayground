@@ -347,9 +347,10 @@ void UPGUIMainHUD::OnBossPresentation(const IPGEventData* Event)
     case EPGBossCombatState::Windup: Status = TEXT("위험 예고 · ") + View.Attack.ToString(); BossStatusColor = FLinearColor(1.f,.5f,.2f); break;
     case EPGBossCombatState::Attacking: Status = TEXT("공격 중 · ") + View.Attack.ToString(); BossStatusColor = FLinearColor(1.f,.3f,.3f); break;
     case EPGBossCombatState::Recovery: Status = TEXT("빈틈 · 반격 기회"); BossStatusColor = FPGUIStyle::Get().Mint; break;
-    case EPGBossCombatState::Transition: Status = TEXT("황혼 각성 · 공격 조합 변경"); break;
+    case EPGBossCombatState::Transition: Status = View.TransitionText.ToString(); break;
+    case EPGBossCombatState::Guard: Status = TEXT("검막 · 측후방 공격 또는 대기"); BossStatusColor = FLinearColor(.3f,.5f,1.f); break;
     case EPGBossCombatState::Defeated:
-        Status = TEXT("황혼의 기사 격파"); BossStatusColor = FPGUIStyle::Get().Mint;
+        Status = View.Name.ToString() + TEXT(" 격파"); BossStatusColor = FPGUIStyle::Get().Mint;
         if (!bBossDefeated) BossDefeatUntil = GetWorld()->GetTimeSeconds() + View.DefeatDisplaySeconds;
         bBossDefeated = true;
         break;

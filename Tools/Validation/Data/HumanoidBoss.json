@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "enemy_id": 15401,
+  "name": "월식의 검성",
+  "baseline": 15106,
+  "appearance_source": "/Game/DataCenter/MonsterVariations/DA_15204",
+  "body_source": 15204,
+  "display_scale": 1.15,
+  "stats": {"MovementSpeed": 345},
+  "minimum_combat_wait": 0.5,
+  "guard_half_angle": 60,
+  "guard_reduction": 0.7,
+  "motions": {
+    "Combo1": "Attack_3Combo_1_Inplace",
+    "Combo2": "Attack_3Combo_2_Inplace",
+    "Combo3": "Attack_3Combo_3_Inplace",
+    "Thrust": "Run_Thrust",
+    "Charge": "Charge_Attack",
+    "Ring": "Circle",
+    "GuardStart": "Revenge_Guard_Start",
+    "GuardHold": "Revenge_Guard_Loop",
+    "GuardAccept": "Revenge_Guard_Accept",
+    "Counter": "Revenge_Guard_Attack_ver_A",
+    "GuardEnd": "Revenge_Guard_End",
+    "Idle": "Frank_RPG_Katana_Stance1_Idle",
+    "Death": "Death"
+  },
+  "contact_fractions": {"Combo1": 0.316, "Combo2": 0.257, "Combo3": 0.342, "Thrust": 0.3, "Charge": 0.383, "Ring": 0.284, "Counter": 0.26},
+  "end_fractions": {"Combo1": 0.39, "Combo2": 0.42, "Combo3": 0.89, "Thrust": 1.0, "Ring": 1.0, "Counter": 0.7},
+  "skills": [
+    {"id":15401,"name":"초승연참","pattern":"Sweep","windup":0.85,"aim":0.3,"radius":300,"range":350,"recovery":1.2,"cooldown":5,"profile":"Combo","contacts":[[0,0.85,"Combo1",0.65,300,70],[0.95,1.75,"Combo2",0.75,300,70]],"phase_two_contacts":[[1.95,2.95,"Combo3",1.0,350,60]]},
+    {"id":15402,"name":"월영 찌르기","pattern":"Thrust","windup":0.8,"aim":0.25,"radius":260,"range":520,"length":520,"half_width":55,"recovery":1.0,"cooldown":4,"profile":"Thrust","contacts":[[0,0.8,"Thrust",1.0,260,70]]},
+    {"id":15403,"name":"월락 돌진","pattern":"ChargeSlam","windup":1.15,"aim":0.35,"radius":260,"range":850,"minimum_range":350,"length":550,"speed":900,"landing":0.45,"recovery":1.65,"cooldown":7,"multiplier":1.4,"motion":"Charge"},
+    {"id":15404,"name":"검막 반격","pattern":"Sweep","windup":0.37,"aim":0.25,"radius":330,"range":420,"minimum_range":160,"recovery":1.25,"cooldown":12,"profile":"Guard","contacts":[[0,0.65,"Counter",1.1,330,55]],"guard":true},
+    {"id":15405,"name":"원월 파동","pattern":"RingBurst","windup":1.45,"aim":0,"radius":650,"inner_radius":260,"range":650,"recovery":2.0,"cooldown":10,"phase":2,"profile":"Ring","contacts":[[0,1.45,"Ring",1.3,650,180]]}
+  ]
+}

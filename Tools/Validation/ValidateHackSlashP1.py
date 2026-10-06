@@ -10,6 +10,8 @@ def validate_hack_slash_p1(rows):
     baseline=json.loads((root/'Tools/Validation/Baselines/HackSlashP1_Skills.json').read_text(encoding='utf-8'))
     from MonsterVariationRoster import SPEC as monster_spec
     additional={s['id'] for s in monster_spec['skills']}
+    boss_spec=json.loads((root/'Tools/Validation/Data/HumanoidBoss.json').read_text(encoding='utf-8'))
+    additional.update(s['id'] for s in boss_spec['skills'])
     assert len(rows)==len(by_id) and set(by_id)-{r['SkillID'] for r in baseline} <= additional
     # Later migrations own only these fields; validate their current contracts
     # instead of comparing them against an obsolete P1 snapshot.

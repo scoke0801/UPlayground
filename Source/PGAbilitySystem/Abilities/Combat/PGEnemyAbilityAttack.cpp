@@ -69,6 +69,9 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		EndAbilitySelf();
 		return;
 	}
+    if (GetWorld()->GetTimeSeconds() < Character->NextCombatActionAt ||
+        (Row->EnemyProfile.LoadSynchronous() && Row->EnemyProfile.Get()->bGuardCounter &&
+         Character->CompletedAttackPatterns < Row->EnemyProfile.Get()->AttacksBeforeGuard)) { EndAbilitySelf(); return; }
 
     if (Row->TelegraphDuration > 0.f)
     {

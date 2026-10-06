@@ -29,6 +29,10 @@ public:
     UFUNCTION(Exec) void PGGuardianBenchmark(int32 Seconds = 1200);
     /** Assisted GAS damage for threshold/death timing probes. */
     UFUNCTION(Exec) void PGBossDamage(float Amount = 15000.f);
+    /** Direct GAS contact for front/rear guard validation; marks the run assisted. */
+    UFUNCTION(Exec) void PGBossDirectHit();
+    /** Change only the current process's stage-six encounter, then restart that stage. */
+    UFUNCTION(Exec) void PGBossEncounter(int32 EnemyID = 15401);
     UFUNCTION(Exec) void PGBuildScenario(FString Family = TEXT("Bleed"), bool bCore = true);
     UFUNCTION(Exec) void PGBuildProbe(FString Action = TEXT("status"));
     UFUNCTION(Exec) void PGBuildCards();

@@ -16,6 +16,8 @@
 #include "PGShared/Shared/Combat/PGSkillObservation.h"
 #include "PGAbilitySystemComponent.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FPGConfirmedGuardHit, AActor*);
+
 /**
  * 플레이그라운드 프로젝트의 커스텀 어빌리티 시스템 컴포넌트
  * 플레이어의 입력 처리와 무기 어빌리티 관리를 담당
@@ -95,6 +97,8 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 public:
+    FPGConfirmedGuardHit OnConfirmedGuardHit;
+    void ApplyEnemyPatternHit(class APGCharacterBase* Target, float Multiplier);
     bool IsProcessingDamage() const { return DamageProcessingDepth > 0; }
     TSharedPtr<FPGSkillObservation> BeginSkillObservation(int32 SkillID, const TSharedPtr<FPGSkillCastContext>& Context = nullptr);
     void EndSkillObservation(const TSharedPtr<FPGSkillObservation>& Observation, bool bCancelled);

@@ -192,6 +192,38 @@ void UPGCheatManager::PGGuardianProbe(FString Action)
 #endif
 }
 
+void UPGCheatManager::PGBossEncounter(int32 EnemyID)
+{
+#if !UE_BUILD_SHIPPING
+    auto* Tables = UPGDataTableManager::Get(this);
+    auto* Profile = UPGProfileSubsystem::Get(this);
+    auto* Row = Tables ? Tables->GetRowData<FPGEnemyDataRow>(EnemyID) : nullptr;
+    auto* Stage = Tables ? Tables->GetRowData<FPGStageDataRow>(6) : nullptr;
+    if (!Row || Row->Role != EPGEnemyRole::Boss || !Stage || Stage->Waves.Num() != 1 ||
+        !Profile || !Profile->MarkRunAssisted()) return;
+    Stage->Waves[0].MonsterSpawnInfos = {FPGMonsterSpawnInfo(EnemyID, 1)};
+    PGStartStage(6);
+#endif
+}
+
+void UPGCheatManager::PGBossDirectHit()
+{
+#if !UE_BUILD_SHIPPING
+    auto* Profile = UPGProfileSubsystem::Get(this);
+    auto* Player = Cast<APGCharacterBase>(GetOuterAPlayerController()->GetPawn());
+    auto* Tables = UPGDataTableManager::Get(this);
+    if (!Player || !Tables || !Profile || !Profile->MarkRunAssisted()) return;
+    for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It)
+        if (const auto* Row = Tables->GetRowData<FPGEnemyDataRow>(It->GetCharacterTID()); Row && Row->Role == EPGEnemyRole::Boss)
+        {
+            const float Scale = It->GetDirectionalDamageScale(Player);
+            EPGDamageType Type;
+            const float Damage = It->GetPGAbilitySystemComponent()->ReceiveCombatHit(Player->GetPGAbilitySystemComponent(), Type);
+            UE_LOG(LogTemp, Display, TEXT("PGBoss DirectHit scale=%.2f damage=%.1f guarding=%d"), Scale, Damage, It->bGuarding);
+        }
+#endif
+}
+
 void UPGCheatManager::PGBossDamage(float Amount)
 {
 #if !UE_BUILD_SHIPPING

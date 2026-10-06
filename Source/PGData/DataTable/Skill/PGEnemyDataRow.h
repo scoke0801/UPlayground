@@ -71,6 +71,10 @@ public:
     float PhaseTwoHealthRatio = .5f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin="0", ClampMax="5"))
     float PhaseTransitionSeconds = 1.2f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin="0"))
+    float MinimumCombatWait = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss")
+    FText PhaseTransitionText = NSLOCTEXT("PG", "TwilightBossTransition", "황혼 각성 · 공격 조합 변경");
     // Prefer this ordered combination in phase two; unavailable attacks are skipped.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss")
     TArray<int32> PhaseTwoSkillSequence;

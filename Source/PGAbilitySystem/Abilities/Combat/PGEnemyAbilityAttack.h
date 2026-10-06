@@ -15,6 +15,7 @@ class PGABILITYSYSTEM_API UPGEnemyAbilityAttack : public UPGEnemyGameplayAbility
 	GENERATED_BODY()
     friend class FPGAttackPatternLifecycleTest;
     friend class FPGBossPhaseLifecycleTest;
+    friend class FPGHumanoidBossLifecycleTest;
 
 public:
     UPGEnemyAbilityAttack();
@@ -29,6 +30,26 @@ protected:
     void UpdateAim();
     void ShowTelegraph(const FVector& Center, bool bLine, bool bRecovery = false);
     void BeginRecovery();
+    void BeginProfile();
+    void SelectContact(int32 Index);
+    void StrikeProfileContact();
+    void UpdateProfileMotion();
+    void PlayProfileMontage(class UAnimMontage* Montage, float Duration = 0.f);
+    void BeginGuardHold();
+    void OnGuardHit(AActor* Attacker);
+    void BeginCounter();
+    void FailGuard();
+    UPROPERTY(Transient) TObjectPtr<UPGEnemyAttackProfile> AttackProfile;
+    UPROPERTY(Transient) TArray<FPGEnemyAttackContact> Contacts;
+    UPROPERTY(Transient) TObjectPtr<class UAnimMontage> ProfileMontage;
+    FDelegateHandle GuardHitDelegate;
+    int32 ContactIndex = 0;
+    int32 MotionIndex = INDEX_NONE;
+    bool bDispatchingContact = false;
+    bool bGuardSucceeded = false;
+    enum class EGuardStage : uint8 { None, Start, Hold, Accept, Counter, End, Recovery };
+    EGuardStage GuardStage = EGuardStage::None;
+    double CounterStartedAt = 0;
     UPROPERTY(Transient) TObjectPtr<class UDecalComponent> Telegraph;
     UPROPERTY(Transient) FPGSkillDataRow EliteData;
     FTimerHandle PatternTimer;

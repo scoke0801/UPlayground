@@ -80,14 +80,17 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
     auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
     auto* Tables = UPGDataTableManager::Get(this);
     if (!Enemy || !Tables || !Enemy->GetPGAbilitySystemComponent() || Enemy->bPatternActive || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
-        Enemy->IsBossTransitioning()) return false;
+        Enemy->IsBossTransitioning() || GetWorld()->GetTimeSeconds() < Enemy->NextCombatActionAt) return false;
     const auto* Data = Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID());
     const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(SkillID);
     if (!Data || !Data->SkillIdList.Contains(SkillID) || !Skill || !Skill->IsPatternValid() || Skill->MinimumBossPhase > Enemy->BossPhase ||
         !Enemy->GetSkillHandler() || !Enemy->GetSkillHandler()->IsSkillReadyByID(SkillID)) return false;
+    if (const auto* Profile = Skill->EnemyProfile.LoadSynchronous())
+        if (Profile->bGuardCounter && Enemy->CompletedAttackPatterns < Profile->AttacksBeforeGuard) return false;
     auto* Director = GetWorld()->GetSubsystem<UPGCombatDirectorSubsystem>();
     auto* Target = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
     if (!Target || !Target->GetPGAbilitySystemComponent() || Target->GetPGAbilitySystemComponent()->GetHealth() <= 0) return false;
+    if (!Skill->IsInActivationRange(FVector::Dist2D(Enemy->GetActorLocation(), Target->GetActorLocation())) || !LineOfSightTo(Target)) return false;
     if (Director && !Director->TryReserve(Enemy, Target, Skill->AttackPressureCost)) return false;
     auto* ASC = Enemy->GetPGAbilitySystemComponent();
     const auto Handle = GetAttackAbilityHandle();
@@ -115,6 +118,11 @@ int32 APGRoleAIController::SelectSkill(const FPGEnemyDataRow& Data, const TArray
 {
     if (SequencePhase != Phase) { SequencePhase = Phase; SequenceCursor = 0; }
     if (Candidates.IsEmpty()) return 0;
+    if (Data.Role == EPGEnemyRole::Boss)
+        if (auto* Tables = UPGDataTableManager::Get(this))
+            for (int32 ID : Candidates)
+                if (const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ID))
+                    if (const auto* Profile = Skill->EnemyProfile.LoadSynchronous(); Profile && Profile->bGuardCounter) return ID;
     if (Data.Role == EPGEnemyRole::Boss && Phase >= 2 && !Data.PhaseTwoSkillSequence.IsEmpty())
         for (int32 Offset = 0; Offset < Data.PhaseTwoSkillSequence.Num(); ++Offset)
         {
@@ -180,7 +188,7 @@ void APGRoleAIController::RefreshCombatContext()
     }
     if (CombatTarget.IsValid() && CombatTarget != Target) { PendingSkill = 0; ReleaseAttackReservation(); }
     CombatTarget = Target;
-    if (Enemy->bPatternActive || Enemy->IsBossTransitioning()) { PendingSkill = 0; StopMovement(); PublishCombatBlackboard(); return; }
+    if (Enemy->bPatternActive || Enemy->IsBossTransitioning() || GetWorld()->GetTimeSeconds() < Enemy->NextCombatActionAt) { PendingSkill = 0; StopMovement(); PublishCombatBlackboard(); return; }
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
     auto* Handler = Enemy->GetSkillHandler();
@@ -202,6 +210,8 @@ void APGRoleAIController::RefreshCombatContext()
     {
         const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ID);
         if (!Skill || Skill->MinimumBossPhase > Enemy->BossPhase || Skill->SelectionWeight <= 0.f || !Skill->IsPatternValid()) continue;
+        if (const auto* Profile = Skill->EnemyProfile.LoadSynchronous())
+            if (Profile->bGuardCounter && Enemy->CompletedAttackPatterns < Profile->AttacksBeforeGuard) continue;
         const float Range = Skill->GetPatternActivationRange();
         NearestRange = FMath::Min(NearestRange, Range);
         if (!Handler->IsSkillReadyByID(ID)) continue;

@@ -19,6 +19,9 @@
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 #include "HAL/IConsoleManager.h"
+#include "PGData/PGDataTableManager.h"
+#include "PGData/DataTable/Skill/PGEnemyDataRow.h"
+#include "PGAI/PGCombatDirectorSubsystem.h"
 
 static TAutoConsoleVariable<int32> CVarPGPatternDebug(TEXT("pg.Combat.EliteDebug"), 0, TEXT("Draw the current shared pattern bounds."));
 
@@ -27,6 +30,7 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     auto* Enemy = GetEnemyCharacterFromActorInfo();
     if (!Enemy || !Row.IsPatternValid()) { EndAbilitySelf(); return; }
     EliteData = Row;
+    AttackProfile = Row.EnemyProfile.LoadSynchronous();
     bElitePattern = Enemy->bPatternActive = true;
     Enemy->bPerformingHeavyAttack = true;
     Enemy->bUseHeavyImpactFeedback = Row.bHeavyImpactFeedback;
@@ -55,6 +59,7 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     Movement->StopMovementImmediately(); Movement->DisableMovement();
     if (auto* AI = Cast<AAIController>(Enemy->GetController())) AI->StopMovement();
     UpdateAim();
+    if (AttackProfile) { BeginProfile(); return; }
     ShowTelegraph(StrikeCenter, Row.Pattern == EPGAttackPattern::ChargeSlam || Row.Pattern == EPGAttackPattern::AimedProjectile || Row.Pattern == EPGAttackPattern::Thrust);
     GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &ThisClass::UpdatePattern, .02f, true);
     GetWorld()->GetTimerManager().SetTimer(PatternTimer, this, &ThisClass::StrikeElitePattern, FMath::Max(.05f, Row.TelegraphDuration), false);
@@ -124,6 +129,7 @@ void UPGEnemyAbilityAttack::UpdatePattern()
         (EliteData.Pattern != EPGAttackPattern::LegacySlam && (!IsValid(Target) || Target->GetPGAbilitySystemComponent()->GetHealth() <= 0))) { EndAbilitySelf(); return; }
     const double Now = GetWorld()->GetTimeSeconds();
     const float Delta = FMath::Clamp(float(Now - LastUpdateAt), 0.f, .1f); LastUpdateAt = Now;
+    if (AttackProfile) UpdateProfileMotion();
     if (bTravelling)
     {
         const float Step = FMath::Min(EliteData.TravelDistance - Travelled, EliteData.TravelSpeed * Delta);
@@ -147,6 +153,15 @@ void UPGEnemyAbilityAttack::UpdatePattern()
             StrikeCenter = Enemy->GetActorLocation(); StrikeCenter.Z -= HalfHeight;
             // Landing circle gets its own visible warning after collision-shortened travel.
             ShowTelegraph(StrikeCenter, false);
+            if (EliteData.bSyncMontageToPattern)
+                if (auto* Anim = Enemy->GetMesh()->GetAnimInstance())
+                    if (auto* Montage = EliteData.ElitePresentationMontage.Get())
+                    {
+                        Anim->Montage_SetPosition(Montage, Montage->GetPlayLength() * EliteData.WindupMontageFraction);
+                        Anim->Montage_SetPlayRate(Montage, Montage->GetPlayLength() *
+                            (EliteData.ImpactMontageFraction - EliteData.WindupMontageFraction) / EliteData.LandingTelegraphSeconds);
+                        Anim->Montage_Resume(Montage);
+                    }
             GetWorld()->GetTimerManager().SetTimer(PatternTimer, this, &ThisClass::StrikeElitePattern, EliteData.LandingTelegraphSeconds, false);
         }
     }
@@ -191,6 +206,7 @@ void UPGEnemyAbilityAttack::UpdatePattern()
 
 void UPGEnemyAbilityAttack::StrikeElitePattern()
 {
+    if (AttackProfile && !bDispatchingContact) { StrikeProfileContact(); return; }
     auto* Enemy = GetEnemyCharacterFromActorInfo();
     if (!IsActive() || !IsValid(Enemy) || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0) { EndAbilitySelf(); return; }
     if (EliteData.Pattern != EPGAttackPattern::LegacySlam)
@@ -205,8 +221,16 @@ void UPGEnemyAbilityAttack::StrikeElitePattern()
         Enemy->PublishBossPresentation();
         if (auto* Anim = Enemy->GetMesh()->GetAnimInstance())
             if (auto* Montage = EliteData.ElitePresentationMontage.Get()) Anim->Montage_Resume(Montage);
-        if (auto* Sound = EliteData.AttackSound.LoadSynchronous()) UGameplayStatics::PlaySoundAtLocation(this, Sound, Enemy->GetActorLocation());
-        if (EliteData.Pattern == EPGAttackPattern::ChargeSlam) { bTravelling = true; return; }
+        if (!AttackProfile)
+            if (auto* Sound = EliteData.AttackSound.LoadSynchronous()) UGameplayStatics::PlaySoundAtLocation(this, Sound, Enemy->GetActorLocation());
+        if (EliteData.Pattern == EPGAttackPattern::ChargeSlam)
+        {
+            bTravelling = true;
+            if (EliteData.bSyncMontageToPattern)
+                if (auto* Anim = Enemy->GetMesh()->GetAnimInstance())
+                    if (auto* Montage = EliteData.ElitePresentationMontage.Get()) Anim->Montage_Pause(Montage);
+            return;
+        }
         if (EliteData.Pattern == EPGAttackPattern::AimedProjectile)
         {
             auto* Class = EliteData.ProjectileClass.LoadSynchronous();
@@ -253,8 +277,7 @@ void UPGEnemyAbilityAttack::StrikeElitePattern()
         if (GetWorld()->LineTraceSingleByObjectType(Wall, StrikeCenter + FVector(0,0,60), Target->GetActorLocation(),
             FCollisionObjectQueryParams(ECC_WorldStatic), Params)) continue;
         Unique.Add(Target);
-        FGameplayEventData Event; Event.Instigator = Enemy; Event.Target = Target;
-        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Target, PGGamePlayTags::Shared_Event_HitReact, Event);
+        Enemy->GetPGAbilitySystemComponent()->ApplyEnemyPatternHit(Cast<APGCharacterBase>(Target), EliteData.EnemyDamageMultiplier);
         if (!IsActive()) return; // Damage can synchronously end the stage and cancel this ability.
     }
     if (EliteData.ImpactVFXScale > 0.f)
@@ -269,12 +292,14 @@ void UPGEnemyAbilityAttack::StrikeElitePattern()
         GetWorld()->GetTimerManager().SetTimer(PatternTimer, this, &ThisClass::StrikeElitePattern, FMath::Max(.1f, EliteData.HazardInterval), false);
         return;
     }
-    BeginRecovery();
+    if (!AttackProfile) BeginRecovery();
 }
 
 void UPGEnemyAbilityAttack::BeginRecovery()
 {
     auto* Enemy = GetEnemyCharacterFromActorInfo();
+    if (!Enemy || Enemy->bPatternRecovering) return;
+    GuardStage = AttackProfile && AttackProfile->bGuardCounter ? EGuardStage::Recovery : EGuardStage::None;
     Enemy->bPatternRecovering = true; Enemy->SetGuarding(false);
     Enemy->GetEnemyPresentation()->BeginRecovery();
     if (EliteData.bSyncMontageToPattern)
@@ -303,8 +328,22 @@ void UPGEnemyAbilityAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, 
     {
         if (auto* Enemy = GetEnemyCharacterFromActorInfo())
         {
+            Enemy->GetPGAbilitySystemComponent()->OnConfirmedGuardHit.Remove(GuardHitDelegate);
+            GuardHitDelegate.Reset();
+            Enemy->SetGuarding(false); Enemy->bBossPatternGuard = false;
+            if (!bCancelled)
+            {
+                if (!AttackProfile || !AttackProfile->bGuardCounter) ++Enemy->CompletedAttackPatterns;
+                auto* Tables = UPGDataTableManager::Get(this);
+                const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
+                if (Data && FMath::IsFinite(Data->MinimumCombatWait))
+                    Enemy->NextCombatActionAt = GetWorld()->GetTimeSeconds() + FMath::Max(0.f, Data->MinimumCombatWait);
+            }
             if (auto* Anim = Enemy->GetMesh()->GetAnimInstance())
+            {
+                if (ProfileMontage) Anim->Montage_Stop(.1f, ProfileMontage);
                 if (auto* Montage = EliteData.ElitePresentationMontage.Get()) Anim->Montage_Stop(.1f, Montage);
+            }
             Enemy->ClearPatternHitboxes();
             Enemy->GetPGAbilitySystemComponent()->CloseRecoveryWindow();
             Enemy->bPatternActive = Enemy->bPatternRecovering = Enemy->bPatternStriking = Enemy->bPerformingHeavyAttack = false;
@@ -315,6 +354,9 @@ void UPGEnemyAbilityAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, 
             Enemy->PublishBossPresentation();
         }
         PatternTarget.Reset();
+        if (auto* Director = GetWorld()->GetSubsystem<UPGCombatDirectorSubsystem>()) Director->Release(GetEnemyCharacterFromActorInfo());
+        AttackProfile = nullptr; ProfileMontage = nullptr; Contacts.Reset();
+        GuardStage = EGuardStage::None; bGuardSucceeded = bDispatchingContact = false;
         bElitePattern = bTravelling = bStriking = false;
         UE_LOG(LogTemp, Log, TEXT("PGPattern End skill=%d cancelled=%d"), EliteData.SkillID, bCancelled);
     }

@@ -78,13 +78,14 @@ def check_loot_cycle(log):
     rolls = re.findall(r'PGLoot rolled enemy=(\d+) pool=(\S+) seed=(-?\d+) item=(\d+) guid=([0-9A-Fa-f]+) result=([01])', log)
     problems = []
     guaranteed_pools = {'Rogue.Crusher', 'Rogue.Warden', 'Rogue.Boss'}
+    boss_id=15401 if any(int(row[0])==15401 for row in rolls) else 15106
     guaranteed = Counter(int(row[0]) for row in rolls if row[1] in guaranteed_pools)
-    expected = Counter({15104: 2, 15105: 2, 15106: 1})
+    expected = Counter({15104: 2, 15105: 2, boss_id: 1})
     from MonsterVariationRoster import SPEC, CREATURE_IDS
     if any(int(row[0]) in CREATURE_IDS for row in rolls):
         guaranteed_ids = {i for grade in SPEC['p09_grades'] if grade['grade']=='Elite' for i in grade['ids']}
         guaranteed_ids.update(c['id'] for c in SPEC['creatures'] if c['base'] in (15104,15105))
-        expected = Counter({15106:1})
+        expected = Counter({boss_id:1})
         for waves in SPEC['waves'].values():
             for wave in waves:
                 for eid,count in wave:
@@ -97,7 +98,7 @@ def check_loot_cycle(log):
         problems.append('Loot routed to the wrong ground/result destination')
     if len({row[4] for row in rolls}) != len(rolls):
         problems.append('Duplicate loot identity spawned')
-    boss = [row for row in rolls if row[0] == '15106']
+    boss = [row for row in rolls if int(row[0]) == boss_id]
     committed = re.findall(r'PGLoot boss committed item=(\d+) guid=([0-9A-Fa-f]+) wins=(\d+)', log)
     if len(boss) != 1 or boss[0][5] != '1' or len(committed) != 1 or committed[0][:2] != (boss[0][3], boss[0][4]) or committed[0][2] != '1':
         problems.append('Boss loot and victory were not committed exactly once together')

@@ -24,6 +24,17 @@ class QAEvidenceTests(unittest.TestCase):
         rows.append(f'PGLoot boss committed item=15004 guid={5:032X} wins=1')
         self.assertEqual(check_loot_cycle('\n'.join(rows)),[])
 
+    def test_humanoid_boss_loot_is_committed_exactly_once(self):
+        pools={15104:'Rogue.Crusher',15105:'Rogue.Warden',15401:'Rogue.Boss'}
+        rows=[f'PGLoot rolled enemy={eid} pool={pools[eid]} seed=1 item=15004 guid={index:032X} result={int(eid==15401)}'
+              for index,eid in enumerate((15104,15105,15104,15105,15401),1)]
+        rows.append('PGLoot boss committed item=15004 guid='+f'{5:032X}'+' wins=1')
+        complete='\n'.join(rows)
+        self.assertEqual(check_loot_cycle(complete),[])
+        self.assertTrue(check_loot_cycle('\n'.join(rows[:-1])))
+        self.assertTrue(check_loot_cycle(complete+'\n'+rows[-2]))
+        self.assertTrue(check_loot_cycle(complete.replace('wins=1','wins=2')))
+
     def test_telemetry_requires_assisted_commits_and_finite_samples(self):
         rows = [dict(stage=stage, run_seed=173001, assisted=True, outcome="Cleared",
                      selected_rewards=[15000] * count, combat_seconds=10,

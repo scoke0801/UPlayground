@@ -70,7 +70,11 @@ def validate_content_milestone(enemies, skills, stages):
             for field in ('TelegraphMaterial','ElitePresentationMontage','SlamVFX','AttackSound'):
                 assert unreal.load_asset(skill[field]), (sid,field)
         assert by_id[6]['bIsBossStage'] and len(by_id[6]['Waves']) == 1
-        assert [(s['MonsterId'], s['SpawnCount']) for s in by_id[6]['Waves'][0]['MonsterSpawnInfos']] == [(15106,1)]
+        boss_id=15401 if unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/HumanoidBoss/BP_15401') else 15106
+        assert [(s['MonsterId'], s['SpawnCount']) for s in by_id[6]['Waves'][0]['MonsterSpawnInfos']] == [(boss_id,1)]
+        if boss_id==15401:
+            from ConfigureHumanoidBoss import validate as validate_humanoid_boss
+            validate_humanoid_boss()
     else:
         assert 15107 not in skills and 15108 not in skills, 'Partial boss migration'
     if variety:

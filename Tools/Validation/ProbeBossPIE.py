@@ -73,7 +73,7 @@ def tick(dt):
                 return
             unreal.SystemLibrary.execute_console_command(world, 't.MaxFPS 60')
             unreal.SystemLibrary.execute_console_command(world, 'PGStress 0 0')
-            unreal.SystemLibrary.execute_console_command(world, 'PGStartStage 6')
+            unreal.SystemLibrary.execute_console_command(world, 'PGBossEncounter 15106')
             origin = player.get_actor_location()
             initialized = True
             at = elapsed

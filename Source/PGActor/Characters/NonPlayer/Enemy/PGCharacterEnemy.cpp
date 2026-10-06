@@ -168,6 +168,15 @@ void APGCharacterEnemy::BeginPlay()
                     SkillIDataRow->ElitePresentationMontage.ToSoftObjectPath(), SkillIDataRow->SlamVFX.ToSoftObjectPath(),
                     SkillIDataRow->AttackSound.ToSoftObjectPath(), SkillIDataRow->ProjectileClass.ToSoftObjectPath()})
                     if (auto* Asset = Path.TryLoad()) PreparedPatternAssets.AddUnique(Asset);
+                if (auto* Profile = SkillIDataRow->EnemyProfile.LoadSynchronous())
+                {
+                    PreparedPatternAssets.AddUnique(Profile);
+                    for (const auto* List : {&Profile->Contacts, &Profile->PhaseTwoContacts})
+                        for (const auto& Contact : *List)
+                            if (auto* Montage = Contact.Montage.LoadSynchronous()) PreparedPatternAssets.AddUnique(Montage);
+                    for (const auto& Motion : {Profile->GuardStartMontage, Profile->GuardHoldMontage, Profile->GuardAcceptMontage, Profile->GuardEndMontage})
+                        if (auto* Montage = Motion.LoadSynchronous()) PreparedPatternAssets.AddUnique(Montage);
+                }
 			}
 		}
         if (EnemyData->Role == EPGEnemyRole::Boss)
@@ -526,6 +535,7 @@ bool APGCharacterEnemy::TryBeginBossPhase(const FPGEnemyDataRow& Row)
         !FMath::IsFinite(Row.PhaseTwoHealthRatio) || Health / MaxHealth > FMath::Clamp(Row.PhaseTwoHealthRatio, .01f, .99f)) return false;
     // Set both gates before cancellation: a callback must not start a new attack in this transition.
     BossPhase = 2;
+    CompletedAttackPatterns = 0;
     const float Duration = FMath::IsFinite(Row.PhaseTransitionSeconds) ? FMath::Clamp(Row.PhaseTransitionSeconds, 0.f, 5.f) : 1.2f;
     PhaseTransitionUntil = GetWorld()->GetTimeSeconds() + Duration;
     RequestedSkillID = 0;
@@ -559,9 +569,11 @@ void APGCharacterEnemy::PublishBossPresentation(bool bHidePresentation) const
     View.Name = FText::FromName(Row->EnemyName);
     View.HealthRatio = FMath::Clamp(AbilitySystemComponent->GetHealth() / FMath::Max(1.f, AbilitySystemComponent->GetCombatStat(EPGStatType::Health)), 0.f, 1.f);
     View.Phase = BossPhase;
+    View.TransitionText = Row->PhaseTransitionText;
     View.DefeatDisplaySeconds = FMath::Clamp(Row->DefeatDisplaySeconds, 0.f, 10.f);
     View.State = bHidePresentation ? EPGBossCombatState::Hidden : View.HealthRatio <= 0 ? EPGBossCombatState::Defeated :
         IsBossTransitioning() ? EPGBossCombatState::Transition : bPatternRecovering ? EPGBossCombatState::Recovery :
+        bBossPatternGuard && bGuarding ? EPGBossCombatState::Guard :
         bPatternStriking ? EPGBossCombatState::Attacking : bPatternActive ? EPGBossCombatState::Windup : EPGBossCombatState::Preparing;
     if (ActivePatternID > 0)
         if (const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ActivePatternID)) View.Attack = FText::FromString(Skill->Desc);
@@ -573,7 +585,7 @@ float APGCharacterEnemy::GetDirectionalDamageScale(const AActor* Attacker) const
     if (!bGuarding || bPatternRecovering || !Attacker) return 1.f;
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Row = Tables ? Tables->GetRowData<FPGEnemyDataRow>(CharacterTID) : nullptr;
-    if (!Row || Row->Role != EPGEnemyRole::Guardian) return 1.f;
+    if (!Row || (Row->Role != EPGEnemyRole::Guardian && !(Row->Role == EPGEnemyRole::Boss && bBossPatternGuard))) return 1.f;
     const FVector Direction = (Attacker->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
     return !Direction.IsNearlyZero() && FVector::DotProduct(GetActorForwardVector(), Direction) >= FMath::Cos(FMath::DegreesToRadians(FMath::Clamp(Row->GuardHalfAngle, 0.f, 180.f)))
         ? 1.f - FMath::Clamp(Row->GuardReduction, 0.f, .95f) : 1.f;
@@ -598,7 +610,7 @@ void APGCharacterEnemy::SetGuarding(bool bEnabled)
     }
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Row = Tables ? Tables->GetRowData<FPGEnemyDataRow>(CharacterTID) : nullptr;
-    if (!Row || Row->Role != EPGEnemyRole::Guardian || Row->SkillIdList.IsEmpty()) return;
+    if (!Row || (Row->Role != EPGEnemyRole::Guardian && !(Row->Role == EPGEnemyRole::Boss && bBossPatternGuard)) || Row->SkillIdList.IsEmpty()) return;
     const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(Row->SkillIdList[0]);
     if (!GuardDecal && Skill && Skill->TelegraphMaterial.IsValid())
     {

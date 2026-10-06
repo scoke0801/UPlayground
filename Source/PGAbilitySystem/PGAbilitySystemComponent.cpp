@@ -222,7 +222,9 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     float Damage = PGCombatMath::Damage(Attack * Source->MeleeDamageMultiplier, GetEffectiveDefense(),
         bCritical, Source->GetCombatStat(EPGStatType::CriticalDamage), Tuning->DefenseConstant, Tuning->BaseCriticalMultiplier, Tuning->MinimumDamage);
     const float Before = GetHealth();
-    if (const auto* Guard = Cast<APGCharacterEnemy>(GetAvatarActor())) Damage *= Guard->GetDirectionalDamageScale(Source->GetAvatarActor());
+    const auto* Guard = Cast<APGCharacterEnemy>(GetAvatarActor());
+    const float GuardScale = Guard ? Guard->GetDirectionalDamageScale(Source->GetAvatarActor()) : 1.f;
+    Damage *= GuardScale;
     const auto* SourceTuning = Source->CombatTuning ? Source->CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
     float Bonus = 0.f;
     if (Before <= GetCombatStat(EPGStatType::Health) * FMath::Clamp(SourceTuning->ExecutionHealthThreshold, 0.f, 1.f))
@@ -244,6 +246,9 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     const FVector HitForward = Source->GetAvatarActor() ? Source->GetAvatarActor()->GetActorForwardVector() : FVector::ForwardVector;
     ApplyGameplayEffectToSelf(Effect, 1.f, Source->MakeEffectContext());
     const float Applied = FMath::Max(0.f, Before - GetHealth());
+    // Confirm the direct hit after GAS/phase/death callbacks, before any proc damage.
+    if (Applied > 0.f && GuardScale < 1.f && GetHealth() > 0.f)
+        OnConfirmedGuardHit.Broadcast(Source->GetAvatarActor());
     Source->RecordObservedHit(Observation, GetAvatarActor(), ObservedPhase, Applied, HitOrigin, HitForward);
     const bool bPlayerSource = Cast<APGCharacterPlayer>(Source->GetAvatarActor()) != nullptr;
     const bool bPlayerTarget = Cast<APGCharacterPlayer>(GetAvatarActor()) != nullptr;
@@ -387,6 +392,16 @@ int32 UPGAbilitySystemComponent::HandleGameplayEvent(FGameplayTag EventTag, cons
     }
     return Super::HandleGameplayEvent(EventTag, Payload);
 }
+void UPGAbilitySystemComponent::ApplyEnemyPatternHit(APGCharacterBase* Target, float Multiplier)
+{
+    auto* Enemy = Cast<APGCharacterEnemy>(GetAvatarActor());
+    if (!IsValid(Enemy) || !IsValid(Target) || Enemy == Target || GetHealth() <= 0.f ||
+        !FMath::IsFinite(Multiplier) || Multiplier <= 0.f || !Target->GetPGAbilitySystemComponent()) return;
+    TGuardValue<float> DamageScope(MeleeDamageMultiplier, Multiplier);
+    FGameplayEventData Event; Event.Instigator = Enemy; Event.Target = Target;
+    Target->GetPGAbilitySystemComponent()->HandleGameplayEvent(PGGamePlayTags::Shared_Event_HitReact, &Event);
+}
+
 void UPGAbilitySystemComponent::ApplyPlayerMeleeHit(APGCharacterBase* Target, float DamageMultiplier, bool bHeavyImpact)
 {
     auto* Player = Cast<APGCharacterPlayer>(GetAvatarActor());

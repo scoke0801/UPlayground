@@ -55,6 +55,8 @@ def validate_hack_slash_p0(rows=None):
         allowed = {s['id'] for s in spec['skills']}
         from MonsterVariationRoster import SPEC as monster_spec
         additional={s['id'] for s in monster_spec['skills']}
+        boss_spec=json.loads((root/'Tools/Validation/Data/HumanoidBoss.json').read_text(encoding='utf-8'))
+        additional.update(s['id'] for s in boss_spec['skills'])
         assert len(rows)==len(by_id) and set(by_id)-{r['SkillID'] for r in old_rows} <= additional
         for old in old_rows:
             current = regression_rows[old['SkillID']]
