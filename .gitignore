@@ -168,6 +168,11 @@ Tools/Validation/ValidatePlayerAttacks.py
 
 # Shared toon import pipeline used by the player prefab transfer.
 !/Tools/Validation/ConfigureToonCharacterBatch.py
+
+# Reproducible isolated Bokusei shading comparison fixture.
+!/Tools/Validation/ConfigureBokuseiShadingComparison.py
+!/Tools/Validation/PreviewBokuseiShadingComparison.py
+!/Tools/Validation/RunBokuseiShadingComparison.py
 !/Tools/Validation/PreviewToonCharacterBatch.py
 !/Tools/Validation/ValidateToonCharacterBatch.py
 /Tools/Art/P09Modular
@@ -186,3 +191,21 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/RunGripPreview.py
 !/Tools/Validation/Data/PlayableCharacterGrip_Bokusei.json
 !/Tools/Validation/Data/PlayableCharacterGrip_Players.json
+
+# Humanoid boss source, migration and isolated combat/motion probes.
+!/Tools/Validation/ConfigureHumanoidBoss.py
+!/Tools/Validation/RunHumanoidBoss.py
+!/Tools/Validation/ProbeHumanoidBossPIE.py
+!/Tools/Validation/ProbeHumanoidMotions.py
+!/Tools/Validation/Data/HumanoidBoss.json
+
+# Monster loadout source and reproducible grip/encounter verification.
+!/Tools/Validation/ConfigureMonsterVariations.py
+!/Tools/Validation/MonsterVariationRoster.py
+!/Tools/Validation/ProbeMonsterVariationsPIE.py
+!/Tools/Validation/RunMonsterVariations.py
+!/Tools/Validation/ProbeP09MonsterGrip.py
+!/Tools/Validation/RunP09MonsterGrip.py
+!/Tools/Validation/TestMonsterVariations.py
+!/Tools/Validation/TestP09MonsterGrip.py
+!/Tools/Validation/Data/MonsterVariations.json
