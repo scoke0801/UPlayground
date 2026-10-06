@@ -1,10 +1,30 @@
 # UPlayground 프로젝트 분석 문서
 
+## 2026-10-06 bOKUSEI 단계별 셰이딩 비교 · 자유 카메라
+
+- 기존 `/Game/Art/ToonTest/Maps/L_PGToon_Bokusei_ShadingComparison`을 일반 Lit → 공통 셀 명암 → 피부·얼굴·헤어별 명암 → 림·하이라이트 → 외곽선의 누적 5단계로 확장했다. 10개 슬롯의 텍스처·색상·투명도, 메시·LOD0·Leader Pose를 공유하며 마지막 단계는 현재 Bokusei 표현이다.
+- 비교 전용 `PGShadingComparisonPawn`으로 재생 중 WASD/QE 이동·우클릭 회전·Shift 가속, 1–5 단계 선택·F 얼굴·C 쿼터뷰·0/R 전체 보기를 제공한다. 한국어 조작 안내를 화면에 표시하며 게임 기본 맵과 원본 외형은 보존한다.
+- 생성·새 프로세스 저장 재로드·SM6 렌더·PIE 포즈와 실제 입력 경로 검증은 기존 `RunBokuseiShadingComparison.py`를 사용한다. 단계별 차이·사용법·검증 근거는 [비교 맵 기록](Docs/todo/BokuseiShadingComparison_Implementation_Report.md)을 따른다.
+
+## 2026-10-05 bOKUSEI 셰이딩 비교 맵
+
+- `/Game/Art/ToonTest/Maps/L_PGToon_Bokusei_ShadingComparison`에서 왼쪽 일반 Default Lit과 오른쪽 현재 `DA_Bokusei`의 Unlit 툰 재질·화면 공간 외곽선을 비교한다. 동일 메시·텍스처·색상·투명도·LOD0와 Leader Pose로 맞춘 대기 포즈를 사용한다.
+- 정면·쿼터뷰·얼굴 카메라, 공통 광원·고정 노출과 한국어 안내판을 제공한다. 재생하면 정면 카메라에서 대기 모션이 반복된다. 원본 외형·재질·모션과 기존 게임 맵은 수정하지 않는다.
+- 재생성은 `RunBokuseiShadingComparison.py`, 저장 재로드·10개 슬롯의 색상/알파 일치·SM6 렌더·PIE 동기 포즈 검증은 `PreviewBokuseiShadingComparison.py`다. 열기·카메라 사용법과 검증 근거는 [비교 맵 기록](Docs/todo/BokuseiShadingComparison_Implementation_Report.md)을 따른다.
+
+## 2026-10-05 휴머노이드 보스 · 월식의 검성
+
+- `15401` 월식의 검성을 6구간에 연결했다. 기존 황혼의 기사 데이터와 일반 15웨이브는 보존한다. P09 Armor007 남성 외형·검 그립과 보유 카타나 모션을 별도 전투 Skeleton으로 변환해 사용한다.
+- `PGEnemyAttackProfile`이 2타/3타 연참의 접점·형상·피해·모션 구간과 검막 유지/지연 반격을 소유한다. 찌르기·돌진·고리 파동, HP 50% 전환과 패턴 종료 뒤 최소 대기, 취소·사망 정리와 한국어 보스 HUD를 연결한다.
+- 원본은 `Tools/Validation/Data/HumanoidBoss.json`, 적용·백업·새 프로세스 재로드·실제 GAS 전투·접점 근접 캡처는 `RunHumanoidBoss.py`다. 검증 결과와 직접 플레이·연출 수용 범위는 [보스 구현 보고서](Docs/todo/HumanoidBoss_Implementation_Report.md)를 따른다.
+
 ## 2026-10-05 몬스터 배리에이션 · P09 등급 장비
 
 - 보유 리소스로 새끼 거미·거미 여왕·리치·엔트·골렘(`15301–15305`)을 시련에 추가하고, P09 남녀를 일반·강화·정예 6종(`15201–15206`)으로 구성했다. 등급별 Armor003/007/012, Sword001/003/005와 정예 방패·방어·보장 드랍을 연결한다.
 - `MonsterVariations.json`이 능력치·전투 패턴·장비·15웨이브 편성을 소유한다. 일반/강화/정예 P09는 1/3/4구간부터 등장하며 기존 웨이브 총수와 6구간 보스는 유지한다. 이전 P09 전용 편성 기록보다 이 구성이 우선한다.
 - `PGCharacterAppearance.Attachments`는 표시 메시 본의 고정 장비를 관리하며 골렘은 `PGCreatureAnimInstance`로 기존 Fantasy Pack 모션을 재생한다. 적용·백업·저장 재로드·11종 실전 검사는 `RunMonsterVariations.py`이며 검증 결과와 범위는 [몬스터 배리에이션 보고서](Docs/todo/MonsterVariations_Implementation_Report.md)를 따른다.
+- P09 그립은 성별 손바닥 접촉점과 검·방패 방향을 보정하고 정예 방패에 왼손 15개 본의 쥐기 포즈를 적용한다. 모듈형 표시 리더의 현재 본 위치로 전체 몸 경계를 계산해, 기본 자세의 팔 경계 때문에 손·전완이 잘못 컬링되는 문제를 수정했다. `RunMonsterVariations.py --apply --grips-only`는 외형 6개만 저장하며 `RunP09MonsterGrip.py`가 손잡이 접촉 오차·팔 경계·근접 시점을 검사한다.
+- 중단 작업 재개 후 최신 빌드의 근접 표본·PNG 150개와 14개 검토 시트, 새 프로세스 저장 재로드, 11종 전투·9종 플레이어 외형 회귀 및 PG 자동 테스트 50개가 통과했다. 초기 그립 불합격 기록 이후의 최신 결과와 수용 범위는 [그립 보정 완료 기록](Docs/todo/MonsterVariations_Implementation_Report.md#p09-그립-보정중단-작업-재개-완료--2026-10-05)을 따른다.
 
 ## 2026-10-05 월빛 회복약 · HUD 크기 수정
 
