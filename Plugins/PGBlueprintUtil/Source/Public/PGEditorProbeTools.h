@@ -20,4 +20,8 @@ public:
     /** Captures this PIE world's viewport and HUD; rejects an empty render. */
     UFUNCTION(BlueprintCallable, Category="PG|QA")
     static bool CaptureGameViewport(UWorld* World, const FString& Filename);
+
+    /** Read imported LOD0 positions/normals/UV0, bypassing FBX material baking. */
+    UFUNCTION(BlueprintCallable, Category="PG|QA")
+    static bool ExportSkeletalMaterialGeometry(class USkeletalMesh* Mesh, FName MaterialSlot, const FString& Filename);
 };

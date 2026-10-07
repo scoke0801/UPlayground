@@ -49,9 +49,14 @@ void UPGToonPresentationComponent::Initialize(USkeletalMeshComponent* InMesh)
         OriginalMaterials.Add(Source);
         UMaterialInstanceDynamic* MID = Source ? Mesh->CreateDynamicMaterialInstance(Index, Source) : nullptr;
         Materials.Add(MID);
-        float Face = 0;
-        if (MID && MID->GetScalarParameterValue(FMaterialParameterInfo(TEXT("FaceShading")), Face) && Face > .01f)
-            HeadMaterials.Add(MID);
+        if (MID)
+        {
+            float Face = 0, FaceSDF = 0;
+            MID->GetScalarParameterValue(FMaterialParameterInfo(TEXT("FaceShading")), Face);
+            MID->GetScalarParameterValue(FMaterialParameterInfo(TEXT("FaceSDFEnabled")), FaceSDF);
+            if (Face > .01f || FaceSDF > .01f)
+                HeadMaterials.Add(MID);
+        }
     }
     RefreshPresentation();
 }

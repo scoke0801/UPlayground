@@ -112,7 +112,7 @@ def apply_shading_profile(instance, character, slot):
     return profile
 
 
-def build_toon_master(name="M_PGToonCharacter", extended_alpha=False, translucent=False, world_lit=False):
+def build_toon_master(name="M_PGToonCharacter", extended_alpha=False, translucent=False, world_lit=False, face_sdf_texture=None):
     material = recreate_material(name)
     material.set_editor_property("material_domain", unreal.MaterialDomain.MD_SURFACE)
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT if translucent else unreal.BlendMode.BLEND_MASKED)
@@ -203,6 +203,23 @@ float spec = lerp(pow(saturate(dot(N, H)), max(SpecularPower, 1.0)), strandSpec,
     if world_lit:
         extra_nodes += [(scalar_parameter(material, 'HairAnisotropy', 0, -1550, 2400), '', 'HairAnisotropy'),
                         (expression(material, unreal.MaterialExpressionVertexTangentWS, -1550, 2500), '', 'HairTangentWS')]
+    if face_sdf_texture:
+        sdf = expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -2100, -300)
+        sdf.set_editor_property('parameter_name', 'FaceSDFTexture')
+        sdf.set_editor_property('texture', face_sdf_texture)
+        sdf.set_editor_property('sampler_type', unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR)
+        extra_nodes += [(sdf, 'RGB', 'FaceSDFSample')]
+        extra_nodes += [(vector_parameter(material, key, value, -2100, 2700+i*100), 'RGB', key)
+                        for i,(key,value) in enumerate([('HeadForwardWS',(0,1,0,0)),('HeadRightWS',(1,0,0,0))])]
+        extra_nodes += [(scalar_parameter(material,key,value,-2100,3000+i*90),'',key)
+                        for i,(key,value) in enumerate([('FaceSDFEnabled',0),('FaceSDFStrength',.85),
+                            ('FaceSDFBias',.035),('FaceSDFSoftness',.012),('FaceSDFDebug',0)])]
+        sdf_code = (ROOT/'Tools/Art/ToonTest/BokuseiFaceSDF/FaceSDF.hlsl').read_text(encoding='utf-8')
+        code = custom.get_editor_property('code')
+        marker = 'float3 base = max(BaseColor * BaseTint, 0.0);'
+        assert marker in code
+        custom.set_editor_property('code', code.replace(marker, sdf_code+'\n'+marker).replace(
+            'return base * band + rimTint', 'if (FaceSDFDebug > 1.5) return faceLit.xxx;\nif (FaceSDFDebug > .5) return FaceSDFSample;\nreturn base * band + rimTint'))
     custom.set_editor_property(
         "inputs",
         [

@@ -1,4 +1,5 @@
 #include "PGToonPreviewActor.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
@@ -8,6 +9,27 @@
 APGToonPreviewActor::APGToonPreviewActor()
 {
     ToonPresentation = CreateDefaultSubobject<UPGToonPresentationComponent>(TEXT("ToonPresentation"));
+    HairShadowProxy = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HairShadowProxy"));
+    HairShadowProxy->SetupAttachment(GetSkeletalMeshComponent());
+    HairShadowProxy->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    HairShadowProxy->SetVisibility(false);
+    HairShadowProxy->SetCastHiddenShadow(true);
+    HairShadowProxy->SetCastShadow(false);
+    HairShadowProxy->SetRenderInMainPass(false);
+    HairShadowProxy->SetRenderInDepthPass(false);
+    HairShadowProxy->SetRenderCustomDepth(false);
+    HairShadowProxy->SetComponentTickEnabled(false);
+    HairShadowProxy->bCastStaticShadow = false;
+    HairShadowProxy->bReceivesDecals = false;
+    HairShadowProxy->bAffectDistanceFieldLighting = false;
+    HairShadowProxy->bAffectDynamicIndirectLighting = false;
+}
+
+void APGToonPreviewActor::BeginPlay()
+{
+    Super::BeginPlay();
+    if (HairShadowProxy->GetSkeletalMeshAsset())
+        HairShadowProxy->SetLeaderPoseComponent(GetSkeletalMeshComponent());
 }
 
 APGToonPreviewActor* APGToonPreviewActor::SpawnPreviewActor(UObject* WorldContextObject, const FTransform& Transform)

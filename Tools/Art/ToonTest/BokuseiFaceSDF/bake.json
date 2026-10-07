@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "status": "PASS",
+  "mesh": "/Game/Art/ToonTest/Bokusei/SK_Bokusei_ToonTest.SK_Bokusei_ToonTest",
+  "slot": "Mat_Bokusei_Face",
+  "lod": 0,
+  "vertices": 6671,
+  "triangles": 9760,
+  "size": 512,
+  "valid_texels": 202033,
+  "conflicting_texels": 1175,
+  "head_frame": {
+    "status": "PASS",
+    "mesh": "/Game/Art/ToonTest/Bokusei/SK_Bokusei_ToonTest.SK_Bokusei_ToonTest",
+    "head_bone": "Head",
+    "head_transform": "(Rotation=(X=-0.751839,Y=0.000000,Z=-0.000000,W=0.659347),Translation=(X=-0.000004,Y=-1.496015,Z=133.028966),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000))",
+    "head_origin": [
+      -4.346653108196554e-06,
+      -1.4960147613747283,
+      133.02896623385047
+    ],
+    "head_forward_axis": [
+      -0.0,
+      -0.130523,
+      0.991445
+    ],
+    "head_right_axis": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "materials": [
+      {
+        "index": 0,
+        "slot": "Mat_Bokusei_Body",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_Body.MI_PGToon_Bokusei_Mat_Bokusei_Body",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_Body.T_Tx_Bokusei_Body"
+      },
+      {
+        "index": 1,
+        "slot": "Mat_Bokusei_Face",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_Face.MI_PGToon_Bokusei_Mat_Bokusei_Face",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_Face.T_Tx_Bokusei_Face"
+      },
+      {
+        "index": 2,
+        "slot": "Mat_Bokusei_FaceParts",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_FaceParts.MI_PGToon_Bokusei_Mat_Bokusei_FaceParts",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_FaceParts.T_Tx_Bokusei_FaceParts"
+      },
+      {
+        "index": 3,
+        "slot": "Mat_Bokusei_FaceParts_Transparent",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_FaceParts_Transparent.MI_PGToon_Bokusei_Mat_Bokusei_FaceParts_Transparent",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_FaceParts.T_Tx_Bokusei_FaceParts"
+      },
+      {
+        "index": 4,
+        "slot": "Mat_Bokusei_Hair",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_Hair.MI_PGToon_Bokusei_Mat_Bokusei_Hair",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_Hair.T_Tx_Bokusei_Hair"
+      },
+      {
+        "index": 5,
+        "slot": "Mat_Bokusei_Hair_Transparent",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_Hair_Transparent.MI_PGToon_Bokusei_Mat_Bokusei_Hair_Transparent",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_Hair.T_Tx_Bokusei_Hair"
+      },
+      {
+        "index": 6,
+        "slot": "Mat_Bokusei_Earring",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_Earring.MI_PGToon_Bokusei_Mat_Bokusei_Earring",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_Earring.T_Tx_Bokusei_Earring"
+      },
+      {
+        "index": 7,
+        "slot": "Mat_Bokusei_Robe",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_Robe.MI_PGToon_Bokusei_Mat_Bokusei_Robe",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_Robe.T_Tx_Bokusei_Robe"
+      },
+      {
+        "index": 8,
+        "slot": "Mat_Bokusei_Cloth",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_Cloth.MI_PGToon_Bokusei_Mat_Bokusei_Cloth",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_Cloth.T_Tx_Bokusei_Cloth"
+      },
+      {
+        "index": 9,
+        "slot": "Mat_Bokusei_Underwear",
+        "material": "/Game/Art/ToonTest/Bokusei/Materials/MI_PGToon_Bokusei_Mat_Bokusei_Underwear.MI_PGToon_Bokusei_Mat_Bokusei_Underwear",
+        "texture": "/Game/Art/ToonTest/Bokusei/Textures/T_Tx_Bokusei_Underwear.T_Tx_Bokusei_Underwear"
+      }
+    ],
+    "protected": {
+      "Content\\DataCenter\\Characters\\DA_Bokusei.uasset": "2129e9b0d15165b3a701104b201ad55cab8a24640e5ee88ac847ce3157904d8c",
+      "Content\\Art\\ToonTest\\Bokusei\\SK_Bokusei_ToonTest.uasset": "8086b1fcea30a006c1f7e48760eda036c406f10f1c354866a66700812710596c",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_Body.uasset": "29e74132271e901409b52d8d95100b5fac9ed4bf039a3ec9362d1f0172900f63",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_Face.uasset": "9900d5228f393b159907903518dbe4b4284e1a4eafb4895bacf0040e1eab58c3",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_FaceParts.uasset": "80fc50b404c0eb8b076273933d17ffe7510ef11778d9f722340898ce71a3fd56",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_FaceParts_Transparent.uasset": "a67c980321f0534e3c98ba021a213725b67a0bad17bfb127749c38d8d6978282",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_Hair.uasset": "229704d9887ba1052a02c7b8eb17e2d1b7c447a33d6ff40a87ca7ab120c65daa",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_Hair_Transparent.uasset": "8e2a5d628f26fc593611310fec51cd062f3f9b6cf2e2bacf3254a924d1ad9b63",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_Earring.uasset": "bd18c584191a3f07d68b0d00cba105981a39e80a3421aa4080b5ee8d8d035f90",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_Robe.uasset": "33ddde9913601951fbdbea6f62d77f81c6ba5519f0bfc56f238d6f6ab549b711",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_Cloth.uasset": "76cf05ea2e7428676e6583e25d0c232d2591b6b26becaac08aa1212a8c405b31",
+      "Content\\Art\\ToonTest\\Bokusei\\Materials\\MI_PGToon_Bokusei_Mat_Bokusei_Underwear.uasset": "034fdd93fd5c602d6da8c342287eab5d3fe61c35ecf59e320ecf472ed326bd47"
+    },
+    "head_forward": [
+      2.5606290674292517e-07,
+      0.9999997207769257,
+      -7.245711541870037e-08
+    ],
+    "head_right": [
+      0.999999999999948,
+      -2.5606296403304835e-07,
+      1.9609601446236411e-07
+    ],
+    "geometry": "C:\\UsingProject\\UnrealProject\\UPlayground\\Saved\\BokuseiFaceSDF\\Model\\face_geometry.json",
+    "geometry_sha256": "9a28e9b78df90cbd6e15e8b667d47a60fd5c7ecaede6ff5d478ee749e66433bd"
+  },
+  "half_width_cm": 8.531809156877646,
+  "skin_island_texels": 124046,
+  "skin_island_conflicts": 0,
+  "texture": "C:\\UsingProject\\UnrealProject\\UPlayground\\Tools\\Art\\ToonTest\\BokuseiFaceSDF\\T_PGBokusei_FaceSDF.png",
+  "texture_sha256": "a16968941041d9be6d4dc232aa15faf1fd32e6c9d3fa1829ed97fce999deafb9",
+  "encoding": {
+    "R": "+HeadRight light; angular zero crossing / pi",
+    "G": "-HeadRight light; angular zero crossing / pi",
+    "B": "Front face influence; back of head/lowest rim use geometric shading"
+  },
+  "authoring": {
+    "resolution": 512,
+    "angles_per_side": 19,
+    "proxy_width_gain": 1.35,
+    "geometric_yaw_weight": 0.22,
+    "light_cutoff": 0.05,
+    "uv_padding_texels": 12,
+    "signed_distance_clamp_texels": 24
+  },
+  "settings_sha256": "afcabcebab2540f9542243f3246b7af42bb76fed7167fa4df7e4f7aea577c17e",
+  "checks": {
+    "euclidean_distance": true,
+    "finite_range": true,
+    "front_back_endpoints": true
+  }
+}

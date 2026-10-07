@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "bake": {
+    "resolution": 512,
+    "angles_per_side": 19,
+    "proxy_width_gain": 1.35,
+    "geometric_yaw_weight": 0.22,
+    "light_cutoff": 0.05,
+    "uv_padding_texels": 12,
+    "signed_distance_clamp_texels": 24
+  },
+  "scalars": {
+    "FaceSDFEnabled": 1.0,
+    "FaceSDFStrength": 0.85,
+    "FaceSDFBias": 0.035,
+    "FaceSDFSoftness": 0.012,
+    "FaceSDFDebug": 0.0
+  }
+}

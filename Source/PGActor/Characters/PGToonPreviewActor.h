@@ -19,4 +19,10 @@ public:
     static bool SetPreviewViewportSize(UObject* WorldContextObject, int32 Width, int32 Height);
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="PG|Toon")
     TObjectPtr<class UPGToonPresentationComponent> ToonPresentation;
+    /** Optional masked hair caster; shares the visible mesh's pose, never renders color/depth. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="PG|Toon")
+    TObjectPtr<class USkeletalMeshComponent> HairShadowProxy;
+
+protected:
+    virtual void BeginPlay() override;
 };
