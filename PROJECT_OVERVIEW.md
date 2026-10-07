@@ -1,10 +1,27 @@
 # UPlayground 프로젝트 분석 문서
 
-## 2026-10-06 bOKUSEI 단계별 셰이딩 비교 · 자유 카메라
+## 2026-10-06 이동 공격 · 대시 연결
 
-- 기존 `/Game/Art/ToonTest/Maps/L_PGToon_Bokusei_ShadingComparison`을 일반 Lit → 공통 셀 명암 → 피부·얼굴·헤어별 명암 → 림·하이라이트 → 외곽선의 누적 5단계로 확장했다. 10개 슬롯의 텍스처·색상·투명도, 메시·LOD0·Leader Pose를 공유하며 마지막 단계는 현재 Bokusei 표현이다.
-- 비교 전용 `PGShadingComparisonPawn`으로 재생 중 WASD/QE 이동·우클릭 회전·Shift 가속, 1–5 단계 선택·F 얼굴·C 쿼터뷰·0/R 전체 보기를 제공한다. 한국어 조작 안내를 화면에 표시하며 게임 기본 맵과 원본 외형은 보존한다.
-- 생성·새 프로세스 저장 재로드·SM6 렌더·PIE 포즈와 실제 입력 경로 검증은 기존 `RunBokuseiShadingComparison.py`를 사용한다. 단계별 차이·사용법·검증 근거는 [비교 맵 기록](Docs/todo/BokuseiShadingComparison_Implementation_Report.md)을 따른다.
+- 기본 3타는 WASD 이동 100%와 상체 공격, 관통검기는 이동 90%와 상체 발사, 원월참은 전신 회전을 유지하며 이동 85%를 사용한다. 공격 시작·종료·콤보 전환·히트스톱에서 Walk 속도를 지우지 않으며 이동 방향은 실제 속도를 캐릭터 기준으로 계산한다. 피해·모션 접점·쿨다운·취소 시각은 유지한다.
+- 대시 중 입력 예약을 0.45초로 분리하고, 이동 키를 누른 상태의 종료 속도를 보행 속도로 제한해 다음 공격과 연결한다. 정지 입력·취소는 즉시 정지하며 기존 벽 충돌·적 통과·잔상 정리를 유지한다.
+- 원본은 `HackSlashP0.json` / `HackSlashP1.json`, 적용·백업·재로드는 `ConfigureMobileCombat.py`, 실행 검증은 `RunMobileCombat.py`다. Development·DebugGame 빌드, PG 50개·8종 공간 판정·콤보·세 외형의 15회 이동 공격과 별도 대시 회귀가 통과했다. Development의 이동 공격 실행도 별도로 확인했다. 일반 플레이는 `Tools/PlayMobileCombat.ps1`로 실행한다. 검증 근거와 직접 플레이 폴리싱 범위는 [이동 공격 기록](Docs/todo/MobileCombat_Implementation_Report.md)을 따른다.
+
+## 2026-10-06 Bokusei 모델 기반 얼굴 SDF 적용
+
+- 실제 Bokusei LOD0 얼굴 위치·노멀·UV0와 Head 본 좌표를 추출해 512×512 좌우 얼굴 명암 전환 맵을 제작했다. 19단계 조명 마스크의 2D signed distance 영점을 보간하며 피부 UV 섬만 적용한다.
+- 게임에서 사용하는 얼굴 MI의 부모를 전용 Unlit SDF 마스터로 교체했다. DA·메시·다른 9개 슬롯의 해시는 유지하며 기존 얼굴은 Baseline으로 보관한다. 비교 맵 7단계는 적용한 얼굴, 8단계는 비교 전용 월드 수광·헤어 그림자 변형이다.
+- `RunBokuseiFaceSDF.py --apply`가 추출·베이크·백업·적용·8단계 비교 맵 생성·검증을 재현한다. 에디터 빌드, 좌우/정면/후면·천정/바닥·쿼터뷰 캡처, 저장 재로드, 애니메이션 중 머리 방향 및 입력 33개 검사를 통과했다. 설정·복원·확인 범위는 [얼굴 SDF 기록](Docs/todo/BokuseiFaceSDF_Implementation_Report.md)을 따른다.
+
+## 2026-10-06 bOKUSEI 머리카락 그림자
+
+- 비교 맵의 6단계와 얼굴 SDF가 있는 8단계에 반투명 헤어를 유지하는 그림자 전용 Masked 메시를 추가했다. 두 헤어 슬롯만 투사하며 같은 메시·LOD·Leader Pose를 공유한다. `J`로 헤어 그림자를 전환하고 기본 가림막은 꺼 두어 `6 → F → J`로 얼굴의 차이를 볼 수 있다.
+- C++ 빌드, 정면·비스듬한 얼굴·PIE의 피부 수광 픽셀, 헤어 투사체 2개의 포즈 일치, 현재 8개 모델·35개 본 비교·입력 33개 검증이 통과했다. 최종 렌더와 입력 재검증의 별도 실행 근거는 [비교 맵 기록](Docs/todo/BokuseiShadingComparison_Implementation_Report.md)의 머리카락 그림자 항목을 따른다.
+
+## 2026-10-06 bOKUSEI 단계별 셰이딩 비교 · 자유 카메라 · 그림자
+
+- 기존 `/Game/Art/ToonTest/Maps/L_PGToon_Bokusei_ShadingComparison`을 일반 Lit → 공통 셀 명암 → 피부·얼굴·헤어별 명암 → 림·하이라이트 → 외곽선 → 월드 그림자의 6단계로 확장했다. 10개 슬롯의 텍스처·색상·투명도, 메시·LOD0·Leader Pose를 공유하며 5단계는 현재 Bokusei 표현, 6단계는 비교 전용 Default Lit 툰 수광 변형이다.
+- 비교 전용 `PGShadingComparisonPawn`으로 재생 중 WASD/QE 이동·우클릭 회전·Shift 가속, 1–6 단계 선택·F 얼굴·C 쿼터뷰·0/R 전체 보기·H 가림막 그림자 토글을 제공한다. 5/6단계에 같은 가림막을 배치해 Unlit/월드 수광을 비교하며 한국어 조작 안내를 표시한다. 게임 기본 맵과 원본 외형은 보존한다.
+- 생성·새 프로세스 저장 재로드·SM6 렌더·PIE 포즈와 실제 입력 경로 검증은 기존 `RunBokuseiShadingComparison.py`를 사용한다. 에디터 빌드·6단계 저장/렌더·25개 본 포즈 비교·입력 24개 및 실제 그림자 수광 픽셀 검증이 통과했다. 단계별 차이·사용법·검증 근거는 [비교 맵 기록](Docs/todo/BokuseiShadingComparison_Implementation_Report.md)을 따른다.
 
 ## 2026-10-05 bOKUSEI 셰이딩 비교 맵
 
