@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--step', choices=['all', 'configure', 'preview'], default='all')
     parser.add_argument('--engine', type=Path, default=Path('C:/Program Files/Epic Games/UE_5.8'))
+    parser.add_argument('--input-only', action='store_true', help='Skip editor screenshots and verify PIE camera input only')
     args = parser.parse_args()
     output = ROOT/'Saved/BokuseiShadingComparison/Runs'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     output.mkdir(parents=True)
@@ -35,6 +36,7 @@ def main():
                        '-abslog='+str(output/(step+'.log'))]
             command += ['-RenderOffscreen', '-windowed', '-ForceRes', '-ResX=1600', '-ResY=900', '-ExecutePythonScript='+str(script)] if render else ['-nullrhi', '-run=pythonscript', '-script='+str(script)]
             if render: command.append('-PGShadingComparisonProbe')
+            if render and args.input_only: command.append('-PGComparisonInputOnly')
             (output/(step+'_command.json')).write_text(json.dumps(command, indent=2), encoding='utf-8')
             latest = ROOT/'Saved/BokuseiShadingComparison'/(step+'.json')
             previous = latest.stat().st_mtime_ns if latest.exists() else None
@@ -53,6 +55,11 @@ def main():
             assert latest.exists() and latest.stat().st_mtime_ns != previous, 'Missing fresh report: '+str(latest)
             result = json.loads(latest.read_text(encoding='utf-8'))
             assert result['status'] == 'PASS', result.get('error', result)
+            if render and not args.input_only:
+                subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+                                str(ROOT/'Tools/Art/ToonTest/BokuseiShadingComparison/MeasureShadows.ps1'),
+                                '-PreviewDirectory', result['run']], check=True, timeout=30, creationflags=flags)
+                report['shadow_pixels'] = str(Path(result['run'])/'shadow_pixels.json')
             report['steps'].append(dict(name=step, status='PASS', result=str(latest)))
         report['status'] = 'PASS'
     except BaseException as error:

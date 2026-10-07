@@ -2,7 +2,10 @@
 
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "PGToonPreviewActor.h"
 #include "EngineUtils.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameFramework/PlayerController.h"
@@ -43,7 +46,12 @@ void APGShadingComparisonPawn::PawnClientRestart()
         PC->SetInputMode(FInputModeGameOnly());
         PC->SetViewTarget(this);
         if (!HelpWidget) HelpWidget = CreateWidget<UPGUIShadingComparison>(PC);
-        if (HelpWidget) HelpWidget->AddToViewport();
+        if (HelpWidget)
+        {
+            HelpWidget->SetShadowEnabled(bShadowCasterEnabled);
+            HelpWidget->SetHairShadowEnabled(bHairShadowEnabled);
+            HelpWidget->AddToViewport();
+        }
         ShowOverview();
     }
 }
@@ -60,7 +68,7 @@ void APGShadingComparisonPawn::SetupPlayerInputComponent(UInputComponent* Player
     Super::SetupPlayerInputComponent(PlayerInputComponent);
     PlayerInputComponent->BindAxisKey(EKeys::MouseX, this, &ThisClass::LookHorizontal);
     PlayerInputComponent->BindAxisKey(EKeys::MouseY, this, &ThisClass::LookVertical);
-    const FKey StageKeys[] = { EKeys::One, EKeys::Two, EKeys::Three, EKeys::Four, EKeys::Five };
+    const FKey StageKeys[] = { EKeys::One, EKeys::Two, EKeys::Three, EKeys::Four, EKeys::Five, EKeys::Six, EKeys::Seven, EKeys::Eight };
     for (int32 Index = 0; Index < UE_ARRAY_COUNT(StageKeys); ++Index)
     {
         FInputKeyBinding Binding(FInputChord(StageKeys[Index]), IE_Pressed);
@@ -71,6 +79,8 @@ void APGShadingComparisonPawn::SetupPlayerInputComponent(UInputComponent* Player
     PlayerInputComponent->BindKey(EKeys::R, IE_Pressed, this, &ThisClass::ShowOverview);
     PlayerInputComponent->BindKey(EKeys::F, IE_Pressed, this, &ThisClass::ShowFace);
     PlayerInputComponent->BindKey(EKeys::C, IE_Pressed, this, &ThisClass::ShowQuarter);
+    PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &ThisClass::ToggleShadowCaster);
+    PlayerInputComponent->BindKey(EKeys::J, IE_Pressed, this, &ThisClass::ToggleHairShadow);
 }
 
 void APGShadingComparisonPawn::Tick(float DeltaSeconds)
@@ -133,7 +143,7 @@ void APGShadingComparisonPawn::ShowOverview()
 
 void APGShadingComparisonPawn::FocusStage(int32 Index)
 {
-    if (Index < 0 || Index >= 5) return;
+    if (Index < 0 || Index >= 8) return;
     const FName Tag(*FString::Printf(TEXT("PGShadingStage%d"), Index));
     for (TActorIterator<AActor> It(GetWorld()); It; ++It)
         if (It->ActorHasTag(Tag))
@@ -145,7 +155,7 @@ void APGShadingComparisonPawn::FocusStage(int32 Index)
             const FVector Target = Base + FVector(0, 0, bFace ? 139 : 90);
             const FVector Location = Base + (bFace ? FVector(0, 135, 144) : bQuarter ? FVector(230, 390, 330) : FVector(0, 360, 125));
             SetView(Location, (Target - Location).Rotation());
-            static const TCHAR* Names[] = { TEXT("일반 조명"), TEXT("셀 명암"), TEXT("부위별 명암"), TEXT("림·하이라이트"), TEXT("외곽선 · 완성") };
+            static const TCHAR* Names[] = { TEXT("일반 조명"), TEXT("셀 명암"), TEXT("부위별 명암"), TEXT("림·하이라이트"), TEXT("외곽선 · 기존 툰"), TEXT("월드 그림자"), TEXT("얼굴 SDF"), TEXT("얼굴 SDF · 월드 그림자") };
             if (HelpWidget) HelpWidget->SetViewLabel(FText::FromString(FString::Printf(TEXT("%d단계 · %s"), Index + 1, Names[Index])));
             return;
         }
@@ -161,6 +171,28 @@ void APGShadingComparisonPawn::ShowQuarter()
 {
     SelectedView = EComparisonView::Quarter;
     FocusStage(SelectedStage);
+}
+
+void APGShadingComparisonPawn::ToggleShadowCaster()
+{
+    bShadowCasterEnabled = !bShadowCasterEnabled;
+    for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+        if (It->ActorHasTag(TEXT("PGShadingShadowCaster")))
+        {
+            TInlineComponentArray<UPrimitiveComponent*> Primitives(*It);
+            for (UPrimitiveComponent* Primitive : Primitives)
+                Primitive->SetCastShadow(bShadowCasterEnabled);
+        }
+    if (HelpWidget) HelpWidget->SetShadowEnabled(bShadowCasterEnabled);
+}
+
+void APGShadingComparisonPawn::ToggleHairShadow()
+{
+    bHairShadowEnabled = !bHairShadowEnabled;
+    for (TActorIterator<APGToonPreviewActor> It(GetWorld()); It; ++It)
+        if ((It->ActorHasTag(TEXT("PGShadingStage5")) || It->ActorHasTag(TEXT("PGShadingStage7"))) && It->HairShadowProxy->GetSkeletalMeshAsset())
+            It->HairShadowProxy->SetCastShadow(bHairShadowEnabled);
+    if (HelpWidget) HelpWidget->SetHairShadowEnabled(bHairShadowEnabled);
 }
 
 bool APGShadingComparisonPawn::SendProbeInput(FKey Key, bool bPressed, float AxisValue)

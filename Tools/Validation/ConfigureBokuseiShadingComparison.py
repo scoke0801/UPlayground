@@ -2,6 +2,7 @@
 import hashlib
 import json
 import shutil
+import sys
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,7 +17,7 @@ RUN.mkdir(parents=True)
 LIB = unreal.MaterialEditingLibrary
 EAL = unreal.EditorAssetLibrary
 TOOLS = unreal.AssetToolsHelpers.get_asset_tools()
-REPORT = dict(schema=2, status='RUNNING', map=MAP, run=str(RUN), slots=[], stages=[], protected={})
+REPORT = dict(schema=4, status='RUNNING', map=MAP, run=str(RUN), slots=[], stages=[], protected={})
 
 
 def package_file(path):
@@ -186,6 +187,89 @@ def toon_variant(source, slot, basic=False):
     return mi
 
 
+def shadow_variants(originals, slots):
+    # Reuse the established world-lit toon graph, with face normal/anisotropy
+    # extensions disabled so this stage keeps the original analytic art terms.
+    sys.path.insert(0, str(ROOT/'Tools/Validation'))
+    import ConfigureToonCharacterTest as shared
+    shared.MASTER_DEST = DEST+'/Materials'
+    shadow_masters = [shared.build_toon_master('M_PGComparison_ToonShadow', True, False, True),
+                      shared.build_toon_master('M_PGComparison_ToonShadowTransparent', True, True, True)]
+    result = []
+    for source, slot in zip(originals, slots):
+        transparent = source.get_editor_property('parent').get_editor_property('blend_mode') == unreal.BlendMode.BLEND_TRANSLUCENT
+        mi = own('MI_PGShadow_'+str(slot.material_slot_name), unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+        for kind in ['scalar', 'vector', 'texture']:
+            mi.set_editor_property(kind+'_parameter_values', [])
+        LIB.set_material_instance_parent(mi, shadow_masters[int(transparent)])
+        for kind in ['scalar', 'vector', 'texture']:
+            names = getattr(LIB, 'get_'+kind+'_parameter_names')(source)
+            for name in names:
+                value = getattr(LIB, 'get_material_instance_'+kind+'_parameter_value')(source, name)
+                if value is not None:
+                    getattr(LIB, 'set_material_instance_'+kind+'_parameter_value')(mi, name, value)
+        for name, value in dict(WorldLightingInfluence=.65, FaceShading=0., HairAnisotropy=0.,
+                                ShadowCast=0. if 'face' in str(slot.material_slot_name).lower() else 1.).items():
+            LIB.set_material_instance_scalar_parameter_value(mi, name, value)
+        LIB.update_material_instance(mi)
+        save(mi)
+        result.append(mi)
+    return result
+
+
+def hair_shadow_materials(originals, slots):
+    # The visible hair stays translucent. Only these masked proxy slots cast,
+    # using the same alpha textures; every non-hair slot is completely clipped.
+    masked_master = master('M_PGComparison_HairShadow')
+    # Inset the duplicate by 0.8 mm along its vertex normal to avoid coplanar
+    # shadow acne on the visible hair while retaining the face shadow silhouette.
+    normal = expr(masked_master, unreal.MaterialExpressionVertexNormalWS, -700, 1500)
+    inset = expr(masked_master, unreal.MaterialExpressionMultiply, -300, 1500)
+    connect(normal, '', inset, 'A')
+    connect(scalar(masked_master, 'ShadowInset', -.08, -700, 1650), '', inset, 'B')
+    output(inset, '', unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    LIB.recompile_material(masked_master)
+    save(masked_master)
+    invisible = own('M_PGComparison_NoShadow', unreal.Material, unreal.MaterialFactoryNew())
+    LIB.delete_all_material_expressions(invisible)
+    invisible.set_editor_property('blend_mode', unreal.BlendMode.BLEND_MASKED)
+    invisible.set_editor_property('shading_model', unreal.MaterialShadingModel.MSM_UNLIT)
+    invisible.set_editor_property('used_with_skeletal_mesh', True)
+    output(scalar(invisible, 'Opacity', 0.), '', unreal.MaterialProperty.MP_OPACITY_MASK)
+    LIB.recompile_material(invisible)
+    save(invisible)
+    materials, hair_slots = [], []
+    for index, (source, slot) in enumerate(zip(originals, slots)):
+        if 'hair' not in str(slot.material_slot_name).lower():
+            materials.append(invisible)
+            continue
+        mi = own('MI_PGHairShadow_'+str(slot.material_slot_name), unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+        for kind in ['scalar', 'vector', 'texture']:
+            mi.set_editor_property(kind+'_parameter_values', [])
+        LIB.set_material_instance_parent(mi, masked_master)
+        for name in ['BaseTexture', 'OpacityTexture']:
+            texture = LIB.get_material_instance_texture_parameter_value(source, name)
+            if texture:
+                LIB.set_material_instance_texture_parameter_value(mi, name, texture)
+        LIB.set_material_instance_vector_parameter_value(mi, 'BaseTint', LIB.get_material_instance_vector_parameter_value(source, 'BaseTint'))
+        alpha = {}
+        for name in ['UseBaseAlpha', 'AlphaMaskMode', 'AlphaMaskScale', 'AlphaMaskValue', 'MainOpacity', 'OpacityCutoff']:
+            alpha[name] = LIB.get_material_instance_scalar_parameter_value(source, name)
+            LIB.set_material_instance_scalar_parameter_value(mi, name, alpha[name])
+        # Translucent source cutoffs are 0/.001. A masked caster needs a real
+        # threshold, otherwise the padded hair cards become solid shadow slabs.
+        alpha['OpacityCutoff'] = .35
+        LIB.set_material_instance_scalar_parameter_value(mi, 'OpacityCutoff', alpha['OpacityCutoff'])
+        LIB.update_material_instance(mi)
+        save(mi)
+        materials.append(mi)
+        hair_slots.append(dict(index=index, name=str(slot.material_slot_name), material=mi.get_path_name(), alpha=alpha))
+    assert len(hair_slots) == 2, hair_slots
+    REPORT['hair_shadow'] = dict(stage=6, slots=hair_slots, materials=[m.get_path_name() for m in materials],
+                                 toggle_key='J', default_enabled=True, synchronized_pose=True, shadow_inset_cm=-.08)
+    return materials
+
+
 def main():
     # Rebuild only the comparison outputs, with package backups on reruns.
     previous = ROOT/'Content/Art/ToonTest/BokuseiShadingComparison'
@@ -203,13 +287,23 @@ def main():
     for asset in (appearance, mesh, idle, outline):
         protect(asset)
     originals = [slot.material_interface for slot in mesh.get_editor_property('materials')]
+    sdf_path = ROOT/'Saved/BokuseiFaceSDF/configure.json'
+    sdf_data = json.loads(sdf_path.read_text(encoding='utf-8')) if sdf_path.exists() else None
+    if sdf_data:
+        assert sdf_data['status'] == 'PASS'
+        for mi in originals: protect(mi)
+        face_index = next(i for i,s in enumerate(mesh.get_editor_property('materials')) if str(s.material_slot_name) == 'Mat_Bokusei_Face')
+        originals[face_index] = unreal.load_asset(sdf_data['baseline_face'])
+        assert originals[face_index]
+        REPORT['face_sdf'] = sdf_data
+        REPORT['schema'] = 5
     for mi in originals:
         protect(mi)
         protect(mi.get_editor_property('parent'))
     masters = [master('M_PGComparison_DefaultLit'), master('M_PGComparison_DefaultLitTransparent', True)]
     lit_materials = []
-    for slot in mesh.get_editor_property('materials'):
-        source = slot.material_interface
+    for slot_index,slot in enumerate(mesh.get_editor_property('materials')):
+        source = originals[slot_index]
         transparent = source.get_editor_property('parent').get_editor_property('blend_mode') == unreal.BlendMode.BLEND_TRANSLUCENT
         target = DEST+'/Materials/MI_PGLit_'+str(slot.material_slot_name)
         mi = unreal.load_asset(target) if EAL.does_asset_exist(target) else EAL.duplicate_asset(source.get_path_name(), target)
@@ -235,8 +329,20 @@ def main():
         ('Cel', '2 · 셀 명암', [toon_variant(mi, str(slot.material_slot_name), True) for mi, slot in zip(originals, mesh.get_editor_property('materials'))]),
         ('Parts', '3 · 부위별 명암', [toon_variant(mi, str(slot.material_slot_name)) for mi, slot in zip(originals, mesh.get_editor_property('materials'))]),
         ('Rim', '4 · 림·하이라이트', originals),
-        ('Toon', '5 · 외곽선 · 완성', originals),
+        ('Toon', '5 · 외곽선 · 기존 툰', originals),
+        ('Shadow', '6 · 월드 그림자', shadow_variants(originals, mesh.get_editor_property('materials'))),
     ]
+    if sdf_data:
+        sdf_materials = list(originals)
+        sdf_materials[face_index] = unreal.load_asset(sdf_data['sdf_face'])
+        sdf_world = list(definitions[5][2])
+        sdf_world[face_index] = unreal.load_asset(sdf_data['world_face'])
+        assert sdf_materials[face_index] and sdf_world[face_index]
+        for mi in [sdf_materials[face_index],sdf_world[face_index]]:
+            protect(mi)
+            protect(mi.get_editor_property('parent'))
+        definitions += [('FaceSDF','7 · 얼굴 SDF',sdf_materials),('FaceSDFWorld','8 · 얼굴 SDF · 월드 그림자',sdf_world)]
+    hair_materials = hair_shadow_materials(originals, mesh.get_editor_property('materials'))
     labels = {name: label_material(name) for name in ['Title']+[d[0] for d in definitions]}
     factory = unreal.BlueprintFactory()
     factory.set_editor_property('parent_class', unreal.GameModeBase)
@@ -289,7 +395,7 @@ def main():
     fill.light_component.set_cast_shadows(False)
     model_components = []
     for index, (stage_id, name, materials) in enumerate(definitions):
-        position = (index-2)*220
+        position = (index-(len(definitions)-1)/2)*220
         actor = actors.spawn_actor_from_class(unreal.PGToonPreviewActor if index else unreal.SkeletalMeshActor, unreal.Vector(position, 0, 0))
         actor.set_actor_label(name)
         actor.set_folder_path('비교 모델')
@@ -299,11 +405,19 @@ def main():
         component.set_skeletal_mesh_asset(mesh)
         component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
         component.set_editor_property('cast_shadow', True)
-        component.set_render_custom_depth(index == 4)
-        component.set_custom_depth_stencil_value(73 if index == 4 else 0)
+        component.set_render_custom_depth(index >= 4)
+        component.set_custom_depth_stencil_value(73 if index >= 4 else 0)
         component.set_forced_lod(1)
         for i, material in enumerate(materials):
             component.set_material(i, material)
+        if index in [5,7]:
+            proxy = actor.hair_shadow_proxy
+            proxy.set_skeletal_mesh_asset(mesh)
+            proxy.set_forced_lod(1)
+            proxy.set_leader_pose_component(component)
+            for i, material in enumerate(hair_materials):
+                proxy.set_material(i, material)
+            proxy.set_cast_shadow(True)
         data = unreal.SingleAnimationPlayData()
         data.anim_to_play, data.saved_looping, data.saved_playing = idle, True, True
         data.saved_position, data.saved_play_rate = 1.25, 1.
@@ -323,15 +437,24 @@ def main():
         sign = prop('안내 · '+name, 'Plane', (position, 0, 195), (2., .4, 1), labels[stage_id], unreal.Rotator(roll=90))
         sign.static_mesh_component.set_cast_shadow(False)
         REPORT['stages'].append(dict(index=index, id=stage_id, label=name, position=position,
-                                     materials=[mi.get_path_name() for mi in materials], outline=index == 4))
+                                     materials=[mi.get_path_name() for mi in materials], outline=index >= 4))
+        if index >= 4:
+            caster = prop('가림막 그림자 · '+str(index+1)+'단계', 'Cube', (position-39, 50, 230), (1.3, .32, .14), stage)
+            caster.set_editor_property('tags', ['PGShadingShadowCaster'])
+            caster.set_folder_path('그림자 비교')
+            c = caster.static_mesh_component
+            c.set_mobility(unreal.ComponentMobility.MOVABLE)
+            c.set_editor_property('cast_hidden_shadow', True)
+            c.set_cast_shadow(False)
+            c.set_visibility(False)
     for component in model_components[1:]:
         component.set_leader_pose_component(model_components[0])
     title = prop('안내 · bOKUSEI 셰이딩 비교', 'Plane', (0, 0, 270), (6.8, .6375, 1), labels['Title'], unreal.Rotator(roll=90))
     title.static_mesh_component.set_cast_shadow(False)
     for name, location, target, fov, active in [
-            ('카메라 · 정면 비교', (0, 1650, 330), (0, 0, 120), 45, True),
-            ('카메라 · 쿼터뷰 비교', (390, 1600, 1000), (0, 0, 100), 45, False),
-            ('카메라 · 얼굴 비교', (330, 340, 147), (330, 0, 139), 45, False)]:
+            ('카메라 · 정면 비교', (0, 1950, 380), (0, 0, 120), 45, True),
+            ('카메라 · 쿼터뷰 비교', (390, 1900, 1100), (0, 0, 100), 45, False),
+            ('카메라 · 얼굴 비교', (550 if sdf_data else 440, 340, 147), (550 if sdf_data else 440, 0, 139), 45, False)]:
         loc, aim = unreal.Vector(*location), unreal.Vector(*target)
         rot = unreal.MathLibrary.find_look_at_rotation(loc, aim)
         camera = actors.spawn_actor_from_class(unreal.CameraActor, loc, rot)
@@ -349,7 +472,8 @@ def main():
     assert all(hashlib.sha256((ROOT/p).read_bytes()).hexdigest() == expected for p, expected in REPORT['protected'].items()), 'Source asset changed'
     REPORT.update(status='PASS', source_mesh=mesh.get_path_name(), animation=idle.get_path_name(),
                   game_mode=mode.get_path_name(), toon_basis='Current DA_Bokusei mesh-slot Unlit toon materials + stencil 73 screen outline',
-                  original_assets_unchanged=True, free_camera='/Script/PGActor.PGShadingComparisonPawn')
+                  original_assets_unchanged=True, free_camera='/Script/PGActor.PGShadingComparisonPawn',
+                  shadow=dict(stage=6, world_lighting_influence=.65, casters=len(definitions)-4, toggle_key='H', default_enabled=False))
 
 
 try:

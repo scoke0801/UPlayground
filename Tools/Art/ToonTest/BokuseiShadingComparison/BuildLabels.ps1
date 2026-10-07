@@ -30,4 +30,7 @@ Write-PGLabel 'Lit' '1 · 일반 조명' '부드러운 명암 · 기준' 640 128
 Write-PGLabel 'Cel' '2 · 셀 명암' '공통 3단 명암' 640 128 43
 Write-PGLabel 'Parts' '3 · 부위별 명암' '피부 · 얼굴 · 헤어 튜닝' 640 128 43
 Write-PGLabel 'Rim' '4 · 림·하이라이트' '윤곽 빛 · 재질별 반사' 640 128 43
-Write-PGLabel 'Toon' '5 · 외곽선 · 완성' '현재 bOKUSEI 표현' 640 128 43
+Write-PGLabel 'Toon' '5 · 외곽선 · 기존 툰' '현재 bOKUSEI 표현' 640 128 40
+Write-PGLabel 'Shadow' '6 · 월드 그림자' '툰 + 월드 조명 · 헤어 그림자' 640 128 43
+Write-PGLabel 'FaceSDF' '7 · 얼굴 SDF' '모델 기반 얼굴 명암 · 기존 툰' 640 128 43
+Write-PGLabel 'FaceSDFWorld' '8 · 얼굴 SDF · 그림자' '얼굴 명암 + 월드 · 헤어 그림자' 640 128 38

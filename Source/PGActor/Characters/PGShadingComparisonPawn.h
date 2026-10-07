@@ -32,6 +32,10 @@ public:
     void ShowFace();
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
     void ShowQuarter();
+    UFUNCTION(BlueprintCallable, Category="PG|Comparison")
+    void ToggleShadowCaster();
+    UFUNCTION(BlueprintCallable, Category="PG|Comparison")
+    void ToggleHairShadow();
     /** Input-path verification; only enabled with -PGShadingComparisonProbe in non-shipping builds. */
     UFUNCTION(BlueprintCallable, Category="PG|Comparison|Test")
     bool SendProbeInput(FKey Key, bool bPressed, float AxisValue = 0.f);
@@ -44,7 +48,9 @@ protected:
 private:
     UPROPERTY(Transient) TObjectPtr<class UPGUIShadingComparison> HelpWidget;
     TWeakObjectPtr<AActor> OverviewCamera;
-    int32 SelectedStage = 4;
+    int32 SelectedStage = 5;
+    bool bShadowCasterEnabled = false;
+    bool bHairShadowEnabled = true;
     enum class EComparisonView : uint8 { Front, Face, Quarter };
     EComparisonView SelectedView = EComparisonView::Front;
     void SetView(const FVector& Location, const FRotator& Rotation);
