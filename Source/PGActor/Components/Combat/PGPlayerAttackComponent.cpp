@@ -218,8 +218,11 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     SavedMeshLocation = Player->GetMesh()->GetRelativeLocation();
     Player->SetAttackAimTracking(false);
     SavedWalkSpeed = Player->GetCharacterMovement()->MaxWalkSpeed;
-    Player->GetCharacterMovement()->StopMovementImmediately();
-    Player->GetCharacterMovement()->MaxWalkSpeed = 0.f;
+    UpdateWalkSpeed(0.f);
+    // Walking attacks retain velocity through activation and combo transitions.
+    // Only authored displacement skills take movement away from CharacterMovement.
+    if (Player->GetCharacterMovement()->MaxWalkSpeed <= 0.f)
+        Player->GetCharacterMovement()->StopMovementImmediately();
     auto* Anim = Player->GetMesh()->GetAnimInstance();
     SavedRootMotionMode = Anim->RootMotionMode;
     Anim->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
@@ -254,7 +257,6 @@ void UPGPlayerAttackComponent::Stop(bool bNotify, bool bCancelled)
     {
         Player->GetCharacterMovement()->MaxWalkSpeed = SavedWalkSpeed;
         Player->GetMesh()->SetRelativeLocation(SavedMeshLocation);
-        Player->GetCharacterMovement()->StopMovementImmediately();
         Player->SetAttackAimTracking(false);
         Player->ResetAttackHitStop();
         if (auto* Anim = Player->GetMesh()->GetAnimInstance())
@@ -293,8 +295,10 @@ void UPGPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     { Stop(true); return; }
     if (Player->GetMesh()->GlobalAnimRateScale <= 0.f)
     {
-        Player->GetCharacterMovement()->MaxWalkSpeed = 0.f;
-        Player->GetCharacterMovement()->StopMovementImmediately();
+        // Hit-stop pauses the attack clock/pose, not the player's walking input.
+        UpdateWalkSpeed(LogicalTime);
+        if (Player->GetCharacterMovement()->MaxWalkSpeed <= 0.f)
+            Player->GetCharacterMovement()->StopMovementImmediately();
         return;
     }
     Advance(DeltaTime * Speed);
@@ -375,17 +379,26 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
     if (LogicalTime >= ActiveProfile->Duration) Stop(true, false);
 }
 
+void UPGPlayerAttackComponent::UpdateWalkSpeed(float Time)
+{
+    auto* Player = CastChecked<APGCharacterPlayer>(GetOwner());
+    float Ratio = 0.f;
+    for (const auto& Move : ActiveProfile->MovementSegments)
+        if (Move.Mode == EPGPlayerMoveMode::Walk && Time >= Move.Start && Time < Move.End)
+        { Ratio = Move.WalkSpeedRatio; break; }
+    Player->GetCharacterMovement()->MaxWalkSpeed = SavedWalkSpeed * Ratio;
+}
+
 bool UPGPlayerAttackComponent::MoveBetween(float From, float To)
 {
     auto* Player = CastChecked<APGCharacterPlayer>(GetOwner());
     auto* Movement = Player->GetCharacterMovement();
-    Movement->MaxWalkSpeed = 0.f;
+    UpdateWalkSpeed(To);
     for (const auto& Move : ActiveProfile->MovementSegments)
     {
         if (To < Move.Start || From >= Move.End) continue;
         if (Move.Mode == EPGPlayerMoveMode::Walk)
         {
-            Movement->MaxWalkSpeed = SavedWalkSpeed * Move.WalkSpeedRatio;
             continue;
         }
         const float Fraction = (FMath::Clamp(To, Move.Start, Move.End) - FMath::Clamp(From, Move.Start, Move.End)) / (Move.End - Move.Start);

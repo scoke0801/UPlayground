@@ -76,8 +76,8 @@ for item in SPEC['skills']:
         profile = tools.create_asset(name, DEST, unreal.PGPlayerSkillProfile, factory)
     movement = set_props(unreal.PGPlayerMovementSegment(), {
         'segment_id':'movement', 'start':item['move_start'], 'end':item['move_end'],
-        'mode':unreal.PGPlayerMoveMode.WALK if skill_id == 112 else unreal.PGPlayerMoveMode.FORWARD_SWEEP,
-        'distance':item['distance'], 'walk_speed_ratio':.6,
+        'mode':getattr(unreal.PGPlayerMoveMode, item.get('movement_mode', 'WALK' if skill_id == 112 else 'FORWARD_SWEEP')),
+        'distance':item['distance'], 'walk_speed_ratio':item.get('walk_speed_ratio', .6),
         'end_cast_on_block':skill_id == 111})
     phases = []
     for index, start in enumerate(item['hits']):
@@ -101,7 +101,7 @@ for item in SPEC['skills']:
     row['Desc'] = item['name']
     montage = unreal.load_asset(row['MontagePath']['AssetPath']['PackageName'])
     preserve(montage)
-    configure_montage_blend(montage)
+    configure_montage_blend(montage, 'UpperBody' if item.get('upper_body') else None)
     save(montage)
     mapping.append({'skill':skill_id, 'montage':montage.get_path_name(), 'length':montage.get_play_length(),
                     'source_rate_scale':montage.get_editor_property('rate_scale'), 'pose_keys':item['pose'],

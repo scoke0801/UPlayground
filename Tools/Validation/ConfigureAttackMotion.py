@@ -14,7 +14,12 @@ import unreal
 BLEND_SECONDS = .16
 
 
-def configure_montage_blend(montage):
+def configure_montage_blend(montage, slot=None):
+    if slot:
+        tracks = list(montage.get_editor_property('slot_anim_tracks'))
+        assert len(tracks) == 1, montage.get_path_name()
+        tracks[0].set_editor_property('slot_name', slot)
+        montage.set_editor_property('slot_anim_tracks', tracks)
     for prop in ('blend_in', 'blend_out'):
         blend = montage.get_editor_property(prop)
         blend.set_editor_property('blend_time', BLEND_SECONDS)
@@ -130,7 +135,7 @@ def apply(active_only=False):
                     entry.set_editor_property(field, value)
             profile.set_editor_property(prop, array)
         if not active_only:
-            configure_montage_blend(montage)
+            configure_montage_blend(montage, 'UpperBody' if item.get('upper_body') else None)
         validate_profile_motion(item, profile, montage)
         for asset in ((profile,) if active_only else (profile, montage)):
             assert unreal.EditorAssetLibrary.save_loaded_asset(asset, only_if_is_dirty=False)

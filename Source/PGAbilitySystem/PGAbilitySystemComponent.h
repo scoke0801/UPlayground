@@ -120,6 +120,9 @@ public:
     TObjectPtr<class UPGCombatTuningData> CombatTuning;
     UPROPERTY(EditDefaultsOnly, Category="PG|Input", meta=(ClampMin="0", ClampMax="0.5"))
     float InputBufferSeconds = 0.18f;
+    // A click during a short dash survives until its exit, without lengthening attack buffers.
+    UPROPERTY(EditDefaultsOnly, Category="PG|Input", meta=(ClampMin="0", ClampMax="1"))
+    float DashInputBufferSeconds = 0.45f;
     UPROPERTY(EditDefaultsOnly, Category="PG|Input")
     bool bRepeatNormalAttackWhileHeld = true;
     void InitializeCombatStats(const TMap<EPGStatType, int32>& Stats);

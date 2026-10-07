@@ -69,6 +69,7 @@ private:
     float LeapDistance = 0.f;
     FVector SavedMeshLocation = FVector::ZeroVector;
     bool FindLeapDistance(const UPGPlayerSkillProfile* Profile, const FVector& Direction, float& Distance) const;
+    void UpdateWalkSpeed(float Time);
     void Advance(float Seconds);
     bool MoveBetween(float From, float To);
     void QueryHit(const FPGPlayerHitPhase& Hit);

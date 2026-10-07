@@ -34,7 +34,7 @@ preserve(table); preserve(catalog)
 tools=unreal.AssetToolsHelpers.get_asset_tools(); mapping=[]
 for item in SPEC['skills']:
     montage=unreal.load_asset(by_id[item['id']]['MontagePath']['AssetPath']['PackageName'])
-    preserve(montage); configure_montage_blend(montage); save(montage)
+    preserve(montage); configure_montage_blend(montage, 'UpperBody' if item.get('upper_body') else None); save(montage)
     length=montage.get_play_length()
     pose=item.get('pose_seconds')
     pose=pose+[[item['duration'],length]] if pose else [[t,f*length] for t,f in item['pose_fraction']]
@@ -44,7 +44,7 @@ for item in SPEC['skills']:
     else:
         factory=unreal.DataAssetFactory(); factory.set_editor_property('data_asset_class',unreal.PGPlayerSkillProfile)
         profile=tools.create_asset(name,DEST,unreal.PGPlayerSkillProfile,factory)
-    moves=[props(unreal.PGPlayerMovementSegment(),{'segment_id':'move'+str(i),'start':start,'end':end,'distance':distance,'mode':getattr(unreal.PGPlayerMoveMode,mode),'end_cast_on_block':mode=='GROUND_LEAP'}) for i,(start,end,distance,mode) in enumerate(item['moves'])]
+    moves=[props(unreal.PGPlayerMovementSegment(),{'segment_id':'move'+str(i),'start':start,'end':end,'distance':distance,'mode':getattr(unreal.PGPlayerMoveMode,mode),'walk_speed_ratio':item.get('walk_speed_ratio', .6),'end_cast_on_block':mode=='GROUND_LEAP'}) for i,(start,end,distance,mode) in enumerate(item['moves'])]
     phases=[]
     for i,(start,damage) in enumerate(zip(item['hits'],item['damage'])):
         policy=props(unreal.PGHitProcPolicy(),{'bleed':True,'bleed_burst':i==len(item['hits'])-1,'shock':True,'frenzy':True})

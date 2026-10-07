@@ -13,6 +13,7 @@
 #include "Combat/PGCombatMath.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Components/Combat/PGPlayerDashComponent.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
 #include "PGActor/Components/Stat/PGStatComponent.h"
@@ -57,10 +58,13 @@ void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInpu
     const double InputAt = GetWorld() ? GetWorld()->GetTimeSeconds() : -1.;
     if (TryInput(InInputTag, InputAt)) return;
     // Toggle actions must never turn on later after an unrelated state change.
-    if (InputBufferSeconds <= 0.f || InInputTag.MatchesTag(PGGamePlayTags::InputTag_Toggleable)) return;
+    const auto* Player = Cast<APGCharacterPlayer>(GetAvatarActor());
+    const float BufferSeconds = Player && Player->GetPlayerDashComponent()->IsDashing() &&
+        InInputTag != PGGamePlayTags::InputTag_Roll ? FMath::Max(InputBufferSeconds, DashInputBufferSeconds) : InputBufferSeconds;
+    if (BufferSeconds <= 0.f || InInputTag.MatchesTag(PGGamePlayTags::InputTag_Toggleable)) return;
     BufferedInput = InInputTag;
     BufferedInputAt = InputAt;
-    BufferExpiresAt = GetWorld()->GetTimeSeconds() + InputBufferSeconds;
+    BufferExpiresAt = GetWorld()->GetTimeSeconds() + BufferSeconds;
     GetWorld()->GetTimerManager().SetTimer(InputBufferTimer, this, &ThisClass::RetryBufferedInput, 0.01f, true);
 }
 

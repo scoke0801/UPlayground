@@ -310,6 +310,22 @@ bool FPGPlayerProfileLifecycleTest::RunTest(const FString&)
     TestFalse(TEXT("Blocked dash cancels remaining phases"),Attack->IsRunning());
     TestTrue(TEXT("Capsule stops before wall"),Player->GetActorLocation().X < 190.f);
     Obstacle->Destroy();
+    // Input-driven attacks must preserve velocity on entry, during every clock step,
+    // and when a combo/dodge cancels them. A forced-movement skill still owns movement.
+    Attack->Stop(); Begin();
+    FPGPlayerMovementSegment Walk; Walk.SegmentId=TEXT("walk"); Walk.Mode=EPGPlayerMoveMode::Walk;
+    Walk.Start=0.f; Walk.End=Attack->ActiveProfile->Duration; Walk.Distance=0.f; Walk.WalkSpeedRatio=.9f;
+    Attack->ActiveProfile->MovementSegments={Walk};
+    Player->GetCharacterMovement()->Velocity=FVector(0,600,0);
+    Attack->UpdateWalkSpeed(0.f);
+    TestEqual(TEXT("Walking speed is available on the activation frame"),Player->GetCharacterMovement()->MaxWalkSpeed,540.f);
+    TestEqual(TEXT("Activation preserves existing sideways velocity"),Player->GetVelocity().Y,600.);
+    Attack->Advance(.3f);
+    TestEqual(TEXT("Clock substeps never lock walking"),Player->GetCharacterMovement()->MaxWalkSpeed,540.f);
+    Attack->Stop();
+    TestEqual(TEXT("Cancellation restores full walking speed"),Player->GetCharacterMovement()->MaxWalkSpeed,600.f);
+    TestEqual(TEXT("Combo/dodge exit does not erase walking velocity"),Player->GetVelocity().Y,600.);
+    Player->GetCharacterMovement()->StopMovementImmediately();
     auto* BodyTarget=World->SpawnActor<APGCharacterEnemy>(); Stats(BodyTarget);
     BodyTarget->SetActorLocation(FVector(200,0,98));
     BodyTarget->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,ECR_Overlap);

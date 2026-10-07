@@ -43,31 +43,13 @@ void UPGPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 
 void UPGPlayerAnimInstance::UpdateLocomotionDirection()
 {
-	FVector2D MovementInput = OwningEIC->GetBoundActionValue(MoveInputAction).Get<FVector2D>();
-                
-	if (MovementInput.IsNearlyZero(0.1f))
-	{
-		return;
-	}
-
-	// 2D 입력을 3D 벡터로 변환
-	FVector InputVector3D = FVector(MovementInput.X, MovementInput.Y, 0.0f);
-	InputVector3D.Normalize();
-
-	// 각도 계산
-	LocalVelocityDirectionAngle = FMath::RadiansToDegrees(
-		FMath::Atan2(InputVector3D.Y, InputVector3D.X)
-	);
-
-	// 방향 결정
-	if (FMath::Abs(InputVector3D.X) > FMath::Abs(InputVector3D.Y))
-	{
-		PoseWrappingEnum = (InputVector3D.X > 0.0f) ? 
-			EPGLocomotionDirection::Forward : EPGLocomotionDirection::Back;
-	}
-	else
-	{
-		PoseWrappingEnum = (InputVector3D.Y > 0.0f) ? 
-			EPGLocomotionDirection::Right : EPGLocomotionDirection::Left;
-	}
+    // Quarter-view movement is camera-relative, while the attack faces the cursor.
+    // Animation therefore needs actual velocity relative to the actor, not raw WASD axes.
+    if (!OwningCharacter || Velocity.IsNearlyZero(.1f)) return;
+    const FVector Local = OwningCharacter->GetActorRotation().UnrotateVector(Velocity);
+    LocalVelocityDirectionAngle = FMath::RadiansToDegrees(FMath::Atan2(Local.Y, Local.X));
+    const float Angle = FMath::Abs(LocalVelocityDirectionAngle);
+    PoseWrappingEnum = Angle <= 45.f ? EPGLocomotionDirection::Forward :
+        Angle >= 135.f ? EPGLocomotionDirection::Back :
+        LocalVelocityDirectionAngle > 0.f ? EPGLocomotionDirection::Right : EPGLocomotionDirection::Left;
 }

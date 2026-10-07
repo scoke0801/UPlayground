@@ -64,7 +64,7 @@ void UPGAbilitySkill_Roll::ActivateAbility(const FGameplayAbilitySpecHandle Hand
     if (!IsActive()) return;
     auto* MoveTask = UAbilityTask_ApplyRootMotionConstantForce::ApplyRootMotionConstantForce(
         this, TEXT("PlayerDash"), Direction, Dash->Distance / Dash->Duration, Dash->Duration,
-        false, nullptr, ERootMotionFinishVelocityMode::SetVelocity, FVector::ZeroVector, 0.f, true);
+        false, nullptr, ERootMotionFinishVelocityMode::ClampVelocity, FVector::ZeroVector, Movement->MaxWalkSpeed, true);
     MoveTask->OnFinish.AddDynamic(this, &ThisClass::OnMontageCompleted);
     MoveTask->ReadyForActivation();
 }
@@ -80,6 +80,10 @@ void UPGAbilitySkill_Roll::EndAbility(const FGameplayAbilitySpecHandle Handle,
         {
             Player->GetCharacterMovement()->bCanWalkOffLedges = bSavedLedgePolicy;
             Player->GetPlayerDashComponent()->Stop(bCancelled);
+            // Held WASD carries dash velocity into walking. A released input or an
+            // interruption must still stop immediately instead of leaving a glide.
+            if (bCancelled || Player->GetLastMovementInputVector().IsNearlyZero())
+                Player->GetCharacterMovement()->StopMovementImmediately();
         }
     }
     // Removes the movement source on every completion, death and interruption.
