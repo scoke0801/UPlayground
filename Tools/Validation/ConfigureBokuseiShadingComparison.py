@@ -1,6 +1,7 @@
 """Create cumulative Bokusei shading stages and a playable free-camera fixture."""
 import hashlib
 import json
+import math
 import shutil
 import sys
 import traceback
@@ -18,6 +19,13 @@ LIB = unreal.MaterialEditingLibrary
 EAL = unreal.EditorAssetLibrary
 TOOLS = unreal.AssetToolsHelpers.get_asset_tools()
 REPORT = dict(schema=4, status='RUNNING', map=MAP, run=str(RUN), slots=[], stages=[], protected={})
+HAIR_SETTINGS_PATH = ROOT/'Tools/Art/ToonTest/BokuseiShadingComparison/hair_shadow_settings.json'
+HAIR_SETTINGS = json.loads(HAIR_SETTINGS_PATH.read_text(encoding='utf-8'))
+assert HAIR_SETTINGS['schema'] == 1 and isinstance(HAIR_SETTINGS['two_sided'], bool)
+for name, minimum, maximum in [('opacity_cutoff', .01, 1.), ('inset_cm', -1., 0.),
+                                ('light_source_angle_degrees', 0., 30.)]:
+    value = HAIR_SETTINGS[name]
+    assert isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and minimum <= value <= maximum, name
 
 
 def package_file(path):
@@ -221,12 +229,13 @@ def hair_shadow_materials(originals, slots):
     # The visible hair stays translucent. Only these masked proxy slots cast,
     # using the same alpha textures; every non-hair slot is completely clipped.
     masked_master = master('M_PGComparison_HairShadow')
+    masked_master.set_editor_property('two_sided', HAIR_SETTINGS['two_sided'])
     # Inset the duplicate by 0.8 mm along its vertex normal to avoid coplanar
     # shadow acne on the visible hair while retaining the face shadow silhouette.
     normal = expr(masked_master, unreal.MaterialExpressionVertexNormalWS, -700, 1500)
     inset = expr(masked_master, unreal.MaterialExpressionMultiply, -300, 1500)
     connect(normal, '', inset, 'A')
-    connect(scalar(masked_master, 'ShadowInset', -.08, -700, 1650), '', inset, 'B')
+    connect(scalar(masked_master, 'ShadowInset', HAIR_SETTINGS['inset_cm'], -700, 1650), '', inset, 'B')
     output(inset, '', unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     LIB.recompile_material(masked_master)
     save(masked_master)
@@ -258,15 +267,19 @@ def hair_shadow_materials(originals, slots):
             LIB.set_material_instance_scalar_parameter_value(mi, name, alpha[name])
         # Translucent source cutoffs are 0/.001. A masked caster needs a real
         # threshold, otherwise the padded hair cards become solid shadow slabs.
-        alpha['OpacityCutoff'] = .35
+        alpha['OpacityCutoff'] = HAIR_SETTINGS['opacity_cutoff']
         LIB.set_material_instance_scalar_parameter_value(mi, 'OpacityCutoff', alpha['OpacityCutoff'])
+        LIB.set_material_instance_scalar_parameter_value(mi, 'ShadowInset', HAIR_SETTINGS['inset_cm'])
         LIB.update_material_instance(mi)
         save(mi)
         materials.append(mi)
         hair_slots.append(dict(index=index, name=str(slot.material_slot_name), material=mi.get_path_name(), alpha=alpha))
     assert len(hair_slots) == 2, hair_slots
     REPORT['hair_shadow'] = dict(stage=6, slots=hair_slots, materials=[m.get_path_name() for m in materials],
-                                 toggle_key='J', default_enabled=True, synchronized_pose=True, shadow_inset_cm=-.08)
+                                 toggle_key='J', default_enabled=True, synchronized_pose=True,
+                                 shadow_inset_cm=HAIR_SETTINGS['inset_cm'], settings=HAIR_SETTINGS,
+                                 settings_source=str(HAIR_SETTINGS_PATH.relative_to(ROOT)),
+                                 settings_sha256=hashlib.sha256(HAIR_SETTINGS_PATH.read_bytes()).hexdigest())
     return materials
 
 
@@ -387,7 +400,7 @@ def main():
     key.set_actor_label('주광원 · 모든 단계 공통')
     key.light_component.set_mobility(unreal.ComponentMobility.MOVABLE)
     key.light_component.set_intensity(3.2)
-    key.light_component.set_editor_property('light_source_angle', 3.)
+    key.light_component.set_editor_property('light_source_angle', HAIR_SETTINGS['light_source_angle_degrees'])
     fill = actors.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, -100, 300), unreal.Rotator(pitch=-35, yaw=70, roll=0))
     fill.set_actor_label('보조광 · 모든 단계 공통')
     fill.light_component.set_mobility(unreal.ComponentMobility.MOVABLE)
@@ -439,7 +452,9 @@ def main():
         REPORT['stages'].append(dict(index=index, id=stage_id, label=name, position=position,
                                      materials=[mi.get_path_name() for mi in materials], outline=index >= 4))
         if index >= 4:
-            caster = prop('가림막 그림자 · '+str(index+1)+'단계', 'Cube', (position-39, 50, 230), (1.3, .32, .14), stage)
+            # Keep H's occlusion readable under the shared soft area light.
+            # Every receiving/reference stage uses the same 130x50x14 cm blocker.
+            caster = prop('가림막 그림자 · '+str(index+1)+'단계', 'Cube', (position-39, 50, 230), (1.3, .5, .14), stage)
             caster.set_editor_property('tags', ['PGShadingShadowCaster'])
             caster.set_folder_path('그림자 비교')
             c = caster.static_mesh_component

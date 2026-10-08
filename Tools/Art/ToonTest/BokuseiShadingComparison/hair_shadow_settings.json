@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "opacity_cutoff": 0.35,
+  "two_sided": true,
+  "inset_cm": -0.08,
+  "light_source_angle_degrees": 20.0
+}

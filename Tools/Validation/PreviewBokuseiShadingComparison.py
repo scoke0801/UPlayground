@@ -120,6 +120,13 @@ for row in DATA['hair_shadow']['slots']:
     for name, value in row['alpha'].items():
         assert abs(LIB.get_material_instance_scalar_parameter_value(mi, name)-value) < 1e-6
     assert abs(LIB.get_material_instance_scalar_parameter_value(mi, 'ShadowInset')-DATA['hair_shadow']['shadow_inset_cm']) < 1e-6
+    if 'settings' in DATA['hair_shadow']:
+        assert mi.get_editor_property('parent').get_editor_property('two_sided') == DATA['hair_shadow']['settings']['two_sided']
+if 'settings' in DATA['hair_shadow']:
+    hair_settings_path = ROOT/DATA['hair_shadow']['settings_source']
+    assert hashlib.sha256(hair_settings_path.read_bytes()).hexdigest() == DATA['hair_shadow']['settings_sha256'], 'Hair settings changed; regenerate comparison map'
+    assert abs(models[1].toon_presentation.key_light.light_component.get_editor_property('light_source_angle') - DATA['hair_shadow']['settings']['light_source_angle_degrees']) < 1e-6
+    REPORT['hair_shadow_settings_reload'] = dict(status='PASS', settings=DATA['hair_shadow']['settings'])
 for index, row in enumerate(DATA['slots']):
     a, b = left.get_material(index), right.get_material(index)
     assert isinstance(a, unreal.MaterialInstanceConstant) and isinstance(b, unreal.MaterialInstanceConstant)
