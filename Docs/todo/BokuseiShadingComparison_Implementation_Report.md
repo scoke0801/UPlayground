@@ -67,6 +67,35 @@ UE 내장 Python으로 실행한다.
 
 `--step configure`는 맵과 전용 에셋을 생성하고, `--step preview`는 저장된 결과를 새 UE 프로세스에서 다시 열어 검증·캡처한다. `--step preview --input-only`는 에디터 스크린샷을 건너뛰고 저장 재로드·PIE 포즈·카메라 입력만 검사한다. 다시 생성할 때 이전 비교 에셋과 맵을 `Saved/BokuseiShadingComparison/<실행 시각>/backup`에 보존한다. 원본 외형·재질·텍스처·대기 모션, 기존 갤러리와 게임 기본 맵은 변경하지 않는다.
 
+## 머리카락 그림자 품질 개선 · 중단 작업 재개 · 2026-10-07
+
+중단된 작업에는 VSM 샘플·해상도·바이어스, 투사체 슬롯·양면·알파, 반투명 수광과 광원 크기를 나눈 진단이 남아 있었다. 마지막 깊이 보정 실행은 `Saved/BokuseiHairShadowQuality/20261007T132959403293Z`다. 당시 후보 JSON의 컷오프 0.9·단면·광원 6°는 생성 도구에 연결되지 않았으며, 캡처 완료의 PASS는 시각 품질 수용을 뜻하지 않았다.
+
+재개 후 10/15/20° 및 별도의 16 ray/8 sample 진단을 비교했다. 최종값은 공통 주광원의 **Source Angle 20°**다. 컷오프 0.35·양면 투사·법선 안쪽 0.08cm는 유지한다. 광원 각도는 비교 맵에만 저장한다. 게임 외형·원본 얼굴 SDF·보이는 헤어 재질·전역 렌더 설정과 VSM의 기본 8 ray/4 sample은 유지한다. H 비교 가림막은 모든 5–8단계에서 같은 130×50×14cm로 맞춰 넓은 광원에서도 수광 차이를 읽을 수 있게 했다.
+
+설정 원본은 `Tools/Art/ToonTest/BokuseiShadingComparison/hair_shadow_settings.json`이다. 생성 보고서에 설정·원본 SHA-256을 저장하고 새 프로세스에서 주광원·투사체 설정을 대조한다. `--final` 검사는 파일에 저장된 컷오프·양면·Inset을 확인하고, 예전 진단 기본값으로 덮어쓰지 않는다.
+
+단일 `HighResShot`에서는 넓은 광원의 SMRT 노이즈가 두드러졌다. 실제 품질 비교는 **1600×900 고정 PIE 뷰포트의 `Shot`**과 안정된 TSR 이력으로 수행한다. 모델 포즈와 카메라를 고정하고 가림막을 끈 상태에서 기존 3°/개선 20°/헤어 투사 꺼짐을 비교한다. 런타임 광원·포즈 동작 검사는 별도의 기존 비교 맵 검증을 사용한다.
+
+- 후보 렌더: `Saved/BokuseiHairShadowQuality/20261007T141216357207Z/quality.json`, 15장 PASS. 같은 폴더의 `Comparison.png`는 8단계 정면 전후다.
+- `MeasureHairShadowQuality.ps1`의 피부 표본 검사: 같은 폴더 `shadow_quality_pixels.json` PASS. 헤어 그림자를 뺀 명도장의 인접 기울기 RMS는 6단계 정면/비스듬한 시점에서 각각 **31.5%/28.1%**, 8단계에서 **30.5%/29.0%** 감소했다. 얼굴 명도 감소는 12.77–13.51/255, 변경 피부 비율은 56.5–64.9%로 실제 투사도 유지했다. 이 지표는 해당 포즈·카메라에서 경계가 얼마나 급하게 변하는지 측정하며 전체 게임 품질 점수는 아니다.
+- 초기 검사에서 사용한 절대 기울기 합은 단조 경계를 부드럽게 해도 보존되는 값이다. RMS 기울기로 수정했으며 초기 결과는 `total_variation_metric_fail.json`에 보존했다. 단일 고해상도 캡처의 노이즈 문제도 `20261007T135150833273Z/shadow_quality_pixels.json` FAIL로 보존한다.
+- 최종 저장 설정 재로드·PIE 각도 렌더: `Saved/BokuseiHairShadowQuality/20261007T143252236435Z/quality.json` PASS. 6/8단계의 정면·비스듬한 시점 J 전후와 -60/0/+60° 조명 14장을 확인했다. 원본 패키지 해시를 보존했고, 셰이더 컴파일 오류는 없었다.
+- 첫 전체 회귀 `Saved/BokuseiShadingComparison/Runs/20261007T142345948648Z`는 재로드·35개 본·헤어 포즈·33개 입력 PASS 후 H 픽셀 검사에서 FAIL했다. 주광원의 부드러움으로 PIE 가림막 명도 차이가 1.864/255로 낮아졌다. 픽셀 기준은 유지하고 비교 가림막의 깊이를 32→50cm로 확장했다.
+- 최종 생성·새 프로세스 전체 회귀: `Saved/BokuseiShadingComparison/Runs/20261007T144225973588Z/run.json` configure/preview PASS. `Preview/20261007T144253345537Z/preview.json`의 8개 모델·10개 슬롯 저장값, 원본 패키지, 35개 본 오차 약 `5.68e-14 cm`, 헤어 투사체 포즈 오차 0cm와 실제 입력 33개 PASS. 같은 폴더 `shadow_pixels.json`에서 H 명도 감소는 에디터 2.918/255·PIE 2.626/255, J 얼굴·비스듬한 시점·PIE는 12.419/13.029/14.489로 모두 PASS다. Python 구문 및 `git diff --check`도 통과했다.
+
+재현 순서:
+
+```powershell
+& 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/ThirdParty/Python3/Win64/python.exe' Tools/Validation/RunBokuseiShadingComparison.py
+& 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/ThirdParty/Python3/Win64/python.exe' Tools/Validation/RunBokuseiHairShadowQuality.py --candidate --temporal
+& 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/ThirdParty/Python3/Win64/python.exe' Tools/Validation/RunBokuseiHairShadowQuality.py --final --temporal
+```
+
+첫 명령은 이전 비교 에셋·맵을 백업하고 생성·새 프로세스 재로드·PIE·H/J 피부 픽셀을 검사한다. 두 번째 명령은 비교 전후 픽셀 검사와 한국어 비교 시트도 생성한다. 세 번째는 저장 설정으로 각도별 렌더를 검증한다. 이번 변경은 C++ 수정이 없어 에디터 재빌드가 필요하지 않았다.
+
+물리적 헤어 카드의 좁은 그림자는 일부 측면 광원에서 남는다. 광원 크기와 SMRT의 겹친 투사체 한계는 [UE 5.8 VSM 문서](https://dev.epicgames.com/documentation/en-us/unreal-engine/virtual-shadow-maps-in-unreal-engine)의 Soft Shadows/Limitations에 설명돼 있다. 광원 크기를 더 키우거나 전역 샘플 수를 늘리는 방식은 채택하지 않았다. GPU 비용·밀집 전투·패키지 장시간 품질은 별도 확인 범위다.
+
 ## 5단계·자유 카메라 검증 · 2026-10-06
 
 아래는 그림자 추가 전의 기록이다. 최신 검증은 다음 6단계 기록을 따른다.
