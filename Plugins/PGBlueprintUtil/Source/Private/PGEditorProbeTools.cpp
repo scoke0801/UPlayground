@@ -17,6 +17,34 @@
 #include "Rendering/SkeletalMeshLODModel.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
+#include "AI/NavigationSystemBase.h"
+#include "GameFramework/WorldSettings.h"
+#include "NavigationSystem.h"
+#include "NavigationData.h"
+#include "NavigationPath.h"
+#include "NavMesh/NavMeshBoundsVolume.h"
+
+AActor* UPGEditorProbeTools::EnsureEditorNavigation(UWorld* World, ANavMeshBoundsVolume* Bounds)
+{
+    if (!GEditor || !IsValid(World) || World->WorldType != EWorldType::Editor ||
+        !IsValid(Bounds) || Bounds->GetWorld() != World) return nullptr;
+    if (!World->GetNavigationSystem())
+        FNavigationSystem::AddNavigationSystemToWorld(*World, FNavigationSystemRunMode::EditorMode,
+            World->GetWorldSettings()->GetNavigationSystemConfig(), true);
+    auto* Navigation = UNavigationSystemV1::GetCurrent(World);
+    if (!Navigation) return nullptr;
+    Navigation->OnNavigationBoundsUpdated(Bounds);
+    return Navigation->GetDefaultNavDataInstance(FNavigationSystem::Create);
+}
+
+int32 UPGEditorProbeTools::GetPlayNavigationPathPointCount(UWorld* World, FVector Start, FVector End, AActor* Agent)
+{
+    if (!GEditor || !IsValid(World) || GEditor->PlayWorld != World ||
+        !IsValid(Agent) || Agent->GetWorld() != World) return 0;
+    // Native invocation avoids calling ProcessEvent on NavigationSystem's CDO.
+    const auto* Path = UNavigationSystemV1::FindPathToLocationSynchronously(World, Start, End, Agent);
+    return IsValid(Path) && Path->IsValid() && !Path->IsPartial() ? Path->PathPoints.Num() : 0;
+}
 
 bool UPGEditorProbeTools::ExportSkeletalMaterialGeometry(USkeletalMesh* Mesh, FName MaterialSlot, const FString& Filename)
 {

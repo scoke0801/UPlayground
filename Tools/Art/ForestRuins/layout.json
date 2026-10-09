@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "map": "/Game/Maps/L_PG_ForestRuins",
+  "seed": 10926,
+  "game_mode": "/Game/Blueprints/GameMode/GM_StageGameMode.GM_StageGameMode_C",
+  "player_start_cm": [
+    -650,
+    -300,
+    110
+  ],
+  "boundary_half_extent_cm": [
+    2350,
+    1950
+  ],
+  "navigation_half_extent_cm": [
+    2600,
+    2200,
+    600
+  ],
+  "clear_center_radius_cm": 750,
+  "tree_count": 160,
+  "grass_cluster_count": 2400,
+  "key_light_intensity": 6.0,
+  "fill_light_intensity": 2.6,
+  "key_light_rotation": [
+    -42,
+    -35,
+    0
+  ],
+  "combat_islands": [
+    {
+      "name": "서쪽 무너진 기둥",
+      "center_cm": [
+        -1250,
+        -500
+      ],
+      "mesh": "Ruins_03",
+      "scale": 0.65,
+      "yaw": 20
+    },
+    {
+      "name": "동쪽 무너진 기둥",
+      "center_cm": [
+        1250,
+        600
+      ],
+      "mesh": "Ruins_03",
+      "scale": 0.65,
+      "yaw": -60
+    },
+    {
+      "name": "북쪽 잔해",
+      "center_cm": [
+        -900,
+        1050
+      ],
+      "mesh": "Ruins_10",
+      "scale": 0.8,
+      "yaw": 32
+    },
+    {
+      "name": "남쪽 잔해",
+      "center_cm": [
+        800,
+        -1100
+      ],
+      "mesh": "Ruins_10",
+      "scale": 0.8,
+      "yaw": -45
+    }
+  ],
+  "art_direction": "moss_sanctuary",
+  "resource_tier": "EastLands_LOD0",
+  "tree_ellipse_radius_multiplier": [
+    1.45,
+    3.3
+  ]
+}

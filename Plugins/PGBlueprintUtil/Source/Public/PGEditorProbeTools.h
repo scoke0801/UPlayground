@@ -10,6 +10,14 @@ class PGBLUEPRINTUTIL_API UPGEditorProbeTools : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 public:
+    /** Creates navigation data for a newly authored editor world; never saves it. */
+    UFUNCTION(BlueprintCallable, Category="PG|Editor")
+    static class AActor* EnsureEditorNavigation(UWorld* World, class ANavMeshBoundsVolume* Bounds);
+
+    /** Returns zero unless a complete path exists in the current PIE world. */
+    UFUNCTION(BlueprintCallable, Category="PG|QA")
+    static int32 GetPlayNavigationPathPointCount(UWorld* World, FVector Start, FVector End, AActor* Agent);
+
     UFUNCTION(BlueprintCallable, Category="PG|QA")
     static bool BeginPlayWindow(int32 Width = 1280, int32 Height = 720);
 

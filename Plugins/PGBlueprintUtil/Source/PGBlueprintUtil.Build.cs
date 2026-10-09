@@ -48,7 +48,8 @@ public class PGBlueprintUtil : ModuleRules
 					"LevelEditor",
 					"WorkspaceMenuStructure",
 					"ApplicationCore",
-					"InputCore"
+					"InputCore",
+					"NavigationSystem"
 				}
 			);
 		}

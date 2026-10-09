@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "playable_cm": [
+    [
+      -2310,
+      -1910,
+      0
+    ],
+    [
+      2310,
+      1910,
+      0
+    ]
+  ],
+  "terrain_size_cm": [
+    11200,
+    11200
+  ],
+  "authored_here": true,
+  "flat_combat_surface": true
+}
