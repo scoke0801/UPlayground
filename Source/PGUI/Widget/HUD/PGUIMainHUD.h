@@ -43,8 +43,12 @@ private:
     TSharedRef<SWidget> MakeStagePanel();
     TSharedRef<SWidget> MakeActions();
     TSharedRef<SWidget> MakeBuildPanel();
-    UPROPERTY(Transient) TObjectPtr<UTexture2D> HUDPlaque;
-    FSlateBrush PlaqueBrush;
+    UPROPERTY(Transient) TObjectPtr<UTexture2D> OrbFrameTexture;
+    UPROPERTY(Transient) TObjectPtr<UTexture2D> CombatPlateTexture;
+    UPROPERTY(Transient) TObjectPtr<UTexture2D> PotionIconTexture;
+    FSlateBrush OrbFrameBrush;
+    FSlateBrush CombatPlateBrush;
+    FSlateBrush PotionIconBrush;
     FButtonStyle ActionStyle;
     FText StagePhase;
     bool BuildActive[3] = {};

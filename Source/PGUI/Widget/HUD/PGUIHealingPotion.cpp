@@ -1,4 +1,5 @@
-#include "PGUIMainHUD.h"
+﻿#include "PGUIMainHUD.h"
+#include "PGCombatHUDStyle.h"
 #include "PGUI/Style/PGUIStyle.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Components/Combat/PGConsumableComponent.h"
@@ -16,32 +17,41 @@
 #include "Rendering/DrawElements.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 
-/** Small vector bottle stays sharp at HUD scales, with an actual cooldown arc. */
+/** Authored anime bottle with a runtime cooldown arc and a vector missing-art fallback. */
 class SPGHealingBottle : public SLeafWidget
 {
 public:
-    SLATE_BEGIN_ARGS(SPGHealingBottle) {}
+    SLATE_BEGIN_ARGS(SPGHealingBottle) : _Icon(nullptr) {}
+        SLATE_ARGUMENT(const FSlateBrush*, Icon)
         SLATE_ATTRIBUTE(float, Remaining)
         SLATE_ATTRIBUTE(bool, Highlight)
         SLATE_ATTRIBUTE(bool, Empty)
     SLATE_END_ARGS()
-    void Construct(const FArguments& Args) { Remaining=Args._Remaining; Highlight=Args._Highlight; Empty=Args._Empty; }
-    virtual FVector2D ComputeDesiredSize(float) const override { return FVector2D(42,42); }
+    void Construct(const FArguments& Args) { Icon=Args._Icon; Remaining=Args._Remaining; Highlight=Args._Highlight; Empty=Args._Empty; }
+    virtual FVector2D ComputeDesiredSize(float) const override { return FVector2D(42,46); }
     virtual int32 OnPaint(const FPaintArgs&, const FGeometry& G, const FSlateRect&, FSlateWindowElementList& Out,
-        int32 Layer, const FWidgetStyle&, bool) const override
+        int32 Layer, const FWidgetStyle& WidgetStyle, bool) const override
     {
         const FVector2D Size=G.GetLocalSize(), Center=Size*.5;
-        const FLinearColor Mint=Empty.Get() ? FLinearColor(.25f,.3f,.35f) : FPGUIStyle::Get().Mint;
+        const FLinearColor Mint=Empty.Get() ? FLinearColor(.25f,.3f,.35f) : FLinearColor(.65f,.028f,.038f);
         auto Box=[&](FVector2D Pos,FVector2D Extent,const FSlateBrush* Brush,FLinearColor Color)
         { FSlateDrawElement::MakeBox(Out,Layer+1,G.ToPaintGeometry(Extent,FSlateLayoutTransform(Pos)),Brush,ESlateDrawEffect::None,Color); };
+        if(Icon && Icon->GetResourceObject())
+        {
+            const FLinearColor Tint=Empty.Get() ? FLinearColor(.30f,.30f,.34f,.6f) : FLinearColor::White;
+            FSlateDrawElement::MakeBox(Out,Layer+1,G.ToPaintGeometry(),Icon,ESlateDrawEffect::None,Tint*WidgetStyle.GetColorAndOpacityTint());
+        }
+        else
+        {
         static const FSlateRoundedBoxBrush Body(FLinearColor::White,5.f);
         static const FSlateRoundedBoxBrush Neck(FLinearColor::White,2.f);
-        Box(Center+FVector2D(-10,-7),FVector2D(20,23),&Body,FLinearColor(.08f,.15f,.2f));
+        Box(Center+FVector2D(-10,-7),FVector2D(20,23),&Body,FLinearColor(.055f,.025f,.020f));
         Box(Center+FVector2D(-8,0),FVector2D(16,13),&Body,Mint.CopyWithNewOpacity(.8f));
         Box(Center+FVector2D(-5,-14),FVector2D(10,10),&Neck,Mint);
-        Box(Center+FVector2D(-7,-16),FVector2D(14,4),&Neck,FPGUIStyle::Get().Lavender);
+        Box(Center+FVector2D(-7,-16),FVector2D(14,4),&Neck,FPGCombatHUDStyle::Get().Gold);
         Box(Center+FVector2D(-2,1),FVector2D(4,10),&Neck,FLinearColor::White);
         Box(Center+FVector2D(-5,4),FVector2D(10,4),&Neck,FLinearColor::White);
+        }
         TArray<FVector2D> Points;
         const float Fraction=Remaining.Get();
         const float Arc=Fraction>0 ? FMath::Clamp(Fraction,0.f,1.f) : 1.f;
@@ -51,35 +61,36 @@ public:
             Points.Add(Center+FVector2D(FMath::Cos(Angle),FMath::Sin(Angle))*20.f);
         }
         FSlateDrawElement::MakeLines(Out,Layer+2,G.ToPaintGeometry(),Points,ESlateDrawEffect::None,
-            Fraction>0 ? FPGUIStyle::Get().Lavender : Highlight.Get() ? Mint : Mint.CopyWithNewOpacity(.22f),true,Highlight.Get()?2.5f:1.5f);
+            Fraction>0 ? FPGCombatHUDStyle::Get().Gold : Highlight.Get() ? Mint : Mint.CopyWithNewOpacity(.22f),true,Highlight.Get()?2.5f:1.5f);
         return Layer+2;
     }
 private:
+    const FSlateBrush* Icon=nullptr;
     TAttribute<float> Remaining;
     TAttribute<bool> Highlight, Empty;
 };
 
 TSharedRef<SWidget> UPGUIMainHUD::MakeHealingPotion()
 {
-    return SNew(SBox).WidthOverride(90).HeightOverride(64)
-    [SNew(SButton).Tag(TEXT("PGHealingPotion")).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(3)
+    return SNew(SBox).WidthOverride(56).HeightOverride(70)
+    [SNew(SButton).Tag(TEXT("PGHealingPotion")).ButtonStyle(&FPGCombatHUDStyle::Get().Button).IsFocusable(false).ContentPadding(3)
         .ToolTipText_Lambda([this](){return FText::FromString(FString::Printf(TEXT("%s\n최대 체력의 %.0f%% 즉시 회복 · 재사용 %.0f초\n구간 클리어 시 보충\n%s"),
             *Potion.Name.ToString(),Potion.HealFraction*100,Potion.CooldownDuration,*Potion.Reason.ToString()));})
         .OnClicked_Lambda([this](){if(auto* P=Cast<APGCharacterPlayer>(GetOwningPlayerPawn())) P->GetConsumableComponent()->TryUse();return FReply::Handled();})
         [SNew(SOverlay)
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top)
-            [SNew(SPGHealingBottle).Remaining_Lambda([this](){return Potion.CooldownDuration>0 ? Potion.Cooldown/Potion.CooldownDuration : 0.f;})
+            [SNew(SPGHealingBottle).Icon(&PotionIconBrush).Remaining_Lambda([this](){return Potion.CooldownDuration>0 ? Potion.Cooldown/Potion.CooldownDuration : 0.f;})
                 .Highlight_Lambda([this](){return Potion.bCanUse && HealthRatio<=Potion.LowHealthFraction;})
                 .Empty_Lambda([this](){return Potion.Count<=0;})]
             + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
             [SNew(STextBlock).Text_Lambda([this](){return PotionKey;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",10))]
             + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top)
             [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(FString::Printf(TEXT("%d"),Potion.Count));})
-                .ColorAndOpacity(FPGUIStyle::Get().Mint).Font(FCoreStyle::GetDefaultFontStyle("Bold",13))]
+                .ColorAndOpacity(FPGCombatHUDStyle::Get().Ivory).Font(FCoreStyle::GetDefaultFontStyle("Bold",13))]
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom)
-            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(FPGUIStyle::Get().Text)
-                .Text_Lambda([this](){return FText::FromString(Potion.Count==0 ? TEXT("회복약 없음") :
-                    Potion.Cooldown>0 ? FString::Printf(TEXT("%.1f초"),Potion.Cooldown) : FString::Printf(TEXT("회복약 %d/%d"),Potion.Count,Potion.Capacity));})]]];
+            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(FPGCombatHUDStyle::Get().Ivory)
+                .Text_Lambda([this](){return FText::FromString(Potion.Count==0 ? TEXT("소진") :
+                    Potion.Cooldown>0 ? FString::Printf(TEXT("%.1f초"),Potion.Cooldown) : FString::Printf(TEXT("%d/%d"),Potion.Count,Potion.Capacity));})]]];
 }
 
 void UPGUIMainHUD::RefreshHealingPotion()

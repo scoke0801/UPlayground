@@ -1,0 +1,22 @@
+{
+  "tool": "built-in image_gen",
+  "direction": "User correction: all images must match subculture/anime fantasy game graphics, not photorealistic grimdark metal.",
+  "assets": [
+    {
+      "output": "T_PGCombatOrbFrame_Anime.png",
+      "prompt": "Use case: style-transfer. Edit target: attached circular HUD frame texture. Completely restyle it for a premium Korean/Japanese anime fantasy action RPG (subculture game art), while preserving exact canvas size, centered circle, empty transparent circular aperture, and transparent exterior. Replace photorealistic gritty gothic metal with clean hand-painted 2D anime UI art: broad smooth cel-shaded bevels, sharp elegant inked silhouette, deep charcoal gunmetal enamel, warm champagne-gold trim, restrained ivory edge highlights, a simple four-point star crest at top and small pointed accent below. Preserve the aperture size and circular proportions for runtime liquid to fit. Simplify busy engraving into a few bold flowing ornamental curves readable at 120px. Restrained elegant fantasy craftsmanship, no wear noise, no photorealism, no rusty textures, no skulls, no thorns, no excessive luminous effects. It should feel like the UI of a high-quality anime sword-action game, not a gritty realistic western RPG. Ring is mostly charcoal with thin gold bevels; clear smooth colors, broad controlled shadow planes. Absolutely no text, no numbers, no liquid, no orb, no filled central disc. Real alpha transparency both inside and outside.",
+      "runtime": "/Game/UI/Combat/T_PGCombatOrbFrame"
+    },
+    {
+      "output": "T_PGCombatPlate.png",
+      "prompt": "Use case: stylized-concept. Asset type: single production 2D UI panel texture for an anime fantasy hack-and-slash game, a stretchable horizontal skill-bar plate. Create a wide 3:1 image, ideally 1536x512. One rectangular plate almost fills the canvas with only 2% transparent margin. Front orthographic view, straight parallel horizontal and vertical edges, very slightly chamfered corners. Fine champagne-gold double bevel at the perimeter, charcoal gunmetal enamel inset, clean hand-painted cel shading, precise dark contour and restrained ivory highlight on top edge. Symmetric small angular corner caps; broad smooth shadow planes; elegant premium Korean/Japanese anime fantasy game aesthetic. The entire large center is nearly flat dark charcoal (#171b26), opaque, calm, empty for overlaying interactive skill icons. Border occupies only outer 6% horizontally and 12% vertically; center must contain absolutely no art or divisions. No icons, slots, text, gems, emblems, or objects. No grunge, no worn metal noise, no photorealistic texture, no bright blue glow, no rounded mobile-app card corners. True transparent alpha outside the plate only. Designed for 9-slice scaling, so edge middles are uniform and all ornament is contained in small corners.",
+      "runtime": "/Game/UI/Combat/T_PGCombatPlate"
+    },
+    {
+      "output": "T_PGCombatPotion.png",
+      "prompt": "Use case: stylized-concept. Asset type: single transparent inventory/HUD healing potion icon for a premium anime fantasy action RPG. Square composition, centered large object filling 88% of canvas height. A beautiful compact round ruby-red glass flask with a short neck, champagne gold stopper, small ivory four-point star clasp on the front, dark charcoal metal collar and two restrained gold side filigree pieces. Deep crimson healing liquid with a luminous red-pink meniscus; large clean white glass glints and simple cel shaded planes. Strong immediately recognizable bottle silhouette, elegantly chunky shapes that remain readable at 44x44 pixels. Korean/Japanese subculture fantasy game illustration, clean hand-painted 2D anime item icon, crisp dark contours, rich colors, selective smooth gradients. Front three-quarter view, slight rightward turn. Not photorealistic; no grime, no leather texture, no scratches, no grit, no skulls, no background, no cast shadow outside the icon, no glow halo. No text, no numbers, no border, no frame. Genuine transparent alpha background. Original design, harmonize with charcoal and champagne-gold anime HUD frames.",
+      "runtime": "/Game/UI/Combat/T_PGCombatPotion"
+    }
+  ],
+  "superseded": "Generation.json and T_PGCombatOrbFrame.png are first-pass art, not the final imported artwork."
+}

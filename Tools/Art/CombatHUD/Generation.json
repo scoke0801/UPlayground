@@ -1,0 +1,11 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Use case: stylized-concept. Asset type: production game UI texture, single circular resource orb frame for a dark fantasy hack and slash ARPG. One isolated perfectly circular empty metal bezel, centered, orthographic front view, square 1024x1024 image. The circular inner hole must be fully transparent, diameter 69% of image width. Outer circular bezel diameter 87% of image width, with a small pointed crest at top and bottom reaching 96% image height. Restrained carved gothic iron, aged dark brass edges, hand engraved grooves, hammered blackened steel, delicate warm highlights on upper left, deep worn crevices, realistic sculpted material. Symmetric, elegant, heavy and credible medieval craftsmanship, visually legible at 140 pixels. No wings, no skulls, no characters, no text, no numbers, no gems, no orb, no glass, no liquid, no background. Genuine transparent alpha outside and inside ring. Keep exact circular shape so runtime circular liquid can fit inside it. Original design.",
+  "output": "T_PGCombatOrbFrame.png",
+  "generated_source": "C:/Users/scoke/.codex/generated_images/01a11f31-82aa-7a93-a8e2-8483298471b1/exec-c9ab33cc-a1a0-4174-967f-872892b1c361.png",
+  "references": [
+    "https://news.blizzard.com/en-us/article/23308274/diablo-iv-quarterly-updatefebruary-2020",
+    "https://mobalytics.gg/poe-2/guides/user-interface"
+  ],
+  "note": "Original art, reference assets not copied."
+}

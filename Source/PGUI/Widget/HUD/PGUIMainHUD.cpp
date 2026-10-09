@@ -1,4 +1,6 @@
 ﻿#include "PGUIMainHUD.h"
+#include "PGCombatHUDStyle.h"
+#include "SPGResourceOrb.h"
 #include "PGUI/Style/PGUIStyle.h"
 #include "PGUI/Style/PGUIStyleSettings.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
@@ -55,123 +57,124 @@ UPGUIMainHUD::UPGUIMainHUD(const FObjectInitializer& Initializer) : Super(Initia
 {
     SetIsFocusable(false);
     SkillTextures.SetNum(8);
-    ResourceStyle.SetBackgroundImage(FSlateRoundedBoxBrush(FLinearColor(.07f,.10f,.15f), 3.f))
+    ResourceStyle.SetBackgroundImage(FSlateRoundedBoxBrush(FLinearColor(.025f,.016f,.012f), 1.f))
         .SetFillImage(FSlateRoundedBoxBrush(FLinearColor::White, 3.f));
 }
 
 TSharedRef<SWidget> UPGUIMainHUD::MakeResource(bool bHealth)
 {
-    return SNew(SBox).WidthOverride(bHealth ? 240.f : 120.f)
+    const auto& Art=FPGCombatHUDStyle::Get();
+    return SNew(SBox).WidthOverride(144).HeightOverride(172)
     [SNew(SVerticalBox)
-        + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,7)
-        [SNew(SHorizontalBox)
-            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-            [SNew(STextBlock).Text_Lambda([this,bHealth](){return FText::FromString(bHealth ? TEXT("생명력") : bRogueHUD ? TEXT("격분") : TEXT("분노"));})
-                .ColorAndOpacity(bHealth ? FPGUIStyle::Get().Mint : FPGUIStyle::Get().Lavender).Font(FCoreStyle::GetDefaultFontStyle("Bold",11))]
-            + SHorizontalBox::Slot().FillWidth(1).HAlign(HAlign_Right)
-            [SNew(STextBlock).ColorAndOpacity(FPGUIStyle::Get().Text).Font(FCoreStyle::GetDefaultFontStyle("Bold",13))
-                .Text_Lambda([this,bHealth](){return bHealth ? HealthText : RageText;})]]
         + SVerticalBox::Slot().AutoHeight()
-        [SNew(SBox).HeightOverride(6)
-            [SNew(SProgressBar).Style(&ResourceStyle).BorderPadding(FVector2D::ZeroVector)
-                .FillColorAndOpacity_Lambda([this,bHealth]()
-                {return bHealth ? (HealthRatio <= .25f ? FLinearColor(1.f,.22f,.28f) : FPGUIStyle::Get().Mint) : FPGUIStyle::Get().Lavender;})
-                .Percent_Lambda([this,bHealth](){return bHealth ? HealthRatio : RageRatio;})]]
+        [SNew(SPGResourceOrb).Frame(&OrbFrameBrush).Health(bHealth)
+            .Ratio_Lambda([this,bHealth](){return bHealth ? HealthRatio : RageRatio;})]
+        + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,-16,0,0)
+        [SNew(STextBlock).Text_Lambda([this,bHealth](){return FText::FromString(bHealth ? TEXT("생명력") : bRogueHUD ? TEXT("격분") : TEXT("분노"));})
+            .Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(Art.Ivory).ShadowOffset(FVector2D(1,1))]
+        + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,5,0,0)
+        [SNew(STextBlock).Text_Lambda([this,bHealth](){return bHealth ? HealthText : RageText;})
+            .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(Art.Ivory).ShadowOffset(FVector2D(1,1))]
     ];
 }
 
 TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
 {
-    const FLinearColor Accent = Index == 7 ? FPGUIStyle::Get().Lavender : FPGUIStyle::Get().Mint;
-    return SNew(SBox).WidthOverride(70).HeightOverride(76)
-    .Visibility_Lambda([this,Index](){return SkillIds[Index] > 0 ? EVisibility::Visible : EVisibility::Collapsed;})
-    [SNew(SButton).ButtonStyle(&FPGUIStyle::Get().Button).IsFocusable(false).ContentPadding(3)
-        .IsEnabled_Lambda([this,Index](){return bCanAct && SkillIds[Index] > 0 && Cooldowns[Index] <= 0.f;})
+    const auto& Art=FPGCombatHUDStyle::Get();
+    return SNew(SBox).WidthOverride(56).HeightOverride(70)
+    .Visibility_Lambda([this,Index](){return SkillIds[Index]>0 ? EVisibility::Visible : EVisibility::Collapsed;})
+    [SNew(SButton).ButtonStyle(&Art.Button).IsFocusable(false).ContentPadding(3)
+        // Keep the icon readable during preparation; gameplay activation still uses the input guard.
         .ToolTipText_Lambda([this,Index](){return FText::FromString(SkillNames[Index].ToString()+TEXT("\n")+SkillReasons[Index].ToString());})
-        .OnClicked_Lambda([this,Index](){return ActivateSlot(Index);})
+        .OnClicked_Lambda([this,Index](){return bCanAct && SkillIds[Index]>0 && Cooldowns[Index]<=0.f ? ActivateSlot(Index) : FReply::Handled();})
         [SNew(SOverlay)
-            + SOverlay::Slot().Padding(1,1,1,5)[SNew(SImage).Image(&SkillBrushes[Index])]
-            + SOverlay::Slot()
-            [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Cooldown)
-                .Visibility_Lambda([this,Index](){return Cooldowns[Index] > 0.f ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})]
-            + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(FPGUIStyle::Get().Text)
-                .ShadowOffset(FVector2D(0,1)).Text_Lambda([this,Index]()
-                {
-                    if(Cooldowns[Index]>0.f) return FText::FromString(FString::Printf(TEXT("%.1f"),Cooldowns[Index]));
-                    if(SkillIds[Index]<=0) return FText::FromString(TEXT("·"));
-                    if(SkillTextures[Index]) return FText::GetEmpty();
-                    return FText::FromString(Index==0 ? TEXT("공격") : Index==7 ? TEXT("대시") : FString::FromInt(Index));
-                })]
-            + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
-            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ShadowOffset(FVector2D(1,1)).Text_Lambda([this,Index](){return SkillKeys[Index];})]
-            + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,4)
-            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",9)).Text_Lambda([this,Index](){return SkillReasons[Index];})]
-            + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom)
-            [SNew(SBox).WidthOverride(18).HeightOverride(2)
+            + SOverlay::Slot().Padding(0,0,0,14)[SNew(SImage).Image(&SkillBrushes[Index])]
+            + SOverlay::Slot().Padding(0,0,0,14)
+            [SNew(SBorder).BorderImage(&Art.Shade)
+                .Visibility_Lambda([this,Index](){return Cooldowns[Index]>0 ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})]
+            + SOverlay::Slot().VAlign(VAlign_Center).HAlign(HAlign_Center).Padding(0,0,0,12)
+            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",17)).ColorAndOpacity(Art.Ivory).ShadowOffset(FVector2D(1,1))
+                .Text_Lambda([this,Index](){return Cooldowns[Index]>0 ? FText::FromString(FString::Printf(TEXT("%.1f"),Cooldowns[Index])) : SkillTextures[Index] ? FText::GetEmpty() : FText::FromString(Index==0 ? TEXT("공격") : Index==7 ? TEXT("대시") : FString::FromInt(Index));})]
+            + SOverlay::Slot().VAlign(VAlign_Bottom).HAlign(HAlign_Center)
+            [SNew(STextBlock).Text_Lambda([this,Index](){return SkillKeys[Index];})
+                .Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(Art.Ivory).ShadowOffset(FVector2D(1,1))]
+            + SOverlay::Slot().VAlign(VAlign_Top).HAlign(HAlign_Center)
+            [SNew(SBox).WidthOverride(32).HeightOverride(2)
                 [SNew(SImage).Image(FCoreStyle::Get().GetBrush("WhiteBrush"))
-                    .ColorAndOpacity_Lambda([this,Index,Accent](){return SkillIds[Index]==RefundSkillID && RefundSkillID>0 ? FLinearColor(1,.15f,.2f) : Index==7 && bAfterimageReady ? FLinearColor(1,.8f,.25f) : SkillIds[Index]>0 ? Accent : FLinearColor(.14f,.18f,.24f);})]]
+                    .ColorAndOpacity_Lambda([this,Index](){return SkillIds[Index]==RefundSkillID && RefundSkillID>0 ? FLinearColor(1,.08f,.06f) : Index==7 && bAfterimageReady ? FLinearColor(1,.65f,.12f) : FLinearColor::Transparent;})]]
         ]
     ];
 }
 
 TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
 {
-    HUDPlaque = GetDefault<UPGUIStyleSettings>()->HUDPlaque.LoadSynchronous();
-    PlaqueBrush = FPGUIStyle::Get().Panel;
-    if (HUDPlaque)
+    const auto& Art=FPGCombatHUDStyle::Get();
+    OrbFrameTexture=GetDefault<UPGUIStyleSettings>()->CombatOrbFrame.LoadSynchronous();
+    OrbFrameBrush=FSlateBrush();
+    OrbFrameBrush.SetResourceObject(OrbFrameTexture);
+    OrbFrameBrush.ImageSize=FVector2D(144,144);
+    CombatPlateTexture=GetDefault<UPGUIStyleSettings>()->CombatPlate.LoadSynchronous();
+    CombatPlateBrush=Art.Panel;
+    if(CombatPlateTexture)
     {
-        PlaqueBrush = FSlateBrush();
-        PlaqueBrush.SetResourceObject(HUDPlaque);
-        PlaqueBrush.SetUVRegion(FBox2f(FVector2f(0,.10f),FVector2f(1,.85f)));
-        PlaqueBrush.ImageSize = FVector2D(360,120);
+        CombatPlateBrush=FSlateBrush();
+        CombatPlateBrush.SetResourceObject(CombatPlateTexture);
+        CombatPlateBrush.SetUVRegion(FBox2f(FVector2f(0,.10f),FVector2f(1,.90f)));
+        CombatPlateBrush.ImageSize=FVector2D(320,86);
+        // The authored plate already matches these shallow HUD proportions. Image drawing
+        // preserves its thin bevels; Box slicing uses source-pixel corners on high-res art.
+        CombatPlateBrush.DrawAs=ESlateBrushDrawType::Image;
     }
-    FSlateBrush Normal = PlaqueBrush, Hover = PlaqueBrush, Pressed = PlaqueBrush;
-    Normal.TintColor = FLinearColor(.75f,.83f,.95f,1);
-    Hover.TintColor = FLinearColor(1,1,1,1);
-    Pressed.TintColor = FLinearColor(.45f,.72f,.68f,1);
-    ActionStyle = FPGUIStyle::Get().Button;
-    ActionStyle.SetNormal(Normal).SetHovered(Hover).SetPressed(Pressed);
-    auto Skills = SNew(SHorizontalBox);
-    for (int32 Index=0; Index<8; ++Index)
-        Skills->AddSlot().AutoWidth().Padding(Index == 7 ? 14.f : Index == 0 ? 0.f : 6.f,0,0,0)[MakeSkill(Index)];
+    PotionIconTexture=GetDefault<UPGUIStyleSettings>()->CombatPotionIcon.LoadSynchronous();
+    PotionIconBrush=FSlateBrush();
+    PotionIconBrush.SetResourceObject(PotionIconTexture);
+    PotionIconBrush.SetUVRegion(FBox2f(FVector2f(.13f,0),FVector2f(.87f,.96f)));
+    PotionIconBrush.ImageSize=FVector2D(42,46);
+    ActionStyle=Art.Button;
+    FSlateBrush Hover=CombatPlateBrush,Pressed=CombatPlateBrush;
+    Hover.TintColor=FLinearColor(1.18f,1.12f,1.f);
+    Pressed.TintColor=FLinearColor(.65f,.65f,.70f);
+    ActionStyle.SetNormal(CombatPlateBrush).SetHovered(Hover).SetPressed(Pressed);
+    auto Skills=SNew(SHorizontalBox);
+    Skills->AddSlot().AutoWidth().Padding(0,0,12,0)[MakeHealingPotion()];
+    for(int32 Index=0;Index<8;++Index)
+        Skills->AddSlot().AutoWidth().Padding(Index==7 ? 10.f : 2.f,0,2,0)[MakeSkill(Index)];
     return SNew(SSafeZone).Visibility(EVisibility::SelfHitTestInvisible)
     [SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,28)
-        [SNew(SBox).WidthOverride(450)
+        [SNew(SBox).WidthOverride(430)
             .Visibility_Lambda([this](){return bShowBoss ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
-            [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Panel).Padding(18)
+            [SNew(SBorder).BorderImage(&CombatPlateBrush).Padding(FMargin(16,12))
                 [SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-                    [SNew(STextBlock).Text_Lambda([this](){return BossTitle;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(FPGUIStyle::Get().Text)]
-                    + SVerticalBox::Slot().AutoHeight().Padding(0,8)
-                    [SNew(SBox).HeightOverride(9)[SNew(SProgressBar).Style(&ResourceStyle).Percent_Lambda([this](){return BossHealth;})
-                        .FillColorAndOpacity(FLinearColor(.85f,.2f,.35f))]]
+                    [SNew(STextBlock).Text_Lambda([this](){return BossTitle;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(Art.Ivory)]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,7)
+                    [SNew(SBox).HeightOverride(8)[SNew(SProgressBar).Style(&ResourceStyle).Percent_Lambda([this](){return BossHealth;}).FillColorAndOpacity(FLinearColor(.55f,.016f,.025f))]]
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-                    [SNew(STextBlock).Text_Lambda([this](){return BossStatus;}).ColorAndOpacity_Lambda([this](){return BossStatusColor;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))]]]]
-        + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(32,28)
-        [MakeStagePanel()]
-        + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(32,28)
-        [MakeActions()]
-        + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(32,0,0,32)
-        [MakeBuildPanel()]
-        + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(24,0,24,30)
+                    [SNew(STextBlock).Text_Lambda([this](){return BossStatus;}).ColorAndOpacity_Lambda([this](){return BossStatusColor;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",11))]]]]
+        + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(28,32)
+        [SNew(SVerticalBox)
+            + SVerticalBox::Slot().AutoHeight()[MakeStagePanel()]
+            + SVerticalBox::Slot().AutoHeight().Padding(0,12,0,0)[MakeActions()]]
+        + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(16,0,16,12)
         [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
-            [SNew(SBox).Tag(TEXT("PGCombatHUDLayout")).WidthOverride(560).HeightOverride(194)
-            [SNew(SVerticalBox)
-                + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,0,0,10)
-                [SNew(SBorder).BorderImage(&FPGUIStyle::Get().Panel).Padding(FMargin(18,8))
+            [SNew(SBox).Tag(TEXT("PGCombatHUDLayout")).WidthOverride(900).HeightOverride(226)
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+                    [SNew(SBox).HeightOverride(54)[MakeBuildPanel()]]
+                    + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
                     [SNew(SHorizontalBox)
-                        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[MakeResource(true)]
-                        + SHorizontalBox::Slot().AutoWidth().Padding(16,0)[MakeHealingPotion()]
-                        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[MakeResource(false)]]]
-                + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,0,0,8)
-                [SNew(SBox).HeightOverride(20).Visibility(EVisibility::HitTestInvisible)
-                [SNew(STextBlock).Text_Lambda([this](){return PotionNotice;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))
-                    .ColorAndOpacity(FPGUIStyle::Get().Mint).ShadowOffset(FVector2D(0,1))
-                ]]
-                + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[Skills]
-            ]]]
+                        + SHorizontalBox::Slot().AutoWidth()[MakeResource(true)]
+                        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(0,0,0,20)
+                        [SNew(SVerticalBox)
+                            + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+                            [SNew(SBox).HeightOverride(26)
+                                [SNew(STextBlock).Text_Lambda([this](){return PotionNotice;}).Font(FCoreStyle::GetDefaultFontStyle("Bold",12))
+                                    .ColorAndOpacity(Art.Ivory).ShadowOffset(FVector2D(1,1))]]
+                            + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+                            [SNew(SBorder).BorderImage(&CombatPlateBrush).Padding(FMargin(14,10))[Skills]]]
+                        + SHorizontalBox::Slot().AutoWidth()[MakeResource(false)]]
+                ]]]
     ];
 }
 
@@ -240,7 +243,7 @@ void UPGUIMainHUD::Refresh()
         RefundSkillID=State.RefundSkillID;
         bAfterimageReady=State.FrenzyMaxStacks>0 && State.FrenzyStacks==State.FrenzyMaxStacks && ASC->GetPerkPercent(EPGCombatPerk::FrenzyAfterimage)>0;
         RageRatio = State.FrenzyMaxStacks > 0 ? float(State.FrenzyStacks)/State.FrenzyMaxStacks : 0;
-        RageText = FText::FromString(FString::Printf(TEXT("%d/%d · %.1f초"),State.FrenzyStacks,State.FrenzyMaxStacks,State.FrenzySeconds));
+        RageText = FText::FromString(State.FrenzyStacks>0 ? FString::Printf(TEXT("%d/%d · %.1f초"),State.FrenzyStacks,State.FrenzyMaxStacks,State.FrenzySeconds) : FString::Printf(TEXT("0 / %d"),State.FrenzyMaxStacks));
         int32 ActiveFamilies = 0;
         const EPGCombatPerk Roots[] = {EPGCombatPerk::Bleed, EPGCombatPerk::Shockwave, EPGCombatPerk::Frenzy};
         const EPGCombatPerk Cores[] = {EPGCombatPerk::BleedRecast, EPGCombatPerk::ShockFracture, EPGCombatPerk::FrenzyAfterimage};
