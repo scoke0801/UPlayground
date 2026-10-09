@@ -1,5 +1,39 @@
 # UPlayground 프로젝트 분석 문서
 
+## 2026-10-09 bOKUSEI 비교 맵 추가 모델
+
+- 기존 8단계 비교 앞쪽 전시 줄에 아린·화련(`DA_Hwarin`)·Lianlian을 추가했다. 원본 외형의 메시·툰 재질·머리 방향 설정과 공통 주광원, 외곽선을 사용하며 각 리그에 별도로 리타겟한 대기 모션을 반복한다.
+- `BokuseiGuestModels.py`가 배치를 소유하며 전체 맵 재생성에도 포함된다. 기존 맵에 추가 모델만 갱신할 때는 `ConfigureBokuseiGuests.py`를 사용한다. 숫자 1–8은 기존 Bokusei 단계 선택이며 추가 모델은 자유 카메라로 살펴본다.
+
+## 2026-10-09 핵앤슬래시 전투 HUD 재제작
+
+- 핵앤슬래시의 하단 중앙 전투 배치와 서브컬처 게임풍의 셀 명암·차콜/샴페인 골드 장식을 결합한다. ImageGen 테두리·스킬바·회복약을 연결하고 붉은 생명력·호박색 격분 구슬을 사용한다. 우측 상단에 시련 목표·시작·장비를 묶고, 획득한 강화/발동 상태만 전투 바 위에 표시한다.
+- `PGCombatHUDStyle`과 `SPGResourceOrb`는 전투 HUD 표현을 소유한다. 원본 금속 아트·임포트·해상도별 실제 실행/캡처는 `Tools/Art/CombatHUD`, 텍스처 교체 설정은 `PGUIStyleSettings.CombatOrbFrame`이다. 기존 인벤토리/보상 테마와 GAS·입력·진행 데이터는 유지한다.
+- UE 5.8 Development 빌드와 720p·900p·1080p 회복약/레이아웃 검사를 통과했다. 최종 렌더·재실행 방법·검증 범위는 [전투 HUD 기록](Docs/todo/CombatHUD_Implementation_Report.md)을 따른다. 아래 9월 네이비 HUD·10월 달빛 프레임 기록보다 이번 전투 HUD 변경이 우선한다.
+
+## 2026-10-09 숲속 폐허 바닥 반복감 수정
+
+- 비늘처럼 겹쳐 보이던 포석을 230개에서 12개로 줄이고 중앙에 흙·이끼 지면을 드러냈다. 지면 노멀 강도를 낮추고 다른 식생·폐허 배치의 난수 순서를 보존했다. 현재 2,338 인스턴스이며 실제 플레이 시점 렌더·저장 재로드가 통과했다. 아래 2,556개 구성은 수정 전 기록이다.
+
+## 2026-10-09 숲속 폐허 고디테일 환경 교체
+
+- 보유 환경 팩을 재조사하고 `DreamscapeEastLands` 개별 모델 28종·텍스처 75개를 임포트했다. 원본 LOD0를 분리하고 나무껍질·잎 알파·석재 노멀/ORM·이끼 레이어를 Unreal 재질로 연결했다. Unity 씬·프리팹 배치는 사용하지 않는다.
+- `/Game/Maps/L_PG_ForestRuins`를 석조 아치·수호상·회색 포석·이끼 지면·다층 식생과 따뜻한 등불로 교체했다. 2,556 인스턴스/25 HISM 그룹, Actor 22개와 기존 충돌 Actor 6개를 사용한다. 기존 전투·보상 데이터와 기본 맵은 유지한다.
+- `DetailedForestLayout.py`·`layout.json`이 배치, `ImportDetailedResources.py`가 재질을 소유한다. `RunForestRuins.py --step preview --art-only`는 빠른 미술 프리뷰이며 일반 `preview`의 전투 검증과 구분한다. 현재 렌더·실행 근거·수정 방법은 [환경 구현 기록](Docs/todo/ForestRuins_Implementation_Report.md)의 고디테일 교체 절을 따른다. 아래 LowPoly 항목은 교체 전 이력이다.
+- 최종 재로드·17개 경로·네 방향 경계·보조 16웨이브/7보상과 실제 렌더 8장 검사가 통과했다. 셰이더 컴파일 오류도 실패로 검사한다. 수동 난이도·장시간 GPU 성능·패키징은 별도다.
+
+## 2026-10-09 개별 환경 리소스로 구성한 숲속 폐허 전투장
+
+- Unity `Environment/LowPolyFantasyArena2`의 개별 FBX 40개·텍스처 4개로 `/Game/Maps/L_PG_ForestRuins`를 새 빈 레벨에서 구성했다. Unity 씬·프리팹 배치와 조립된 Arena 메시는 사용하지 않았다. 약 47×39m의 전투장에 중앙 석재 마당·네 곳의 낮은 잔해·외곽 숲을 배치하고 연속 지면·경계 충돌을 새로 제작했다.
+- 기존 Stage GameMode와 6개 시련 데이터를 연결한다. 953개 장식은 24 HISM 그룹으로 저장하며 배치·조명 수정과 재생성은 `Tools/Art/ForestRuins/layout.json`, 바로 실행은 `Tools/PlayForestRuins.ps1`이다. 기본 시작 맵과 전투·성장 데이터는 유지한다.
+- Development 빌드·저장 재로드·17곳 경로·네 방향 경계 이동·실제 적 스폰/추격과 보조 16웨이브/7보상 완주를 검사했다. 실행 근거·렌더·재생성 방법과 수동 밸런스/성능 검수 범위는 [숲속 폐허 기록](Docs/todo/ForestRuins_Implementation_Report.md)을 따른다.
+
+## 2026-10-08 bOKUSEI 비교 맵 · 재생 중 조명 조절
+
+- 기존 8단계 비교 맵의 공통 주광원을 방향키로 좌우·높이 각도 조절하고, Z/X/V 정면·측면·역광 프리셋, L 자동 회전, Backspace 시작 조명 복원을 제공한다. 방향광은 좌표 이동 대신 방향을 조절하며 카메라·단계 선택과 독립적으로 동작한다.
+- `PGShadingComparisonPawn`은 각 모델의 `PGToonPresentationComponent.KeyLight`를 공유하고, 기존 컴포넌트가 툰 명암·얼굴 SDF 방향을 동기화한다. 한국어 안내와 현재 방향·높이·자동 회전 상태를 표시하며 속도는 Pawn 설정으로 노출한다. 바로 실행은 `Tools/PlayBokuseiShadingComparison.ps1`이다.
+- Development 에디터 빌드·새 프로세스 재로드·35개 본 포즈·55개 실제 입력(조명 19개)·70개 MID 방향 동기화와 기존 H/J 그림자 픽셀이 통과했다. 정면·측면·역광 렌더와 초기 연결 안내도 확인했다. 재현 근거·사용법·재생 중 적용 범위는 [비교 맵 기록](Docs/todo/BokuseiShadingComparison_Implementation_Report.md)을 따른다.
+
 ## 2026-10-07 bOKUSEI 머리카락 그림자 품질 개선 · 중단 작업 재개
 
 - 미적용 후보와 마지막 진단을 확인하고 비교 맵의 공통 주광원 Source Angle을 20°로 조절했다. 헤어 투사체의 컷오프 0.35·양면·안쪽 0.08cm, 보이는 반투명 헤어와 실제 게임의 얼굴 SDF는 유지한다. H 가림막은 모든 비교 단계에서 같은 130×50×14cm를 사용한다.
