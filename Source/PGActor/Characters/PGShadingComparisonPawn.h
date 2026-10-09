@@ -22,6 +22,10 @@ public:
     float FastMultiplier = 3.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Comparison", meta=(ClampMin="0.01"))
     float LookSensitivity = .25f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Comparison|Light", meta=(ClampMin="1", Units="Degrees"))
+    float LightRotationSpeed = 45.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Comparison|Light", meta=(ClampMin="1", Units="Degrees"))
+    float LightOrbitSpeed = 20.f;
 
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
     void ShowOverview();
@@ -36,6 +40,15 @@ public:
     void ToggleShadowCaster();
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
     void ToggleHairShadow();
+    /** Azimuth is measured from the models' front (+Y); elevation may go below the horizon. */
+    UFUNCTION(BlueprintCallable, Category="PG|Comparison|Light")
+    void SetLightAngles(float Azimuth, float Elevation);
+    UFUNCTION(BlueprintCallable, Category="PG|Comparison|Light")
+    void ToggleLightOrbit();
+    UFUNCTION(BlueprintCallable, Category="PG|Comparison|Light")
+    void ResetLight();
+    UFUNCTION(BlueprintPure, Category="PG|Comparison|Light")
+    bool IsLightOrbitEnabled() const { return bLightOrbitEnabled; }
     /** Input-path verification; only enabled with -PGShadingComparisonProbe in non-shipping builds. */
     UFUNCTION(BlueprintCallable, Category="PG|Comparison|Test")
     bool SendProbeInput(FKey Key, bool bPressed, float AxisValue = 0.f);
@@ -48,6 +61,9 @@ protected:
 private:
     UPROPERTY(Transient) TObjectPtr<class UPGUIShadingComparison> HelpWidget;
     TWeakObjectPtr<AActor> OverviewCamera;
+    TWeakObjectPtr<class ADirectionalLight> ComparisonKeyLight;
+    FRotator InitialLightRotation = FRotator::ZeroRotator;
+    bool bLightOrbitEnabled = false;
     int32 SelectedStage = 5;
     bool bShadowCasterEnabled = false;
     bool bHairShadowEnabled = true;
@@ -56,4 +72,7 @@ private:
     void SetView(const FVector& Location, const FRotator& Rotation);
     void LookHorizontal(float Value);
     void LookVertical(float Value);
+    void InitializeComparisonLight();
+    void ApplyLightAngles(float Azimuth, float Elevation);
+    void UpdateLightHelp();
 };

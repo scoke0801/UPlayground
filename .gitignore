@@ -178,6 +178,8 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/ConfigureBokuseiShadingComparison.py
 !/Tools/Validation/PreviewBokuseiShadingComparison.py
 !/Tools/Validation/RunBokuseiShadingComparison.py
+!/Tools/Validation/BokuseiGuestModels.py
+!/Tools/Validation/ConfigureBokuseiGuests.py
 !/Tools/Validation/ProbeBokuseiHairShadowQuality.py
 !/Tools/Validation/RunBokuseiHairShadowQuality.py
 !/Tools/Validation/PreviewToonCharacterBatch.py

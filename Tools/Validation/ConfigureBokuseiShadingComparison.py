@@ -483,6 +483,8 @@ def main():
             start = actors.spawn_actor_from_class(unreal.PlayerStart, loc, rot)
             start.set_actor_label('자유 카메라 시작 위치')
             start.set_folder_path('비교 카메라')
+    from BokuseiGuestModels import add_guests
+    REPORT['guests'] = add_guests(actors, key, prop, label_material)
     assert unreal.EditorLoadingAndSavingUtils.save_map(world, MAP)
     assert all(hashlib.sha256((ROOT/p).read_bytes()).hexdigest() == expected for p, expected in REPORT['protected'].items()), 'Source asset changed'
     REPORT.update(status='PASS', source_mesh=mesh.get_path_name(), animation=idle.get_path_name(),
@@ -491,14 +493,15 @@ def main():
                   shadow=dict(stage=6, world_lighting_influence=.65, casters=len(definitions)-4, toggle_key='H', default_enabled=False))
 
 
-try:
-    main()
-except Exception:
-    REPORT.update(status='FAIL', error=traceback.format_exc())
-    unreal.log_error(REPORT['error'])
-finally:
-    payload = json.dumps(REPORT, ensure_ascii=False, indent=2)
-    (OUT/'configure.json').write_text(payload, encoding='utf-8')
-    (RUN/'configure.json').write_text(payload, encoding='utf-8')
-if REPORT['status'] != 'PASS':
-    raise RuntimeError('Bokusei shading comparison creation failed')
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception:
+        REPORT.update(status='FAIL', error=traceback.format_exc())
+        unreal.log_error(REPORT['error'])
+    finally:
+        payload = json.dumps(REPORT, ensure_ascii=False, indent=2)
+        (OUT/'configure.json').write_text(payload, encoding='utf-8')
+        (RUN/'configure.json').write_text(payload, encoding='utf-8')
+    if REPORT['status'] != 'PASS':
+        raise RuntimeError('Bokusei shading comparison creation failed')

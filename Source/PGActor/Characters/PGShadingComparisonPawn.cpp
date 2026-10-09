@@ -6,6 +6,8 @@
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "PGToonPreviewActor.h"
+#include "PGActor/Components/Rendering/PGToonPresentationComponent.h"
+#include "Engine/DirectionalLight.h"
 #include "EngineUtils.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameFramework/PlayerController.h"
@@ -13,6 +15,7 @@
 #include "InputKeyEventArgs.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "TimerManager.h"
 #include "PGUI/Widget/HUD/PGUIShadingComparison.h"
 
 APGShadingComparisonPawn::APGShadingComparisonPawn(const FObjectInitializer& ObjectInitializer)
@@ -35,6 +38,26 @@ void APGShadingComparisonPawn::BeginPlay()
             OverviewCamera = *It;
             break;
         }
+    // The pawn can begin before the level's preview actors are initialized.
+    GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::InitializeComparisonLight);
+}
+
+void APGShadingComparisonPawn::InitializeComparisonLight()
+{
+    if (ComparisonKeyLight.IsValid())
+    {
+        UpdateLightHelp();
+        return;
+    }
+    // Resolve the same authored light used by the materials. Never pick the fill light.
+    for (TActorIterator<APGToonPreviewActor> It(GetWorld()); It; ++It)
+        if (It->ActorHasTag(TEXT("PGShadingComparisonModel")) && IsValid(It->ToonPresentation->KeyLight))
+        {
+            ComparisonKeyLight = It->ToonPresentation->KeyLight;
+            InitialLightRotation = ComparisonKeyLight->GetActorRotation();
+            break;
+        }
+    UpdateLightHelp();
 }
 
 void APGShadingComparisonPawn::PawnClientRestart()
@@ -50,6 +73,7 @@ void APGShadingComparisonPawn::PawnClientRestart()
         {
             HelpWidget->SetShadowEnabled(bShadowCasterEnabled);
             HelpWidget->SetHairShadowEnabled(bHairShadowEnabled);
+            UpdateLightHelp();
             HelpWidget->AddToViewport();
         }
         ShowOverview();
@@ -81,6 +105,16 @@ void APGShadingComparisonPawn::SetupPlayerInputComponent(UInputComponent* Player
     PlayerInputComponent->BindKey(EKeys::C, IE_Pressed, this, &ThisClass::ShowQuarter);
     PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &ThisClass::ToggleShadowCaster);
     PlayerInputComponent->BindKey(EKeys::J, IE_Pressed, this, &ThisClass::ToggleHairShadow);
+    PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &ThisClass::ToggleLightOrbit);
+    PlayerInputComponent->BindKey(EKeys::BackSpace, IE_Pressed, this, &ThisClass::ResetLight);
+    const FKey LightKeys[] = { EKeys::Z, EKeys::X, EKeys::V };
+    const float Azimuths[] = { 0.f, 60.f, 180.f };
+    for (int32 Index = 0; Index < UE_ARRAY_COUNT(LightKeys); ++Index)
+    {
+        FInputKeyBinding Binding(FInputChord(LightKeys[Index]), IE_Pressed);
+        Binding.KeyDelegate.GetDelegateForManualSet().BindUObject(this, &ThisClass::SetLightAngles, Azimuths[Index], 35.f);
+        PlayerInputComponent->KeyBindings.Add(MoveTemp(Binding));
+    }
 }
 
 void APGShadingComparisonPawn::Tick(float DeltaSeconds)
@@ -104,6 +138,21 @@ void APGShadingComparisonPawn::Tick(float DeltaSeconds)
         + View.GetUnitAxis(EAxis::Y) * Axis(EKeys::D, EKeys::A)
         + FVector::UpVector * Axis(EKeys::E, EKeys::Q);
     AddMovementInput(Direction.GetClampedToMaxSize(1.f));
+    if (ComparisonKeyLight.IsValid())
+    {
+        const float Horizontal = Axis(EKeys::Right, EKeys::Left);
+        const float Vertical = Axis(EKeys::Up, EKeys::Down);
+        // Manual control stops the sweep at its current direction.
+        if (Horizontal != 0.f || Vertical != 0.f) bLightOrbitEnabled = false;
+        if (Horizontal != 0.f || Vertical != 0.f || bLightOrbitEnabled)
+        {
+            const FRotator Rotation = ComparisonKeyLight->GetActorRotation();
+            const float SpeedDegrees = FMath::Max(1.f, LightRotationSpeed);
+            ApplyLightAngles(-90.f - Rotation.Yaw + DeltaSeconds * (Horizontal * SpeedDegrees
+                + (bLightOrbitEnabled ? FMath::Max(1.f, LightOrbitSpeed) : 0.f)),
+                -Rotation.Pitch + DeltaSeconds * Vertical * SpeedDegrees);
+        }
+    }
 }
 
 void APGShadingComparisonPawn::LookHorizontal(float Value)
@@ -193,6 +242,42 @@ void APGShadingComparisonPawn::ToggleHairShadow()
         if ((It->ActorHasTag(TEXT("PGShadingStage5")) || It->ActorHasTag(TEXT("PGShadingStage7"))) && It->HairShadowProxy->GetSkeletalMeshAsset())
             It->HairShadowProxy->SetCastShadow(bHairShadowEnabled);
     if (HelpWidget) HelpWidget->SetHairShadowEnabled(bHairShadowEnabled);
+}
+
+void APGShadingComparisonPawn::ApplyLightAngles(float Azimuth, float Elevation)
+{
+    if (!ComparisonKeyLight.IsValid() || !FMath::IsFinite(Azimuth) || !FMath::IsFinite(Elevation)) return;
+    ComparisonKeyLight->SetActorRotation(FRotator(-FMath::Clamp(Elevation, -85.f, 85.f),
+        FRotator::NormalizeAxis(-90.f - Azimuth), 0.f));
+    UpdateLightHelp();
+}
+
+void APGShadingComparisonPawn::SetLightAngles(float Azimuth, float Elevation)
+{
+    if (!FMath::IsFinite(Azimuth) || !FMath::IsFinite(Elevation)) return;
+    bLightOrbitEnabled = false;
+    ApplyLightAngles(Azimuth, Elevation);
+}
+
+void APGShadingComparisonPawn::ToggleLightOrbit()
+{
+    bLightOrbitEnabled = ComparisonKeyLight.IsValid() && !bLightOrbitEnabled;
+    UpdateLightHelp();
+}
+
+void APGShadingComparisonPawn::ResetLight()
+{
+    bLightOrbitEnabled = false;
+    if (ComparisonKeyLight.IsValid()) ComparisonKeyLight->SetActorRotation(InitialLightRotation);
+    UpdateLightHelp();
+}
+
+void APGShadingComparisonPawn::UpdateLightHelp()
+{
+    if (!HelpWidget) return;
+    const bool bAvailable = ComparisonKeyLight.IsValid();
+    const FRotator Rotation = bAvailable ? ComparisonKeyLight->GetActorRotation() : FRotator::ZeroRotator;
+    HelpWidget->SetLightState(bAvailable, FRotator::NormalizeAxis(-90.f - Rotation.Yaw), -Rotation.Pitch, bLightOrbitEnabled);
 }
 
 bool APGShadingComparisonPawn::SendProbeInput(FKey Key, bool bPressed, float AxisValue)

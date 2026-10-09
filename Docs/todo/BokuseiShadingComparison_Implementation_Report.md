@@ -31,11 +31,20 @@
 | 0 / R | 전체 정면 비교로 복귀; 이후 1–8은 개별 정면 |
 | H | 5–8단계의 같은 가림막 그림자를 켜기 / 끄기; 자체·바닥 그림자는 유지 |
 | J | 6/8단계 머리카락 그림자를 켜기 / 끄기; 헤어 외형·월드 수광은 유지 |
+| ← / → | 공통 주광원을 좌우로 회전; 누른 동안 초당 45° 조절 |
+| ↑ / ↓ | 조명 높이 각도 조절; -85°부터 +85°까지 바닥·천정 조명 확인 |
+| Z / X / V | 정면 0° / 측면 +60° / 역광 180°; 높이 35° |
+| L | 현재 높이를 유지하며 초당 20° 자동 회전 켜기 / 끄기 |
+| Backspace | 자동 회전을 끄고 재생 시작 시 저장된 주광원 방향 복원 |
 | Shift + F1 | UE 기본 동작으로 마우스 해제 |
 
 조작 안내는 재생 화면 하단에 계속 표시된다. `F → 2 → 3 → 4 → 5 → 6`으로 얼굴 시점을 유지하며 각 효과를 비교할 수 있다. 기본 상태는 헤어 그림자 켜짐·가림막 꺼짐이다. `6 → F → J`로 앞머리가 얼굴에 드리우는 그림자를 비교한다. `H`로 가림막 수광을 추가하고 5단계와 비교할 수 있다. 처음 재생한 상태에서 F/C를 누르면 6단계로 이동한다.
 
 에디터에서는 `비교 카메라` 폴더의 정면·쿼터뷰·얼굴 카메라를 파일럿할 수 있다. `주광원 · 모든 단계 공통`의 방향을 조절하면 PIE에서 기존 `PGToonPresentationComponent`가 각 툰 재질의 광원 방향을 동기화한다.
+
+재생 중에는 방향키와 Z/X/V로 같은 주광원을 조절한다. 수동 조절·프리셋·초기화는 자동 회전을 정지하고, 카메라 이동·단계 선택·0/R 전체 보기는 조명을 유지한다. 하단에 현재 방향·높이 각도와 자동 회전 상태를 표시한다. 방향 0°는 모델 정면(+Y), 높이 0°는 수평이다. 방향광의 위치 이동은 명암에 영향을 주지 않으므로 방향과 높이 각도로 테스트한다. 보조광·광원 강도·Source Angle·원본 재질은 유지하며 조작한 값은 맵에 저장하지 않는다.
+
+`Tools/PlayBokuseiShadingComparison.ps1`로 비교 맵을 바로 실행할 수 있다. `8 → F → Z/X/V → L`로 얼굴 SDF·월드 수광·헤어 그림자를 비교하고 Backspace로 원래 조명에 돌아온다. `PGShadingComparisonPawn`의 `LightRotationSpeed`와 `LightOrbitSpeed`는 에디터에서 조절한다.
 
 ## 비교 기준
 
@@ -66,6 +75,26 @@ UE 내장 Python으로 실행한다.
 ```
 
 `--step configure`는 맵과 전용 에셋을 생성하고, `--step preview`는 저장된 결과를 새 UE 프로세스에서 다시 열어 검증·캡처한다. `--step preview --input-only`는 에디터 스크린샷을 건너뛰고 저장 재로드·PIE 포즈·카메라 입력만 검사한다. 다시 생성할 때 이전 비교 에셋과 맵을 `Saved/BokuseiShadingComparison/<실행 시각>/backup`에 보존한다. 원본 외형·재질·텍스처·대기 모션, 기존 갤러리와 게임 기본 맵은 변경하지 않는다.
+
+## 재생 중 조명 조절 · 2026-10-08
+
+`PGShadingComparisonPawn`이 비교 모델의 `PGToonPresentationComponent.KeyLight`를 한 번 찾아 공통 주광원의 방향을 조절한다. Pawn이 맵 액터보다 먼저 시작될 수 있어 다음 틱에 연결하고 한국어 안내를 갱신한다. 이후에는 광원 검색이나 추가 MID 생성 없이 기존 표현 컴포넌트가 툰·얼굴 SDF를 동기화한다. 카메라·보조광·광원 강도·Source Angle·원본 외형과 맵 에셋은 유지한다. 외부 각도 입력은 유한값만 허용하고 높이를 ±85°로 제한한다.
+
+- UE 5.8 Development 에디터 빌드 PASS: `Saved/BokuseiShadingComparison/LightControlsBuild.log`. 기존 엔진 deprecated API·툴체인 경고는 유지한다.
+- 최종 새 프로세스 재로드·PIE·입력 검사: `Saved/BokuseiShadingComparison/Runs/20261008T142420775947Z/run.json` PASS. `Preview/20261008T142438089103Z/preview.json`의 8개 모델·10개 슬롯·원본 패키지 해시, 35개 본 포즈 오차 약 `5.68e-14 cm`, 헤어 투사체 포즈 오차 0cm와 입력 **55개** PASS.
+- 조명 검사 **19개**: 방향키 4축, 정면·측면·역광, 자동 회전 시작/정지 및 수동 입력·프리셋·초기화로 정지, 카메라 전체 보기에서 조명 유지, ±85° 제한·360° 순환, NaN/Infinity 거부, 시작 방향 복원 PASS. 각 검사에서 70개 MID의 `LightDirection`을 실제 주광원과 비교했고 최대 성분 오차는 `2.87e-8`이다. 조명 입력으로 카메라 위치·방향이 바뀌지 않는 것도 검사했다.
+- 최종 `PlayableFace.png`와 `light_front.png` / `light_side.png` / `light_back.png`에서 8단계 얼굴 SDF·헤어 그림자의 방향 변화와 초기 연결·현재 각도·조작 안내를 시각 확인했다. 이 실행은 입력 전용이므로 에디터 단계별 렌더는 아래 별도 실행을 따른다.
+- 전체 단계 렌더·H/J 픽셀은 `Preview/20261008T141807064247Z`에 보존한다. `shadow_pixels.json` PASS: H의 얼굴 명도 감소는 에디터 `2.928/255`, PIE `2.595/255`; J는 정면 `12.540/255`, 비스듬한 시점 `12.942/255`, PIE `14.858/255`다. 이 첫 전체 실행은 기존 33개 입력을 통과한 뒤 새 검사의 단계 선택 시점 기대값에서 FAIL했다. 쿼터뷰 유지 동작에 맞춰 전체 보기 복귀를 명시하고 입력 전용으로 재검증했다. 첫 렌더에서 발견한 시작 연결 안내 문제도 다음 틱 초기화로 보완했다.
+- Python 구문·PowerShell 실행 도구 구문·`git diff --check` PASS. `Tools/PlayBokuseiShadingComparison.ps1`는 `.uproject`의 엔진 버전으로 해당 비교 맵을 직접 실행한다.
+
+재검증 명령:
+
+```powershell
+& 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/ThirdParty/Python3/Win64/python.exe' Tools/Validation/RunBokuseiShadingComparison.py --step preview --input-only
+& Tools/Art/ToonTest/BokuseiShadingComparison/MeasureShadows.ps1 -PreviewDirectory Saved/BokuseiShadingComparison/Preview/20261008T141807064247Z
+```
+
+조작값은 재생 중에만 적용된다. 사용자 정의 조명 프리셋 저장과 장시간 자동 회전·패키지 실행 검증은 후속 폴리싱 범위다.
 
 ## 머리카락 그림자 품질 개선 · 중단 작업 재개 · 2026-10-07
 

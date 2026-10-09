@@ -4,6 +4,7 @@ import json
 import math
 import time
 import traceback
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 import unreal
@@ -20,7 +21,10 @@ level = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 world = unreal.EditorLoadingAndSavingUtils.load_map(DATA['map'])
 assert world and DATA['status'] == 'PASS'
 all_actors = actors.get_all_level_actors()
-models = sorted([a for a in all_actors if isinstance(a, unreal.SkeletalMeshActor)], key=lambda a: a.get_actor_location().x)
+models = sorted([a for a in all_actors if a.actor_has_tag('PGShadingComparisonModel')], key=lambda a: a.get_actor_location().x)
+sys.path.insert(0, str(ROOT/'Tools/Validation'))
+from BokuseiGuestModels import validate_guests
+REPORT['guests_reload'] = validate_guests(all_actors)
 STAGES = len(DATA['stages'])
 SDF_PROBE = '-PGFaceSDFProbe' in unreal.SystemLibrary.get_command_line()
 assert DATA['schema'] in [4,5] and len(models) == STAGES and STAGES in [6,8]
@@ -187,6 +191,12 @@ if SDF_PROBE:
         location = unreal.Vector(base+230,390,330)
         shots.append((f'Stage{stage_index+1}Quarter',None,location,unreal.MathLibrary.find_look_at_rotation(location,unreal.Vector(base,0,90)),False,True,key_rotation))
     REPORT['face_sdf'] = dict(status='RUNNING',paired_angles=[-60,0,60,180],zenith_nadir=True,source_stage=5,sdf_stage=7,world_stage=8)
+guests = [a for a in all_actors if isinstance(a, unreal.PGToonPreviewActor) and a.actor_has_tag('PGShadingGuest')]
+for guest in guests:
+    base = guest.get_actor_location()
+    location = base + unreal.Vector(0, 380, 115)
+    shots.append(('Guest'+str(next(t for t in guest.tags if str(t).startswith('PGShadingGuest_'))).removeprefix('PGShadingGuest_'),
+                  None, location, unreal.MathLibrary.find_look_at_rotation(location, base+unreal.Vector(0, 0, 90))))
 if '-PGComparisonInputOnly' in unreal.SystemLibrary.get_command_line():
     shots = []
     REPORT['editor_render_skipped'] = True
@@ -201,6 +211,8 @@ idle = unreal.load_asset(DATA['animation'])
 left.override_animation_data(idle, True, False, 1.25, 0)
 for actor, component in zip(models[1:], components[1:]):
     actor.toon_presentation.initialize(component)
+for guest in guests:
+    guest.toon_presentation.initialize(guest.skeletal_mesh_component)
 for command in ['DisableAllScreenMessages', 'r.ScreenPercentage 100', 'r.Streaming.FullyLoadUsedTextures 1', 'viewmode lit', 't.MaxFPS 60']:
     unreal.SystemLibrary.execute_console_command(world, command)
 level.editor_set_game_view(True)
@@ -211,6 +223,7 @@ probe = None
 probe_at = 0
 probe_start = None
 probe_rotation = None
+probe_light_rotation = None
 probe_index = 0
 input_cases = ([('stage', key, i) for i, key in enumerate(['One', 'Two', 'Three', 'Four', 'Five', 'Six','Seven','Eight'][:STAGES])]
                + [('stage','Six',5),('face', 'F', 5), ('shadow_on', 'H', None), ('shadow_off', 'H', None),
@@ -222,6 +235,15 @@ input_cases = ([('stage', key, i) for i, key in enumerate(['One', 'Two', 'Three'
 REPORT['input_checks'] = []
 if STAGES == 8:
     input_cases += [('stage','Seven',6),('face','F',6),('face_stage','Eight',7),('quarter','C',7)]
+input_cases += ([('reset', 'R', None), ('stage', 'Eight' if STAGES == 8 else 'Six', STAGES-1), ('face', 'F', STAGES-1)]
+                + [('light_move', name, None) for name in ['Left', 'Right', 'Up', 'Down']]
+                + [('light_front', 'Z', None), ('light_side', 'X', None), ('light_back', 'V', None),
+                   ('light_orbit_on', 'L', None), ('light_orbit_off', 'L', None),
+                   ('light_orbit_on', 'L', None), ('light_move', 'Right', None),
+                   ('light_orbit_on', 'L', None), ('light_front', 'Z', None),
+                   ('light_view', 'R', None), ('light_clamp_up', None, None),
+                   ('light_clamp_down', None, None), ('light_invalid', None, None),
+                   ('light_orbit_on', 'L', None), ('light_reset', 'BackSpace', None)])
 unreal.EditorPythonScripting.set_keep_python_script_alive(True)
 
 
@@ -238,7 +260,7 @@ def key(pawn, name, pressed, axis=0):
 
 
 def test_inputs(game_world, now):
-    global probe, probe_at, probe_start, probe_rotation, probe_index
+    global probe, probe_at, probe_start, probe_rotation, probe_light_rotation, probe_index
     pc = unreal.GameplayStatics.get_player_controller(game_world, 0)
     pawn = pc.get_controlled_pawn()
     assert isinstance(pawn, unreal.PGShadingComparisonPawn) and pc.get_view_target() == pawn
@@ -247,22 +269,34 @@ def test_inputs(game_world, now):
         assert unreal.PGEditorProbeTools.capture_game_viewport(game_world, str(RUN/'PlayableOverview.png'))
         REPORT['images'].append(str(RUN/'PlayableOverview.png'))
         REPORT['free_camera'] = dict(status='PASS', possessed=True, input_cases=len(input_cases), pawns=1)
+        REPORT['light_controls'] = dict(status='PASS', checks=sum(c['kind'].startswith('light_') for c in REPORT['input_checks']),
+                                       material_direction_sync=True, camera_independent=True, initial_rotation_restored=True)
         finish()
         return
     kind, name, stage = input_cases[probe_index]
+    runtime_models = sorted([a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.SkeletalMeshActor) if a.actor_has_tag('PGShadingComparisonModel')],
+                            key=lambda a: a.get_actor_location().x)
+    runtime_light = runtime_models[1].toon_presentation.key_light
     if probe is None:
         if kind in ['move', 'fast', 'look_idle', 'look']:
             pawn.show_overview()
         probe_start = pawn.get_actor_location()
         probe_rotation = pc.get_control_rotation()
+        probe_light_rotation = runtime_light.get_actor_rotation()
         if kind == 'fast': key(pawn, 'LeftShift', True)
         if kind == 'look': key(pawn, 'RightMouseButton', True)
         if kind == 'shadow_on':
             runtime_models = unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.SkeletalMeshActor)
             leader = next(a.skeletal_mesh_component for a in runtime_models if a.actor_has_tag('PGShadingStage0'))
             leader.override_animation_data(idle, True, False, 1.25, 0)
-        key(pawn, name, True, 10 if name in ['MouseX', 'MouseY'] else 0)
-        if kind not in ['move', 'fast', 'look', 'look_idle']: key(pawn, name, False)
+        if kind.startswith('light_'):
+            runtime_models[0].skeletal_mesh_component.override_animation_data(idle, True, False, 1.25, 0)
+            if kind == 'light_clamp_up': pawn.set_light_angles(720, 1000)
+            if kind == 'light_clamp_down': pawn.set_light_angles(-720, -1000)
+            if kind == 'light_invalid': pawn.set_light_angles(float('nan'), float('inf'))
+        if name:
+            key(pawn, name, True, 10 if name in ['MouseX', 'MouseY'] else 0)
+            if kind not in ['move', 'fast', 'look', 'look_idle', 'light_move']: key(pawn, name, False)
         probe, probe_at = kind, now
         return
     if now-probe_at < (.8 if kind in ['move', 'fast'] else .4):
@@ -290,6 +324,54 @@ def test_inputs(game_world, now):
         assert angle > 1 if kind == 'look' else angle < .001, (kind, angle)
         key(pawn, 'RightMouseButton', False)
         details = dict(angle_change=angle)
+    elif kind.startswith('light_'):
+        if kind == 'light_move': key(pawn, name, False)
+        rotation = runtime_light.get_actor_rotation()
+        source = runtime_light.get_actor_forward_vector()*-1
+        azimuth = math.degrees(math.atan2(source.x, source.y))
+        elevation = -rotation.pitch
+        before = unreal.MathLibrary.get_forward_vector(probe_light_rotation)
+        direction_change = math.dist(vec(before), vec(runtime_light.get_actor_forward_vector()))
+        if kind == 'light_move':
+            delta = ((probe_light_rotation.yaw-rotation.yaw+180)%360-180) if name in ['Left','Right'] else probe_light_rotation.pitch-rotation.pitch
+            assert delta*(-1 if name in ['Left','Down'] else 1) > 1, (name, delta)
+            assert not pawn.is_light_orbit_enabled(), 'Manual adjustment must stop the sweep'
+        elif kind in ['light_front','light_side','light_back']:
+            expected = {'light_front':0,'light_side':60,'light_back':180}[kind]
+            assert abs((azimuth-expected+180)%360-180) < .001 and abs(elevation-35) < .001
+            assert not pawn.is_light_orbit_enabled(), 'Preset must stop the sweep'
+            path = RUN/(kind+'.png')
+            assert unreal.PGEditorProbeTools.capture_game_viewport(game_world, str(path))
+            REPORT['images'].append(str(path))
+        elif kind == 'light_orbit_on':
+            # Near vertical lighting has little horizontal vector displacement;
+            # measure the azimuth sweep itself, including the +/-180 wrap.
+            assert pawn.is_light_orbit_enabled() and abs((rotation.yaw-probe_light_rotation.yaw+180)%360-180) > 1
+            assert abs(rotation.pitch-probe_light_rotation.pitch) < .001
+        elif kind in ['light_orbit_off','light_invalid','light_view']:
+            assert direction_change < .0001, (kind, direction_change)
+            assert not pawn.is_light_orbit_enabled()
+        elif kind in ['light_clamp_up','light_clamp_down']:
+            assert abs(elevation-(85 if kind == 'light_clamp_up' else -85)) < .001 and abs(azimuth) < .001
+        elif kind == 'light_reset':
+            assert math.dist(vec(runtime_light.get_actor_forward_vector()), vec(unreal.MathLibrary.get_forward_vector(key_rotation))) < .0001
+            assert not pawn.is_light_orbit_enabled()
+        if kind == 'light_view':
+            expected = next(c for c in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.CameraActor) if c.actor_has_tag('PGShadingOverview'))
+            assert math.dist(vec(location), vec(expected.get_actor_location())) < .01
+        else:
+            assert math.dist(vec(location), vec(probe_start)) < .01, 'Light input moved the camera'
+            assert math.dist(vec(unreal.MathLibrary.get_forward_vector(pc.get_control_rotation())),
+                             vec(unreal.MathLibrary.get_forward_vector(probe_rotation))) < .0001, 'Light input rotated the camera'
+        # Validate the render inputs used by every toon slot, including the SDF face.
+        sync_error = 0
+        for model in runtime_models[1:]:
+            assert model.toon_presentation.key_light == runtime_light
+            for i in range(len(DATA['slots'])):
+                actual = model.skeletal_mesh_component.get_material(i).get_vector_parameter_value('LightDirection')
+                sync_error = max(sync_error, max(abs(a-b) for a,b in zip([actual.r,actual.g,actual.b],vec(source*-1))))
+        assert sync_error < 1.01e-4, ('LightDirection drift', sync_error)
+        details = dict(azimuth=azimuth, elevation=elevation, orbiting=pawn.is_light_orbit_enabled(), material_sync_error=sync_error)
     elif kind == 'reset':
         expected = next(c for c in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.CameraActor) if c.actor_has_tag('PGShadingOverview'))
         assert math.dist(vec(location), vec(expected.get_actor_location())) < .01
@@ -358,14 +440,14 @@ def tick(_dt):
     global index, pending, prepared, last, pie_started, first
     try:
         now = time.monotonic()
-        if now-started > 240:
+        if now-started > 270:
             finish('Comparison render/PIE timeout')
             return
         if pie_started:
             game_world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world()
             if not game_world or now-pie_started < 1:
                 return
-            game_models = sorted(unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.SkeletalMeshActor), key=lambda a: a.get_actor_location().x)
+            game_models = sorted([a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.SkeletalMeshActor) if a.actor_has_tag('PGShadingComparisonModel')], key=lambda a: a.get_actor_location().x)
             assert len(game_models) == STAGES
             a = game_models[0].skeletal_mesh_component
             assert len(unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.Pawn)) == 1
@@ -428,7 +510,7 @@ def tick(_dt):
             return
         if not shots:
             if now-started < 12: return
-            for actor in models[1:]: actor.toon_presentation.initialize(None)
+            for actor in models[1:]+guests: actor.toon_presentation.initialize(None)
             left.override_animation_data(idle, True, True, 1.25, 1)
             pie_started = now
             level.editor_request_begin_play()
@@ -452,7 +534,7 @@ def tick(_dt):
                 hair_proxy.set_cast_shadow(True)
                 if STAGES == 8: models[7].hair_shadow_proxy.set_cast_shadow(True)
                 key_light.set_actor_rotation(key_rotation,False)
-                for actor in models[1:]: actor.toon_presentation.initialize(None)
+                for actor in models[1:]+guests: actor.toon_presentation.initialize(None)
                 left.override_animation_data(idle, True, True, 1.25, 1)
                 pie_started = now
                 level.editor_request_begin_play()
@@ -464,7 +546,7 @@ def tick(_dt):
             hair_proxy.set_cast_shadow(shot[5] if len(shot) > 5 else True)
             if STAGES == 8: models[7].hair_shadow_proxy.set_cast_shadow(shot[5] if len(shot) > 5 else True)
             key_light.set_actor_rotation(shot[6] if len(shot) > 6 else key_rotation,False)
-            for actor in models[1:]: actor.toon_presentation.refresh_presentation()
+            for actor in models[1:]+guests: actor.toon_presentation.refresh_presentation()
             loc, rot = (camera.get_actor_location(), camera.get_actor_rotation()) if camera else shot[2:4]
             level.set_level_viewport_camera_info(loc, rot, 'None')
             level.set_level_viewport_fov(45, 'None')
