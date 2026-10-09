@@ -483,8 +483,9 @@ def main():
             start = actors.spawn_actor_from_class(unreal.PlayerStart, loc, rot)
             start.set_actor_label('자유 카메라 시작 위치')
             start.set_folder_path('비교 카메라')
-    from BokuseiGuestModels import add_guests
+    from BokuseiGuestModels import add_guests, validate_guests
     REPORT['guests'] = add_guests(actors, key, prop, label_material)
+    REPORT['guests_validated'] = validate_guests(actors.get_all_level_actors())
     assert unreal.EditorLoadingAndSavingUtils.save_map(world, MAP)
     assert all(hashlib.sha256((ROOT/p).read_bytes()).hexdigest() == expected for p, expected in REPORT['protected'].items()), 'Source asset changed'
     REPORT.update(status='PASS', source_mesh=mesh.get_path_name(), animation=idle.get_path_name(),

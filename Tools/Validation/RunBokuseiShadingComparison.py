@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--step', choices=['all', 'configure', 'preview'], default='all')
+    parser.add_argument('--step', choices=['all', 'configure', 'guests', 'preview'], default='all')
     parser.add_argument('--engine', type=Path, default=Path('C:/Program Files/Epic Games/UE_5.8'))
     parser.add_argument('--input-only', action='store_true', help='Skip editor screenshots and verify PIE camera input only')
     args = parser.parse_args()
@@ -20,15 +20,17 @@ def main():
     flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
     report = dict(status='RUNNING', run=str(output), steps=[])
     try:
-        for step in ['configure', 'preview']:
+        for step in (['guests'] if args.step == 'guests' else ['configure', 'preview']):
             if args.step not in ['all', step]:
                 continue
-            if step == 'configure':
+            if step in ['configure', 'guests']:
                 subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
                                 str(ROOT/'Tools/Art/ToonTest/BokuseiShadingComparison/BuildLabels.ps1')],
                                check=True, timeout=30, creationflags=flags)
             render = step == 'preview'
             script = ROOT/'Tools/Validation'/('PreviewBokuseiShadingComparison.py' if render else 'ConfigureBokuseiShadingComparison.py')
+            if step == 'guests':
+                script = ROOT/'Tools/Validation/ConfigureBokuseiGuests.py'
             command = [str(args.engine/'Engine/Binaries/Win64'/('UnrealEditor.exe' if render else 'UnrealEditor-Cmd.exe')),
                        str(ROOT/'UPlayground.uproject'), '-unattended', '-nosound', '-nosplash', '-nop4', '-culture=en',
                        '-DisablePlugins=RiderLink', '-EnablePlugins=PythonScriptPlugin', '-Multiprocess',

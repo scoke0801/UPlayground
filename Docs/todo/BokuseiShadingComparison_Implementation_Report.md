@@ -4,7 +4,11 @@
 
 콘텐츠 브라우저의 `Art/ToonTest/Maps`에서 `L_PGToon_Bokusei_ShadingComparison`을 연다.
 
-기본 셰이딩 비교는 왼쪽부터 6단계다. 얼굴 SDF 테스트 에셋이 있으면 7/8단계도 함께 배치한다. Play(PIE) 후 뷰포트를 클릭하면 자유 카메라를 조작한다. 모든 모델은 같은 메시와 Leader Pose를 사용해 대기 모션을 공유한다.
+기본 셰이딩 비교는 왼쪽부터 6단계다. 얼굴 SDF 테스트 에셋이 있으면 7/8단계도 함께 배치한다. Play(PIE) 후 뷰포트를 클릭하면 자유 카메라를 조작한다. Bokusei 비교 단계들은 같은 메시와 Leader Pose를 사용해 대기 모션을 공유한다.
+
+앞쪽 전시 줄에는 아린·화련(`DA_Hwarin`)·Lianlian을 별도 배치했다. 각 외형의 기존 툰 재질·머리 축·외곽선을 사용하며 같은 주광원 조절에 반응한다. 숫자 1–8은 Bokusei 단계 선택이고, 추가 모델은 WASD/QE와 우클릭 자유 카메라로 살펴본다. 추가 모델은 모델별 리타겟 대기 모션을 사용하며 Bokusei의 얼굴 SDF·헤어 그림자 프록시를 공유하지 않는다.
+
+추가 모델만 갱신하려면 `python Tools/Validation/RunBokuseiShadingComparison.py --step guests`, 재로드·렌더·PIE 검증은 `--step preview`를 실행한다. 전체 `--step configure`에도 같은 배치 함수가 포함된다. `BokuseiGuestModels.py`가 위치와 모델 목록을 소유하며 기존 맵 백업은 `Saved/BokuseiShadingComparison/<실행시각>/previous_map.umap`에 저장한다. 아린·화련의 비교 전용 모션에는 임포트 루트 스케일 복원과 골반 좌표 보정을 적용한다. 원본 외형·메시·재질·리타겟 설정은 수정하지 않는다.
 
 현재 Bokusei의 실제 얼굴에는 SDF를 적용했다. 1–6단계는 적용 전 얼굴 Baseline을 사용해 비교 기준을 보존하며 7단계가 적용 결과다. 제작·게임 적용·최신 8단계 검증은 [얼굴 SDF 기록](BokuseiFaceSDF_Implementation_Report.md)을 따른다.
 

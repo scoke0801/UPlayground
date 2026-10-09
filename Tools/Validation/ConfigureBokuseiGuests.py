@@ -3,7 +3,6 @@ import json
 import shutil
 import sys
 import traceback
-from datetime import datetime, timezone
 from pathlib import Path
 import unreal
 
@@ -39,6 +38,8 @@ except Exception:
     report.update(status='FAIL', error=traceback.format_exc())
     unreal.log_error(report['error'])
 finally:
-    (ROOT/'Saved/BokuseiShadingComparison/guests.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+    payload = json.dumps(report, ensure_ascii=False, indent=2)
+    (ROOT/'Saved/BokuseiShadingComparison/guests.json').write_text(payload, encoding='utf-8')
+    (RUN/'guests.json').write_text(payload, encoding='utf-8')
 if report['status'] != 'PASS':
     raise RuntimeError(report['error'])

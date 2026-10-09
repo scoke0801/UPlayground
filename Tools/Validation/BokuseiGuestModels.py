@@ -21,7 +21,7 @@ def restore_import_scale(idle, appearance):
     if (current-scale).length() < .001:
         return
     assert (current-unreal.Vector(1, 1, 1)).length() < .001
-    frames = idle.get_data_model().get_number_of_frames()
+    frames = unreal.AnimationLibrary.get_num_frames(idle)
     poses = [idle.get_anim_pose_at_time(idle.get_play_length()*i/frames, options) for i in range(frames+1)]
     controller = idle.get_editor_property('controller')
     controller.open_bracket('Restore imported guest rig scale', should_transact=False)

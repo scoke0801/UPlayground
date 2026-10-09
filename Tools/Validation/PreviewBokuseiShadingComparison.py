@@ -365,9 +365,11 @@ def test_inputs(game_world, now):
                              vec(unreal.MathLibrary.get_forward_vector(probe_rotation))) < .0001, 'Light input rotated the camera'
         # Validate the render inputs used by every toon slot, including the SDF face.
         sync_error = 0
-        for model in runtime_models[1:]:
+        runtime_guests = [a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.PGToonPreviewActor) if a.actor_has_tag('PGShadingGuest')]
+        assert len(runtime_guests) == 3
+        for model in runtime_models[1:]+runtime_guests:
             assert model.toon_presentation.key_light == runtime_light
-            for i in range(len(DATA['slots'])):
+            for i in range(model.skeletal_mesh_component.get_num_materials()):
                 actual = model.skeletal_mesh_component.get_material(i).get_vector_parameter_value('LightDirection')
                 sync_error = max(sync_error, max(abs(a-b) for a,b in zip([actual.r,actual.g,actual.b],vec(source*-1))))
         assert sync_error < 1.01e-4, ('LightDirection drift', sync_error)
@@ -496,6 +498,9 @@ def tick(_dt):
                 return
             if first is None:
                 first = sample
+                runtime_guests = [a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.PGToonPreviewActor) if a.actor_has_tag('PGShadingGuest')]
+                assert len(runtime_guests) == 3
+                REPORT['_guest_first'] = {a.get_name(): vec(a.skeletal_mesh_component.get_socket_location('Head')) for a in runtime_guests}
                 last = now
                 expected = next(c for c in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.CameraActor) if c.actor_has_tag('PGShadingOverview'))
                 assert math.dist(vec(pawn.get_actor_location()), vec(expected.get_actor_location())) < .01
@@ -505,6 +510,16 @@ def tick(_dt):
                 return
             movement = max(math.dist(sample[name], first[name]) for name in sample)
             assert movement > .001, ('PIE idle did not animate', movement)
+            guest_motion = {}
+            for guest in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.PGToonPreviewActor):
+                if not guest.actor_has_tag('PGShadingGuest'): continue
+                c = guest.skeletal_mesh_component
+                distance = math.dist(REPORT['_guest_first'][guest.get_name()], vec(c.get_socket_location('Head')))
+                assert distance > .001, ('Guest idle did not animate', guest.get_name())
+                assert 90 < c.get_socket_location('Head').z-c.get_socket_location('Foot_L').z < 200
+                guest_motion[guest.get_actor_label()] = distance
+            REPORT['guests_pie'] = dict(status='PASS', head_movement_cm=guest_motion)
+            del REPORT['_guest_first']
             REPORT['pie'] = dict(status='PASS', matched_bones=len(errors), pose_max_error_cm=max(errors), movement_cm=movement,
                                  hair_pose_max_error_cm=hair_pose_error, models=STAGES, camera_pawns=1)
             return
