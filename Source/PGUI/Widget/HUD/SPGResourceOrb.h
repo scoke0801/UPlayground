@@ -3,6 +3,9 @@
 #include "Widgets/SLeafWidget.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Style/PGUIStyleSettings.h"
+#include "UObject/StrongObjectPtr.h"
 
 /** Height-clipped liquid, readable even when empty; authored metal remains static. */
 class SPGResourceOrb : public SLeafWidget
@@ -13,7 +16,39 @@ public:
         SLATE_ARGUMENT(const FSlateBrush*, Frame)
         SLATE_ARGUMENT(bool, Health)
     SLATE_END_ARGS()
-    void Construct(const FArguments& Args) { Ratio=Args._Ratio; Frame=Args._Frame; bHealth=Args._Health; }
+    void Construct(const FArguments& Args)
+    {
+        Ratio=Args._Ratio; Frame=Args._Frame; bHealth=Args._Health;
+        if (UMaterialInterface* Material=GetDefault<UPGUIStyleSettings>()->CombatOrbLiquid.LoadSynchronous())
+        {
+            Liquid.Reset(UMaterialInstanceDynamic::Create(Material,GetTransientPackage()));
+            Liquid->SetVectorParameterValue(TEXT("LiquidColor"),bHealth ? FLinearColor(.58f,.012f,.023f) : FLinearColor(.72f,.25f,.016f));
+            DisplayedFill=FMath::Clamp(Ratio.Get(0.f),0.f,1.f);
+            PreviousFill=DisplayedFill;
+            Liquid->SetScalarParameterValue(TEXT("Fill"),DisplayedFill);
+            Liquid->SetScalarParameterValue(TEXT("Phase"),bHealth ? 0.f : 2.3f);
+            LiquidBrush.SetResourceObject(Liquid.Get());
+            LiquidBrush.ImageSize=FVector2D(144,144);
+            LiquidBrush.DrawAs=ESlateBrushDrawType::Image;
+        }
+        SetCanTick(true);
+    }
+    virtual void Tick(const FGeometry& Geometry,double CurrentTime,float DeltaTime) override
+    {
+        SLeafWidget::Tick(Geometry,CurrentTime,DeltaTime);
+        if (!Liquid.IsValid()) return;
+        const float Target=FMath::Clamp(Ratio.Get(0.f),0.f,1.f);
+        const float Dt=FMath::Min(DeltaTime,.1f);
+        Agitation=FMath::Clamp(Agitation+FMath::Abs(Target-PreviousFill)*2.5f,0.f,1.f)*FMath::Exp(-Dt*2.8f);
+        PreviousFill=Target;
+        DisplayedFill=FMath::Lerp(DisplayedFill,Target,1.f-FMath::Exp(-Dt*9.f));
+        if (FMath::Abs(DisplayedFill-Target)<.001f) DisplayedFill=Target;
+        LiquidTime+=Dt;
+        Liquid->SetScalarParameterValue(TEXT("Fill"),DisplayedFill);
+        Liquid->SetScalarParameterValue(TEXT("Agitation"),Agitation);
+        Liquid->SetScalarParameterValue(TEXT("LiquidTime"),LiquidTime);
+        Invalidate(EInvalidateWidgetReason::Paint);
+    }
     virtual FVector2D ComputeDesiredSize(float) const override { return FVector2D(144,144); }
     virtual int32 OnPaint(const FPaintArgs&, const FGeometry& G, const FSlateRect&, FSlateWindowElementList& Out,
         int32 Layer, const FWidgetStyle& Style, bool) const override
@@ -25,7 +60,9 @@ public:
         // Horizontal scanlines describe a true circular reservoir, rather than a round progress bar.
         constexpr int32 Rows=128;
         const float Step=2*R/Rows;
-        for(int32 I=0;I<Rows;++I)
+        if (Liquid.IsValid())
+            FSlateDrawElement::MakeBox(Out,Layer,G.ToPaintGeometry(),&LiquidBrush,ESlateDrawEffect::None,Style.GetColorAndOpacityTint());
+        else for(int32 I=0;I<Rows;++I)
         {
             const float Y=-R+(I+.5f)*Step;
             const float X=FMath::Sqrt(FMath::Max(0.f,R*R-Y*Y));
@@ -46,7 +83,7 @@ public:
             // Slate's vertical gradient denotes vertical color bands (stops use X).
             FSlateDrawElement::MakeGradient(Out,Layer,G.ToPaintGeometry(FVector2D(2*X,Step+.25f),FSlateLayoutTransform(C+FVector2D(-X,Y-Step*.5f))),MoveTemp(Stops),Orient_Vertical);
         }
-        // Glass catches a narrow crescent; no animation or per-frame material allocation.
+        // Static glass and authored metal stay above the animated liquid.
         TArray<FVector2D> Arc;
         for(int32 I=0;I<=28;++I)
         {
@@ -68,4 +105,7 @@ private:
     TAttribute<float> Ratio;
     const FSlateBrush* Frame=nullptr;
     bool bHealth=true;
+    TStrongObjectPtr<UMaterialInstanceDynamic> Liquid;
+    FSlateBrush LiquidBrush;
+    float DisplayedFill=0.f, PreviousFill=0.f, Agitation=0.f, LiquidTime=0.f;
 };
