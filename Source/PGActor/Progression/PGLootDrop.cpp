@@ -111,7 +111,9 @@ void APGLootDrop::SpawnForEnemy(APGCharacterEnemy* Enemy)
     FHitResult Hit;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(PGLootGround), false, Enemy);
     if (Enemy->GetWorld()->LineTraceSingleByChannel(Hit, Location, Location - FVector(0,0,500), ECC_WorldStatic, Params)) Location = Hit.ImpactPoint + FVector(0,0,30);
-    auto* Drop = Enemy->GetWorld()->SpawnActor<APGLootDrop>(Location, FRotator::ZeroRotator);
+    FActorSpawnParameters Spawn;
+    Spawn.Owner = Enemy->EncounterOwner.Get();
+    auto* Drop = Enemy->GetWorld()->SpawnActor<APGLootDrop>(Location, FRotator::ZeroRotator, Spawn);
     if (Drop) Drop->InitializeItem(Item);
     else { Enemy->bLootResolved = false; UE_LOG(LogTemp, Error, TEXT("PGLoot actor spawn failed: %s"), *Item.Guid.ToString()); }
 }

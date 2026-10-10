@@ -17,7 +17,8 @@ enum class EPGStageState : uint8
     Completed   UMETA(DisplayName = "Completed"), Failed, Finished,
     WaveIntermission UMETA(DisplayName = "Wave Intermission"),
     BuildPhase UMETA(DisplayName = "Build Phase"),
-    RunPreparation UMETA(DisplayName = "Run Preparation")
+    RunPreparation UMETA(DisplayName = "Run Preparation"),
+    DungeonTraversal UMETA(DisplayName = "Dungeon Traversal")
 };
 
 
@@ -157,6 +158,30 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+    virtual void Tick(float DeltaSeconds) override;
+
+public:
+    // World-space objective rooms supplied by the generator; no generator dependency.
+    bool ConfigureDungeonCombat(const TArray<FVector>& Centers, float HalfSize, float EntryInset,
+        float SpawnInset, float RecoverySeconds, int32 CombatSeed);
+    UFUNCTION(BlueprintPure, Category="Dungeon") bool IsDungeonCombat() const { return bDungeonCombat; }
+    UFUNCTION(BlueprintPure, Category="Dungeon") FVector GetDungeonObjectiveLocation() const;
+    void StopDungeonCombat();
+private:
+    friend class FPGDungeonCombatTest;
+    bool bDungeonCombat = false;
+    TArray<FVector> DungeonRooms;
+    float DungeonHalfSize = 0.f;
+    float DungeonEntryInset = 0.f;
+    float DungeonSpawnInset = 0.f;
+    float DungeonRecoverySeconds = 0.f;
+    int32 DungeonCombatSeed = 0;
+    TMap<TWeakObjectPtr<APGCharacterEnemy>, double> DungeonUnreachableSince;
+    TSet<TWeakObjectPtr<APGCharacterEnemy>> DungeonSummons;
+    TSet<TWeakObjectPtr<APGCharacterEnemy>> DungeonSummonsWithDefeatedOwner;
+    bool IsInsideDungeonObjective(const FVector& Position, float Inset) const;
+    bool CanStartDungeonObjective(int32 StageId) const;
+    void AwaitDungeonObjective(int32 StageId);
 
 public:
 	UPROPERTY(BlueprintAssignable)
@@ -273,7 +298,7 @@ public:
     bool CanEditSkillLoadout() const
     {
         // RemainingMonsters includes the NEXT wave while waiting between waves.
-        return SpawnedEnemies.IsEmpty() && (CurrentStageState==EPGStageState::RunPreparation ||
+        return SpawnedEnemies.IsEmpty() && (CurrentStageState==EPGStageState::DungeonTraversal || CurrentStageState==EPGStageState::RunPreparation ||
             CurrentStageState==EPGStageState::BuildPhase || CurrentStageState==EPGStageState::WaveIntermission);
     }
 	

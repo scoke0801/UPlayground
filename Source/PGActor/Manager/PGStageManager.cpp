@@ -39,7 +39,9 @@ static TAutoConsoleVariable<int32> CVarPGSpawnDebug(TEXT("pg.Stage.SpawnDebug"),
 
 APGStageManager::APGStageManager()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bStartWithTickEnabled = false;
+    PrimaryActorTick.TickInterval = .25f;
 }
 
 void APGStageManager::BeginPlay()
@@ -57,6 +59,7 @@ void APGStageManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     CurrentStageState = EPGStageState::None;
     BossDefeatPresentationUntil = 0;
+    if (bDungeonCombat) ClearAllEnemies();
     GetWorldTimerManager().ClearAllTimersForObject(this);
     CloseRewardWindow();
     if (UPGMessageManager* Manager = UPGMessageManager::Get(this))
@@ -71,6 +74,7 @@ void APGStageManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void APGStageManager::StartStage(int32 StageId)
 {
     if (StageId == -1) StageId = CurrentStageId + 1;
+    if (bDungeonCombat && !CanStartDungeonObjective(StageId)) return;
     CurrentStageState = EPGStageState::None;
     GetWorldTimerManager().ClearAllTimersForObject(this);
     bVictorySavePending = false;
@@ -89,6 +93,7 @@ void APGStageManager::StartStage(int32 StageId)
         FailStage(TEXT("Stage data is missing or invalid."));
         return;
     }
+    if (bDungeonCombat) CurrentStageDataCache.bManualReady = true;
     for (const FPGStageReward& Reward : CurrentStageDataCache.RewardPool)
     {
         const FPGRewardStatDataRow* Stat = PGData()->GetRowData<FPGRewardStatDataRow>(Reward.RewardId);
@@ -151,7 +156,7 @@ void APGStageManager::PrepareWave(int32 WaveIndex)
     GetWorldTimerManager().ClearTimer(SpawnTimer);
     CurrentWaveIndex = WaveIndex;
     WaveLootOrdinals.Reset();
-    SpawnRandom.Initialize(PGRunRandom::Seed(RunSeed, CurrentStageId, WaveIndex, 1));
+    SpawnRandom.Initialize(PGRunRandom::Seed(bDungeonCombat ? DungeonCombatSeed : RunSeed, CurrentStageId, WaveIndex, 1));
     CurrentStageState = EPGStageState::WaveIntermission;
     RemainingMonsters = 0;
     for (const auto& Spawn : ActiveWaves[WaveIndex].MonsterSpawnInfos) RemainingMonsters += Spawn.SpawnCount;
@@ -335,6 +340,7 @@ APGCharacterEnemy* APGStageManager::SpawnSingleEnemy(int32 EnemyId)
 		EnemyClass, SpawnLocation, SpawnRotation, SpawnParams);
 	
     LastSpawnFailure = SpawnedEnemy ? EPGSpawnFailure::None : EPGSpawnFailure::ActorSpawn;
+    if (SpawnedEnemy && bDungeonCombat) SpawnedEnemy->EncounterOwner = this;
     if (!SpawnedEnemy) LogSpawnFailure(EnemyId, 0, LastSpawnFailure, SpawnLocation);
 	
 	return SpawnedEnemy;
@@ -384,6 +390,16 @@ FVector APGStageManager::GetRandomSpawnLocation() const
 
 FVector APGStageManager::GetSafeSpawnLocation() const
 {
+    if (bDungeonCombat)
+    {
+        const float Extent = DungeonHalfSize - DungeonSpawnInset;
+        const FVector Target = GetDungeonObjectiveLocation() + FVector(
+            SpawnRandom.FRandRange(-Extent, Extent), SpawnRandom.FRandRange(-Extent, Extent), 0);
+        FNavLocation Projected;
+        auto* Nav = UNavigationSystemV1::GetCurrent(GetWorld());
+        return Nav && Nav->ProjectPointToNavigation(Target, Projected, FVector(100,100,200))
+            ? Projected.Location : Target;
+    }
 	// 플레이어 위치 기준
 	FVector PlayerLocation = GetActorLocation();
 	if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
@@ -438,6 +454,8 @@ FVector APGStageManager::GetSafeSpawnLocation() const
 bool APGStageManager::IsValidSpawnLocation(const FVector& Location, float CapsuleRadius, float CapsuleHalfHeight, EPGSpawnFailure& OutFailure) const
 {
 	OutFailure = EPGSpawnFailure::None;
+    if (bDungeonCombat && !IsInsideDungeonObjective(Location, DungeonSpawnInset + CapsuleRadius))
+    { OutFailure = EPGSpawnFailure::Capsule; return false; }
 	// 1. 경사면 각도 체크
 	if (!IsValidSlope(Location, OutFailure))
 	{
@@ -554,6 +572,12 @@ void APGStageManager::OnEnemyKilled(APGCharacterEnemy* KilledEnemy)
 {
     if (CurrentStageState != EPGStageState::InProgress || !KilledEnemy || SpawnedEnemies.Remove(KilledEnemy) == 0) return;
     KilledEnemy->OnDestroyed.RemoveDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
+    DungeonSummons.Remove(KilledEnemy);
+    DungeonSummonsWithDefeatedOwner.Remove(KilledEnemy);
+    if (bDungeonCombat && KilledEnemy->GetPGAbilitySystemComponent()->GetHealth() <= 0)
+        for (const auto& Child : DungeonSummons)
+            if (Child.IsValid() && Child->GetInstigator() == KilledEnemy)
+                DungeonSummonsWithDefeatedOwner.Add(Child);
     if (KilledEnemy->GetPGAbilitySystemComponent()->GetHealth() <= 0)
         if (auto* Tables = UPGDataTableManager::Get(this))
             if (const auto* Row = Tables->GetRowData<FPGEnemyDataRow>(KilledEnemy->GetCharacterTID()); Row && Row->Role == EPGEnemyRole::Boss)
@@ -616,7 +640,8 @@ void APGStageManager::OnRewardSelected()
 void APGStageManager::GoToNextStage()
 {
     if (CurrentStageState != EPGStageState::Completed) return;
-    if (PGData() && PGData()->GetRowData<FPGStageDataRow>(CurrentStageId + 1)) StartStage(CurrentStageId + 1);
+    if (bDungeonCombat && CurrentStageId < DungeonRooms.Num()) AwaitDungeonObjective(CurrentStageId + 1);
+    else if (!bDungeonCombat && PGData() && PGData()->GetRowData<FPGStageDataRow>(CurrentStageId + 1)) StartStage(CurrentStageId + 1);
     else
     {
           CurrentStageState = EPGStageState::Finished;
@@ -673,6 +698,7 @@ void APGStageManager::OnActorSpawned(const IPGEventData* InEventData)
     // Summons cannot create an unlimited loot economy or perturb authored drop identities.
     Enemy->bCanDropLoot = false;
     if (!CurrentStageDataCache.bCountSummonedEnemies) return;
+    if (bDungeonCombat) { DungeonSummons.Add(Enemy); Enemy->EncounterOwner = this; }
     SpawnedEnemies.Add(Enemy);
     Enemy->OnDestroyed.AddUniqueDynamic(this, &ThisClass::OnTrackedEnemyDestroyed);
     ++RemainingMonsters;
@@ -683,6 +709,8 @@ void APGStageManager::ClearAllEnemies()
 {
     const auto Enemies = SpawnedEnemies;
     SpawnedEnemies.Empty();
+    DungeonSummons.Reset();
+    DungeonSummonsWithDefeatedOwner.Reset();
     for (APGCharacterEnemy* Enemy : Enemies)
         if (IsValid(Enemy))
         {
@@ -730,6 +758,7 @@ void APGStageManager::FailStage(const FString& Reason)
 {
     if (auto* Telemetry = UPGRunTelemetrySubsystem::Get(this)) Telemetry->EndStage(Reason);
     CurrentStageState = EPGStageState::Failed;
+    if (bDungeonCombat) ClearAllEnemies();
     GetWorldTimerManager().ClearAllTimersForObject(this);
     RewardToken.Invalidate();
     CloseRewardWindow();
@@ -865,12 +894,38 @@ bool APGStageManager::CommitReward(FGuid Token, int32 Choice)
 
 void APGStageManager::OnTrackedEnemyDestroyed(AActor* Actor)
 {
+    auto* Enemy = Cast<APGCharacterEnemy>(Actor);
+    auto* Summoner = Enemy ? Cast<APGCharacterEnemy>(Enemy->GetInstigator()) : nullptr;
+    if (bDungeonCombat && DungeonSummons.Contains(Enemy) &&
+        (DungeonSummonsWithDefeatedOwner.Contains(Enemy) || (Summoner &&
+        (Summoner->IsActorBeingDestroyed() || (Summoner->GetPGAbilitySystemComponent() && Summoner->GetPGAbilitySystemComponent()->GetHealth() <= 0)))))
+    {
+        // Existing summon contract: children are cancelled when their dead owner is removed.
+        // This is explicit cleanup, not a killed authored enemy or a loot opportunity.
+        DungeonSummons.Remove(Enemy);
+        DungeonSummonsWithDefeatedOwner.Remove(Enemy);
+        if (SpawnedEnemies.Remove(Enemy))
+        {
+            RemainingMonsters = FMath::Max(0, RemainingMonsters - 1);
+            UE_LOG(LogTemp, Log, TEXT("PGDungeon summoned enemy cancelled with defeated owner"));
+            OnMonsterCountChanged.Broadcast(RemainingMonsters);
+            CheckStageComplete();
+        }
+        return;
+    }
+    if (bDungeonCombat && CurrentStageState == EPGStageState::InProgress && SpawnedEnemies.Contains(Cast<APGCharacterEnemy>(Actor)))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("PGDungeon unexpected destroy actor=%s id=%d health=%.1f summoner=%s summon=%d defeatedOwner=%d"),
+            *GetNameSafe(Enemy), Enemy->GetCharacterTID(), Enemy->GetPGAbilitySystemComponent()->GetHealth(),
+            *GetNameSafe(Summoner), DungeonSummons.Contains(Enemy), DungeonSummonsWithDefeatedOwner.Contains(Enemy));
+        FailStage(TEXT("Dungeon enemy disappeared without a confirmed death.")); return;
+    }
     OnEnemyKilled(Cast<APGCharacterEnemy>(Actor));
 }
 void APGStageManager::OnPlayerDied(const IPGEventData* Data)
 {
     if (auto* Profile = UPGProfileSubsystem::Get(this)) Profile->EndRun(false, CurrentStageId);
-    if (CurrentStageState == EPGStageState::InProgress || CurrentStageState == EPGStageState::WaveIntermission || CurrentStageState == EPGStageState::BuildPhase || CurrentStageState == EPGStageState::Completed)
+    if (CurrentStageState == EPGStageState::DungeonTraversal || CurrentStageState == EPGStageState::InProgress || CurrentStageState == EPGStageState::WaveIntermission || CurrentStageState == EPGStageState::BuildPhase || CurrentStageState == EPGStageState::Completed)
         FailStage(TEXT("Player defeated."));
 }
 void APGStageManager::ShowStageStatus(const FText& Text)

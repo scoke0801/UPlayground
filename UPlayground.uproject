@@ -66,6 +66,7 @@
 		}
 	],
 	"Plugins": [
+		{ "Name": "PCG", "Enabled": true },
 		{
 			"Name": "IKRig",
 			"Enabled": true

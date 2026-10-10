@@ -27,7 +27,7 @@ public:
     bool EndRun(bool bVictory, int32 Stage);
     int32 GetEffectivePerk(EPGCombatPerk Perk) const;
     bool IsRewardEligible(const struct FPGRewardStatDataRow& Reward) const;
-    bool BeginNewRun();
+    bool BeginNewRun(int32 RequestedSeed = 0);
     bool EnsureRunSeed();
     bool MarkRunAssisted();
     bool ConfigureBuildScenario(const TArray<int32>& RewardIds);

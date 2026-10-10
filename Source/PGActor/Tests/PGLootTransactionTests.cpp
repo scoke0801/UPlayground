@@ -5,6 +5,7 @@
 #include "PGShared/Shared/Structure/PGRunRandom.h"
 #include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "PGActor/Dungeon/PGDungeonTreasure.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGLootTransactionTest, "PG.Progression.LootTransactions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FPGLootTransactionTest::RunTest(const FString& Parameters)
@@ -69,6 +70,20 @@ bool FPGLootTransactionTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("New run clears claim ledger"), System->Profile->ClaimedLoot.Num(), 0);
     TestNotEqual(TEXT("New run identity changes"), System->Profile->RunId, RunId);
     TestEqual(TEXT("Permanent victory remains"), System->Profile->CompletedRuns, 1);
+    FPGItemInstance Treasure=Item;
+    Treasure.Guid=APGDungeonTreasure::RewardGuid(System->Profile->RunId,8,2);
+    TestEqual(TEXT("Treasure room identity deterministic"),Treasure.Guid,APGDungeonTreasure::RewardGuid(System->Profile->RunId,8,2));
+    TestNotEqual(TEXT("Treasure rooms have independent identity"),Treasure.Guid,APGDungeonTreasure::RewardGuid(System->Profile->RunId,9,2));
+    TestNotEqual(TEXT("New runs have independent treasure identity"),Treasure.Guid,APGDungeonTreasure::RewardGuid(RunId,8,2));
+    System->bInjectSaveFailure=true;
+    TestFalse(TEXT("Treasure save failure preserves claim"),System->TryPickup(Treasure));
+    TestFalse(TEXT("Failed treasure remains available"),System->HasClaimedLoot(Treasure.Guid));
+    System->bInjectSaveFailure=false;
+    TestTrue(TEXT("Treasure retry commits"),System->TryPickup(Treasure));
+    TestTrue(TEXT("Treasure can be discarded"),System->Discard(Treasure.Guid));
+    System->LoadProfile();
+    TestFalse(TEXT("Reload and discard cannot duplicate treasure"),System->TryPickup(Treasure));
+    TestTrue(TEXT("Dungeon claim survives disk reload"),System->HasClaimedLoot(Treasure.Guid));
     UGameplayStatics::DeleteGameInSlot(System->SlotName(0), 0);
     UGameplayStatics::DeleteGameInSlot(System->SlotName(1), 0);
     return true;

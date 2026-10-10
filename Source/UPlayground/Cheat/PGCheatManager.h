@@ -17,6 +17,7 @@ class UPLAYGROUND_API UPGCheatManager : public UCheatManager
 
 public:
     UFUNCTION(Exec) void PGStageStatus();
+    UFUNCTION(Exec) void PGDungeonStep(FString Action = TEXT("status"));
     UFUNCTION(Exec) void PGStartStage(int32 StageId = 1);
     UFUNCTION(Exec) void PGCombatStats();
     UFUNCTION(Exec) void PGPotion(int32 Charges = 3, float HealthFraction = .25f);

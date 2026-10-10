@@ -325,19 +325,19 @@ bool UPGProfileSubsystem::CommitReward(FGuid Token, int32 NextStage, EPGStatType
     if (Amount > 0) Next->RewardBonuses.FindOrAdd(Stat) += Amount;
     return Commit(Next);
 }
-bool UPGProfileSubsystem::BeginNewRun()
+bool UPGProfileSubsystem::BeginNewRun(int32 RequestedSeed)
 {
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
     Next->Checkpoint = 1; Next->RewardBonuses.Reset(); Next->CombatPerks.Reset(); Next->LastReward.Invalidate();
     Next->SelectedRewards.Reset(); Next->bRunEnded = false;
     Next->StageRewardCounts.Reset();
     Next->RunId = FGuid::NewGuid(); Next->ClaimedLoot.Reset(); Next->BossReward = FPGItemInstance();
-    Next->RunSeed = FMath::RandRange(1, MAX_int32);
+    Next->RunSeed = RequestedSeed > 0 ? RequestedSeed : FMath::RandRange(1, MAX_int32);
     Next->bAssistedRun = false;
 #if !UE_BUILD_SHIPPING
     // Fixed seeds only affect explicitly isolated QA profiles, never ordinary saves.
     int32 FixedSeed = 0;
-    if (!TestSlotPrefix.IsEmpty() && FParse::Value(FCommandLine::Get(), TEXT("PGRunSeed="), FixedSeed) && FixedSeed > 0)
+    if (RequestedSeed <= 0 && !TestSlotPrefix.IsEmpty() && FParse::Value(FCommandLine::Get(), TEXT("PGRunSeed="), FixedSeed) && FixedSeed > 0)
         Next->RunSeed = FixedSeed;
     Next->bAssistedRun = RetryProbeRemaining >= 0;
 #endif

@@ -1,6 +1,7 @@
 ﻿#include "PGUIMainHUD.h"
 #include "PGCombatHUDStyle.h"
 #include "SPGResourceOrb.h"
+#include "SPGDungeonMinimap.h"
 #include "PGUI/Style/PGUIStyle.h"
 #include "PGUI/Style/PGUIStyleSettings.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
@@ -141,6 +142,8 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
         Skills->AddSlot().AutoWidth().Padding(Index==7 ? 10.f : 2.f,0,2,0)[MakeSkill(Index)];
     return SNew(SSafeZone).Visibility(EVisibility::SelfHitTestInvisible)
     [SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
+        + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(28,32)
+        [SNew(SPGDungeonMinimap).World(GetWorld())]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
         [SNew(SBox).WidthOverride(4).HeightOverride(4)
             .Visibility_Lambda([this]()
@@ -290,6 +293,7 @@ void UPGUIMainHUD::Refresh()
         case EPGStageState::RewardPhase: Goal=TEXT("보상을 선택해 빌드를 강화하세요");break;
         case EPGStageState::Failed: StagePhase=FText::FromString(TEXT("종료")); Goal=TEXT("잠시 숨을 고르고 다시 도전하세요.");break;
         case EPGStageState::RunPreparation: Goal=TEXT("준비를 마치면 시련을 시작하세요.");break;
+        case EPGStageState::DungeonTraversal: StagePhase=FText::FromString(TEXT("탐험")); Goal=Stage->GetCurrentStageId()==6 ? TEXT("보스방으로 이동하세요") : FString::Printf(TEXT("필수 목표 %d / 5 · 길을 탐험해 전투방을 찾으세요"),Stage->GetCurrentStageId());break;
         case EPGStageState::Finished: StagePhase=FText::FromString(TEXT("돌파")); Goal=TEXT("모든 시련을 완료했습니다");break;
         case EPGStageState::Completed: Goal=TEXT("시련 완료");break;
         default: break;

@@ -10,8 +10,8 @@ class PGACTOR_API APGLootDrop : public AActor
 public:
     APGLootDrop();
     void InitializeItem(const FPGItemInstance& InItem);
-    bool TryPickup(APawn* Player);
-    const FPGItemInstance& GetItem() const { return Item; }
+    UFUNCTION(BlueprintCallable) virtual bool TryPickup(APawn* Player);
+    UFUNCTION(BlueprintPure) const FPGItemInstance& GetItem() const { return Item; }
     FVector GetLabelLocation() const;
     static APGLootDrop* FindNearestPickup(const APawn* Player);
     static void SpawnForEnemy(class APGCharacterEnemy* Enemy);
