@@ -1,0 +1,13 @@
+﻿enemy_id,role,source_package,target_sequence,target_montage
+15601,Idle,/Game/ExternalAssets/Animations/BossyEnemy/Animations/Boss_Idle,/Game/DataCenter/DarkKnightBoss/AS_Idle,/Game/DataCenter/DarkKnightBoss/AM_Idle
+15601,Walk,/Game/ExternalAssets/Animations/BossyEnemy/Animations/InPlace/Movement/Boss_Walk_F_InP,/Game/DataCenter/DarkKnightBoss/AS_Walk,/Game/DataCenter/DarkKnightBoss/AM_Walk
+15601,Run,/Game/ExternalAssets/Animations/BossyEnemy/Animations/InPlace/Movement/Boss_Run_F_InP,/Game/DataCenter/DarkKnightBoss/AS_Run,/Game/DataCenter/DarkKnightBoss/AM_Run
+15601,Sweep,/Game/ExternalAssets/Animations/BossyEnemy/Animations/InPlace/Attacks/Boss_Attack_Swing_InP,/Game/DataCenter/DarkKnightBoss/AS_Sweep,/Game/DataCenter/DarkKnightBoss/AM_Sweep
+15601,Uppercut,/Game/ExternalAssets/Animations/BossyEnemy/Animations/InPlace/Attacks/Boss_Attack_Uppercut_InP,/Game/DataCenter/DarkKnightBoss/AS_Uppercut,/Game/DataCenter/DarkKnightBoss/AM_Uppercut
+15601,Double,/Game/ExternalAssets/Animations/BossyEnemy/Animations/InPlace/Attacks/Boss_Attack_SwingAndSlam_InP,/Game/DataCenter/DarkKnightBoss/AS_Double,/Game/DataCenter/DarkKnightBoss/AM_Double
+15601,Fury,/Game/ExternalAssets/Animations/BossyEnemy/Animations/InPlace/Attacks/Boss_Attack_HandAndSwordSwing_InP,/Game/DataCenter/DarkKnightBoss/AS_Fury,/Game/DataCenter/DarkKnightBoss/AM_Fury
+15601,HitFront,/Game/ExternalAssets/Animations/BossyEnemy/Animations/Boss_ReactionHit_F,/Game/DataCenter/DarkKnightBoss/AS_HitFront,/Game/DataCenter/DarkKnightBoss/AM_HitFront
+15601,HitBack,/Game/ExternalAssets/Animations/BossyEnemy/Animations/Boss_ReactionHit_B,/Game/DataCenter/DarkKnightBoss/AS_HitBack,/Game/DataCenter/DarkKnightBoss/AM_HitBack
+15601,HitLeft,/Game/ExternalAssets/Animations/BossyEnemy/Animations/Boss_ReactionHit_L,/Game/DataCenter/DarkKnightBoss/AS_HitLeft,/Game/DataCenter/DarkKnightBoss/AM_HitLeft
+15601,HitRight,/Game/ExternalAssets/Animations/BossyEnemy/Animations/Boss_ReactionHit_R,/Game/DataCenter/DarkKnightBoss/AS_HitRight,/Game/DataCenter/DarkKnightBoss/AM_HitRight
+15601,Death,/Game/ExternalAssets/Characters/Dark_Knight/Dark_Knight_Male/Animations/Anim_DKM_Death,/Game/DataCenter/DarkKnightBoss/AS_Death,/Game/DataCenter/DarkKnightBoss/AM_Death

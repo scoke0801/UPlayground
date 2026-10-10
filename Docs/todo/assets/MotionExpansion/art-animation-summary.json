@@ -1,0 +1,15 @@
+{
+  "total": 17376,
+  "classes": {
+    "AnimSequence": 17348,
+    "BlendSpace1D": 2,
+    "AnimMontage": 26
+  },
+  "status": {
+    "no_registry_referencer_candidate": 17094,
+    "referenced_within_art": 258,
+    "referenced_outside_art": 24
+  },
+  "scope": "/Game/Art recursively, actual UE animation asset classes",
+  "limitation": "Registry references are not proof of active gameplay use; string loads and unreachable galleries need separate review."
+}

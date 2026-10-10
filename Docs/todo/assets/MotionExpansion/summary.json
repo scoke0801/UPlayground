@@ -1,0 +1,28 @@
+{
+  "scope": "two historical candidate manifests plus all four imported creature sequence folders",
+  "verification": "disk existence and authored creature bindings only; no AssetRegistry, UE load, playback or runtime usage audit",
+  "packages": 207,
+  "missing": [],
+  "creatures": {
+    "Griffin": {
+      "sequence_files": 17,
+      "authored_linked": 6,
+      "not_linked_by_this_config": 11
+    },
+    "MainPlant": {
+      "sequence_files": 9,
+      "authored_linked": 6,
+      "not_linked_by_this_config": 3
+    },
+    "EnemyRoot": {
+      "sequence_files": 6,
+      "authored_linked": 5,
+      "not_linked_by_this_config": 1
+    },
+    "EnemyPlant": {
+      "sequence_files": 10,
+      "authored_linked": 6,
+      "not_linked_by_this_config": 4
+    }
+  }
+}
