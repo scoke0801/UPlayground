@@ -5,6 +5,40 @@
 #include "NiagaraSystem.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "PGAbilitySystem/PGAbilitySystemComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+
+void PGPlayerSlashFX::SnapshotBuild(UPGPlayerSkillProfile* Profile, const UPGAbilitySystemComponent* ASC)
+{
+    if (!Profile) return;
+    Profile->BuildVFXWeights = FVector::ZeroVector;
+    if (!Profile->bBuildReactiveVFX || !ASC) return;
+    // Ownership gives a readable baseline; upgrades and active frenzy enrich it.
+    const auto Weight = [ASC](EPGCombatPerk Base, EPGCombatPerk Upgrade)
+    {
+        return ASC->GetPerkPercent(Base) > 0 ? FMath::Clamp(.55f +
+            ASC->GetPerkPercent(Upgrade) * .01f, .55f, 1.f) : 0.f;
+    };
+    Profile->BuildVFXWeights = FVector(Weight(EPGCombatPerk::Bleed, EPGCombatPerk::BleedPotency),
+        Weight(EPGCombatPerk::Shockwave, EPGCombatPerk::ShockRadius),
+        Weight(EPGCombatPerk::Frenzy, EPGCombatPerk::FrenzyAfterimage));
+    if (Profile->BuildVFXWeights.Z > 0.f)
+    {
+        const auto State = ASC->GetBuildCombatState();
+        Profile->BuildVFXWeights.Z = FMath::Clamp(Profile->BuildVFXWeights.Z +
+            .45f * State.FrenzyStacks / FMath::Max(1, State.FrenzyMaxStacks), 0.f, 1.f);
+    }
+}
+
+void PGPlayerSlashFX::SetMaterialBuild(UMaterialInstanceDynamic* Material, const UPGPlayerSkillProfile* Profile)
+{
+    if (!Material || !Profile) return;
+    Material->SetVectorParameterValue(TEXT("BuildWeights"), FLinearColor(
+        Profile->BuildVFXWeights.X, Profile->BuildVFXWeights.Y, Profile->BuildVFXWeights.Z, 0));
+    Material->SetVectorParameterValue(TEXT("BleedTint"), Profile->BleedVFXTint);
+    Material->SetVectorParameterValue(TEXT("ShockTint"), Profile->ShockVFXTint);
+    Material->SetVectorParameterValue(TEXT("FrenzyTint"), Profile->FrenzyVFXTint);
+}
 
 void PGPlayerSlashFX::Prepare(UNiagaraSystem* System)
 {

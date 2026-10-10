@@ -34,7 +34,7 @@ void APGPlayerSkillProjectile::Initialize(const UPGPlayerSkillProfile* Profile, 
     VisualLifetime = FMath::Max(.001f, FMath::Min(RemainingTime, RemainingRange / Speed));
     for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It) { Stage = *It; StageId = It->GetCurrentStageId(); break; }
     VisualProfile = DuplicateObject<UPGPlayerSkillProfile>(Profile, this);
-    NiagaraSlash = PGPlayerSlashFX::Spawn(this, Profile->SlashVFX.LoadSynchronous(), Profile,
+    NiagaraSlash = PGPlayerSlashFX::Spawn(this, Profile->bUseAuthoredVFX ? nullptr : Profile->SlashVFX.LoadSynchronous(), Profile,
         Hit.Radius, GetActorLocation(), Forward.Rotation(), Profile->bReverseSlash);
     if (NiagaraSlash)
     {
@@ -48,6 +48,8 @@ void APGPlayerSkillProjectile::Initialize(const UPGPlayerSkillProfile* Profile, 
     if (auto* Material = Profile->SlashMaterial.LoadSynchronous())
     {
         SlashMID = UMaterialInstanceDynamic::Create(Material,this);
+        PGPlayerSlashFX::SetMaterialBuild(SlashMID, Profile);
+        SlashMID->SetScalarParameterValue(TEXT("Shape"), static_cast<float>(EPGPlayerVFXShape::Blade));
         SlashMID->SetScalarParameterValue(TEXT("HalfAngleCos"),.25f);
         SlashMID->SetVectorParameterValue(TEXT("Tint"),Profile->SlashTint);
         SlashMID->SetScalarParameterValue(TEXT("BladeWidth"),Profile->SlashWidth);

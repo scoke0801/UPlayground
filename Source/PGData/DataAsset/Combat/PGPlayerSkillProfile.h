@@ -10,6 +10,10 @@ enum class EPGPlayerHitShape : uint8 { Fan, Disc, Projectile };
 UENUM(BlueprintType)
 enum class EPGPlayerMoveMode : uint8 { ForwardSweep, Walk, GroundLeap };
 
+// Visual geometry is independent of damage geometry (a thrust can use a forgiving fan hit).
+UENUM(BlueprintType)
+enum class EPGPlayerVFXShape : uint8 { Crescent, Thrust, Cleave, Orbit, Impact, Blade };
+
 USTRUCT(BlueprintType)
 struct PGDATA_API FPGPlayerMovementSegment
 {
@@ -81,6 +85,18 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Niagara", meta=(ClampMin="1", ClampMax="1500")) float ProjectileSwingRadius = 250.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class USoundBase> SwingSound;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UMaterialInterface> SlashMaterial;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") bool bUseAuthoredVFX = false;
+    // Ordered by resolved source contact, not the authored damage template index.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") TArray<EPGPlayerVFXShape> SwingShapes;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") EPGPlayerVFXShape DefaultSwingShape = EPGPlayerVFXShape::Crescent;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") bool bBuildReactiveVFX = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Build") FLinearColor BleedVFXTint = FLinearColor(1.f, .035f, .12f);
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Build") FLinearColor ShockVFXTint = FLinearColor(.08f, .55f, 1.f);
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|Build") FLinearColor FrenzyVFXTint = FLinearColor(1.f, .42f, .035f);
+    // Cast snapshot; never written back to the shared asset. Mixed builds retain all three layers.
+    UPROPERTY(Transient) FVector BuildVFXWeights = FVector::ZeroVector;
+    EPGPlayerVFXShape GetSwingShape(int32 ContactIndex) const
+    { return SwingShapes.IsValidIndex(ContactIndex) ? SwingShapes[ContactIndex] : DefaultSwingShape; }
     // Presentation only: the profile clock also freezes the slash during hit-stop.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") FLinearColor SlashTint = FLinearColor(.18f, .8f, 1.f);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation", meta=(ClampMin="0.05", ClampMax="0.5")) float SlashDuration = .22f;

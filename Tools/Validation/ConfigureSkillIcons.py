@@ -25,7 +25,11 @@ for name in sorted(set(mapping.values())):
  assert isinstance(texture,unreal.Texture2D),name
  texture.set_editor_property('lod_group',unreal.TextureGroup.TEXTUREGROUP_UI)
  texture.set_editor_property('compression_settings',unreal.TextureCompressionSettings.TC_EDITOR_ICON)
- texture.set_editor_property('mip_gen_settings',unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS)
+ # The 1254px source needs power-of-two resizing before UE can generate mips.
+ texture.set_editor_property('power_of_two_mode',unreal.TexturePowerOfTwoSetting.STRETCH_TO_POWER_OF_TWO)
+ texture.set_editor_property('mip_gen_settings',unreal.TextureMipGenSettings.TMGS_SIMPLE_AVERAGE)
+ texture.set_editor_property('filter',unreal.TextureFilter.TF_TRILINEAR)
+ texture.set_editor_property('never_stream',True)
  texture.set_editor_property('max_texture_size',256)
  texture.set_editor_property('srgb',True)
  assert unreal.EditorAssetLibrary.save_loaded_asset(texture,only_if_is_dirty=False),name

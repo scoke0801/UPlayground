@@ -4,6 +4,8 @@
 class UNiagaraComponent;
 class UNiagaraSystem;
 class UPGPlayerSkillProfile;
+class UPGAbilitySystemComponent;
+class UMaterialInstanceDynamic;
 
 // Manually owned pooled systems: their simulation follows the attack's logical clock.
 struct FPGPlayerSlashFXInstance
@@ -14,6 +16,8 @@ struct FPGPlayerSlashFXInstance
 
 namespace PGPlayerSlashFX
 {
+    PGACTOR_API void SnapshotBuild(UPGPlayerSkillProfile* Profile, const UPGAbilitySystemComponent* ASC);
+    PGACTOR_API void SetMaterialBuild(UMaterialInstanceDynamic* Material, const UPGPlayerSkillProfile* Profile);
     // Finish editor on-demand compilation before the short attack clock starts.
     void Prepare(UNiagaraSystem* System);
     UNiagaraComponent* Spawn(const UObject* WorldContext, UNiagaraSystem* System,

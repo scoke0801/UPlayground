@@ -37,6 +37,7 @@
 #include "NiagaraSystem.h"
 #include "NiagaraSystemInstanceController.h"
 #include "UObject/UObjectIterator.h"
+#include "UObject/UnrealType.h"
 
 static FAutoConsoleCommandWithWorld PGHackSlashLoadout(TEXT("PGHackSlashLoadout"),
     TEXT("Equip 111 + 112 without saving in a HackSlash_ test profile."),
@@ -220,8 +221,26 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
                 Surface->SetWorldLocation(Floor->GetActorLocation()); Surface->SetWorldScale3D(FVector(50,50,1));
             }
             State->Origin=FVector(20000,20000,50+Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()+2);
+            if (FParse::Param(FCommandLine::Get(),TEXT("PGCombatVFXFixedAim")))
+            {
+                // This isolated fixture must not depend on the desktop pointer location.
+                auto* QuarterView = FindFProperty<FBoolProperty>(Player->GetClass(),TEXT("bUseQuarterView"));
+                if (!QuarterView) return Finish(false,TEXT("fixed aim property missing"));
+                QuarterView->SetPropertyValue_InContainer(Player,false);
+                Player->SetActorRotation(FRotator(0,120,0));
+            }
             if(auto* Boom=Player->FindComponentByClass<USpringArmComponent>()) Boom->bEnableCameraLag=false;
             ASC->SetEquipmentBonuses({}); ASC->SetProfileBonuses({}); ASC->SetCombatPerks({});
+            // Presentation-only build matrix uses misses so secondary damage cannot alter spatial expectations.
+            int32 VFXBuild=0;
+            if (State->bSwingMiss && FParse::Value(FCommandLine::Get(),TEXT("PGCombatVFXBuild="),VFXBuild))
+            {
+                TMap<EPGCombatPerk,int32> Perks;
+                if(VFXBuild==1 || VFXBuild==4) Perks.Add(EPGCombatPerk::Bleed,20);
+                if(VFXBuild==2 || VFXBuild==4) Perks.Add(EPGCombatPerk::Shockwave,30);
+                if(VFXBuild==3 || VFXBuild==4) Perks.Add(EPGCombatPerk::Frenzy,5);
+                ASC->SetCombatPerks(Perks);
+            }
             ASC->SetNumericAttributeBase(UPGAtrributeSet::GetAttackPowerAttribute(),100);
             ASC->SetNumericAttributeBase(UPGAtrributeSet::GetCriticalRateAttribute(),0);
             State->bReady=true;

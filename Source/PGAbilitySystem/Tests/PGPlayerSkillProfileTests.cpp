@@ -412,4 +412,28 @@ bool FPGPlayerP1CooldownTest::RunTest(const FString&)
     TestTrue(TEXT("Reequipped cooldown blocks use"),A->IsOnCooldown());
     World->DestroyWorld(false); return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGCombatVFXBuildTest,"PG.HackSlash.CombatVFXBuildSnapshot",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPGCombatVFXBuildTest::RunTest(const FString&)
+{
+    auto* World=TestWorld(); auto* Player=World->SpawnActor<APGCharacterPlayer>(); Stats(Player);
+    auto* ASC=Player->GetPGAbilitySystemComponent();
+    auto* Source=TestProfile(); Source->bBuildReactiveVFX=true;
+    Source->SwingShapes={EPGPlayerVFXShape::Thrust,EPGPlayerVFXShape::Cleave};
+    Source->DefaultSwingShape=EPGPlayerVFXShape::Orbit;
+    TestTrue(TEXT("Contact shape is independent of Disc damage"),Source->GetSwingShape(0)==EPGPlayerVFXShape::Thrust);
+    TestTrue(TEXT("Extra contacts use authored fallback"),Source->GetSwingShape(5)==EPGPlayerVFXShape::Orbit);
+    ASC->SetCombatPerks({{EPGCombatPerk::Bleed,20},{EPGCombatPerk::Shockwave,30},{EPGCombatPerk::Frenzy,5}});
+    auto* Snapshot=DuplicateObject<UPGPlayerSkillProfile>(Source,Player);
+    PGPlayerSlashFX::SnapshotBuild(Snapshot,ASC);
+    TestTrue(TEXT("Mixed build retains all three channels"),Snapshot->BuildVFXWeights.GetMin()>0.);
+    TestTrue(TEXT("Shared profile remains unchanged"),Source->BuildVFXWeights.IsZero());
+    ASC->SetCombatPerks({});
+    TestTrue(TEXT("In-flight snapshot survives respec"),Snapshot->BuildVFXWeights.GetMin()>0.);
+    PGPlayerSlashFX::SnapshotBuild(Snapshot,ASC);
+    TestTrue(TEXT("Next cast clears removed build"),Snapshot->BuildVFXWeights.IsZero());
+    ASC->SetCombatPerks({{EPGCombatPerk::BleedPotency,100}});
+    PGPlayerSlashFX::SnapshotBuild(Snapshot,ASC);
+    TestTrue(TEXT("Upgrade alone does not pretend base perk is owned"),Snapshot->BuildVFXWeights.IsZero());
+    World->DestroyWorld(false); return true;
+}
 #endif

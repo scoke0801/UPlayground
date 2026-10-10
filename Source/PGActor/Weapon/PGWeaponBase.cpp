@@ -33,6 +33,15 @@ APGWeaponBase::APGWeaponBase()
 	WeaponMeshType = EPGWeaponMeshType::StaticMesh;
 }
 
+void APGWeaponBase::PostInitializeComponents()
+{
+    Super::PostInitializeComponents();
+    // Equipped weapons (including the player's own) must not retract the camera.
+    TInlineComponentArray<UPrimitiveComponent*> Primitives(this);
+    for (UPrimitiveComponent* Primitive : Primitives)
+        Primitive->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+}
+
 void APGWeaponBase::OnCollisionBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {

@@ -22,6 +22,7 @@
 #include "Sound/SoundBase.h"
 #include "DrawDebugHelpers.h"
 #include "HAL/IConsoleManager.h"
+#include "Misc/App.h"
 
 static TAutoConsoleVariable<int32> CVarPGSkillShapes(TEXT("pg.Skill.DebugShapes"), 0, TEXT("Draw player profile hit geometry."));
 static TAutoConsoleVariable<int32> CVarPGSkillCast(TEXT("pg.Skill.DebugCast"), 0, TEXT("Log committed player casts and phase targets."));
@@ -41,6 +42,10 @@ FCollisionObjectQueryParams WorldObjects()
 }
 UStaticMeshComponent* CreateSlashMesh(AActor* Owner, UMaterialInterface* Material)
 {
+    // A .2s cue cannot wait for an editor fallback shader to finish its first draw.
+#if WITH_EDITOR
+    if (Material && FApp::CanEverRender()) Material->EnsureIsComplete();
+#endif
     auto* Mesh = NewObject<UStaticMeshComponent>(Owner);
     Mesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane")));
     Mesh->SetMaterial(0, Material);
@@ -104,13 +109,22 @@ void UPGPlayerAttackComponent::PrepareLoadout()
             if (auto* Profile = Row->PlayerProfile.LoadSynchronous())
             {
                 PreparedLoadoutAssets.Add(Profile);
-                for (const auto& Path : {Profile->SlashMaterial.ToSoftObjectPath(), Profile->SlashVFX.ToSoftObjectPath(), Profile->ProjectileSwingVFX.ToSoftObjectPath(), Profile->SwingSound.ToSoftObjectPath()})
+                for (const auto& Path : {Profile->SlashMaterial.ToSoftObjectPath(), Profile->SwingSound.ToSoftObjectPath()})
                     if (!Path.IsNull()) if (auto* Asset = Path.TryLoad()) PreparedLoadoutAssets.Add(Asset);
-                PGPlayerSlashFX::Prepare(Profile->SlashVFX.Get());
-                PGPlayerSlashFX::Prepare(Profile->ProjectileSwingVFX.Get());
+#if WITH_EDITOR
+                if (FApp::CanEverRender())
+                    if (auto* Material = Profile->SlashMaterial.Get()) Material->EnsureIsComplete();
+#endif
+                if (!Profile->bUseAuthoredVFX)
+                {
+                    for (const auto& Path : {Profile->SlashVFX.ToSoftObjectPath(), Profile->ProjectileSwingVFX.ToSoftObjectPath()})
+                        if (!Path.IsNull()) if (auto* Asset = Path.TryLoad()) PreparedLoadoutAssets.Add(Asset);
+                    PGPlayerSlashFX::Prepare(Profile->SlashVFX.Get());
+                    PGPlayerSlashFX::Prepare(Profile->ProjectileSwingVFX.Get());
+                }
                 // Prepare the actual primitive/material pipeline before the first short swing.
                 // Loading the material alone does not precache the static-mesh draw pipeline.
-                if (!SlashMesh && Profile->SlashVFX.IsNull())
+                if (!SlashMesh && (Profile->bUseAuthoredVFX || Profile->SlashVFX.IsNull()))
                     if (auto* Material = Profile->SlashMaterial.Get()) SlashMesh = CreateSlashMesh(Player, Material);
             }
         }
@@ -181,11 +195,12 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     auto* ASC = Player->GetPGAbilitySystemComponent();
     // Snapshot the complete profile, not an editor asset that could change mid-cast.
     ActiveProfile = DuplicateObject<UPGPlayerSkillProfile>(Profile, this);
+    PGPlayerSlashFX::SnapshotBuild(ActiveProfile, ASC);
     // Damage and Niagara use the same resolved source-contact schedule for this cast.
     ActiveProfile->HitPhases = Profile->ResolveHitPhases(Montage);
     ActiveMontage = Montage;
-    PreparedVFX = Profile->SlashVFX.LoadSynchronous();
-    PreparedProjectileSwingVFX = Profile->ProjectileSwingVFX.LoadSynchronous();
+    PreparedVFX = Profile->bUseAuthoredVFX ? nullptr : Profile->SlashVFX.LoadSynchronous();
+    PreparedProjectileSwingVFX = Profile->bUseAuthoredVFX ? nullptr : Profile->ProjectileSwingVFX.LoadSynchronous();
     // Also cover profiles injected without a loadout refresh (cheats/editor changes).
     PGPlayerSlashFX::Prepare(PreparedVFX);
     PGPlayerSlashFX::Prepare(PreparedProjectileSwingVFX);
@@ -200,6 +215,7 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
             SlashMesh = CreateSlashMesh(Player, Material);
         }
         SlashMID = UMaterialInstanceDynamic::Create(Material, this);
+        PGPlayerSlashFX::SetMaterialBuild(SlashMID, ActiveProfile);
         SlashMesh->SetMaterial(0, SlashMID); SlashMesh->SetVisibility(false);
     }
     CastContext = MakeShared<FPGSkillCastContext>();
@@ -319,6 +335,11 @@ void UPGPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
         SlashMID->SetScalarParameterValue(TEXT("Progress"), FMath::Clamp(
             (LogicalTime - SlashStarted) / ActiveProfile->SlashDuration, 0.f, 1.f));
         SlashMesh->SetVisibility(LogicalTime < SlashUntil);
+        if (CVarPGSkillCast.GetValueOnGameThread() > 1)
+            UE_LOG(LogTemp,Display,TEXT("PGCombatVFX Frame Skill=%d Clock=%.4f Started=%.4f Until=%.4f Visible=%d Proxy=%d Progress=%.4f Shape=%.1f Intensity=%.2f Location=%s"),
+                ActiveProfile->SkillID,LogicalTime,SlashStarted,SlashUntil,SlashMesh->IsVisible(),SlashMesh->GetSceneProxy()!=nullptr,
+                SlashMID->K2_GetScalarParameterValue(TEXT("Progress")),SlashMID->K2_GetScalarParameterValue(TEXT("Shape")),
+                SlashMID->K2_GetScalarParameterValue(TEXT("Intensity")),*SlashMesh->GetComponentLocation().ToString());
     }
 }
 
@@ -524,8 +545,13 @@ void UPGPlayerAttackComponent::PresentHit(const FPGPlayerHitPhase& Hit)
             ActiveProfile->SkillID,Hit.PhaseId,LogicalTime,Origin.X,Origin.Y,Origin.Z,LockedForward.Rotation().Yaw,Hit.Shape==EPGPlayerHitShape::Projectile);
     }
     const FVector Center = Feet(Player) + FVector(0,0,10);
-    if (!PreparedVFX && SlashMesh && SlashMID && Hit.Shape!=EPGPlayerHitShape::Projectile)
+    if (!PreparedVFX && SlashMesh && SlashMID)
     {
+        const auto Shape = ActiveProfile->GetSwingShape(Hit.PhaseId);
+        SlashMID->SetScalarParameterValue(TEXT("Shape"), static_cast<float>(Shape));
+        if (CVarPGSkillCast.GetValueOnGameThread())
+            UE_LOG(LogTemp,Display,TEXT("PGCombatVFX Skill=%d Phase=%d Shape=%d Build=%s"),
+                ActiveProfile->SkillID,Hit.PhaseId,static_cast<int32>(Shape),*ActiveProfile->BuildVFXWeights.ToString());
         SlashMID->SetScalarParameterValue(TEXT("HalfAngleCos"), Hit.Shape == EPGPlayerHitShape::Disc ? -1.f : FMath::Cos(FMath::DegreesToRadians(Hit.FullAngleDegrees*.5f)));
         SlashMID->SetVectorParameterValue(TEXT("Tint"), ActiveProfile->SlashTint);
         SlashMID->SetScalarParameterValue(TEXT("BladeWidth"), ActiveProfile->SlashWidth);
@@ -533,8 +559,13 @@ void UPGPlayerAttackComponent::PresentHit(const FPGPlayerHitPhase& Hit)
         SlashMID->SetScalarParameterValue(TEXT("Direction"), (ActiveProfile->bReverseSlash != bool(Hit.PhaseId % 2)) ? -1.f : 1.f);
         SlashMID->SetScalarParameterValue(TEXT("Projectile"), 0.f);
         SlashMID->SetScalarParameterValue(TEXT("Progress"), 0.f);
-        SlashMesh->SetWorldLocationAndRotation(Feet(Player) + FVector(0,0,ActiveProfile->SlashHeight), LockedForward.Rotation());
-        SlashMesh->SetWorldScale3D(FVector(Hit.Radius / 50.f, Hit.Radius / 50.f, 1.f));
+        const float Height = Shape == EPGPlayerVFXShape::Impact ? 8.f : ActiveProfile->SlashHeight;
+        FRotator Orientation = LockedForward.Rotation();
+        // Cleaves occupy a slanted vertical plane; thrusts stay aligned with +X.
+        if (Shape == EPGPlayerVFXShape::Cleave) Orientation.Roll = 58.f;
+        SlashMesh->SetWorldLocationAndRotation(Feet(Player) + FVector(0,0,Height), Orientation);
+        const float Radius = Hit.Shape == EPGPlayerHitShape::Projectile ? ActiveProfile->ProjectileSwingRadius : Hit.Radius;
+        SlashMesh->SetWorldScale3D(FVector(Radius / 50.f, Radius / 50.f, 1.f));
         SlashStarted = LogicalTime;
         SlashMesh->SetVisibility(true); SlashUntil = LogicalTime + ActiveProfile->SlashDuration;
     }

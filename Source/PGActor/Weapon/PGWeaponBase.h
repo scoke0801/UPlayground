@@ -53,6 +53,7 @@ private:
 public:	
 	// Sets default values for this actor's properties
 	APGWeaponBase();
+    virtual void PostInitializeComponents() override;
 
 public:
 	UFUNCTION()

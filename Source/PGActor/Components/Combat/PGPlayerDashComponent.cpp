@@ -26,6 +26,7 @@ void UPGPlayerDashComponent::Start()
     bDashing = true;
     if (auto* Player = Cast<APGCharacterPlayer>(GetOwner()))
     {
+        Player->CancelLocomotionTurn();
         auto* Capsule = Player->GetCapsuleComponent();
         SavedEnemyResponse = Capsule->GetCollisionResponseToChannel(ECC_GameTraceChannel1);
         if (SavedEnemyResponse == ECR_Block)

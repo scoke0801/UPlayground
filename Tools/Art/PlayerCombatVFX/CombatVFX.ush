@@ -1,0 +1,80 @@
+// Project-authored analytical VFX. Local +X is forward; no runtime texture or noise dependency.
+// Shape: crescent / thrust / cleave / orbit / impact / travelling blade.
+float2 p = (UV - .5) * 2;
+float t = saturate(Progress);
+float r = length(p);
+float a = atan2(p.y * Direction, p.x);
+float aa = max(fwidth(r), .003);
+float w = clamp(BladeWidth, .02, .4);
+float core = 0, body = 0, wisps = 0, accent = 0;
+float envelope = 1 - smoothstep(.25, 1., t);
+float longitudinal = 0;
+if (Shape < .5 || (Shape > 1.5 && Shape < 3.5))
+{
+    float orbit = step(2.5, Shape);
+    float halfAngle = lerp(acos(clamp(CosAngle, -.98, .98)), 3.14159, orbit);
+    // A cleave uses a narrow angular stroke in a tilted plane, not a horizontal circle.
+    halfAngle = lerp(halfAngle, 1.15, step(1.5, Shape) * (1-orbit));
+    float u = (a + halfAngle) / (2*halfAngle);
+    u = lerp(u, frac(u*2), orbit);
+    float head = saturate(.48 + t*1.65);
+    float sweep = smoothstep(0., .13, u) * (1-smoothstep(.86, 1., u));
+    sweep *= 1-smoothstep(head-.025, head+.015, u);
+    sweep *= lerp(1-smoothstep(halfAngle-.06, halfAngle, abs(a)), 1., orbit);
+    float taper = pow(saturate(sin(saturate(u)*3.14159)), .7);
+    float outer = .81 + .08*t;
+    float width = max(.008, w*taper);
+    float d = outer-r;
+    body = smoothstep(-aa, aa, d) * (1-smoothstep(width*.25,width,d));
+    core = exp2(-pow((d-.014)/(aa+.012),2)) * taper;
+    float grooves = .55+.45*sin(a*31+r*67-t*16);
+    body *= lerp(1., grooves, saturate(d/width));
+    wisps = exp2(-pow((d-width*1.5)/(aa+.007),2)) * .28 * taper;
+    accent = exp2(-pow((d-width*2.15)/(aa+.009),2)) * taper * .6;
+    body *= sweep; core *= sweep; wisps *= sweep; accent *= sweep;
+    longitudinal = u;
+}
+else if (Shape < 1.5 || Shape > 4.5)
+{
+    float blade = step(4.5, Shape);
+    float tip = lerp(.58 + .38*saturate(t*3), .95, blade);
+    float rear = lerp(.04, -.85, blade);
+    float u = saturate((p.x-rear)/(tip-rear));
+    // A spear-shaped wedge with a white spine and two converging pressure filaments.
+    float width = max(.003, w*.7 * pow(saturate(1-u),.8) * smoothstep(0.,.18,u));
+    float gate = smoothstep(rear,rear+.06,p.x)*(1-smoothstep(tip-.015,tip+.01,p.x));
+    body = (1-smoothstep(width*.2,width+aa,abs(p.y)))*gate;
+    core = exp2(-pow(p.y/(aa+.006+.009*(1-u)),2))*gate;
+    float side = width*1.7 + .02;
+    wisps = exp2(-pow((abs(p.y)-side)/(aa+.005),2))*gate*.38;
+    accent = exp2(-pow((abs(p.y)-side*1.8)/(aa+.006),2))*gate*.75;
+    longitudinal = u;
+    envelope = lerp(envelope,1-smoothstep(.8,1.,t),blade);
+}
+else
+{
+    // Landing: two expanding, broken pressure rings and short radial fracture rays.
+    float outer = .22+.69*sqrt(t);
+    float d = abs(r-outer);
+    core = exp2(-pow(d/(aa+.012),2));
+    body = exp2(-pow(d/(aa+w*.45),2))*.7;
+    float broken = smoothstep(-.3,.6,sin(a*13 + sin(a*7)*2));
+    wisps = exp2(-pow((r-outer*.72)/(aa+.009),2))*broken*.7;
+    float rays = pow(saturate(sin(a*17+sin(a*5)*2)),24);
+    accent = rays * smoothstep(.15,.35,r)*(1-smoothstep(outer*.65,outer,r));
+    longitudinal = frac(a/6.28318);
+}
+float3 weights = saturate(BuildWeights.rgb);
+float amount = weights.x+weights.y+weights.z;
+float3 buildTint = (BleedTint.rgb*weights.x+ShockTint.rgb*weights.y+FrenzyTint.rgb*weights.z)/max(amount,.001);
+float hasBuild = step(.001,amount);
+float3 base = lerp(Tint.rgb,buildTint,hasBuild*.92);
+float bleed = (body*.25 + wisps*(.5+.5*sin(longitudinal*47-t*14))) * weights.x;
+float shock = accent * weights.y * (.65+.35*sin(longitudinal*71+t*9));
+float frenzy = (wisps+accent*.5)*weights.z;
+float3 rgb = base*(body*.9+wisps*.55) + lerp(base,float3(1,.96,.88),lerp(.72,.25,hasBuild))*core;
+rgb += BleedTint.rgb*bleed + ShockTint.rgb*shock + FrenzyTint.rgb*frenzy;
+// White hot core, colored edge and separate colored build filaments. No solid opaque fan.
+float edge = 1-smoothstep(.96,1.,r);
+rgb *= Intensity * envelope * edge;
+return float4(rgb, saturate((body+core+wisps+bleed+shock+frenzy)*envelope*edge));
