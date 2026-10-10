@@ -179,6 +179,8 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/PreviewBokuseiShadingComparison.py
 !/Tools/Validation/RunBokuseiShadingComparison.py
 !/Tools/Validation/BokuseiGuestModels.py
+!/Tools/Validation/BokuseiGuestStages.py
+!/Tools/Validation/PreviewBokuseiGuests.py
 !/Tools/Validation/ConfigureBokuseiGuests.py
 !/Tools/Validation/ProbeBokuseiHairShadowQuality.py
 !/Tools/Validation/RunBokuseiHairShadowQuality.py
@@ -223,3 +225,43 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/ConfigureMobileCombat.py
 !/Tools/Validation/RunMobileCombat.py
 !/Tools/Validation/RunPlayerDash.py
+# Humanoid locomotion source and saved/runtime verification.
+!/Tools/Validation/ConfigureHumanoidLocomotion.py
+!/Tools/Validation/InspectHumanoidLocomotion.py
+!/Tools/Validation/PreviewHumanoidLocomotion.py
+!/Tools/Validation/RunHumanoidLocomotion.py
+!/Tools/Validation/Data/HumanoidLocomotion.json
+# Authored player turn poses, rotation curves and reproducible validation.
+!/Tools/Validation/ConfigurePlayerTurns.py
+!/Tools/Validation/InspectPlayerTurns.py
+!/Tools/Validation/RunPlayerTurns.py
+!/Tools/Validation/Data/PlayerTurns.json
+/Tools/Art
+!/Tools/Art/
+/Tools/Art/*
+!/Tools/Art/PlayerCombatVFX/
+/Tools/Art/PlayerCombatVFX/__pycache__/
+
+# Toon P0-P2 sources and reproducible verification (generated bakes stay local).
+!/Tools/Validation/InspectToonImprovement.py
+!/Tools/Validation/ConfigureToonImprovement.py
+!/Tools/Validation/ConfigureToonFinalAssets.py
+!/Tools/Validation/ConfigureNativeToonComparison.py
+!/Tools/Validation/ConfigureCharacterFaces.py
+!/Tools/Validation/ConfigureHairShadowProxy.py
+!/Tools/Validation/PreviewCharacterFaces.py
+!/Tools/Validation/PreviewToonImprovement.py
+!/Tools/Validation/RunToonImprovement.py
+!/Tools/Validation/RunToonPackage.py
+!/Tools/Validation/RunToonScene.py
+!/Tools/Validation/RunToonFinalChecks.py
+!/Tools/Art/ToonTest/
+/Tools/Art/ToonTest/*
+!/Tools/Art/ToonTest/BakeCharacterFaces.py
+!/Tools/Art/ToonTest/BuildHairShadowProxy.py
+!/Tools/Art/ToonTest/FaceDistanceField.py
+!/Tools/Art/ToonTest/improvement.json
+!/Tools/Validation/ConfigureCameraFade.py
+!/Tools/Validation/RunCameraFade.py
+!/Tools/Validation/PreviewCameraFade.py
+!/Tools/Validation/InspectSwordFade.py
