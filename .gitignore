@@ -265,3 +265,50 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/RunCameraFade.py
 !/Tools/Validation/PreviewCameraFade.py
 !/Tools/Validation/InspectSwordFade.py
+
+# Griffin and carnivorous plant import tools; source art and UE packages stay local.
+!/Tools/Art/CreatureModels/
+/Tools/Art/CreatureModels/*
+!/Tools/Art/CreatureModels/*.py
+!/Tools/Art/CreatureModels/manifest.json
+
+# Creature combat registration, tuning and reproducible checks.
+!/Tools/Validation/ConfigureCreatureCombat.py
+!/Tools/Validation/RunCreatureCombat.py
+!/Tools/Validation/ProbeCreatureCombat.py
+!/Tools/Validation/Data/CreatureCombat.json
+
+# Reproducible pre-PCG level dressing; source packs and captures remain local.
+!/Tools/Art/ForestRuins/
+/Tools/Art/ForestRuins/*
+!/Tools/Art/ForestRuins/RunLevelDressing.py
+!/Tools/Art/ForestRuins/InspectLevelDressing.py
+!/Tools/Art/ForestRuins/DressForestSanctuary.py
+!/Tools/Art/ForestRuins/PreviewLevelDressing.py
+
+# Procedural dungeon P0 creation and isolated acceptance probes.
+!/Tools/Art/ProceduralDungeon/
+/Tools/Art/ProceduralDungeon/*
+!/Tools/Art/ProceduralDungeon/*.py
+!/Tools/Validation/ProbeProceduralDungeon.py
+!/Tools/Validation/RunProceduralDungeon.py
+!/Tools/Validation/RunDungeonCombat.py
+!/Tools/Validation/ProbeDungeonCombat.py
+!/Tools/Validation/PreviewDungeonCombat.py
+!/Tools/Validation/RunDungeonExploration.py
+!/Tools/Validation/ProbeDungeonExploration.py
+!/Tools/Validation/ProbeDungeonP2.py
+
+# Reproducible disk-only motion planning inventory.
+!/Tools/Validation/InventoryMotionExpansion.py
+
+# Dark Knight boss authoring and Art animation inventory.
+!/Tools/Validation/Data/DarkKnightBoss.json
+!/Tools/Validation/ConfigureDarkKnightBoss.py
+!/Tools/Validation/InspectDarkKnightBoss.py
+!/Tools/Validation/InspectDarkKnightGrip.py
+!/Tools/Validation/RunDarkKnightBoss.py
+!/Tools/Validation/PreviewDarkKnightBoss.py
+!/Tools/Validation/ProbeDarkKnightBoss.py
+!/Tools/Validation/PlayDarkKnightBoss.py
+!/Tools/PlayDarkKnightBoss.ps1

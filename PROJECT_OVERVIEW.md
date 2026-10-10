@@ -1,5 +1,79 @@
 # UPlayground 프로젝트 분석 문서
 
+## 2026-10-10 모션 확장 AI 선택 진단
+
+- `pg.AI.DebugDecisions 1`로 스킬 후보 탈락·선택 우선순위·선택 유지·공격권 대기·GAS 실행·이동 요청 실패를 기록한다. `pg.AI.DebugEnemyID`로 적 ID를 필터링하며 기본 출력은 꺼짐이다.
+- 기존 선택 정책·전투 수치와 Art 후보/보스 사용 확정 목록은 유지한다. `RunCombatBT.py --debug-decisions`가 기존 6역할 검증과 진단 근거 수집을 연결한다. 범위·한계·검증 결과는 [AI 개선 기록](Docs/todo/MotionExpansion_AI_Implementation_Report.md)을 따른다.
+
+## 2026-10-10 Dark Knight 보스와 Art 모션 목록
+
+- Dark Knight 본체와 오른손 전용 검에 BossyEnemy 모션 11개 및 모델 사망 모션을 연결한 보스 15601을 추가했다. 공격 4종과 HP 50%의 2페이즈를 기존 GAS/역할 AI로 실행한다. 6스테이지 자동 스폰은 Dark Knight 1마리이며 같은 편성을 절차 생성 던전 보스방도 사용한다.
+- `Tools/PlayDarkKnightBoss.ps1` 또는 PIE의 `PGBossEncounter 15601`로 실행한다. 에셋 경로, 검증 근거 및 한계는 [보스 제작 기록](Docs/todo/DarkKnightBoss_Implementation_Report.md)을 따른다.
+- Art 전체 애니메이션 관련 17,376개를 [사용 후보 목록](Docs/todo/ArtAnimation_UsageCatalog.md)과 CSV에 수집했다. 직접 참조 없음은 미사용 확정이나 삭제 허가를 뜻하지 않는다.
+
+## 2026-10-10 절차 생성 던전 P2 환경·탐험 통합
+
+- 보물방에 기존 저장 트랜잭션과 고유 키를 사용하는 장비 보상 1개씩을 추가했다. 기본 104마리·16웨이브·필수 강화 7회는 유지한다. 미니맵에 발견한 보물·획득 상태·카메라 방향과 범례를 연결했다.
+- 제작 방 데이터 8종과 실제 PCG 환경 그래프를 적용한다. PCG 완료·출력 검증 후 이동 경로를 검사한다. 실행 객체는 저장·PIE 복제에서 제외하고 취소·재생성 시 정리한다. 외부 원본은 유지하며 던전 사본에만 환경 가림 재질을 적용한다.
+- 보스 문은 금빛 봉인·승강·사운드로 표현한다. 경계벽·장식은 두 카메라에서 플레이어·바닥을 가릴 때 인스턴스별로 디더링하며 충돌은 유지한다.
+- P2 최종 빌드·자동 테스트 60개·100시드 경로·3시드 완주·복구·렌더 검사를 통과했다. 720p/1080p 화면 11장을 확인했고 최종 렌더는 종료 코드 0이다. 기존 종료 접근 위반의 원인 해결을 확정한 것은 아니며 전체 수용·저장 복원·패키지 성능·직접 플레이는 P3에 남는다.
+- 도구는 `Tools/Validation/RunDungeonExploration.py`와 `Tools/Art/ProceduralDungeon/ConfigureDungeonP2.py`다. 검증 근거와 P3 범위는 [던전 구현 기록](Docs/todo/ProceduralDungeon_Implementation_Report.md)의 최신 P2 항목을 따른다. 아래 항목은 이전 이력이다.
+
+## 2026-10-10 절차 생성 던전 P2 발견형 미니맵
+
+- 방문한 방·확인한 연결·입구·발견한 목표와 보스·플레이어 위치를 좌측 상단 지도에 표시한다. 미탐험 출입구는 방향만 표시하며 미발견 방의 역할·보상을 노출하지 않는다.
+- `PGDungeonDiscoverySubsystem`이 월드별 발견 상태와 제한된 UI 스냅샷을 소유한다. 생성기에서 준비 완료·위치·목표를 전달하고 PGUI가 변경 이벤트를 구독한다. 전투·탐험 모드에서 동작하며 취소·재생성 시 초기화한다. 저장 복원은 아직 지원하지 않는다.
+- 검증 도구는 `Tools/Validation/RunDungeonExploration.py --step <build|automation|runtime|render>`다. 검증 근거와 남은 P2/P3 범위는 [던전 구현 기록](Docs/todo/ProceduralDungeon_Implementation_Report.md)의 P2 첫 단계 항목을 따른다.
+
+## 2026-10-10 절차 생성 던전 P1 전투 연결
+
+- 실제 이동 검증 후 StageManager에 목표방 5개와 보스방을 전달한다. 방 진입으로 기존 16웨이브·적 104마리·강화 7회를 실행하고 보스 진행 게이트·봉쇄·실패 시 해제를 연결했다. 일반방은 개방 상태로 유지한다.
+- `PGStageManagerDungeon.cpp`가 공간 진입과 도달 불가 감시를 맡고 기존 GAS 전투·강화·드랍 저장을 재사용한다. 생성기는 구조와 문을 소유한다. 스폰 실패·비정상 적 소멸·사망·재생성을 처리하고 정상 소환체 정리를 보존한다.
+- `Tools/PlayProceduralDungeon.ps1 -Seed 101026`은 격리 전투 프로필의 새 런을 시작한다. `-Preview`는 이전 공간 검증 모드다. 던전 시드에서 전투·진행 난수를 분리하며 체크포인트 복원은 아직 지원하지 않는다.
+- 검증은 `Tools/Validation/RunDungeonCombat.py --render`다. 결과와 P1/P2/P3 잔여 범위는 [던전 구현 기록](Docs/todo/ProceduralDungeon_Implementation_Report.md)의 P1 항목을 따른다. 아래 P0 항목은 이전 단계의 기록이다.
+- 최종 빌드·PG 자동 테스트 59개·3시드 자동 완주(16웨이브/104마리/강화 7회)·실패 복구·P0 실제 경로 100시드는 통과했다. 한국어 화면 3장은 확인했으나 렌더 종료 후 `0xC0000005`가 재현되어 전체 검증은 FAIL로 유지한다. 직접 조작 완주와 저장 복원·P2 환경/탐험 통합은 남아 있다.
+
+## 2026-10-10 ExternalAssets 공격 VFX 연결
+
+- 플레이어 공격·스킬 8종의 접점과 이동 검기에 `MixedVFX` 베기, `SlashTrail_SoftTofu` 순간 섬광, `Niagara/GroundRocks` 파편을 연결한다. 프로젝트 조정본은 `/Game/Art/PlayerCombatFX/External`이며 원본은 유지한다.
+- `PGPlayerSkillProfile.ExternalVFX`가 접점 형상별 시스템·변환·재생 시간을 소유한다. 기존 형상·빌드별 머티리얼을 함께 사용하며 피해 판정·모션 시각을 보존한다. 논리 시계·히트스톱·취소·검기 수명과 풀 반환 경로에 통합한다.
+- `Tools/Art/PlayerCombatVFX/RunExternalVFX.py`로 검사·빌드·적용·재로드·렌더를 재현한다. 백업, 에셋 선정, 검증 결과와 미검증 범위는 [VFX 구현 기록](Docs/todo/PlayerCombatVFX_Implementation_Report.md)을 따른다.
+
+## 2026-10-10 절차 생성 던전 P0 기반
+
+- 별도 `/Game/Maps/L_PG_ProceduralDungeon`에서 시드에 따라 8~12개 방과 통로를 생성한다. 입구·필수 목표 5개·보스 역할과 깊이 1~2의 선택 분기를 연결한다. 현재는 탐험 검증용이며 전투·보상 진행은 연결하지 않았다.
+- PGShared의 레이아웃 값 타입, PGData의 정의·유한 구조 생성기, UPlayground의 공간 조립·준비 게이트로 책임을 분리한다. 최대 3회 생성과 기본 배치, 요청 취소, 완전 내비게이션 경로 및 실제 캐릭터 캡슐 검사를 제공한다.
+- 기존 숲 폐성소의 조명·석재·이끼·나무 스타일을 재사용하고 `ExternalAssets/LevelDesign/RuinedCrypt` 소품을 던전 전용 사본에 연결한다. 기존 고정 맵과 외부 원본은 보존한다. PCG·제작 방 변형·미니맵은 후속 범위다.
+- 실행은 `Tools/PlayProceduralDungeon.ps1 -Seed 101026`, 재현 검증은 `Tools/Validation/RunProceduralDungeon.py --build-map --runtime --render`다. UE 5.8 에디터 빌드·1,000개 구조 시드·100개 실제 월드 경로와 재생성·취소 후 복구 검사를 통과했다. 상세 근거와 직접 플레이·전투·저장 통합의 잔여 범위는 [구현 기록](Docs/todo/ProceduralDungeon_Implementation_Report.md)을 따른다.
+- 최종 화면 3장은 확인했으나 렌더 에디터가 종료 로그 이후 `0xC0000005`로 반환해 전체 검증은 FAIL로 남긴다. 캡처 완료와 정상 종료 통과를 구분한다.
+
+## 2026-10-10 PCG 전 폐성소 환경 구성
+
+- 현재 기본 테스트 맵 `/Game/Maps/L_PG_ForestRuins`에 `ExternalAssets/LevelDesign/RuinedCrypt`의 예배당·기둥·묘비·석재 잔해와 `Dungeon_Pack`의 바닥 텍스처·봉헌 소품을 적용한다. 석재 광장과 흙·이끼가 연결되는 참배길, 외곽의 지붕 없는 예배당과 묘역을 구성했다.
+- 지면 전용 재질은 `/Game/Environment/ForestRuins/Sanctuary/M_PG_SanctuaryGround`다. 기존 지면·경계·전투 장애물의 충돌, PlayerStart와 내비게이션 액터 Transform을 유지하고 장식은 비충돌로 배치한다. 예배당·보관함은 환경 표현이며 입장·보상 기능은 없다.
+- 재현은 `Tools/Art/ForestRuins/RunLevelDressing.py`에 `InspectLevelDressing.py`, `DressForestSanctuary.py`, `PreviewLevelDressing.py --render`를 차례로 전달한다. 실행마다 기존 맵을 `Saved/LevelDressing/Backups`에 보관하며, 전용 태그의 장식만 교체한다. 과거 `BuildForestRuins.py`로 기본 숲을 다시 만들었다면 환경 구성을 재적용해야 한다.
+- 요청에 따라 빌드·패키징·전투 회귀 테스트는 실행하지 않는다. 검수 범위는 저장된 맵의 에디터 렌더와 쿼터뷰 화면이며, PCG 및 던전 진행 로직은 아직 구현하지 않았다. 배치 명세와 캡처 위치는 `Saved/LevelDressing/dressing.json`, `latest_preview.json`에서 확인한다.
+- 최종 맵을 새 에디터 프로세스에서 로드해 5개 시점의 캡처를 확인했다. 맵 저장 프로세스는 정상 종료했으나 최종 렌더 프리뷰 2회는 캡처와 종료 로그 기록 후 `0xC0000005`로 반환됐다. 카메라 참조 정리 후에도 재현되어 원인은 미확정이며, 정상 종료 검증 통과로 보지 않는다.
+
+## 2026-10-10 그리핀·식물 전투 AI와 스폰 연결
+
+- 몬스터 15501 그리핀(공중형), 15502 식물 본체·15503 뿌리(고정형), 15504 이동형 식물(지상형)을 `/Game/DataCenter/CreatureCombat`에 등록했다. 기존 역할 BT·GAS와 전용 메시·모션·스탯·피격·사망을 연결한다. 기존 검성 15401은 유지한다.
+- `PGEnemyDataRow.Mobility`가 지상·저공 비행·고정 이동을 구분한다. 본체의 15523 소환 스킬은 예고 후 이동형 2마리, 쿨다운 12초, 생존 상한 4마리를 사용한다. NavMesh·충돌을 검사하고 기존 스테이지 스폰 메시지·집계 정책에 연결하며 소환체 드랍과 본체 제거 후 잔존을 차단한다.
+- 기존 웨이브 총수·보상·보스를 유지하며 1~5구간 일부 적을 신규 타입으로 교체했다. 이동형 15504는 일반 웨이브에도 독립 등록된다. 원본은 `Tools/Validation/Data/CreatureCombat.json`, 백업·적용·재로드·실전 렌더 검사는 `RunCreatureCombat.py --apply --render`다.
+- Development 빌드·PG 자동 테스트 56개·공통 에셋 검사 schema 5·9스킬 실행·공중/고정/지상 이동·소환 상한/취소/정리·1~4구간 신규 타입의 실제 스폰을 확인했다. 근거와 저공 이동·전용 연출의 후속 범위는 [전투 통합 기록](Docs/todo/CreatureCombat_Implementation_Report.md)을 따른다.
+
+## 2026-10-10 그리핀·식충식물 에셋 이전
+
+- Unity의 두 캐릭터 팩을 `/Game/Art/CreatureModels`에 이전했다. 그리핀·식물 본체·이동형 식물·뿌리의 4메시, 원본 모션 42개, 몽타주 25개, 색상별 배치 BP 11종과 PBR 재질을 제공한다.
+- `/Game/Art/CreatureModels/Maps/L_PG_CreatureModels`에서 외형을 확인한다. `Tools/Art/CreatureModels/RunCreatureModels.py`가 임포트·재질 구성·재로드·렌더를 재현한다.
+- 새 프로세스의 참조·모션·본 포즈 검사와 16개 렌더를 확인했다. 기존 전투 데이터는 유지하며 AI/스폰/비행 이동 연결은 별도다. 사용법·근거·한계는 [에셋 이전 기록](Docs/todo/CreatureModels_Import_Report.md)을 따른다.
+
+## 2026-10-10 플레이어 기본 무기 카타나 01
+
+- `BP_PlayerWeapon_Sword`의 표시 메시를 CombatGirls School Katana Girl의 `Weapon_Katana01` 칼날로 교체한다. 기존 무기 태그·어빌리티·스탯·충돌 박스와 캐릭터별 그립을 유지한다.
+- `/Game/Art/PlayerKatana`에 칼날·칼집·원본 합본, 텍스처와 카메라 디더링(CPD 7) 재질을 저장한다. 실제 손 장착에는 칼날을 사용하고, 칼집·합본은 별도 에셋으로 제공한다.
+- 원본 보관·FBX 준비는 `Tools/Art/PlayerKatana/PrepareKatana.py`, 적용·재로드·그립 검사는 `Tools/Validation/RunPlayerKatana.py`다. 상세 범위는 [카타나 교체 기록](Docs/todo/PlayerKatana_Implementation_Report.md)을 따른다.
+
 ## 2026-10-10 액션 카메라 근접 디더링
 
 - 플레이어·카메라 근처 몬스터·각 부착 장비에 거리 기반 `DitherTemporalAA` 페이드를 적용한다. 실제 최종 시점과 대상별 캡슐 표면 거리를 사용하며 `CameraBodyClearance` 45cm에서 완전 숨김, 그 바깥 `CameraBodyFadeDistance` 100cm에서 점진적으로 복원한다. 3D 액션에만 적용하고 쿼터뷰 전환 시 전체 복원한다. 일반 재질 몬스터도 완전 숨김 거리에서는 내부 노출을 차단한다.
