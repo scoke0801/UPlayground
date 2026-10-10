@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
 #include "GameFramework/PlayerController.h"
+#include "PGData/DataAsset/Input/PGCameraSettings.h"
 #include "PGPlayerController.generated.h"
 
 class IPGClickableInterface;
@@ -19,6 +20,13 @@ class PGACTOR_API APGPlayerController : public APlayerController, public IGeneri
 {
 	GENERATED_BODY()
 public:
+    // Reserved CPD slot; zero means no camera fade. Shared with the toon material generator.
+    static constexpr int32 CameraFadeDataIndex = 7;
+    void ToggleSettings();
+    virtual void UpdateHiddenComponents(const FVector& ViewLocation, TSet<FPrimitiveComponentId>& HiddenComponents) override;
+    void CloseSettings();
+    void SetPreferredCameraMode(EPGCameraMode Mode);
+    void RefreshCameraInputMode();
     void ToggleInventory();
     void CloseInventory();
     void PickupNearest();
@@ -29,6 +37,12 @@ public:
     UFUNCTION(Exec) void PGInventoryProbe(FString Action = TEXT("open"));
     UFUNCTION(Exec) void PGRewardProbe(FString Action = TEXT("reward"));
 private:
+    UPROPERTY() TObjectPtr<class UPGUISettings> SettingsWidget;
+    TWeakObjectPtr<class APGCharacterPlayer> CameraHiddenPlayer;
+    TMap<TWeakObjectPtr<class UMeshComponent>, bool> CameraFadedMeshes;
+    void ResetCameraFade();
+    bool bCameraInputModeInitialized = false;
+    bool bActionMouseCaptured = false;
     UPROPERTY() TObjectPtr<class UPGUIInventory> InventoryWidget;
     UPROPERTY() TObjectPtr<class UPGUILootOverlay> LootOverlay;
 

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
+#include "PGData/DataAsset/Input/PGCameraSettings.h"
 #include "PGActor/Characters/PGCharacterBase.h"
 #include "PGCharacterPlayer.generated.h"
 
@@ -38,18 +39,41 @@ protected:
     bool bUseQuarterView = true;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|QuarterView")
     TObjectPtr<class UPGQuarterViewData> QuarterViewData;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|Movement", meta=(ClampMin="0.1"))
+    float MovementFacingInterpSpeed = 8.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|Movement")
+    TSoftObjectPtr<class UPGPlayerLocomotionData> LocomotionDataAsset;
     FVector LastAimDirection = FVector::ForwardVector;
     FVector LastAimPoint = FVector::ZeroVector;
     bool bHasAimPoint = false;
     FTimerHandle AimTimer;
     void UpdateAim();
     void ConfigureQuarterView();
+    EPGCameraMode CameraMode = EPGCameraMode::QuarterView;
+    float QuarterViewDistance = 1200.f;
+    float ActionCameraDistance = 450.f;
+    FRotator ActionCameraRotation = FRotator::ZeroRotator;
+    void UpdatePlayerCamera(float DeltaSeconds);
+    void ApplyActionCameraMouseDelta(float MouseX, float MouseY);
+    float TargetCameraDistance = 1200.f;
+    float CameraPitchOffset = 0.f;
+    FVector CombatCameraTargetOffset = FVector::ZeroVector;
 public:
+    void SetCameraMode(EPGCameraMode Mode);
+    bool ShouldHideForCamera(const FVector& ViewLocation, bool bWasHidden) const;
+    float GetCameraBodyFade(const FVector& ViewLocation, const class UCapsuleComponent* Body = nullptr) const;
+    EPGCameraMode GetCameraMode() const { return CameraMode; }
     bool IsGameplayInputAllowed() const;
     bool IsConsumableInputAllowed() const;
     class UPGConsumableComponent* GetConsumableComponent() const { return ConsumableComponent; }
     const UDataAsset_InputConfig* GetInputConfig() const { return InputConfigDataAsset; }
     void FaceAimDirection();
+    class UAnimSequence* GetLocomotionTurnAnimation() const { return TurnAnimation; }
+    float GetLocomotionTurnTime() const { return TurnAnimationTime; }
+    float GetLocomotionTurnPlayRate() const { return TurnEffectivePlayRate; }
+    bool IsLocomotionTurning() const { return bLocomotionTurning; }
+    void CancelLocomotionTurn();
+    const class UPGPlayerLocomotionData* GetLocomotionData() const { return LocomotionData; }
     bool GetGroundAimPoint(FVector& Point) const { Point = LastAimPoint; return bHasAimPoint; }
     void FaceDodgeDirection();
     FVector GetDodgeDirection();
@@ -68,8 +92,23 @@ private:
     UPROPERTY(VisibleAnywhere, Category="PG|Combat")
     TObjectPtr<class UPGPlayerAttackComponent> PlayerAttackComponent;
     friend class FPGDodgeDirectionTest;
+    friend class FPGCameraModesTest;
+    friend class FPGCameraCollisionTest;
     FVector MoveInputDirection = FVector::ZeroVector;
     bool bTrackAttackAim = false;
+    UPROPERTY(Transient) TObjectPtr<class UPGPlayerLocomotionData> LocomotionData;
+    UPROPERTY(Transient) TObjectPtr<class UAnimSequence> TurnAnimation;
+    bool bLocomotionTurning = false;
+    bool bCanStartStationaryTurn = true;
+    int32 TurnMotionIndex = INDEX_NONE;
+    float TurnAnimationTime = 0.f;
+    float TurnEffectivePlayRate = 1.f;
+    float TurnStartYaw = 0.f;
+    float TurnAngle = 0.f;
+    float TurnCooldown = 0.f;
+    float LastTurnSign = 1.f;
+    float CombatFacingUntil = 0.f;
+    float UpdateMovementFacing(const FVector& Direction, float DeltaSeconds);
     void RefreshCursorAim();
     bool bSkillWindowOpen = false;
     float AttackCancelFraction = 0.2f;
@@ -135,6 +174,7 @@ public:
 	
 protected:
 	virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
 

@@ -47,6 +47,15 @@
 #include "PGUI/Manager/PGDamageFloaterManager.h"
 #include "PGUI/Widget/Billboard/PGUIEnemyNamePlate.h"
 
+void APGCharacterEnemy::PostInitializeComponents()
+{
+    Super::PostInitializeComponents();
+    // Apply after Blueprint construction, including body hitboxes and custom meshes.
+    TInlineComponentArray<UPrimitiveComponent*> Primitives(this);
+    for (UPrimitiveComponent* Primitive : Primitives)
+        Primitive->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+}
+
 UPGPawnCombatComponent* APGCharacterEnemy::GetCombatComponent() const
 {
 	return CombatComponent;

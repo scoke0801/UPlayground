@@ -23,6 +23,7 @@ public:
 	virtual void NativeBeginPlay() override;
 	
 	virtual void NativeInitializeAnimation() override;
+    virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 
@@ -37,6 +38,20 @@ protected:
 	float EnterRelaxStateThreshold = 5.f;
 
 	float IdleElapsedTime = 0.f;
+
+	/** Actual movement speed for authored in-place locomotion, including hit-stop. */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category="AnimData|LocomotionData")
+	float HumanoidGroundSpeed = 0.f;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category="AnimData|LocomotionData")
+	bool bUseAirborneLocomotion = false;
+
+    UPROPERTY(Transient, BlueprintReadOnly, Category="AnimData|LocomotionData")
+    TObjectPtr<class UAnimSequence> LocomotionTurnAnimation;
+    UPROPERTY(Transient, BlueprintReadOnly, Category="AnimData|LocomotionData")
+    float LocomotionTurnTime = 0.f;
+    UPROPERTY(Transient, BlueprintReadOnly, Category="AnimData|LocomotionData")
+    float LocomotionTurnWeight = 0.f;
 
 private:
 	virtual void UpdateLocomotionDirection() override;

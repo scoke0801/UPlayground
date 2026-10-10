@@ -480,7 +480,7 @@ void UPGUIManager::OnStagePresentation(const IPGEventData* Event)
     const auto& View = *static_cast<const FPGStagePresentation*>(Event);
     if (!View.Owner.IsValid() || View.Owner->GetWorld() != GetWorld()) return;
     if (View.bClose) { if (StageOwner == View.Owner) CloseStageWindow(); return; }
-    if (auto* PC = Cast<APGPlayerController>(GetFirstPlayerController())) PC->CloseInventory();
+    if (auto* PC = Cast<APGPlayerController>(GetFirstPlayerController())) { PC->CloseSettings(); PC->CloseInventory(); }
     CloseStageWindow();
     APlayerController* PC = GetFirstPlayerController();
     if (!PC || !PC->IsLocalController()) return;
@@ -545,6 +545,8 @@ void UPGUIManager::ApplyModalInput()
         Input.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
         PC->bShowMouseCursor = true;
         PC->SetInputMode(Input);
+        // Paused worlds may not tick the controller before this modal closes.
+        if (auto* PGPC = Cast<APGPlayerController>(PC)) PGPC->RefreshCameraInputMode();
     }
     else
     {
@@ -558,5 +560,6 @@ void UPGUIManager::ApplyModalInput()
         if (FSlateApplication::IsInitialized()) FSlateApplication::Get().SetAllUserFocusToGameViewport();
         ModalPlayer.Reset();
         bModalMoveLock = bPausedByModal = false;
+        if (auto* PGPC = Cast<APGPlayerController>(PC)) PGPC->RefreshCameraInputMode();
     }
 }

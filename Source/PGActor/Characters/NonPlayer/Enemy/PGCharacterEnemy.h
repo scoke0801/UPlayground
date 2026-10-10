@@ -92,6 +92,7 @@ private:
 
 public:
 	APGCharacterEnemy();
+    virtual void PostInitializeComponents() override;
     /** Locomotion asset for the native imported-creature animation graph. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|Motion")
     TObjectPtr<class UBlendSpace> CreatureLocomotion;

@@ -1,8 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PGPlayerController.h"
+#include "Components/MeshComponent.h"
 #include "PGActor/Manager/PGStageManager.h"
 #include "PGUI/Widget/Window/PGUIInventory.h"
+#include "PGUI/Widget/Window/PGUISettings.h"
 #include "PGUI/Widget/HUD/PGUIMainHUD.h"
 #include "PGUI/Widget/Billboard/PGUILootOverlay.h"
 #include "PGUI/Manager/PGUIManager.h"
@@ -12,6 +14,7 @@
 #include "PGActor/Progression/PGLootDrop.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "EngineUtils.h"
 #include "InputCoreTypes.h"
@@ -28,6 +31,68 @@ APGPlayerController::APGPlayerController(const FObjectInitializer& ObjectInitial
 	PlayerTeamId = FGenericTeamId(0);
 	bEnableClickEvents = true;
 	bEnableMouseOverEvents = true;
+}
+
+void APGPlayerController::ResetCameraFade()
+{
+    for (const auto& Entry : CameraFadedMeshes)
+        if (UMeshComponent* Mesh = Entry.Key.Get())
+        {
+            Mesh->SetCustomPrimitiveDataFloat(CameraFadeDataIndex, 0.f);
+            Mesh->SetRenderCustomDepth(Entry.Value);
+        }
+    CameraFadedMeshes.Reset();
+}
+
+void APGPlayerController::UpdateHiddenComponents(const FVector& ViewLocation, TSet<FPrimitiveComponentId>& HiddenComponents)
+{
+    Super::UpdateHiddenComponents(ViewLocation, HiddenComponents);
+    APGCharacterPlayer* ViewCharacter = Cast<APGCharacterPlayer>(GetPawn());
+    if (!ViewCharacter || GetViewTarget() != ViewCharacter || ViewCharacter->GetCameraMode() != EPGCameraMode::Action3D)
+    {
+        ResetCameraFade();
+        CameraHiddenPlayer.Reset();
+        return;
+    }
+    if (CameraHiddenPlayer.Get() != ViewCharacter) ResetCameraFade();
+    CameraHiddenPlayer = ViewCharacter;
+    TSet<TWeakObjectPtr<UMeshComponent>> CurrentMeshes;
+    auto FadeCharacter = [&](ACharacter* Subject, float Fade)
+    {
+        if (Fade <= 0.f) return;
+        TArray<AActor*> Actors;
+        Subject->GetAttachedActors(Actors, true, true);
+        Actors.Add(Subject);
+        for (AActor* Actor : Actors)
+        {
+            TInlineComponentArray<UMeshComponent*> Meshes(Actor);
+            for (UMeshComponent* Mesh : Meshes)
+            {
+                CurrentMeshes.Add(Mesh);
+                if (!CameraFadedMeshes.Contains(Mesh)) CameraFadedMeshes.Add(Mesh, Mesh->bRenderCustomDepth);
+                Mesh->SetCustomPrimitiveDataFloat(CameraFadeDataIndex, Fade);
+                // A depth-derived outline would trace every dither hole. Suppress it while fading.
+                Mesh->SetRenderCustomDepth(false);
+                if (Fade >= 1.f) HiddenComponents.Add(Mesh->GetPrimitiveSceneId());
+            }
+        }
+    };
+    FadeCharacter(ViewCharacter, ViewCharacter->GetCameraBodyFade(ViewLocation));
+    // Cheap capsule checks only; enumerate meshes/attachments for nearby enemies.
+    // Do not rely on collision overlaps: death disables queries before the body disappears.
+    for (TActorIterator<APGCharacterEnemy> It(GetWorld()); It; ++It)
+        FadeCharacter(*It, ViewCharacter->GetCameraBodyFade(ViewLocation, It->GetCapsuleComponent()));
+    // Equipment can be detached/replaced while the camera is inside the fade zone.
+    for (auto It = CameraFadedMeshes.CreateIterator(); It; ++It)
+        if (!CurrentMeshes.Contains(It.Key()))
+        {
+            if (UMeshComponent* Mesh = It.Key().Get())
+            {
+                Mesh->SetCustomPrimitiveDataFloat(CameraFadeDataIndex, 0.f);
+                Mesh->SetRenderCustomDepth(It.Value());
+            }
+            It.RemoveCurrent();
+        }
 }
 
 ETeamAttitude::Type APGPlayerController::GetTeamAttitudeTowards(const AActor& Other) const
@@ -67,11 +132,13 @@ void APGPlayerController::BeginPlay()
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	InputMode.SetHideCursorDuringCapture(false); // 커서 숨김 방지
 	SetInputMode(InputMode);
+    RefreshCameraInputMode();
 }
 
 void APGPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
+    InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ThisClass::ToggleSettings).bExecuteWhenPaused = true;
     InputComponent->BindKey(EKeys::I, IE_Pressed, this, &ThisClass::ToggleInventory).bExecuteWhenPaused = true;
     InputComponent->BindKey(EKeys::E, IE_Pressed, this, &ThisClass::PickupNearest);
 
@@ -89,9 +156,10 @@ void APGPlayerController::SetupInputComponent()
 void APGPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+    RefreshCameraInputMode();
 
 	// 마우스 오버 체크 활성화 시
-	if (bEnableMouseOverCheck)
+	if (bEnableMouseOverCheck && bShowMouseCursor)
 	{
 		// 마우스 이동량 확인
 		FVector2D MouseDelta;
@@ -108,6 +176,7 @@ void APGPlayerController::Tick(float DeltaTime)
 void APGPlayerController::HandleMouseClick()
 {
 	bLastClickConsumed = false;
+    if (!bShowMouseCursor) return;
     if (IsMoveInputIgnored() || IsPointerOverUI()) { bLastClickConsumed = true; return; }
 	
 	FVector HitLocation;
@@ -224,7 +293,7 @@ void APGPlayerController::CheckMouseOver()
 
 bool APGPlayerController::IsPointerOverUI() const
 {
-    if (!FSlateApplication::IsInitialized()) return false;
+    if (!bShowMouseCursor || !FSlateApplication::IsInitialized()) return false;
     FSlateApplication& Slate = FSlateApplication::Get();
     const FWidgetPath Path = Slate.LocateWindowUnderMouse(Slate.GetCursorPos(), Slate.GetInteractiveTopLevelWindows());
     for (int32 Index = 0; Index < Path.Widgets.Num(); ++Index)
@@ -245,7 +314,9 @@ void APGPlayerController::CloseInventory()
 
 void APGPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ResetCameraFade();
     if (LootOverlay) { LootOverlay->RemoveFromParent(); LootOverlay = nullptr; }
+    CloseSettings();
     CloseInventory();
     Super::EndPlay(EndPlayReason);
 }
@@ -290,4 +361,71 @@ void APGPlayerController::PGHUDCapture()
         FScreenshotRequest::RequestScreenshot(TEXT("PGMainHUD"), true, true);
     }), 3.f, false);
 #endif
+}
+
+void APGPlayerController::ToggleSettings()
+{
+    if (SettingsWidget) { CloseSettings(); return; }
+    if (!IsLocalController()) return;
+    // Do not discard unsaved inventory edits or cover a reward/result decision.
+    auto* UI = UPGUIManager::Get(this);
+    if (!UI || UI->IsWindowOpen()) return;
+    SettingsWidget = CreateWidget<UPGUISettings>(this);
+    if (!SettingsWidget) return;
+    if (auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn()))
+        if (auto* ASC = LocalCharacter->GetPGAbilitySystemComponent()) ASC->ClearBufferedInput();
+    SettingsWidget->AddToViewport(110);
+    UI->AcquireModalInput(SettingsWidget, true);
+    SettingsWidget->SetKeyboardFocus();
+    bCameraInputModeInitialized = false;
+}
+
+void APGPlayerController::CloseSettings()
+{
+    if (!SettingsWidget) return;
+    if (auto* UI = UPGUIManager::Get(this)) UI->ReleaseModalInput(SettingsWidget);
+    SettingsWidget->RemoveFromParent();
+    SettingsWidget = nullptr;
+    RefreshCameraInputMode();
+}
+
+void APGPlayerController::SetPreferredCameraMode(EPGCameraMode Mode)
+{
+    if (!IsLocalController()) return;
+    auto* Settings = GetMutableDefault<UPGCameraSettings>();
+    Settings->CameraMode = Mode == EPGCameraMode::Action3D ? Mode : EPGCameraMode::QuarterView;
+    Settings->SaveConfig();
+    if (auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn())) LocalCharacter->SetCameraMode(Settings->GetCameraMode());
+    bCameraInputModeInitialized = false;
+    RefreshCameraInputMode();
+}
+
+void APGPlayerController::RefreshCameraInputMode()
+{
+    if (!IsLocalController()) return;
+    if (const auto* UI = UPGUIManager::Get(this); UI && UI->IsWindowOpen())
+    {
+        bCameraInputModeInitialized = false;
+        return;
+    }
+    const auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
+    const bool bCapture = LocalCharacter && LocalCharacter->GetCameraMode() == EPGCameraMode::Action3D
+        && !IsInputKeyDown(EKeys::LeftAlt) && !IsInputKeyDown(EKeys::RightAlt) && !IsPaused();
+    if (bCameraInputModeInitialized && bCapture == bActionMouseCaptured) return;
+    bCameraInputModeInitialized = true;
+    bActionMouseCaptured = bCapture;
+    bShowMouseCursor = !bCapture;
+    if (bCapture)
+    {
+        FInputModeGameOnly Input;
+        Input.SetConsumeCaptureMouseDown(false);
+        SetInputMode(Input);
+    }
+    else
+    {
+        FInputModeGameAndUI Input;
+        Input.SetHideCursorDuringCapture(false);
+        Input.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        SetInputMode(Input);
+    }
 }

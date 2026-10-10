@@ -14,7 +14,10 @@
 #include "PGUI/Manager/PGUIManager.h"
 
 #include "EnhancedInputSubsystems.h"
+#include "InputCoreTypes.h"
 #include "Animation/AnimMontage.h"
+#include "Animation/AnimSequence.h"
+#include "PGData/DataAsset/Input/PGPlayerLocomotionData.h"
 #include "Camera/CameraComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Components/CapsuleComponent.h"
@@ -45,6 +48,9 @@
 
 APGCharacterPlayer::APGCharacterPlayer()
 {
+    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bStartWithTickEnabled = false;
+    LocomotionDataAsset = TSoftObjectPtr<UPGPlayerLocomotionData>(FSoftObjectPath(TEXT("/Game/DataCenter/PlayerTurns/DA_PlayerLocomotion.DA_PlayerLocomotion")));
     ConsumableComponent = CreateDefaultSubobject<UPGConsumableComponent>(TEXT("ConsumableComponent"));
     PlayerDashComponent = CreateDefaultSubobject<UPGPlayerDashComponent>(TEXT("PlayerDashComponent"));
     PlayerAttackComponent = CreateDefaultSubobject<UPGPlayerAttackComponent>(TEXT("PlayerAttackComponent"));
@@ -102,6 +108,7 @@ void APGCharacterPlayer::BeginPlay()
     const auto* ConsumableProfile = UPGProfileSubsystem::Get(this);
     ConsumableComponent->Initialize(ConsumableProfile && ConsumableProfile->GetCatalog() ? ConsumableProfile->GetCatalog()->HealingPotion.Get() : nullptr);
     ConfigureQuarterView();
+    LocomotionData = LocomotionDataAsset.LoadSynchronous();
 
 	InitUIComponents();
 
@@ -277,6 +284,7 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
     MoveInputDirection = FVector::ZeroVector;
 	if (!IsGameplayInputAllowed())
 	{
+		CancelLocomotionTurn();
 		return;
 	}
 	
@@ -293,18 +301,101 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 		const FVector MovementDirection = (ForwardDirection * MovementVector.Y + RightDirection * MovementVector.X).GetSafeNormal();
         MoveInputDirection = MovementDirection;
         
-		AddMovementInput(MovementDirection, 1.0f);
-        
-		// 이동 방향으로 캐릭터 회전 (카메라는 독립적으로 공전)
-		const FRotator TargetRotation = MovementDirection.Rotation();
-		const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, GetWorld()->GetDeltaSeconds(), 8.0f);
-		if (!bUseQuarterView) SetActorRotation(NewRotation);
+		AddMovementInput(MovementDirection, UpdateMovementFacing(MovementDirection, GetWorld()->GetDeltaSeconds()));
+        bCanStartStationaryTurn = false;
 	}
+    else { CancelLocomotionTurn(); bCanStartStationaryTurn = true; }
+}
+
+void APGCharacterPlayer::CancelLocomotionTurn()
+{
+    if (bLocomotionTurning) TurnCooldown = GetWorld()->GetTimeSeconds() + (LocomotionData ? LocomotionData->BlendOutSeconds : .12f);
+    bLocomotionTurning = false;
+    // Retain the last pose while the graph blends back to directional locomotion.
+}
+
+float APGCharacterPlayer::UpdateMovementFacing(const FVector& Direction, float DeltaSeconds)
+{
+    const UAnimInstance* Anim = GetMesh()->GetAnimInstance();
+    if (PlayerAttackComponent->IsRunning() && LocomotionData)
+        CombatFacingUntil = GetWorld()->GetTimeSeconds() + LocomotionData->CombatStrafeSeconds;
+    if (bTrackAttackAim || PlayerAttackComponent->IsRunning() || PlayerDashComponent->IsDashing() ||
+        GetCharacterMovement()->IsFalling() || (Anim && Anim->IsAnyMontagePlaying()))
+    {
+        CancelLocomotionTurn();
+        return 1.f;
+    }
+    // Actual local velocity selects left/right/back (including diagonals) in BS_PlayerSword.
+    // Do not rotate that direction back to zero while chaining combat movement.
+    if (GetWorld()->GetTimeSeconds() < CombatFacingUntil)
+    {
+        CancelLocomotionTurn();
+        return 1.f;
+    }
+    const float TargetYaw = Direction.Rotation().Yaw;
+    float DeltaYaw = FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, TargetYaw);
+    // Exact reversals have two equally short paths; keep their choice stable under tiny input noise.
+    if (FMath::Abs(DeltaYaw) > 179.f) DeltaYaw = 180.f * LastTurnSign;
+    if (bLocomotionTurning && FMath::Abs(FMath::FindDeltaAngleDegrees(TurnStartYaw + TurnAngle, TargetYaw)) > LocomotionData->RetargetCancelAngle)
+        CancelLocomotionTurn();
+
+    // Absolute time also expires the blend-out guard while input is released or combat owns facing.
+    if (!bLocomotionTurning && GetWorld()->GetTimeSeconds() >= TurnCooldown && LocomotionData &&
+        (LocomotionData->bAllowMovingTurns ||
+            (bCanStartStationaryTurn && GetVelocity().Size2D() <= LocomotionData->StationarySpeed)))
+    {
+        const float Threshold = GetVelocity().Size2D() <= LocomotionData->StationarySpeed
+            ? LocomotionData->StartTurnAngle : LocomotionData->MovingPivotAngle;
+        if (FMath::Abs(DeltaYaw) >= Threshold)
+        {
+            float BestError = MAX_flt;
+            int32 BestIndex = INDEX_NONE;
+            for (int32 Index = 0; Index < LocomotionData->Turns.Num(); ++Index)
+            {
+                const auto& Turn = LocomotionData->Turns[Index];
+                if (!Turn.Animation || Turn.Animation->GetPlayLength() <= SMALL_NUMBER || Turn.RotationProgress.Num() < 2 || Turn.Angle * DeltaYaw <= 0.f) continue;
+                const float Error = FMath::Abs(Turn.Angle - DeltaYaw);
+                if (Error < BestError) { BestError = Error; BestIndex = Index; }
+            }
+            if (BestIndex != INDEX_NONE)
+            {
+                TurnMotionIndex = BestIndex;
+                TurnAnimation = LocomotionData->Turns[BestIndex].Animation;
+                TurnAnimationTime = 0.f;
+                TurnEffectivePlayRate = FMath::Max(FMath::Max(.1f, LocomotionData->TurnPlayRate),
+                    TurnAnimation->GetPlayLength() / FMath::Max(.1f, LocomotionData->MaxTurnSeconds));
+                TurnStartYaw = GetActorRotation().Yaw;
+                TurnAngle = DeltaYaw;
+                LastTurnSign = FMath::Sign(DeltaYaw);
+                bLocomotionTurning = true;
+            }
+        }
+    }
+    if (bLocomotionTurning)
+    {
+        const auto& Turn = LocomotionData->Turns[TurnMotionIndex];
+        TurnAnimationTime = FMath::Min(TurnAnimationTime + DeltaSeconds * TurnEffectivePlayRate, TurnAnimation->GetPlayLength());
+        const float Fraction = TurnAnimationTime / TurnAnimation->GetPlayLength();
+        const float Sample = Fraction * (Turn.RotationProgress.Num() - 1);
+        const int32 Index = FMath::Min(FMath::FloorToInt(Sample), Turn.RotationProgress.Num() - 2);
+        const float Progress = FMath::Lerp(Turn.RotationProgress[Index], Turn.RotationProgress[Index + 1], Sample - Index);
+        SetActorRotation(FRotator(0.f, TurnStartYaw + TurnAngle * Progress, 0.f));
+        const float Resume = FMath::Clamp(LocomotionData->MovementResumeFraction, 0.f, .95f);
+        // Hand back to the directional gait as acceleration resumes, rather than
+        // translating a full-weight planted turn pose across the floor.
+        const float MovementScale = FMath::SmoothStep(Resume, FMath::Min(Resume + .25f, 1.f), Fraction);
+        if (Fraction >= 1.f) CancelLocomotionTurn();
+        return MovementScale;
+    }
+    SetActorRotation(FMath::RInterpTo(GetActorRotation(), FRotator(0.f, TargetYaw, 0.f), DeltaSeconds, MovementFacingInterpSpeed));
+    return 1.f;
 }
 
 void APGCharacterPlayer::Input_MoveReleased(const FInputActionValue& InputActionValue)
 {
     MoveInputDirection = FVector::ZeroVector;
+    bCanStartStationaryTurn = true;
+    CancelLocomotionTurn();
 }
 
 void APGCharacterPlayer::Input_Look(const FInputActionValue& InputActionValue)
@@ -346,10 +437,13 @@ void APGCharacterPlayer::Input_Look(const FInputActionValue& InputActionValue)
 void APGCharacterPlayer::Input_Zoom(const FInputActionValue& InputActionValue)
 {
     if (!IsGameplayInputAllowed()) return;
-	const float Delta = InputActionValue.Get<float>();
-
-	float NewLength = FMath::Clamp(CameraBoom->TargetArmLength - Delta * CameraUpdateSpeed, CameraMinOffset, CameraMaxOffset);
-	CameraBoom->TargetArmLength = NewLength;
+    const APGPlayerController* PC = Cast<APGPlayerController>(Controller);
+    if (PC && PC->IsPointerOverUI()) return;
+    const float Delta = InputActionValue.Get<float>();
+    if (bUseQuarterView)
+        TargetCameraDistance = FMath::Clamp(TargetCameraDistance - Delta * CameraUpdateSpeed, CameraMinOffset, CameraMaxOffset);
+    else
+        CameraBoom->TargetArmLength = FMath::Clamp(CameraBoom->TargetArmLength - Delta * CameraUpdateSpeed, CameraMinOffset, CameraMaxOffset);
 }
 
 void APGCharacterPlayer::Input_AbilityInputPressed(FGameplayTag InInputTag)
@@ -424,16 +518,144 @@ void APGCharacterPlayer::ConfigureQuarterView()
     CameraBoom->bUsePawnControlRotation = false;
     CameraBoom->bInheritPitch = CameraBoom->bInheritYaw = CameraBoom->bInheritRoll = false;
     CameraBoom->SetUsingAbsoluteRotation(true);
-    CameraBoom->SetWorldRotation(Data->Rotation);
-    CameraMinOffset = FMath::Max(100.f, Data->MinDistance);
+    CameraBoom->SetWorldRotation(FRotator(Data->Rotation.Pitch, Data->Rotation.Yaw, 0.f));
+    CameraMinOffset = FMath::Clamp(Data->CloseUpDistance, 100.f, FMath::Max(100.f, Data->MinDistance));
     CameraMaxOffset = FMath::Max(CameraMinOffset, Data->MaxDistance);
     CameraBoom->TargetArmLength = FMath::Clamp(Data->Distance, CameraMinOffset, CameraMaxOffset);
     CameraBoom->bEnableCameraLag = Data->LagSpeed > 0.f;
     CameraBoom->CameraLagSpeed = FMath::Max(0.f, Data->LagSpeed);
-    CameraUpdateSpeed = Data->ZoomSpeed;
+    // Blueprint defaults must not disable world collision for either player view.
+    CameraBoom->bDoCollisionTest = true;
+    CameraBoom->ProbeChannel = ECC_Camera;
+    CameraBoom->ProbeSize = FMath::Max(12.f, Data->CameraProbeRadius);
+    CameraBoom->bEnableCameraRotationLag = false;
+    CameraBoom->bUseCameraLagSubstepping = true;
+    CameraBoom->CameraLagMaxTimeStep = 1.f / 60.f;
+    CameraBoom->CameraLagMaxDistance = FMath::Max(0.f, Data->CameraMaxLagDistance);
+    // Keep the view at the swept socket; a child offset bypasses collision protection.
+    FollowCamera->SetRelativeLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
+    CameraUpdateSpeed = FMath::Max(1.f, Data->ZoomSpeed);
+    TargetCameraDistance = CameraBoom->TargetArmLength;
+    CameraPitchOffset = 0.f;
+    CombatCameraTargetOffset = CameraBoom->TargetOffset;
+    CameraBoom->AddTickPrerequisiteActor(this);
+    SetActorTickEnabled(true);
+    QuarterViewDistance = TargetCameraDistance;
+    ActionCameraDistance = Data->ActionDistance;
+    ActionCameraRotation = FRotator(Data->ActionPitch, GetActorRotation().Yaw, 0.f);
+    SetCameraMode(GetDefault<UPGCameraSettings>()->GetCameraMode());
+    UpdatePlayerCamera(0.f);
     LastAimDirection = GetActorForwardVector();
     GetWorldTimerManager().SetTimer(AimTimer, this, &ThisClass::UpdateAim, 1.f / 60.f, true);
 }
+void APGCharacterPlayer::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    if (!bUseQuarterView || !IsLocallyControlled()) return;
+    UpdatePlayerCamera(DeltaSeconds);
+}
+
+void APGCharacterPlayer::SetCameraMode(EPGCameraMode Mode)
+{
+    Mode = Mode == EPGCameraMode::Action3D ? Mode : EPGCameraMode::QuarterView;
+    if (CameraMode == Mode) return;
+    const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
+    if (CameraMode == EPGCameraMode::QuarterView) QuarterViewDistance = TargetCameraDistance;
+    else ActionCameraDistance = TargetCameraDistance;
+    CameraMode = Mode;
+    if (Mode == EPGCameraMode::Action3D)
+    {
+        CameraMinOffset = FMath::Max(100.f, Data->ActionMinDistance);
+        CameraMaxOffset = FMath::Max(CameraMinOffset, Data->ActionMaxDistance);
+        TargetCameraDistance = FMath::Clamp(ActionCameraDistance, CameraMinOffset, CameraMaxOffset);
+    }
+    else
+    {
+        CameraMinOffset = FMath::Clamp(Data->CloseUpDistance, 100.f, FMath::Max(100.f, Data->MinDistance));
+        CameraMaxOffset = FMath::Max(CameraMinOffset, Data->MaxDistance);
+        TargetCameraDistance = FMath::Clamp(QuarterViewDistance, CameraMinOffset, CameraMaxOffset);
+    }
+    // Do not blend through a wall or carry a ground target from the previous view.
+    CameraBoom->TargetArmLength = TargetCameraDistance;
+    bHasAimPoint = false;
+    UpdatePlayerCamera(0.f);
+}
+
+float APGCharacterPlayer::GetCameraBodyFade(const FVector& ViewLocation, const UCapsuleComponent* Body) const
+{
+    if (!bUseQuarterView || CameraMode != EPGCameraMode::Action3D) return 0.f;
+    const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
+    const UCapsuleComponent* Capsule = Body ? Body : GetCapsuleComponent();
+    const float Radius = Capsule->GetScaledCapsuleRadius();
+    const FVector Axis = Capsule->GetUpVector() * FMath::Max(0.f, Capsule->GetScaledCapsuleHalfHeight() - Radius);
+    const FVector Center = Capsule->GetComponentLocation();
+    const float Distance = FMath::Sqrt(FMath::PointDistToSegmentSquared(ViewLocation, Center - Axis, Center + Axis));
+    const float Inner = Radius + FMath::Max(0.f, Data->CameraBodyClearance);
+    return 1.f - FMath::SmoothStep(Inner, Inner + FMath::Max(1.f, Data->CameraBodyFadeDistance), Distance);
+}
+
+bool APGCharacterPlayer::ShouldHideForCamera(const FVector& ViewLocation, bool bWasHidden) const
+{
+    if (!bUseQuarterView || CameraMode != EPGCameraMode::Action3D) return false;
+    const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
+    const UCapsuleComponent* Capsule = GetCapsuleComponent();
+    const float Radius = Capsule->GetScaledCapsuleRadius();
+    const FVector Axis = Capsule->GetUpVector() * FMath::Max(0.f, Capsule->GetScaledCapsuleHalfHeight() - Radius);
+    const FVector Center = Capsule->GetComponentLocation();
+    const float Clearance = Radius + FMath::Max(0.f, Data->CameraBodyClearance)
+        + (bWasHidden ? FMath::Max(0.f, Data->CameraBodyHideHysteresis) : 0.f);
+    return FMath::PointDistToSegmentSquared(ViewLocation, Center - Axis, Center + Axis) < FMath::Square(Clearance);
+}
+
+void APGCharacterPlayer::UpdatePlayerCamera(float DeltaSeconds)
+{
+    const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
+    CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetCameraDistance,
+        DeltaSeconds, FMath::Max(.1f, Data->ZoomInterpSpeed));
+    if (CameraMode == EPGCameraMode::Action3D)
+    {
+        const float MinPitch = FMath::Clamp(Data->ActionMinPitch, -89.f, 89.f);
+        const float MaxPitch = FMath::Clamp(Data->ActionMaxPitch, MinPitch, 89.f);
+        APGPlayerController* PC = Cast<APGPlayerController>(Controller);
+        if (DeltaSeconds > 0.f && PC && !PC->bShowMouseCursor && IsGameplayInputAllowed())
+        {
+            float MouseX = 0.f, MouseY = 0.f;
+            PC->GetInputMouseDelta(MouseX, MouseY);
+            ApplyActionCameraMouseDelta(MouseX, MouseY);
+        }
+        ActionCameraRotation.Pitch = FMath::Clamp(ActionCameraRotation.Pitch, MinPitch, MaxPitch);
+        ActionCameraRotation.Roll = 0.f;
+        CameraBoom->SetWorldRotation(ActionCameraRotation);
+        CameraBoom->TargetOffset = CombatCameraTargetOffset + FVector(0.f, 0.f, Data->ActionFocusHeight);
+        return;
+    }
+    const float TransitionDistance = FMath::Clamp(Data->MinDistance, CameraMinOffset, CameraMaxOffset);
+    const float CloseUpAlpha = TransitionDistance > CameraMinOffset + KINDA_SMALL_NUMBER
+        ? 1.f - FMath::SmoothStep(CameraMinOffset, TransitionDistance, CameraBoom->TargetArmLength) : 0.f;
+    const float BasePitch = FMath::Lerp(Data->Rotation.Pitch, Data->CloseUpPitch, CloseUpAlpha);
+    const float MinPitch = FMath::Clamp(Data->MinPitch, -89.f, -5.f);
+    const float MaxPitch = FMath::Clamp(Data->MaxPitch, MinPitch, -5.f);
+    APGPlayerController* PC = Cast<APGPlayerController>(Controller);
+    // Keep cursor aiming independent of the camera. Only middle-button vertical drag changes pitch.
+    if (DeltaSeconds > 0.f && PC && IsGameplayInputAllowed() && !PC->IsPointerOverUI() && PC->IsInputKeyDown(EKeys::MiddleMouseButton))
+    {
+        float MouseX = 0.f, MouseY = 0.f;
+        PC->GetInputMouseDelta(MouseX, MouseY);
+        const float CurrentPitch = FMath::Clamp(BasePitch + CameraPitchOffset, MinPitch, MaxPitch);
+        CameraPitchOffset = FMath::Clamp(CurrentPitch - MouseY * MouseSensitivityY, MinPitch, MaxPitch) - BasePitch;
+    }
+    CameraBoom->SetWorldRotation(FRotator(FMath::Clamp(BasePitch + CameraPitchOffset, MinPitch, MaxPitch), Data->Rotation.Yaw, 0.f));
+    CameraBoom->TargetOffset = CombatCameraTargetOffset + FVector(0.f, 0.f, Data->CloseUpFocusHeight * CloseUpAlpha);
+}
+
+void APGCharacterPlayer::ApplyActionCameraMouseDelta(float MouseX, float MouseY)
+{
+    // Raw mouse delta is displacement: do not multiply by frame time.
+    // Positive raw MouseY looks up, matching the requested reversal of action mode.
+    ActionCameraRotation.Yaw = FRotator::NormalizeAxis(ActionCameraRotation.Yaw + MouseX * MouseSensitivityX);
+    ActionCameraRotation.Pitch += MouseY * MouseSensitivityY;
+}
+
 bool APGCharacterPlayer::IsGameplayInputAllowed() const
 {
     const APlayerController* PC = Cast<APlayerController>(Controller);
@@ -444,11 +666,14 @@ bool APGCharacterPlayer::IsGameplayInputAllowed() const
 }
 void APGCharacterPlayer::UpdateAim()
 {
-    if (!IsGameplayInputAllowed()) { MoveInputDirection = FVector::ZeroVector; AbilitySystemComponent->ClearBufferedInput(); return; }
+    if (!IsGameplayInputAllowed()) { MoveInputDirection = FVector::ZeroVector; CancelLocomotionTurn(); AbilitySystemComponent->ClearBufferedInput(); return; }
+    if (PlayerAttackComponent->IsRunning() && LocomotionData)
+        CombatFacingUntil = GetWorld()->GetTimeSeconds() + LocomotionData->CombatStrafeSeconds;
     APGPlayerController* PC = Cast<APGPlayerController>(Controller);
     if (!PC || PC->IsPointerOverUI()) return;
-    // Attacks track the cursor; dodge/hit-reaction montages retain their authored facing.
-    if (bTrackAttackAim || !GetMesh()->GetAnimInstance() || !GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
+    // Keep cursor targeting current without overriding locomotion or idle facing.
+    // Attacks explicitly acquire aim on activation; legacy tracking remains opt-in.
+    if (bTrackAttackAim)
         FaceAimDirection();
     else RefreshCursorAim();
 }
@@ -471,7 +696,15 @@ void APGCharacterPlayer::RefreshCursorAim()
     APGPlayerController* PC = Cast<APGPlayerController>(Controller);
     if (!bUseQuarterView || !PC || PC->IsPointerOverUI()) return;
     FVector Origin, Direction;
-    if (PC->DeprojectMousePositionToWorld(Origin, Direction))
+    bool bHasRay = false;
+    if (CameraMode == EPGCameraMode::Action3D && !PC->bShowMouseCursor)
+    {
+        int32 Width = 0, Height = 0;
+        PC->GetViewportSize(Width, Height);
+        bHasRay = Width > 0 && Height > 0 && PC->DeprojectScreenPositionToWorld(Width * .5f, Height * .5f, Origin, Direction);
+    }
+    else bHasRay = PC->DeprojectMousePositionToWorld(Origin, Direction);
+    if (bHasRay)
     {
         const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
         FHitResult Hit;
@@ -481,7 +714,12 @@ void APGCharacterPlayer::RefreshCursorAim()
             AimPoint = Hit.ImpactPoint;
         else
         {
-            // A gap is not a valid ground target. Retain the last finite ground direction.
+            // Looking into the sky in action mode must not retain an unrelated cursor target.
+            if (CameraMode == EPGCameraMode::Action3D)
+            {
+                LastAimDirection = CameraBoom->GetForwardVector().GetSafeNormal2D();
+                bHasAimPoint = false;
+            }
             return;
         }
         const FVector Aim = (AimPoint - GetActorLocation()).GetSafeNormal2D();
@@ -490,11 +728,14 @@ void APGCharacterPlayer::RefreshCursorAim()
 }
 void APGCharacterPlayer::FaceAimDirection()
 {
+    CancelLocomotionTurn();
+    if (LocomotionData) CombatFacingUntil = GetWorld()->GetTimeSeconds() + LocomotionData->CombatStrafeSeconds;
     RefreshCursorAim(); // Also refresh on buffered ability activation, not only the 60 Hz timer.
     if (bUseQuarterView && !LastAimDirection.IsNearlyZero() && !bDeathStarted) SetActorRotation(LastAimDirection.Rotation());
 }
 void APGCharacterPlayer::FaceDodgeDirection()
 {
+    CancelLocomotionTurn();
     if (!bDeathStarted) SetActorRotation(GetDodgeDirection().Rotation());
 }
 FVector APGCharacterPlayer::GetDodgeDirection()
