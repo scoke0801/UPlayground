@@ -39,6 +39,8 @@ public class PGBlueprintUtil : ModuleRules
 					"AssetRegistry",
 					"ContentBrowser",
 					"BlueprintGraph",
+					"AnimGraph",
+					"AnimGraphRuntime",
 					"KismetCompiler",
 					"ClassViewer",
 					"PropertyEditor",
