@@ -72,6 +72,14 @@ public:
     // A positive duration opts into a timed attack; zero keeps the original montage path.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern")
     EPGAttackPattern Pattern = EPGAttackPattern::LegacySlam;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern|Summon")
+    int32 SummonEnemyID = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern|Summon", meta=(ClampMin="1", ClampMax="8"))
+    int32 SummonCount = 2;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern|Summon", meta=(ClampMin="1", ClampMax="16"))
+    int32 MaxLivingSummons = 4;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern|Summon", meta=(ClampMin="100", ClampMax="1000"))
+    float SummonRadius = 350.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern")
     TSoftObjectPtr<UPGEnemyAttackProfile> EnemyProfile;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="0.01"))
@@ -171,7 +179,9 @@ public:
             (ProjectileCount < 1 || ProjectileCount > 5 || !FMath::IsFinite(ProjectileSpreadHalfAngle) ||
              ProjectileSpreadHalfAngle < 0.f || ProjectileSpreadHalfAngle > 60.f ||
              (ProjectileCount > 1 && ProjectileSpreadHalfAngle <= 0.f))) return false;
-        return Pattern >= EPGAttackPattern::LegacySlam && Pattern <= EPGAttackPattern::RingBurst;
+        if (Pattern == EPGAttackPattern::Summon && (SummonEnemyID <= 0 || SummonCount < 1 || SummonCount > 8 ||
+            MaxLivingSummons < 1 || MaxLivingSummons > 16 || !FMath::IsFinite(SummonRadius) || SummonRadius < 100.f || SummonRadius > 1000.f)) return false;
+        return Pattern >= EPGAttackPattern::LegacySlam && Pattern <= EPGAttackPattern::Summon;
     }
 
     float GetPatternActivationRange() const

@@ -96,11 +96,24 @@ public:
     /** Locomotion asset for the native imported-creature animation graph. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="PG|Motion")
     TObjectPtr<class UBlendSpace> CreatureLocomotion;
+    UPROPERTY(Transient) TObjectPtr<class UBlendSpace> DormantLocomotion;
+    UFUNCTION(BlueprintCallable, Category="PG|Motion") bool EnsureCombatReady(const AActor* Target);
+    UFUNCTION(BlueprintPure, Category="PG|Motion") bool IsCombatDormant() const { return !bEntranceStarted && DormantLocomotion != nullptr; }
+    UFUNCTION(BlueprintPure, Category="PG|Motion") bool IsEnteringCombat() const { return bEntranceStarted && !bEntranceFinished; }
+    bool bEntranceStarted = false;
+    bool bEntranceFinished = false;
+    bool bAwakenedByHit = false;
+    double EntranceUntil = 0;
     // Assigned once by the stage before combat; independent of kill order and spawn retries.
     int32 LootSeed = 0;
     FGuid LootGuid;
+    // Pawn possession replaces AActor::Owner with its controller. Keep encounter cleanup independent.
+    UPROPERTY(Transient) TWeakObjectPtr<AActor> EncounterOwner;
     bool bLootResolved = false;
     bool bCanDropLoot = true;
+    int32 GetLivingSummonCount() const;
+    int32 SpawnPatternSummons(const struct FPGSkillDataRow& Skill);
+    TArray<TWeakObjectPtr<APGCharacterEnemy>> PatternSummons;
     // Scoped activation request shared by BT and role AI. Zero means legacy tag selection.
     UPROPERTY(BlueprintReadOnly, Category="PG|Skill")
     int32 RequestedSkillID = 0;

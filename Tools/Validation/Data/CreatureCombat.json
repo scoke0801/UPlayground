@@ -1,0 +1,26 @@
+{
+  "monsters": [
+    {"id":15501,"model":"Griffin","name":"그리핀","mobility":"Flying","base":15101,"height":180,"radius":65,"skills":[15511,15512],"idle":"Idle_Fly_Zero","move":"Fly_Zero","death":"Death","stats":{"Health":2400,"Attack":125,"Defense":45,"MovementSpeed":360}},
+    {"id":15502,"model":"MainPlant","name":"포식 식물","mobility":"Stationary","base":15105,"height":210,"radius":70,"skills":[15521,15522,15523],"idle":"Idle_Battle","move":"Idle_Battle","death":"Death","stats":{"Health":3200,"Attack":110,"Defense":50,"MovementSpeed":0}},
+    {"id":15503,"model":"EnemyRoot","name":"포식 식물 뿌리","mobility":"Stationary","base":15101,"height":130,"radius":38,"skills":[15531,15532],"idle":"Idle","move":"Idle","death":"Exit","stats":{"Health":1100,"Attack":85,"Defense":30,"MovementSpeed":0}},
+    {"id":15504,"model":"EnemyPlant","name":"이동형 포식 식물","mobility":"Ground","base":15101,"height":105,"radius":35,"skills":[15541,15542],"idle":"Idle","move":"Run","death":"Death","stats":{"Health":750,"Attack":65,"Defense":15,"MovementSpeed":300}}
+  ],
+  "skills": [
+    {"id":15511,"model":"Griffin","clip":"Attack_1","name":"그리핀 발톱 휩쓸기","base":15101,"patch":{"TelegraphDuration":0.65,"RecoveryDuration":0.8,"TelegraphRadius":290,"SkillRange":290}},
+    {"id":15512,"model":"Griffin","clip":"Attack_3","name":"그리핀 날개 강타","base":15114,"patch":{"TelegraphDuration":1.15,"RecoveryDuration":1.3,"TelegraphRadius":340,"SkillRange":330,"SkillCoolTime":6}},
+    {"id":15521,"model":"MainPlant","clip":"Attack","name":"포식 식물 물어뜯기","base":15101,"patch":{"TelegraphDuration":0.8,"RecoveryDuration":1.0,"TelegraphRadius":320,"SkillRange":320}},
+    {"id":15522,"model":"MainPlant","clip":"Spittle","name":"포식 식물 독액","base":15102,"patch":{"TelegraphDuration":1.1,"TravelSpeed":700,"TravelDistance":1100,"SkillRange":1050,"SkillCoolTime":4,"ProjectileClass":"/Script/PGActor.PGPatternProjectile"}},
+    {"id":15523,"model":"MainPlant","clip":"Cast_Agr","name":"이동형 식물 소환","base":15101,"patch":{"Pattern":"Summon","SkillType":"SummonEnemy","TelegraphDuration":1.5,"RecoveryDuration":1.0,"SkillCoolTime":12,"SkillRange":1400,"TelegraphRadius":350,"SummonEnemyID":15504,"SummonCount":2,"MaxLivingSummons":4,"SummonRadius":350,"SelectionWeight":2}},
+    {"id":15531,"model":"EnemyRoot","clip":"Attack_1","name":"뿌리 휩쓸기","base":15101,"patch":{"TelegraphDuration":0.75,"RecoveryDuration":0.9,"TelegraphRadius":280,"SkillRange":280}},
+    {"id":15532,"model":"EnemyRoot","clip":"Attack_2","name":"뿌리 찌르기","base":15111,"patch":{"TelegraphDuration":1.0,"RecoveryDuration":1.2,"TravelDistance":420,"SkillRange":420,"SkillCoolTime":5}},
+    {"id":15541,"model":"EnemyPlant","clip":"Attack_1","name":"이동 식물 물어뜯기","base":15101,"patch":{"TelegraphDuration":0.5,"RecoveryDuration":0.65,"TelegraphRadius":190,"SkillRange":190,"bHeavyImpactFeedback":false}},
+    {"id":15542,"model":"EnemyPlant","clip":"Attack_2","name":"이동 식물 연속 물기","base":15101,"patch":{"TelegraphDuration":0.8,"RecoveryDuration":1.0,"TelegraphRadius":220,"SkillRange":220,"SkillCoolTime":5,"EnemyDamageMultiplier":1.3}}
+  ],
+  "wave_replacements": [
+    {"stage":1,"wave":1,"source":15301,"enemy":15504},
+    {"stage":2,"wave":1,"source":15304,"enemy":15503},
+    {"stage":3,"wave":1,"source":15303,"enemy":15501},
+    {"stage":4,"wave":1,"source":15303,"enemy":15502},
+    {"stage":5,"wave":2,"source":15303,"enemy":15501}
+  ]
+}

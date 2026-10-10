@@ -3,6 +3,7 @@
 
 #include "PGCharacterEnemy.h"
 #include "AIController.h"
+#include "NavigationSystem.h"
 #include "PGAbilitySystem/Abilities/Combat/PGEnemyAbilityAttack.h"
 #include "PGShared/Shared/Message/Combat/PGBossPresentation.h"
 #include "Kismet/GameplayStatics.h"
@@ -155,6 +156,16 @@ void APGCharacterEnemy::BeginPlay()
 
 	if(FPGEnemyDataRow* EnemyData = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
 	{
+        DormantLocomotion = EnemyData->DormantLocomotion.LoadSynchronous();
+        if (auto* Montage = EnemyData->EntranceMontage.LoadSynchronous()) PreparedPatternAssets.AddUnique(Montage);
+        if (EnemyData->Mobility == EPGEnemyMobility::Stationary)
+            GetCharacterMovement()->DisableMovement();
+        else if (EnemyData->Mobility == EPGEnemyMobility::Flying)
+        {
+            GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+            GetCharacterMovement()->MaxFlySpeed = GetCharacterMovement()->MaxWalkSpeed;
+            GetCharacterMovement()->BrakingDecelerationFlying = 1200.f;
+        }
         // GAS hit queries and movement use the capsule; cosmetic bones need no
         // Chaos bodies. Avoid synchronizing every physics bone on every animation
         // update in dense combat. Explicit bone-physics roles keep their settings.
@@ -173,6 +184,9 @@ void APGCharacterEnemy::BeginPlay()
 				SkillHandler->AddSkill(SkillSlot, SkillId);
 
                 // Hold presentation references for the enemy lifetime; no first-use loads during impact.
+                if (SkillIDataRow->Pattern == EPGAttackPattern::Summon)
+                    if (const auto* SummonData = PGData()->GetRowData<FPGEnemyDataRow>(SkillIDataRow->SummonEnemyID))
+                        if (auto* SummonClass = SummonData->ActorClass.LoadSynchronous()) PreparedPatternAssets.AddUnique(SummonClass);
                 for (const FSoftObjectPath& Path : {SkillIDataRow->TelegraphMaterial.ToSoftObjectPath(),
                     SkillIDataRow->ElitePresentationMontage.ToSoftObjectPath(), SkillIDataRow->SlamVFX.ToSoftObjectPath(),
                     SkillIDataRow->AttackSound.ToSoftObjectPath(), SkillIDataRow->ProjectileClass.ToSoftObjectPath()})
@@ -208,10 +222,65 @@ void APGCharacterEnemy::BeginPlay()
 
 void APGCharacterEnemy::EndPlay(const EEndPlayReason::Type Reason)
 {
+    const auto OwnedSummons = MoveTemp(PatternSummons);
+    for (const auto& Child : OwnedSummons) if (Child.IsValid()) Child->Destroy();
     GetWorldTimerManager().ClearTimer(BossTransitionTimer);
     PublishBossPresentation(true);
     bBossPresentationClosed = true;
     Super::EndPlay(Reason);
+}
+
+int32 APGCharacterEnemy::GetLivingSummonCount() const
+{
+    int32 Count = 0;
+    for (const auto& Child : PatternSummons)
+        if (Child.IsValid() && Child->GetPGAbilitySystemComponent() && Child->GetPGAbilitySystemComponent()->GetHealth() > 0) ++Count;
+    return Count;
+}
+
+int32 APGCharacterEnemy::SpawnPatternSummons(const FPGSkillDataRow& Skill)
+{
+    if (!HasAuthority() || !Skill.IsPatternValid() || Skill.Pattern != EPGAttackPattern::Summon ||
+        !AbilitySystemComponent || AbilitySystemComponent->GetHealth() <= 0) return 0;
+    auto* Tables = UPGDataTableManager::Get(this);
+    const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Skill.SummonEnemyID) : nullptr;
+    UClass* Class = Data ? Data->ActorClass.LoadSynchronous() : nullptr;
+    auto* Nav = UNavigationSystemV1::GetCurrent(GetWorld());
+    if (!Class || !Class->IsChildOf(StaticClass()) || !Nav) return 0;
+    const auto* Defaults = Class->GetDefaultObject<APGCharacterEnemy>();
+    const float Radius = Defaults->GetCapsuleComponent()->GetScaledCapsuleRadius();
+    const float Half = Defaults->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+    const int32 Budget = FMath::Min(Skill.SummonCount, FMath::Max(0, Skill.MaxLivingSummons - GetLivingSummonCount()));
+    PatternSummons.RemoveAll([](const auto& Child) { return !Child.IsValid(); });
+    int32 Spawned = 0;
+    FNavLocation Origin;
+    if (!Nav->ProjectPointToNavigation(GetActorLocation(), Origin, FVector(100,100,500))) return 0;
+    for (int32 Attempt = 0; Attempt < Budget * 8 && Spawned < Budget; ++Attempt)
+    {
+        FNavLocation Point;
+        if (!Nav->GetRandomReachablePointInRadius(Origin.Location, Skill.SummonRadius, Point)) continue;
+        if (FVector::Dist2D(Point.Location, GetActorLocation()) < Radius + GetCapsuleComponent()->GetScaledCapsuleRadius() + 25.f) continue;
+        FVector Location = Point.Location + FVector(0,0,Half + 3.f);
+        if (Data->Mobility == EPGEnemyMobility::Flying) Location.Z += FMath::Clamp(Data->FlightHeight, 0.f, 300.f);
+        FCollisionQueryParams Query(SCENE_QUERY_STAT(PGSummonSpace), false);
+        if (GetWorld()->OverlapBlockingTestByChannel(Location, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeCapsule(Radius, Half), Query)) continue;
+        // Enemy capsules intentionally ignore each other; still avoid stacking summons.
+        bool bOccupied = false;
+        for (const auto& Child : PatternSummons)
+            if (Child.IsValid() && FVector::Dist2D(Child->GetActorLocation(), Location) < Radius * 2.f + 20.f) { bOccupied = true; break; }
+        if (bOccupied) continue;
+        const FTransform Transform(GetActorRotation(), Location);
+        auto* Child = GetWorld()->SpawnActorDeferred<APGCharacterEnemy>(Class, Transform, this, this, ESpawnActorCollisionHandlingMethod::DontSpawnIfColliding);
+        if (!Child) continue;
+        Child->bCanDropLoot = false;
+        UGameplayStatics::FinishSpawningActor(Child, Transform);
+        if (!IsValid(Child)) continue;
+        PatternSummons.Add(Child);
+        ++Spawned;
+        FPGEventDataOneParam<TWeakObjectPtr<APGCharacterEnemy>> Event(Child);
+        if (auto* Messages = UPGMessageManager::Get(this)) Messages->SendMessage(EPGSharedMessageType::OnSpawned, &Event);
+    }
+    return Spawned;
 }
 
 void APGCharacterEnemy::PossessedBy(AController* NewController)
@@ -221,6 +290,7 @@ void APGCharacterEnemy::PossessedBy(AController* NewController)
 
 void APGCharacterEnemy::OnHit(UPGStatComponent* Source, const UPGPawnCombatComponent* Combat)
 {
+    bAwakenedByHit = true;
     const bool bGuardedHit = Source && GetDirectionalDamageScale(Source->GetOwner()) < 1.f;
     EPGDamageType Type = EPGDamageType::Normal;
     const float Damage = AbilitySystemComponent->ReceiveCombatHit(Source ? Source->GetASC() : nullptr, Type);
@@ -503,6 +573,12 @@ bool APGCharacterEnemy::IsClickable_Implementation() const
 
 void APGCharacterEnemy::OnHealthChanged()
 {
+    if (AbilitySystemComponent && AbilitySystemComponent->GetHealth() <= 0.f && IsEnteringCombat())
+    {
+        if (const auto* Row = PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID))
+            if (auto* Anim = GetMesh()->GetAnimInstance()) Anim->Montage_Stop(.05f, Row->EntranceMontage.Get());
+        bEntranceFinished = true;
+    }
     const bool bWasDead = bDeathStarted;
     Super::OnHealthChanged();
     UpdateHpBar();
@@ -534,6 +610,30 @@ void APGCharacterEnemy::OnHealthChanged()
 bool APGCharacterEnemy::IsBossTransitioning() const
 {
     return GetWorld() && GetWorld()->GetTimeSeconds() < PhaseTransitionUntil && AbilitySystemComponent->GetHealth() > 0;
+}
+
+bool APGCharacterEnemy::EnsureCombatReady(const AActor* Target)
+{
+    if (!AbilitySystemComponent || AbilitySystemComponent->GetHealth() <= 0.f) return false;
+    const auto* Row = PGData() ? PGData()->GetRowData<FPGEnemyDataRow>(CharacterTID) : nullptr;
+    if (!Row || Row->EntranceMontage.IsNull() || Row->EntranceSeconds <= 0.f || bEntranceFinished) return true;
+    const double Now = GetWorld()->GetTimeSeconds();
+    if (!bEntranceStarted)
+    {
+        if (Row->WakeDistance > 0.f && !bAwakenedByHit && (!Target ||
+            FVector::Dist2D(Target->GetActorLocation(), GetActorLocation()) > Row->WakeDistance)) return false;
+        bEntranceStarted = true;
+        EntranceUntil = Now + FMath::Clamp(Row->EntranceSeconds, .1f, 5.f);
+        GetCharacterMovement()->StopMovementImmediately();
+        if (auto* Anim = GetMesh()->GetAnimInstance())
+            if (auto* Montage = Row->EntranceMontage.Get())
+                Anim->Montage_Play(Montage, Montage->GetPlayLength() / FMath::Clamp(Row->EntranceSeconds, .1f, 5.f));
+        UE_LOG(LogTemp, Log, TEXT("PGEntrance begin enemy=%d"), CharacterTID);
+    }
+    if (Now < EntranceUntil) return false;
+    bEntranceFinished = true;
+    UE_LOG(LogTemp, Log, TEXT("PGEntrance ready enemy=%d"), CharacterTID);
+    return true;
 }
 
 bool APGCharacterEnemy::TryBeginBossPhase(const FPGEnemyDataRow& Row)

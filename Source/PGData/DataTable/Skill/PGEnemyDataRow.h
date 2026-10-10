@@ -43,6 +43,17 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role")
     EPGEnemyRole Role = EPGEnemyRole::Legacy;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Movement")
+    EPGEnemyMobility Mobility = EPGEnemyMobility::Ground;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Movement", meta=(ClampMin="0", ClampMax="300"))
+    float FlightHeight = 60.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Entrance") TSoftObjectPtr<class UAnimMontage> EntranceMontage;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Entrance") TSoftObjectPtr<class UBlendSpace> DormantLocomotion;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Entrance", meta=(ClampMin="0", ClampMax="5")) float EntranceSeconds = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Entrance", meta=(ClampMin="0")) float WakeDistance = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior", meta=(ClampMin="0")) float SelectionReconsiderSeconds = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior") bool bPrioritizeGuard = true;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior", meta=(ClampMin="0")) float GuardRepeatCooldown = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior")
     TSoftObjectPtr<class UBehaviorTree> CombatBehaviorTree;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior")

@@ -1,0 +1,1595 @@
+{
+  "destination": "/Game/Art/CreatureModels",
+  "source_root": "C:/UsingProject/UnityProject/UPlayground/Assets/ExternalAssets/Character",
+  "files": [
+    {
+      "path": "Source/Griffin Character/Models/Griffin.fbx",
+      "sha256": "9f99c43b37c6d0ac6764005e8357d62dd16c0252cf3b4c81a488b5e26c582a71",
+      "bytes": 3795264
+    },
+    {
+      "path": "Source/Griffin Character/Models/Griffin.fbx.meta",
+      "sha256": "fba5967270fbe194b7bff45ff582f414045a0810b28b4a397ab90aa32ab7bd87",
+      "bytes": 2787
+    },
+    {
+      "path": "Source/Griffin Character/AnimationClips/Griffin Animation.fbx",
+      "sha256": "e0a61af6d0ab025e5e2e01c8b6be74650c907d59d7cd3e6c748c9d9c7942cfb1",
+      "bytes": 21535792
+    },
+    {
+      "path": "Source/Griffin Character/AnimationClips/Griffin Animation.fbx.meta",
+      "sha256": "79311f4a2d29b00b54516484256af28dd3a788d999b1721945c740f21611f5fe",
+      "bytes": 16687
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin_1_D.tga",
+      "sha256": "f758099cd49b5633a25c398b784302eb43c7330ffeb379f895448c53aa45a764",
+      "bytes": 268435474
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin_1_D.tga.meta",
+      "sha256": "8f27f71895f4f1b0d8bc263f4b0db230f10136aefc88a42aaa9ace2901ea7756",
+      "bytes": 3518
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin_2_D.tga",
+      "sha256": "23f8f23f83648a7cd2275ca7ba2122587e3750fd140e0dc101bf5909667ceeca",
+      "bytes": 268435474
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin_2_D.tga.meta",
+      "sha256": "dba4840bd39a9982a7fb527f5ce86a7d9d183d977308c1e0489d3d45d15f9dec",
+      "bytes": 3518
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin_2_E.tga",
+      "sha256": "08eb771a5d04411e1607cc1de735f962adcf51ca2581a804a12092074aa6f873",
+      "bytes": 50331692
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin_2_E.tga.meta",
+      "sha256": "5fbbfb19a5e2f752c9f015f4c9fb271a9fc9682b68ea1b654f47f1a4726d2166",
+      "bytes": 3518
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin_MetallicSmoothness.tga",
+      "sha256": "2cfb1d4defb2e368f43a9aa7f64abb15edcb205e57a5338760b55cd35168ffd5",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin_MetallicSmoothness.tga.meta",
+      "sha256": "9bef871e81cdca3360a5155dd2de18cb04ede1fc30cdf16a221206a8ad2ba668",
+      "bytes": 3518
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin__Normal.tga",
+      "sha256": "e85c5515965a87774abdd2517dfcf687ea499218077436f9b8dea1d93c833b4d",
+      "bytes": 50331692
+    },
+    {
+      "path": "Source/Griffin Character/Textures/T_Griffin__Normal.tga.meta",
+      "sha256": "f01ce3b137779a2e75582314faa3f853256061057f7e39c08a2c7cf7a83c7254",
+      "bytes": 3518
+    },
+    {
+      "path": "Source/Griffin Character/Materials/Griffin_Brown_Material.mat",
+      "sha256": "400e345bc8a5ccc9bbdc14994ab99c06f0c4b787b6874e5fd9bb1071a3b1f747",
+      "bytes": 7342
+    },
+    {
+      "path": "Source/Griffin Character/Materials/Griffin_Brown_Material.mat.meta",
+      "sha256": "abe6cb71add7ff43af940d54b3eda4e83c759394e571a32d9f406f7c0a3d4886",
+      "bytes": 188
+    },
+    {
+      "path": "Source/Griffin Character/Materials/Griffin_Dark_Material.mat",
+      "sha256": "66fd40fd5a0cc42883660578324dbd185219dd9c8d47888082533137ed2c8b2b",
+      "bytes": 7294
+    },
+    {
+      "path": "Source/Griffin Character/Materials/Griffin_Dark_Material.mat.meta",
+      "sha256": "f3ecc90a05febf687a85b42684f5e2253968d9f19c30c4377d330b4c43828942",
+      "bytes": 188
+    },
+    {
+      "path": "Source/Griffin Character/Prefabs/Griffin_Brown.prefab",
+      "sha256": "f882f0b3bcdf433df411eec69fa55ba5cf08d198e6a419f8d4494f1a18b9190c",
+      "bytes": 123718
+    },
+    {
+      "path": "Source/Griffin Character/Prefabs/Griffin_Brown.prefab.meta",
+      "sha256": "a3b327830a2fa74c2a65e8bb6bf32e47157a2490fec8dba70a5829df21be3ec6",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Griffin Character/Prefabs/Griffin_Dark.prefab",
+      "sha256": "adfcd7f8bdb8a304608cdabcfad67e986c56c041c58267fc6673dfaf256c70a4",
+      "bytes": 126915
+    },
+    {
+      "path": "Source/Griffin Character/Prefabs/Griffin_Dark.prefab.meta",
+      "sha256": "d3853097082e2d528e64f308b3f9cbcb6d9428d350b3ea3fd7ec5877c73c9823",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Models/EnemyPlant.fbx",
+      "sha256": "225709ccc60c47bd6ab5f9b597ac4bf2c2641d5ad27db1f74b54a056103f41c0",
+      "bytes": 1763104
+    },
+    {
+      "path": "Source/Carnivorous plant character/Models/EnemyPlant.fbx.meta",
+      "sha256": "1a188dfece8e8c9c410fe12966856f662b1d1a9e0fbba6371132b5b03cdbcae0",
+      "bytes": 2603
+    },
+    {
+      "path": "Source/Carnivorous plant character/Models/EnemyRoot.fbx",
+      "sha256": "d42ccd6914dff72a4e8a25e4e9689413f18d9ac720f3c0fd11c8422cc5ecec27",
+      "bytes": 128928
+    },
+    {
+      "path": "Source/Carnivorous plant character/Models/EnemyRoot.fbx.meta",
+      "sha256": "7c7e0f05e9ee642bc977c790bbc11942a97513886a7a164a7bb3a01a05157fde",
+      "bytes": 2603
+    },
+    {
+      "path": "Source/Carnivorous plant character/Models/MainPlant.fbx",
+      "sha256": "76b556530ee8b7e845510227e12f5c5f40ae972d9be8de72fed3220d705d6c5b",
+      "bytes": 2532416
+    },
+    {
+      "path": "Source/Carnivorous plant character/Models/MainPlant.fbx.meta",
+      "sha256": "3664f6476bf6d8daff80ecc41ae21a4720c5c8710f5c2764215a87f8e29d950d",
+      "bytes": 2603
+    },
+    {
+      "path": "Source/Carnivorous plant character/AnimationClips/Anim_Enemy_Plant.fbx",
+      "sha256": "9410d04eb476e10fbbeb201159de5d98465ccbff48364f6a4ce4e1a3e6834d14",
+      "bytes": 5024992
+    },
+    {
+      "path": "Source/Carnivorous plant character/AnimationClips/Anim_Enemy_Plant.fbx.meta",
+      "sha256": "b33e0338c3f14ef09a3a44c4caa5f1ffe858444ae1957b56341f977ae21fef9f",
+      "bytes": 11137
+    },
+    {
+      "path": "Source/Carnivorous plant character/AnimationClips/Anim_Enemy_Root.fbx",
+      "sha256": "b28e9a0d338cb20b329101f4ee258f4f5b2a6ad2fc1f87394625a20019e31af6",
+      "bytes": 669616
+    },
+    {
+      "path": "Source/Carnivorous plant character/AnimationClips/Anim_Enemy_Root.fbx.meta",
+      "sha256": "e13197cf516c161315676d8093dbbffd7746192b21921a42dfc4e31d8ee3282f",
+      "bytes": 7739
+    },
+    {
+      "path": "Source/Carnivorous plant character/AnimationClips/Anim_Main_Plant.fbx",
+      "sha256": "8b09670d0306ed29c28a0099c5a3427d38d410f3de44905582220283902caf68",
+      "bytes": 6488240
+    },
+    {
+      "path": "Source/Carnivorous plant character/AnimationClips/Anim_Main_Plant.fbx.meta",
+      "sha256": "aee0e304f17a2dac21a48687a4c1dafb81ea06625671b81b15a883f1f9e93f96",
+      "bytes": 10327
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_1_D.tga",
+      "sha256": "c3ac600bc3ae07441bff01108d28dda89a8186189d14a0325e44e9b0aa0f0e2a",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_1_D.tga.meta",
+      "sha256": "93c382177515c519f00467f620d6153a3287a4fce16e250a16151e8b5f2e4b74",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_2_D.tga",
+      "sha256": "def444ee97a93c15fc246b1c915497c08a3ef8dc69080b795307aec377a5afa1",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_2_D.tga.meta",
+      "sha256": "7f855afdd2368d2daf6efd0f65aeff893220caab08184f9ee5675daa0fd66d54",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_3_D.tga",
+      "sha256": "c218a4300a7426468caebaf641201389047d0ed98d30c5bba9e1652731b84f05",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_3_D.tga.meta",
+      "sha256": "0dc82eb70dda29f7d5ef4c03d95b86d096ab7a6e1298f47b181e9eaf0bef83d8",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_E.tga",
+      "sha256": "bf11780066a2f3f102307adf2696ef58d6ae0789f31c003b566c78eb2bc039b4",
+      "bytes": 50331692
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_E.tga.meta",
+      "sha256": "7e8a8bbb51bf837f8de0a7ce376de6465a1eda52dcb8f77c0c42e11ba7bdce79",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_MaskMap.tga",
+      "sha256": "84d57638602c42db2ea3f62207e7623734b6a88f29e574abe2a85702d9802eb3",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_MaskMap.tga.meta",
+      "sha256": "5fa3ec81e1682cf08785885621fd24eed72d0fa667fbcdd265e9b5fac69a3292",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_N.tga",
+      "sha256": "3272276f975a3a52a0a087692d0e8bc933e83ef5a04735a1a25e9603b8633d59",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_N.tga.meta",
+      "sha256": "b21b1b7ff082c0b83cfe05c259b811910d504d684d29283fd8053e97c4764ffb",
+      "bytes": 3102
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_1_D.tga",
+      "sha256": "e410912ec9aa33fd7e2a00400c208ceccdcddf800c5795d15dc81dccb77422c6",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_1_D.tga.meta",
+      "sha256": "11c4568ee6c38e7703cf41a7d3971d1f625838115a7bee534e06fa0b66983568",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_1_E.tga",
+      "sha256": "edd30fc5371f974f4bf8162d51accbd24a9698137f1346e91b88ee01c0e2f118",
+      "bytes": 50331692
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_1_E.tga.meta",
+      "sha256": "4b6d916059e23f2b3af8cdbd13379876ddabf2eaad4e45d973810745fdc2e5ea",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_2_D.tga",
+      "sha256": "8728b9a24925aec40bbc3794ee71395ca00517d7b3bd2797edcc51f41eca9ffe",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_2_D.tga.meta",
+      "sha256": "24c0c943f350ee364d1411b5e9838b84227c0238ec06046723edea9054058392",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_2_E.tga",
+      "sha256": "88ab8b50b72ca704c8fbd2c2169e3b0a47dc3e76a08984237704a7b73d383f1b",
+      "bytes": 50331692
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_2_E.tga.meta",
+      "sha256": "4d521637e76db36b06ef92990791566fbe2d3511cd9bb25ad64785e7d8d30504",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_3_D.tga",
+      "sha256": "9a469acc6eac3cdf5feef29f22e28594dbad6dfbe3572723cb3930977f7ede04",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_3_D.tga.meta",
+      "sha256": "caaff63dfd4162ffeea9c4914b0088ffd6acb27e787a9423a9677af9026ca89f",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_MaskMap.tga",
+      "sha256": "1fc2e568d65bbde8a504cc100255233fb4c1c5ab6aff91ac3472fe06361bd477",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_MaskMap.tga.meta",
+      "sha256": "f823e00006afd465f67dee86a69dfc3a8bd5f5dbd9923f69f67a03a19f57cfec",
+      "bytes": 2116
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_N.tga",
+      "sha256": "ffb82cacf624fe0e0b91dfe4a027ddce19faa4cd05421bd2fe1392e47e794854",
+      "bytes": 67108908
+    },
+    {
+      "path": "Source/Carnivorous plant character/Textures/T_Main_Plant_N.tga.meta",
+      "sha256": "a481d1e4f92ca3f793e27e0aceb726a2893eea3f94ba4fca50bdd1acaf4c69ed",
+      "bytes": 3102
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Enemy_Plant_V1_Material.mat",
+      "sha256": "d6eba2e3fb84be4f24aff318198a00117c5a7d4fed0ca6722897d1cd2db6dfe4",
+      "bytes": 4088
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Enemy_Plant_V1_Material.mat.meta",
+      "sha256": "55410bc339779d03f21fff95fa795d81bbe0e822cb104879a055a699c0e447df",
+      "bytes": 188
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Enemy_Plant_V2_Material.mat",
+      "sha256": "75790574213834daffd32febb525945e9a9c5955a721df4e56f28bcbbcf3e6e0",
+      "bytes": 4088
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Enemy_Plant_V2_Material.mat.meta",
+      "sha256": "2e1c86073a977cc4bae6fcdd7db06f907475070fe45c0090214f5ff2aaa4ca78",
+      "bytes": 188
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Enemy_Plant_V3_Material.mat",
+      "sha256": "3764a0dce5d3953020e1e3cee0f619625089d569cb7d0a71f743d624e4719ee8",
+      "bytes": 4088
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Enemy_Plant_V3_Material.mat.meta",
+      "sha256": "398c140e6db9840755157ad8c48897bb0002c01139bf6bfebbdbfe91d58fdcea",
+      "bytes": 188
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Main_Plant_V1_Material.mat",
+      "sha256": "952de74eb4e22817d39fb300adfce001a0390821280571a7daadb2b93a74ef13",
+      "bytes": 4087
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Main_Plant_V1_Material.mat.meta",
+      "sha256": "47894513ff1e21a0cc08575e72cf57ec8549b8504a8c021c9289c1b7ef0da58f",
+      "bytes": 188
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Main_Plant_V2_Material.mat",
+      "sha256": "01e050f10cf0676e217fc77d9e172d5522a923e8b63bc93786e710ad2673350f",
+      "bytes": 4088
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Main_Plant_V2_Material.mat.meta",
+      "sha256": "96da5b797a042ad49a2a9baa1dc838581d2053867e469e1c4fa0410df1641fdf",
+      "bytes": 188
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Main_Plant_V3_Material.mat",
+      "sha256": "3c035cd5559d0d709da11dc41c12b502cf8c822e27412c614444d0dc97e7b371",
+      "bytes": 4079
+    },
+    {
+      "path": "Source/Carnivorous plant character/Materials/Main_Plant_V3_Material.mat.meta",
+      "sha256": "f28fe5c47572ae0fe8bea2deae169543fb77a20d1a312427efe61728c7430a9c",
+      "bytes": 188
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V1.prefab",
+      "sha256": "1c357fd6ed25da019e7564c1f313f82663daff50144d465ae804878d1cf2125b",
+      "bytes": 182604
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V1.prefab.meta",
+      "sha256": "971f75506a7cfae304c8cb14ef678993632794b1a382ba1706bd2f92cb5dfdb1",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V2.prefab",
+      "sha256": "2d3f38d7338cadb0aa8989bae7c042ae114c954b3590d91c3710f4c534b28d67",
+      "bytes": 182660
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V2.prefab.meta",
+      "sha256": "404988a1283ae05bec4e40ecbb150f8363b189adf8c34f29522206e65b3bce05",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V3.prefab",
+      "sha256": "dc53ebb6dcbc7374b006922f90cc3d63282a81bea86079198327f8f2c5ce85f8",
+      "bytes": 182678
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V3.prefab.meta",
+      "sha256": "24b533a839a88a8da801c9588223cad225967686f67fcfecc1a8d16e0d5fec71",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V1.prefab",
+      "sha256": "a908ecf65ae29f8fe7fa47dbb52d3632a6ed87f42807c2c7b18cf8255cf9fd33",
+      "bytes": 13204
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V1.prefab.meta",
+      "sha256": "9e1397718b82ad771159c3d2c550c573078f59758046eb1dab21dc4116557a9d",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V2.prefab",
+      "sha256": "dd9f80c581ce00ebf70531aebf0a48031e25929180c82bf8375a5693945b6c81",
+      "bytes": 13200
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V2.prefab.meta",
+      "sha256": "af9e6b04ef71e76ed28d4dea8c700502ae3599c69ad2625e9c1567b114670ff7",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V3.prefab",
+      "sha256": "7a5883812b3c37475bf4699e3ecb981ea3654298b498730c99f38cdfbbad4176",
+      "bytes": 13202
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V3.prefab.meta",
+      "sha256": "e45f32e60c4ef053b8991e7b949f3928098c2e9bafd571d413e2e2bdc75859a5",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/MainPlant_V1.prefab",
+      "sha256": "d954044d628a0c9570ad1054584edea379263fd2490d0d9b9bdaefa30452b69c",
+      "bytes": 305928
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/MainPlant_V1.prefab.meta",
+      "sha256": "577efbd156e4548b316d0b92b2fec8269311511d79fbfc5f3deb8195a55d1f5d",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/MainPlant_V2.prefab",
+      "sha256": "cb93bfd6d81aa00870ba65a038e57a74638d5f868a4d613a0761ee925b14558c",
+      "bytes": 305925
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/MainPlant_V2.prefab.meta",
+      "sha256": "acceb1d88351a630dbf463bdaa2eec2b697ef33ce567ff5f94817b8abf927de0",
+      "bytes": 154
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/MainPlant_V3.prefab",
+      "sha256": "7c91a22ecafe1e7d55026bc7e1590cd5e72547e85436f8ca2473ff08602a8b45",
+      "bytes": 305924
+    },
+    {
+      "path": "Source/Carnivorous plant character/Prefabs/MainPlant_V3.prefab.meta",
+      "sha256": "4fb3c70be895e2949e77d58d165a1c0464131006d558dbbc218eb82e7c9d9942",
+      "bytes": 154
+    }
+  ],
+  "models": [
+    {
+      "name": "Griffin",
+      "mesh": "Source/Griffin Character/Models/Griffin.fbx",
+      "animation": "Source/Griffin Character/AnimationClips/Griffin Animation.fbx",
+      "clips": [
+        {
+          "name": "Idle",
+          "take": "Idle",
+          "first": 10,
+          "last": 90,
+          "loop": true
+        },
+        {
+          "name": "Walk",
+          "take": "Walk",
+          "first": 100,
+          "last": 138,
+          "loop": true
+        },
+        {
+          "name": "Run",
+          "take": "Run",
+          "first": 150,
+          "last": 170,
+          "loop": true
+        },
+        {
+          "name": "Agr",
+          "take": "Agr",
+          "first": 180,
+          "last": 232,
+          "loop": false
+        },
+        {
+          "name": "Idle_Fly_Zero",
+          "take": "Idle_Fly_Zero",
+          "first": 250,
+          "last": 294,
+          "loop": true
+        },
+        {
+          "name": "Fly_Zero",
+          "take": "Fly_Zero",
+          "first": 310,
+          "last": 354,
+          "loop": true
+        },
+        {
+          "name": "Soars_Zero",
+          "take": "Soars_Zero",
+          "first": 370,
+          "last": 420,
+          "loop": true
+        },
+        {
+          "name": "Jump_Start",
+          "take": "Jump_Start",
+          "first": 440,
+          "last": 476,
+          "loop": false
+        },
+        {
+          "name": "Soars_Non_Zero",
+          "take": "Soars_Non_Zero",
+          "first": 490,
+          "last": 540,
+          "loop": true
+        },
+        {
+          "name": "Idle_Fly_Non_Zero",
+          "take": "Idle_Fly_Non_Zero",
+          "first": 1140,
+          "last": 1184,
+          "loop": true
+        },
+        {
+          "name": "Fly_Non_Zero",
+          "take": "Fly_Non_Zero",
+          "first": 1200,
+          "last": 1244,
+          "loop": true
+        },
+        {
+          "name": "Landing",
+          "take": "Landing",
+          "first": 560,
+          "last": 600,
+          "loop": false
+        },
+        {
+          "name": "Attack_1",
+          "take": "Attack_1",
+          "first": 620,
+          "last": 642,
+          "loop": false
+        },
+        {
+          "name": "Attack_2",
+          "take": "Attack_2",
+          "first": 660,
+          "last": 715,
+          "loop": false
+        },
+        {
+          "name": "Attack_3",
+          "take": "Attack_3",
+          "first": 730,
+          "last": 760,
+          "loop": false
+        },
+        {
+          "name": "Hit",
+          "take": "Hit",
+          "first": 900,
+          "last": 945,
+          "loop": false
+        },
+        {
+          "name": "Death",
+          "take": "Death",
+          "first": 970,
+          "last": 1120,
+          "loop": false
+        }
+      ],
+      "materials": [
+        "Griffin_Brown_Material",
+        "Griffin_Dark_Material"
+      ],
+      "prefabs": [
+        {
+          "file": "Source/Griffin Character/Prefabs/Griffin_Brown.prefab",
+          "material_guids": [
+            "574ab413900e5724a949f3c9c50a6083"
+          ],
+          "materials": [
+            "Source/Griffin Character/Materials/Griffin_Brown_Material.mat"
+          ]
+        },
+        {
+          "file": "Source/Griffin Character/Prefabs/Griffin_Dark.prefab",
+          "material_guids": [
+            "0be22bbd188a14945945cfecfcad1cb4"
+          ],
+          "materials": [
+            "Source/Griffin Character/Materials/Griffin_Dark_Material.mat"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MainPlant",
+      "mesh": "Source/Carnivorous plant character/Models/MainPlant.fbx",
+      "animation": "Source/Carnivorous plant character/AnimationClips/Anim_Main_Plant.fbx",
+      "clips": [
+        {
+          "name": "Idle_Asleep",
+          "take": "Idle_Asleep",
+          "first": 10,
+          "last": 170,
+          "loop": true
+        },
+        {
+          "name": "Idle_Battle",
+          "take": "Idle_Battle",
+          "first": 180,
+          "last": 260,
+          "loop": true
+        },
+        {
+          "name": "Spittle",
+          "take": "Spittle",
+          "first": 270,
+          "last": 330,
+          "loop": false
+        },
+        {
+          "name": "Cast | Agr",
+          "take": "Cast | Agr",
+          "first": 340,
+          "last": 440,
+          "loop": false
+        },
+        {
+          "name": "Attack",
+          "take": "Attack",
+          "first": 450,
+          "last": 500,
+          "loop": false
+        },
+        {
+          "name": "Awake",
+          "take": "Awake",
+          "first": 510,
+          "last": 600,
+          "loop": false
+        },
+        {
+          "name": "Hit",
+          "take": "Hit",
+          "first": 610,
+          "last": 640,
+          "loop": false
+        },
+        {
+          "name": "Eat",
+          "take": "Eat",
+          "first": 650,
+          "last": 710,
+          "loop": true
+        },
+        {
+          "name": "Death",
+          "take": "Death",
+          "first": 720,
+          "last": 800,
+          "loop": false
+        }
+      ],
+      "materials": [
+        "Main_Plant_V1_Material",
+        "Main_Plant_V2_Material",
+        "Main_Plant_V3_Material"
+      ],
+      "prefabs": [
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/MainPlant_V1.prefab",
+          "material_guids": [
+            "3ad51d69d38339d4485072580987dda2"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Main_Plant_V1_Material.mat"
+          ]
+        },
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/MainPlant_V2.prefab",
+          "material_guids": [
+            "dd1377a7fc528774885401689ad93edb"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Main_Plant_V2_Material.mat"
+          ]
+        },
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/MainPlant_V3.prefab",
+          "material_guids": [
+            "aef64430660f0b44e994edfacd99950a"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Main_Plant_V3_Material.mat"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "EnemyPlant",
+      "mesh": "Source/Carnivorous plant character/Models/EnemyPlant.fbx",
+      "animation": "Source/Carnivorous plant character/AnimationClips/Anim_Enemy_Plant.fbx",
+      "clips": [
+        {
+          "name": "Idle",
+          "take": "Idle",
+          "first": 10,
+          "last": 70,
+          "loop": true
+        },
+        {
+          "name": "Walk",
+          "take": "Walk",
+          "first": 80,
+          "last": 116,
+          "loop": true
+        },
+        {
+          "name": "Run",
+          "take": "Run",
+          "first": 120,
+          "last": 140,
+          "loop": true
+        },
+        {
+          "name": "Attack_1",
+          "take": "Attack_1",
+          "first": 150,
+          "last": 200,
+          "loop": false
+        },
+        {
+          "name": "Attack_2",
+          "take": "Attack_2",
+          "first": 210,
+          "last": 248,
+          "loop": false
+        },
+        {
+          "name": "Hit",
+          "take": "Hit",
+          "first": 260,
+          "last": 280,
+          "loop": false
+        },
+        {
+          "name": "Death",
+          "take": "Death",
+          "first": 290,
+          "last": 330,
+          "loop": false
+        },
+        {
+          "name": "Jump_In",
+          "take": "Jump_In",
+          "first": 340,
+          "last": 350,
+          "loop": false
+        },
+        {
+          "name": "Fall",
+          "take": "Fall",
+          "first": 360,
+          "last": 420,
+          "loop": true
+        },
+        {
+          "name": "Jump_End",
+          "take": "Jump_End",
+          "first": 430,
+          "last": 445,
+          "loop": false
+        }
+      ],
+      "materials": [
+        "Enemy_Plant_V1_Material",
+        "Enemy_Plant_V2_Material",
+        "Enemy_Plant_V3_Material"
+      ],
+      "prefabs": [
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V1.prefab",
+          "material_guids": [
+            "2167bcbf4f4a22e4a8e46999e6bb758d"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Enemy_Plant_V1_Material.mat"
+          ]
+        },
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V2.prefab",
+          "material_guids": [
+            "29a12bdf97cd4aa468d855bbb3c4d472"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Enemy_Plant_V2_Material.mat"
+          ]
+        },
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/EnemyPlant_V3.prefab",
+          "material_guids": [
+            "37539c49fddb52045b6304cf1204caee"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Enemy_Plant_V3_Material.mat"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "EnemyRoot",
+      "mesh": "Source/Carnivorous plant character/Models/EnemyRoot.fbx",
+      "animation": "Source/Carnivorous plant character/AnimationClips/Anim_Enemy_Root.fbx",
+      "clips": [
+        {
+          "name": "Uprise",
+          "take": "Uprise",
+          "first": 10,
+          "last": 80,
+          "loop": false
+        },
+        {
+          "name": "Idle",
+          "take": "Idle",
+          "first": 90,
+          "last": 150,
+          "loop": true
+        },
+        {
+          "name": "Attack_2",
+          "take": "Attack_2",
+          "first": 290,
+          "last": 340,
+          "loop": false
+        },
+        {
+          "name": "Hit",
+          "take": "Hit",
+          "first": 350,
+          "last": 370,
+          "loop": false
+        },
+        {
+          "name": "Exit",
+          "take": "Exit",
+          "first": 380,
+          "last": 480,
+          "loop": false
+        },
+        {
+          "name": "Attack_1",
+          "take": "Attack_1",
+          "first": 160,
+          "last": 280,
+          "loop": false
+        }
+      ],
+      "materials": [
+        "Main_Plant_V1_Material",
+        "Main_Plant_V2_Material",
+        "Main_Plant_V3_Material"
+      ],
+      "prefabs": [
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V1.prefab",
+          "material_guids": [
+            "3ad51d69d38339d4485072580987dda2"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Main_Plant_V1_Material.mat"
+          ]
+        },
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V2.prefab",
+          "material_guids": [
+            "dd1377a7fc528774885401689ad93edb"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Main_Plant_V2_Material.mat"
+          ]
+        },
+        {
+          "file": "Source/Carnivorous plant character/Prefabs/EnemyRoot_V3.prefab",
+          "material_guids": [
+            "aef64430660f0b44e994edfacd99950a"
+          ],
+          "materials": [
+            "Source/Carnivorous plant character/Materials/Main_Plant_V3_Material.mat"
+          ]
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Griffin_Brown_Material",
+      "source": "Source/Griffin Character/Materials/Griffin_Brown_Material.mat",
+      "textures": {
+        "_BaseMap": "Source/Griffin Character/Textures/T_Griffin_1_D.tga",
+        "_BumpMap": "Source/Griffin Character/Textures/T_Griffin__Normal.tga",
+        "_MainTex": "Source/Griffin Character/Textures/T_Griffin_1_D.tga",
+        "_MetallicGlossMap": "Source/Griffin Character/Textures/T_Griffin_MetallicSmoothness.tga",
+        "_SampleTexture2D_0a63c5f24a854c678005a421256954bd_Texture_1": null,
+        "_SampleTexture2D_246e95cdb1974c7cb02f15444c7d4860_Texture_1": null,
+        "_SampleTexture2D_508a80ac7e5d403ab2ee25f2d0a762e2_Texture_1": null,
+        "_SampleTexture2D_6e983a790a834fbfa4574c4e603a66cc_Texture_1": "Source/Griffin Character/Textures/T_Griffin__Normal.tga",
+        "_SampleTexture2D_6e983a790a834fbfa4574c4e603a66cc_Texture_1_Texture2D": "Source/Griffin Character/Textures/T_Griffin__Normal.tga",
+        "_SampleTexture2D_7f735676069d4ef78fc7aa0f60e9f24d_Texture_1": null,
+        "_SampleTexture2D_c4065bc68dfb42bb98fd1564ce08379f_Texture_1": null,
+        "_SampleTexture2D_c880b0fbf716416c905f4f4c2887b999_Texture_1": null,
+        "_Texture2D": null,
+        "_Texture_Color": "Source/Griffin Character/Textures/T_Griffin_1_D.tga",
+        "_Texture_Emission": "Source/Griffin Character/Textures/T_Griffin_2_E.tga",
+        "_Texture_Metallic_Smoothness": "Source/Griffin Character/Textures/T_Griffin_MetallicSmoothness.tga"
+      },
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_Albedo_Brightness": 1,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_BUILTIN_QueueControl": 0,
+        "_BUILTIN_QueueOffset": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_CastShadows": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_Effect_Power": 2,
+        "_Emission_Power": 0,
+        "_Emissive_Power": 0,
+        "_EnvironmentReflections": 1,
+        "_Fresnel_Power": 6,
+        "_GlossMapScale": 0,
+        "_Glossiness": 0,
+        "_GlossyReflections": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.005,
+        "_QueueControl": 0,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.5,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_WorkflowMode": 1,
+        "_ZTest": 4,
+        "_ZWrite": 1,
+        "_ZWriteControl": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Effect_Color": [
+          1,
+          0.59912676,
+          0,
+          0
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_Emission_Color": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "_Emission_Scroll_Speed1": [
+          0.05,
+          0,
+          0,
+          0
+        ],
+        "_Emission_Scroll_Speed2": [
+          -0.05,
+          0,
+          0,
+          0
+        ],
+        "_FresnelColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ],
+        "_Stone_Color": [
+          1,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Griffin_Dark_Material",
+      "source": "Source/Griffin Character/Materials/Griffin_Dark_Material.mat",
+      "textures": {
+        "_BaseMap": "Source/Griffin Character/Textures/T_Griffin_2_D.tga",
+        "_BumpMap": "Source/Griffin Character/Textures/T_Griffin__Normal.tga",
+        "_MainTex": "Source/Griffin Character/Textures/T_Griffin_2_D.tga",
+        "_MetallicGlossMap": "Source/Griffin Character/Textures/T_Griffin_MetallicSmoothness.tga",
+        "_SampleTexture2D_246e95cdb1974c7cb02f15444c7d4860_Texture_1": null,
+        "_SampleTexture2D_508a80ac7e5d403ab2ee25f2d0a762e2_Texture_1": null,
+        "_SampleTexture2D_6e983a790a834fbfa4574c4e603a66cc_Texture_1": "Source/Griffin Character/Textures/T_Griffin__Normal.tga",
+        "_SampleTexture2D_6e983a790a834fbfa4574c4e603a66cc_Texture_1_Texture2D": "Source/Griffin Character/Textures/T_Griffin__Normal.tga",
+        "_SampleTexture2D_7f735676069d4ef78fc7aa0f60e9f24d_Texture_1": null,
+        "_SampleTexture2D_c4065bc68dfb42bb98fd1564ce08379f_Texture_1": null,
+        "_SampleTexture2D_c880b0fbf716416c905f4f4c2887b999_Texture_1": null,
+        "_Texture2D": null,
+        "_Texture_Color": "Source/Griffin Character/Textures/T_Griffin_2_D.tga",
+        "_Texture_Emission": "Source/Griffin Character/Textures/T_Griffin_2_E.tga",
+        "_Texture_Metallic_Smoothness": "Source/Griffin Character/Textures/T_Griffin_MetallicSmoothness.tga"
+      },
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_Albedo_Brightness": 1,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_BUILTIN_QueueControl": 0,
+        "_BUILTIN_QueueOffset": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_CastShadows": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_Effect_Power": 2,
+        "_Emission_Power": 0,
+        "_Emissive_Power": 1,
+        "_EnvironmentReflections": 1,
+        "_Fresnel_Power": 6,
+        "_GlossMapScale": 0,
+        "_Glossiness": 0,
+        "_GlossyReflections": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.005,
+        "_QueueControl": 0,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.5,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_WorkflowMode": 1,
+        "_ZTest": 4,
+        "_ZWrite": 1,
+        "_ZWriteControl": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Effect_Color": [
+          1,
+          0.59912676,
+          0,
+          0
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_Emission_Color": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "_Emission_Scroll_Speed1": [
+          0.05,
+          0,
+          0,
+          0
+        ],
+        "_Emission_Scroll_Speed2": [
+          -0.05,
+          0,
+          0,
+          0
+        ],
+        "_FresnelColor": [
+          0.14631534,
+          1,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ],
+        "_Stone_Color": [
+          1,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Enemy_Plant_V1_Material",
+      "source": "Source/Carnivorous plant character/Materials/Enemy_Plant_V1_Material.mat",
+      "textures": {
+        "_BaseMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_1_D.tga",
+        "_BumpMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_N.tga",
+        "_EmissionMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_E.tga",
+        "_MainTex": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_1_D.tga",
+        "_MetallicGlossMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_MaskMap.tga"
+      },
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 1,
+        "_Glossiness": 0.5,
+        "_GlossyReflections": 1,
+        "_Metallic": 0,
+        "_Mode": 1,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.02,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.5,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_UVSec": 0,
+        "_WorkflowMode": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1,
+          0.5956318,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      }
+    },
+    {
+      "name": "Enemy_Plant_V2_Material",
+      "source": "Source/Carnivorous plant character/Materials/Enemy_Plant_V2_Material.mat",
+      "textures": {
+        "_BaseMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_2_D.tga",
+        "_BumpMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_N.tga",
+        "_EmissionMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_E.tga",
+        "_MainTex": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_2_D.tga",
+        "_MetallicGlossMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_MaskMap.tga"
+      },
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 1,
+        "_Glossiness": 0.5,
+        "_GlossyReflections": 1,
+        "_Metallic": 0,
+        "_Mode": 1,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.02,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.5,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_UVSec": 0,
+        "_WorkflowMode": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1,
+          0.5956318,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      }
+    },
+    {
+      "name": "Enemy_Plant_V3_Material",
+      "source": "Source/Carnivorous plant character/Materials/Enemy_Plant_V3_Material.mat",
+      "textures": {
+        "_BaseMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_3_D.tga",
+        "_BumpMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_N.tga",
+        "_EmissionMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_E.tga",
+        "_MainTex": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_3_D.tga",
+        "_MetallicGlossMap": "Source/Carnivorous plant character/Textures/T_Enemy_Plant_MaskMap.tga"
+      },
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 1,
+        "_Glossiness": 0.5,
+        "_GlossyReflections": 1,
+        "_Metallic": 0,
+        "_Mode": 1,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.02,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.5,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_UVSec": 0,
+        "_WorkflowMode": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1,
+          0.5956318,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      }
+    },
+    {
+      "name": "Main_Plant_V1_Material",
+      "source": "Source/Carnivorous plant character/Materials/Main_Plant_V1_Material.mat",
+      "textures": {
+        "_BaseMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_1_D.tga",
+        "_BumpMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_N.tga",
+        "_EmissionMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_1_E.tga",
+        "_MainTex": "Source/Carnivorous plant character/Textures/T_Main_Plant_1_D.tga",
+        "_MetallicGlossMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_MaskMap.tga"
+      },
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 1,
+        "_Glossiness": 0.5,
+        "_GlossyReflections": 1,
+        "_Metallic": 0,
+        "_Mode": 1,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.02,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.5,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_UVSec": 0,
+        "_WorkflowMode": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1,
+          0.5956318,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      }
+    },
+    {
+      "name": "Main_Plant_V2_Material",
+      "source": "Source/Carnivorous plant character/Materials/Main_Plant_V2_Material.mat",
+      "textures": {
+        "_BaseMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_2_D.tga",
+        "_BumpMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_N.tga",
+        "_EmissionMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_1_E.tga",
+        "_MainTex": "Source/Carnivorous plant character/Textures/T_Main_Plant_2_D.tga",
+        "_MetallicGlossMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_MaskMap.tga"
+      },
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 1,
+        "_Glossiness": 0.5,
+        "_GlossyReflections": 1,
+        "_Metallic": 0,
+        "_Mode": 1,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.02,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.5,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_UVSec": 0,
+        "_WorkflowMode": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1,
+          0.5956318,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      }
+    },
+    {
+      "name": "Main_Plant_V3_Material",
+      "source": "Source/Carnivorous plant character/Materials/Main_Plant_V3_Material.mat",
+      "textures": {
+        "_BaseMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_3_D.tga",
+        "_BumpMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_N.tga",
+        "_EmissionMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_2_E.tga",
+        "_MainTex": "Source/Carnivorous plant character/Textures/T_Main_Plant_3_D.tga",
+        "_MetallicGlossMap": "Source/Carnivorous plant character/Textures/T_Main_Plant_MaskMap.tga"
+      },
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 1,
+        "_Glossiness": 0.5,
+        "_GlossyReflections": 1,
+        "_Metallic": 0,
+        "_Mode": 1,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.02,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.5,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_UVSec": 0,
+        "_WorkflowMode": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      }
+    }
+  ]
+}

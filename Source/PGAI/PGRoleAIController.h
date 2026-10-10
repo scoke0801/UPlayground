@@ -13,6 +13,7 @@ class PGAI_API APGRoleAIController : public AAIController
     friend class FPGCombatBehaviorTreeTest;
 public:
     APGRoleAIController();
+    virtual void Tick(float DeltaSeconds) override;
     // Also used by isolated content QA without destroying the team-owning controller.
     UFUNCTION(BlueprintCallable, Category="PG|AI")
     void SetCombatThinkingEnabled(bool bEnabled);
@@ -41,6 +42,9 @@ protected:
     virtual void OnUnPossess() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:
+    void TraceCombatDecision(const TCHAR* Reason, int32 SkillID = 0);
+    TMap<FString, double> NextDecisionTraceAt;
+    bool bFlightApproach = false;
     int32 SelectSkill(const struct FPGEnemyDataRow& Data, const TArray<int32>& Candidates, int32 Phase,
         const TMap<int32, float>& Weights = {});
     int32 SequencePhase = 1;

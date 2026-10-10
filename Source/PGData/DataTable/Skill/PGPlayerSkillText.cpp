@@ -19,6 +19,7 @@ PGPlayerSkillText::FView PGPlayerSkillText::MakeView(const FPGSkillDataRow& Row)
         Hit.Shape==EPGPlayerHitShape::Disc ? TEXT("크게 원을 그리며 주변의 적을 베어냅니다.") :
         Phases.Num()>1 ? TEXT("전방의 적에게 연속 참격을 가합니다.") :
         Hit.bHeavyImpact ? TEXT("힘을 실은 참격으로 전방의 적을 베어냅니다.") : TEXT("전방의 적을 베어냅니다.");
+    if (!Profile->SkillDescription.IsEmpty()) View.Description = Profile->SkillDescription.ToString();
     float Total = 0.f;
     for (const auto& Phase : Phases) Total += Phase.DamageMultiplier;
     View.Damage = FString::Printf(TEXT("%s  공격력의 %.0f%%"),Phases.Num()>1 ? TEXT("총 피해") : TEXT("피해"),Total*100);

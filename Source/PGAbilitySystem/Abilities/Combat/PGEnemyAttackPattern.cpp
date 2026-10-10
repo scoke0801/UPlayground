@@ -215,6 +215,13 @@ void UPGEnemyAbilityAttack::StrikeElitePattern()
         if (!IsValid(Target) || Target->GetPGAbilitySystemComponent()->GetHealth() <= 0) { EndAbilitySelf(); return; }
     }
     if (Telegraph) { Telegraph->DestroyComponent(); Telegraph = nullptr; }
+    if (EliteData.Pattern == EPGAttackPattern::Summon)
+    {
+        const int32 Count = Enemy->SpawnPatternSummons(EliteData);
+        UE_LOG(LogTemp, Log, TEXT("PGPattern Summon skill=%d spawned=%d"), EliteData.SkillID, Count);
+        BeginRecovery();
+        return;
+    }
     if (!bStriking)
     {
         bStriking = Enemy->bPatternStriking = true;

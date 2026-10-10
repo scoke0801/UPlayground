@@ -4,7 +4,10 @@
 
 UENUM(BlueprintType)
 // Append only: existing DataTables serialize these values.
-enum class EPGAttackPattern : uint8 { LegacySlam, Sweep, ChargeSlam, HazardSequence, AimedProjectile, Thrust, RingBurst };
+enum class EPGAttackPattern : uint8 { LegacySlam, Sweep, ChargeSlam, HazardSequence, AimedProjectile, Thrust, RingBurst, Summon };
+
+UENUM(BlueprintType)
+enum class EPGEnemyMobility : uint8 { Ground, Flying, Stationary };
 
 UENUM(BlueprintType)
 enum class EPGEnemyRole : uint8 { Legacy, Chaser, Shooter, Guardian, Crusher, Warden, Boss };

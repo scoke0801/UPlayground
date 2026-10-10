@@ -50,6 +50,16 @@ bool FPGAttackGeometryTest::RunTest(const FString&)
     TestFalse(TEXT("Fan cannot exceed its performance budget"), Row.IsPatternValid());
     Row.ProjectileCount = 3; Row.ProjectileSpreadHalfAngle = 0;
     TestFalse(TEXT("Multishot cannot stack invisible identical lanes"), Row.IsPatternValid());
+    Row.Pattern = EPGAttackPattern::Summon;
+    TestFalse(TEXT("Summon requires a registered enemy ID"), Row.IsPatternValid());
+    Row.SummonEnemyID = 15404;
+    TestTrue(TEXT("Bounded summon data is valid"), Row.IsPatternValid());
+    Row.MaxLivingSummons = 0;
+    TestFalse(TEXT("Summon cannot omit a population budget"), Row.IsPatternValid());
+    Row.MaxLivingSummons = 4; Row.SummonCount = 9;
+    TestFalse(TEXT("Summon burst is bounded"), Row.IsPatternValid());
+    Row.SummonCount = 2; Row.SummonRadius = -1;
+    TestFalse(TEXT("Invalid summon placement radius is rejected"), Row.IsPatternValid());
     return true;
 }
 #endif

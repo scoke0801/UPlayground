@@ -19,17 +19,79 @@
 #include "HAL/IConsoleManager.h"
 #include "PGCombatSpatial.h"
 #include "DrawDebugHelpers.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Components/CapsuleComponent.h"
 
 static TAutoConsoleVariable<int32> CVarPGUseCombatBT(TEXT("pg.AI.UseBehaviorTree"), 1,
     TEXT("Use role BTs for newly initialized enemies. 0 keeps the shared timer driver for comparison."));
 static TAutoConsoleVariable<int32> CVarPGCombatPositionDebug(TEXT("pg.AI.DebugPositions"), 0,
     TEXT("Draw chosen combat positions and accepted local movement requests."));
+static TAutoConsoleVariable<int32> CVarPGCombatDecisionDebug(TEXT("pg.AI.DebugDecisions"), 0,
+    TEXT("Log combat eligibility, selection and execution reasons. Disabled by default."));
+static TAutoConsoleVariable<int32> CVarPGCombatDecisionEnemy(TEXT("pg.AI.DebugEnemyID"), 0,
+    TEXT("Limit decision logs to this enemy data ID; 0 includes all enemies."));
 
-APGRoleAIController::APGRoleAIController() { SetGenericTeamId(FGenericTeamId(1)); }
+void APGRoleAIController::TraceCombatDecision(const TCHAR* Reason, int32 SkillID)
+{
+    if (!CVarPGCombatDecisionDebug.GetValueOnGameThread()) return;
+    const auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
+    if (!Enemy || !GetWorld()) return;
+    const int32 Filter = CVarPGCombatDecisionEnemy.GetValueOnGameThread();
+    if (Filter != 0 && Filter != Enemy->GetCharacterTID()) return;
+    // Bound repeated diagnostics to one entry per reason/skill/second per controller.
+    const FString Key = FString::Printf(TEXT("%s:%d"), Reason, SkillID);
+    const double Now = GetWorld()->GetTimeSeconds();
+    if (const double* Next = NextDecisionTraceAt.Find(Key); Next && Now < *Next) return;
+    NextDecisionTraceAt.Add(Key, Now + 1.0);
+    auto* Tables = UPGDataTableManager::Get(this);
+    const auto* Skill = Tables && SkillID ? Tables->GetRowData<FPGSkillDataRow>(SkillID) : nullptr;
+    const auto* Target = CombatTarget.Get();
+    UE_LOG(LogTemp, Log, TEXT("PGCombatDecision pawn=%s enemy=%d reason=%s skill=%d pending=%d phase=%d distance=%.1f pressure=%d montage=%s presentation=%s profile=%s"),
+        *GetNameSafe(Enemy), Enemy->GetCharacterTID(), Reason, SkillID, PendingSkill, Enemy->BossPhase,
+        Target ? FVector::Dist2D(Enemy->GetActorLocation(), Target->GetActorLocation()) : -1.f,
+        Skill ? Skill->AttackPressureCost : 0,
+        Skill ? *Skill->MontagePath.ToString() : TEXT(""),
+        Skill ? *Skill->ElitePresentationMontage.ToSoftObjectPath().ToString() : TEXT(""),
+        Skill ? *Skill->EnemyProfile.ToSoftObjectPath().ToString() : TEXT(""));
+}
+
+APGRoleAIController::APGRoleAIController()
+{
+    SetGenericTeamId(FGenericTeamId(1));
+    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bStartWithTickEnabled = false;
+}
+
+void APGRoleAIController::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
+    auto* Tables = UPGDataTableManager::Get(this);
+    const auto* Data = Enemy && Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
+    if (!Data || Data->Mobility != EPGEnemyMobility::Flying || bHoldPosition || Enemy->bPatternActive ||
+        !Enemy->GetPGAbilitySystemComponent() || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0) return;
+    FVector Direction = bFlightApproach && CombatTarget.IsValid() ?
+        (CombatTarget->GetActorLocation() - Enemy->GetActorLocation()).GetSafeNormal2D() : FVector::ZeroVector;
+    const FVector Probe = Enemy->GetActorLocation() + Direction * 100.f;
+    FHitResult Floor;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(PGFlightFloor), false, Enemy);
+    if (!GetWorld()->LineTraceSingleByObjectType(Floor, Probe + FVector(0,0,300), Probe - FVector(0,0,1000),
+        FCollisionObjectQueryParams(ECC_WorldStatic), Params))
+    {
+        Enemy->GetCharacterMovement()->StopMovementImmediately();
+        TraceCombatDecision(TEXT("flight_floor_missing"));
+        return;
+    }
+    const float Height = Floor.ImpactPoint.Z + Enemy->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() +
+        FMath::Clamp(Data->FlightHeight, 0.f, 300.f);
+    Direction.Z = FMath::Clamp((Height - Enemy->GetActorLocation().Z) / 80.f, -1.f, 1.f);
+    Enemy->AddMovementInput(Direction.GetSafeNormal(), FMath::Min(1.f, Direction.Size()));
+}
 void APGRoleAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
     PreviousSkill = 0;
+    NextDecisionTraceAt.Reset();
     PendingSkill = 0;
     SequencePhase = 1;
     SequenceCursor = 0;
@@ -40,6 +102,7 @@ void APGRoleAIController::OnPossess(APawn* InPawn)
 }
 void APGRoleAIController::SetCombatThinkingEnabled(bool bEnabled)
 {
+    if (!bEnabled) { SetActorTickEnabled(false); bFlightApproach = false; }
     GetWorldTimerManager().ClearTimer(ThinkTimer);
     if (bEnabled && GetPawn())
     {
@@ -85,17 +148,24 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
     const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(SkillID);
     if (!Data || !Data->SkillIdList.Contains(SkillID) || !Skill || !Skill->IsPatternValid() || Skill->MinimumBossPhase > Enemy->BossPhase ||
         !Enemy->GetSkillHandler() || !Enemy->GetSkillHandler()->IsSkillReadyByID(SkillID)) return false;
+    if (Skill->Pattern == EPGAttackPattern::Summon && Enemy->GetLivingSummonCount() >= Skill->MaxLivingSummons) return false;
     if (const auto* Profile = Skill->EnemyProfile.LoadSynchronous())
         if (Profile->bGuardCounter && Enemy->CompletedAttackPatterns < Profile->AttacksBeforeGuard) return false;
     auto* Director = GetWorld()->GetSubsystem<UPGCombatDirectorSubsystem>();
     auto* Target = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
     if (!Target || !Target->GetPGAbilitySystemComponent() || Target->GetPGAbilitySystemComponent()->GetHealth() <= 0) return false;
+    if (!Enemy->EnsureCombatReady(Target)) return false;
     if (!Skill->IsInActivationRange(FVector::Dist2D(Enemy->GetActorLocation(), Target->GetActorLocation())) || !LineOfSightTo(Target)) return false;
-    if (Director && !Director->TryReserve(Enemy, Target, Skill->AttackPressureCost)) return false;
+    if (Director && !Director->TryReserve(Enemy, Target, Skill->AttackPressureCost))
+    {
+        TraceCombatDecision(TEXT("pressure_wait"), SkillID);
+        return false;
+    }
     auto* ASC = Enemy->GetPGAbilitySystemComponent();
     const auto Handle = GetAttackAbilityHandle();
     Enemy->RequestedSkillID = SkillID;
     bPositionMove = false;
+    bFlightApproach = false;
     StopMovement();
     const bool bActivated = Handle.IsValid() && ASC->TryActivateAbility(Handle);
     Enemy->RequestedSkillID = 0;
@@ -110,6 +180,7 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
             if (Index != INDEX_NONE) SequenceCursor = (Index + 1) % Data->PhaseTwoSkillSequence.Num();
         }
     }
+    TraceCombatDecision(bActivated && Enemy->bPatternActive ? TEXT("started") : TEXT("activation_failed"), SkillID);
     return bActivated && Enemy->bPatternActive;
 }
 
@@ -122,12 +193,13 @@ int32 APGRoleAIController::SelectSkill(const FPGEnemyDataRow& Data, const TArray
         if (auto* Tables = UPGDataTableManager::Get(this))
             for (int32 ID : Candidates)
                 if (const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ID))
-                    if (const auto* Profile = Skill->EnemyProfile.LoadSynchronous(); Profile && Profile->bGuardCounter) return ID;
+                    if (const auto* Profile = Skill->EnemyProfile.LoadSynchronous(); Profile && Profile->bGuardCounter)
+                    { TraceCombatDecision(TEXT("selected_guard_priority"), ID); return ID; }
     if (Data.Role == EPGEnemyRole::Boss && Phase >= 2 && !Data.PhaseTwoSkillSequence.IsEmpty())
         for (int32 Offset = 0; Offset < Data.PhaseTwoSkillSequence.Num(); ++Offset)
         {
             const int32 ID = Data.PhaseTwoSkillSequence[(SequenceCursor + Offset) % Data.PhaseTwoSkillSequence.Num()];
-            if (Candidates.Contains(ID)) return ID;
+            if (Candidates.Contains(ID)) { TraceCombatDecision(TEXT("selected_phase_sequence"), ID); return ID; }
         }
     TArray<int32> Choices = Candidates;
     if (Choices.Num() > 1) Choices.Remove(PreviousSkill);
@@ -138,8 +210,9 @@ int32 APGRoleAIController::SelectSkill(const FPGEnemyDataRow& Data, const TArray
     for (int32 ID : Choices)
     {
         Roll -= Weights.Contains(ID) ? FMath::Max(0.f, Weights[ID]) : 1.f;
-        if (Roll < 0.f) return ID;
+        if (Roll < 0.f) { TraceCombatDecision(TEXT("selected_weighted"), ID); return ID; }
     }
+    TraceCombatDecision(TEXT("selected_weighted"), Choices.Last());
     return Choices.Last();
 }
 FGameplayAbilitySpecHandle APGRoleAIController::GetAttackAbilityHandle()
@@ -171,12 +244,14 @@ void APGRoleAIController::PublishCombatBlackboard()
 
 void APGRoleAIController::RefreshCombatContext()
 {
+    bFlightApproach = false;
     auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
     auto* Target = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
     bHoldPosition = true;
     if (!Enemy || !Enemy->GetPGAbilitySystemComponent() || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
         !Target || !Target->GetPGAbilitySystemComponent() || Target->GetPGAbilitySystemComponent()->GetHealth() <= 0)
     {
+        TraceCombatDecision(TEXT("invalid_combatant"));
         CombatTarget.Reset(); PendingSkill = 0;
         ReleaseAttackReservation();
         StopMovement();
@@ -188,15 +263,30 @@ void APGRoleAIController::RefreshCombatContext()
     }
     if (CombatTarget.IsValid() && CombatTarget != Target) { PendingSkill = 0; ReleaseAttackReservation(); }
     CombatTarget = Target;
-    if (Enemy->bPatternActive || Enemy->IsBossTransitioning() || GetWorld()->GetTimeSeconds() < Enemy->NextCombatActionAt) { PendingSkill = 0; StopMovement(); PublishCombatBlackboard(); return; }
+    if (!Enemy->EnsureCombatReady(Target))
+    {
+        TraceCombatDecision(TEXT("entrance_locked"));
+        PendingSkill = 0; ReleaseAttackReservation(); StopMovement(); PublishCombatBlackboard(); return;
+    }
+    if (Enemy->bPatternActive || Enemy->IsBossTransitioning() || GetWorld()->GetTimeSeconds() < Enemy->NextCombatActionAt)
+    {
+        TraceCombatDecision(Enemy->bPatternActive ? TEXT("pattern_locked") :
+            Enemy->IsBossTransitioning() ? TEXT("phase_transition") : TEXT("recovery_locked"));
+        PendingSkill = 0; StopMovement(); PublishCombatBlackboard(); return;
+    }
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
     auto* Handler = Enemy->GetSkillHandler();
-    if (!Data || !Handler) { PendingSkill = 0; ReleaseAttackReservation(); StopMovement(); PublishCombatBlackboard(); return; }
+    if (!Data || !Handler)
+    {
+        TraceCombatDecision(TEXT("missing_combat_data"));
+        PendingSkill = 0; ReleaseAttackReservation(); StopMovement(); PublishCombatBlackboard(); return;
+    }
+    SetActorTickEnabled(Data->Mobility == EPGEnemyMobility::Flying);
     const FVector Delta = Target->GetActorLocation() - Enemy->GetActorLocation();
     const float Distance = Delta.Size2D();
     const double Now = GetWorld()->GetTimeSeconds();
-    Enemy->SetActorRotation(FMath::RInterpConstantTo(Enemy->GetActorRotation(), Delta.Rotation(), FMath::Max(.05f, DecisionInterval), FMath::Max(1.f, Data->TurnSpeed)));
+    Enemy->SetActorRotation(FMath::RInterpConstantTo(Enemy->GetActorRotation(), Delta.GetSafeNormal2D().Rotation(), FMath::Max(.05f, DecisionInterval), FMath::Max(1.f, Data->TurnSpeed)));
     Enemy->SetGuarding(Data->Role == EPGEnemyRole::Guardian);
     if (Now < RetreatUntil && GetMoveStatus() == EPathFollowingStatus::Moving) { PublishCombatBlackboard(); return; }
     if (RetreatUntil > 0) { StopMovement(); RetreatUntil = 0; }
@@ -209,14 +299,21 @@ void APGRoleAIController::RefreshCombatContext()
     for (int32 ID : Data->SkillIdList)
     {
         const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ID);
-        if (!Skill || Skill->MinimumBossPhase > Enemy->BossPhase || Skill->SelectionWeight <= 0.f || !Skill->IsPatternValid()) continue;
+        if (!Skill) { TraceCombatDecision(TEXT("missing_skill"), ID); continue; }
+        if (Skill->MinimumBossPhase > Enemy->BossPhase) { TraceCombatDecision(TEXT("phase_required"), ID); continue; }
+        if (Skill->SelectionWeight <= 0.f) { TraceCombatDecision(TEXT("weight_disabled"), ID); continue; }
+        if (!Skill->IsPatternValid()) { TraceCombatDecision(TEXT("invalid_pattern"), ID); continue; }
+        if (Skill->Pattern == EPGAttackPattern::Summon && Enemy->GetLivingSummonCount() >= Skill->MaxLivingSummons)
+        { TraceCombatDecision(TEXT("summon_limit"), ID); continue; }
         if (const auto* Profile = Skill->EnemyProfile.LoadSynchronous())
-            if (Profile->bGuardCounter && Enemy->CompletedAttackPatterns < Profile->AttacksBeforeGuard) continue;
+            if (Profile->bGuardCounter && Enemy->CompletedAttackPatterns < Profile->AttacksBeforeGuard)
+            { TraceCombatDecision(TEXT("guard_attack_requirement"), ID); continue; }
         const float Range = Skill->GetPatternActivationRange();
         NearestRange = FMath::Min(NearestRange, Range);
-        if (!Handler->IsSkillReadyByID(ID)) continue;
+        if (!Handler->IsSkillReadyByID(ID)) { TraceCombatDecision(TEXT("cooldown"), ID); continue; }
         ReadyRange = FMath::Max(ReadyRange, Range);
         if (Skill->IsInActivationRange(Distance) && bCanSeeTarget) { Candidates.Add(ID); Weights.Add(ID, Skill->SelectionWeight); }
+        else TraceCombatDecision(!Skill->IsInActivationRange(Distance) ? TEXT("out_of_range") : TEXT("no_line_of_sight"), ID);
     }
     if (!Candidates.Contains(PendingSkill))
     {
@@ -224,6 +321,7 @@ void APGRoleAIController::RefreshCombatContext()
         // Keep the FIFO place if another eligible skill replaces the previous choice.
         if (PendingSkill == 0) ReleaseAttackReservation();
     }
+    else TraceCombatDecision(TEXT("selection_retained"), PendingSkill);
     ApproachRange = (ReadyRange > 0.f ? ReadyRange : NearestRange) * .8f;
     if (Data->PreferredDistance > 0.f) ApproachRange = FMath::Min(ApproachRange, Data->PreferredDistance);
     if (NearestRange == TNumericLimits<float>::Max()) ApproachRange = 180.f;
@@ -237,7 +335,7 @@ bool APGRoleAIController::TryRetreat()
     auto* Target = CombatTarget.Get();
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Data = Enemy && Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
-    if (!Data || !Target || Data->Role != EPGEnemyRole::Shooter) return false;
+    if (!Data || !Target || Data->Mobility != EPGEnemyMobility::Ground || Data->Role != EPGEnemyRole::Shooter) return false;
     const double Now = GetWorld()->GetTimeSeconds();
     const FVector Delta = Target->GetActorLocation() - Enemy->GetActorLocation();
     const float Distance = Delta.Size2D();
@@ -252,7 +350,8 @@ bool APGRoleAIController::TryRetreat()
             if (!Nav->ProjectPointToNavigation(Enemy->GetActorLocation() + Away * FMath::Max(1.f, Data->RetreatDistance), Position, FVector(100,100,200))) continue;
             // MoveTo rejects partial paths; do not run the same synchronous path search twice.
             if (FVector::Dist2D(Position.Location, Target->GetActorLocation()) <= Distance + 60) continue;
-            if (MoveToLocation(Position.Location, 40.f, false, true, false, true, nullptr, false) == EPathFollowingRequestResult::Failed) continue;
+            if (MoveToLocation(Position.Location, 40.f, false, true, false, true, nullptr, false) == EPathFollowingRequestResult::Failed)
+            { TraceCombatDecision(TEXT("retreat_request_failed")); continue; }
             RetreatUntil = Now + FMath::Max(.1f, Data->RetreatSeconds);
             MoveTarget.Reset();
             PendingSkill = 0; ReleaseAttackReservation(); PublishCombatBlackboard();
@@ -267,6 +366,14 @@ void APGRoleAIController::ApproachTarget()
     auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
     auto* Target = CombatTarget.Get();
     if (!Enemy || !Target || bHoldPosition) return;
+    auto* Tables = UPGDataTableManager::Get(this);
+    const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
+    if (Data && Data->Mobility == EPGEnemyMobility::Stationary) { StopMovement(); return; }
+    if (Data && Data->Mobility == EPGEnemyMobility::Flying)
+    {
+        bFlightApproach = PendingSkill == 0 && (!bCanSeeTarget || FVector::Dist2D(Target->GetActorLocation(), Enemy->GetActorLocation()) > ApproachRange);
+        return;
+    }
     if (TryPositionForCombat()) return;
     const float Distance = FVector::Dist2D(Target->GetActorLocation(), Enemy->GetActorLocation());
     // Waiting for pressure must not keep walking through the intended firing distance.
@@ -277,7 +384,8 @@ void APGRoleAIController::ApproachTarget()
     if (Now < NextMoveRequestAt) return;
     NextMoveRequestAt = Now + FMath::Max(.1f, MoveRetryInterval);
     LastAcceptanceRadius = Radius; MoveTarget = Target;
-    MoveToActor(Target, Radius, false, true, false, nullptr, false);
+    if (MoveToActor(Target, Radius, false, true, false, nullptr, false) == EPathFollowingRequestResult::Failed)
+        TraceCombatDecision(TEXT("approach_request_failed"));
 }
 
 bool APGRoleAIController::TryPositionForCombat()
@@ -328,7 +436,8 @@ bool APGRoleAIController::TryPositionForCombat()
     // At most two path requests per reconsideration; no duplicate preflight path search.
     for (int32 Index = 0; Index < FMath::Min(2, Candidates.Num()); ++Index)
     {
-        if (MoveToLocation(Candidates[Index].Location, 35.f, false, true, false, true, nullptr, false) == EPathFollowingRequestResult::Failed) continue;
+        if (MoveToLocation(Candidates[Index].Location, 35.f, false, true, false, true, nullptr, false) == EPathFollowingRequestResult::Failed)
+        { TraceCombatDecision(TEXT("position_request_failed")); continue; }
         PositionGoal = Candidates[Index].Location; bPositionMove = true; MoveTarget.Reset(); ++PositionMoveCount;
         if (CVarPGCombatPositionDebug.GetValueOnGameThread())
         {

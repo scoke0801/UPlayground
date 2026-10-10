@@ -9,9 +9,14 @@ CREATURE_IDS=frozenset(c['id'] for c in SPEC['creatures'])
 IDS=P09_IDS|CREATURE_IDS
 ROLE_IDS={i:g['base'] for g in SPEC['p09_grades'] for i in g['ids']}
 ROLE_IDS.update({c['id']:c['base'] for c in SPEC['creatures']})
+CREATURE_COMBAT=json.loads((Path(__file__).parent/'Data/CreatureCombat.json').read_text(encoding='utf-8'))
+ROLE_IDS.update({c['id']:c['base'] for c in CREATURE_COMBAT['monsters']})
 
 def compose(stages):
     result=copy.deepcopy(stages)
+    creature_spec=CREATURE_COMBAT
+    creature_ids={d['id'] for d in creature_spec['monsters']}
+    has_creatures=any(s['MonsterId'] in creature_ids for stage in stages for w in stage['Waves'] for s in w['MonsterSpawnInfos'])
     assert set(map(int,SPEC['waves'])) <= {s['Id'] for s in result}
     for stage in result:
         roster=SPEC['waves'].get(str(stage['Id']))
@@ -25,6 +30,14 @@ def compose(stages):
             assert sum(s['SpawnCount'] for s in old)==sum(n for _,n in pack), 'Wave budget changed'
             assert len({i for i,_ in pack})==len(pack) and all(n>0 for _,n in pack)
             wave['MonsterSpawnInfos']=[dict(old[0],MonsterId=i,SpawnCount=n) for i,n in pack]
+    if has_creatures:
+        for patch in creature_spec['wave_replacements']:
+            stage=next(s for s in result if s['Id']==patch['stage'])
+            infos=stage['Waves'][patch['wave']-1]['MonsterSpawnInfos']
+            source=next(s for s in infos if s['MonsterId']==patch['source'])
+            new=dict(source,MonsterId=patch['enemy'],SpawnCount=1)
+            source['SpawnCount']-=1
+            infos[:]=[s for s in infos if s['SpawnCount']>0]+[new]
     return result
 
 def validate_roster(stages):

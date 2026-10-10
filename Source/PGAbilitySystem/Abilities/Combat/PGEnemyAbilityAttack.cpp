@@ -37,7 +37,8 @@ void UPGEnemyAbilityAttack::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	// 스킬 결정해서 대상 스킬 Ability를 활성화할 수 있어야한다.
 	APGCharacterEnemy* Character = GetEnemyCharacterFromActorInfo();
-	if (nullptr == Character || Character->IsBossTransitioning() || Character->GetPGAbilitySystemComponent()->GetHealth() <= 0)
+	if (nullptr == Character || Character->IsBossTransitioning() || Character->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
+        !Character->EnsureCombatReady(UGameplayStatics::GetPlayerPawn(this, 0)))
 	{
 		EndAbilitySelf();
 		return;

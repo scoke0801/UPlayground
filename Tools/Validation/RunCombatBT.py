@@ -1,5 +1,6 @@
 """Run the autonomous six-role BT probe and retain evidence in a unique QA directory."""
 from datetime import datetime, timezone
+import argparse
 import json
 import os
 import re
@@ -9,6 +10,9 @@ from RunQA import ROOT, FATAL, read_text, run_process, unexpected_errors
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--debug-decisions', action='store_true', help='Capture throttled AI decision reasons')
+    args = parser.parse_args()
     version = json.loads(read_text(ROOT / 'UPlayground.uproject'))['EngineAssociation']
     engine = Path(os.environ.get('ProgramFiles', 'C:/Program Files')) / 'Epic Games' / f'UE_{version}'
     run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ_') + uuid.uuid4().hex[:8]
@@ -20,9 +24,14 @@ def main():
         '-RenderOffscreen', '-windowed', '-ResX=1280', '-ResY=720', '-nosplash', '-nosound', '-unattended', '-nop4',
         '-DisablePlugins=RiderLink', '-ddc=InstalledNoZenLocalFallback',
         '-culture=en', '-UTF8Output', '-PGRunSeed=173001', f'-PGTestProfile=CombatBT_{run_id}', f'-PGCombatBTEvidence={out}', f'-abslog={out / "probe.log"}']
+    if args.debug_decisions:
+        command.append('-ExecCmds=pg.AI.DebugDecisions 1')
     code, timeout = run_process(command, ROOT, out / 'probe.stdout.log', 240)
     log = read_text(out / 'probe.log') if (out / 'probe.log').exists() else ''
     problems = unexpected_errors(log, 'combat_bt')
+    decision_reasons = sorted(set(re.findall(r'PGCombatDecision .*?reason=(\w+)', log)))
+    if args.debug_decisions and 'started' not in decision_reasons:
+        problems.append('Missing AI decision execution evidence')
     if code or timeout or FATAL.search(log):
         problems.append(f'Process failure: code={code}, timeout={timeout}')
     completions = re.findall(r'PGCombatBTProbe COMPLETE (\{[^\n]+\})', log)
@@ -39,7 +48,7 @@ def main():
         if not (out / name).is_file():
             problems.append('Missing rendered evidence: ' + name)
     report = dict(schema=2, status='FAIL' if problems else 'PASS', assisted=True, direct_input=False,
-                  problems=problems, sample=sample, command=[str(a) for a in command])
+                  problems=problems, sample=sample, decision_reasons=decision_reasons, command=[str(a) for a in command])
     (out / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'BT probe {report["status"]}: {problems}', flush=True)
     return int(bool(problems))
