@@ -4,7 +4,7 @@
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "Style/PGUIStyleSettings.h"
+#include "PGUI/Style/PGUIStyleSettings.h"
 #include "UObject/StrongObjectPtr.h"
 
 /** Height-clipped liquid, readable even when empty; authored metal remains static. */

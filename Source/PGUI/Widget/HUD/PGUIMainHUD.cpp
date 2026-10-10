@@ -65,16 +65,20 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeResource(bool bHealth)
 {
     const auto& Art=FPGCombatHUDStyle::Get();
     return SNew(SBox).WidthOverride(144).HeightOverride(172)
-    [SNew(SVerticalBox)
-        + SVerticalBox::Slot().AutoHeight()
-        [SNew(SPGResourceOrb).Frame(&OrbFrameBrush).Health(bHealth)
-            .Ratio_Lambda([this,bHealth](){return bHealth ? HealthRatio : RageRatio;})]
-        + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,-16,0,0)
-        [SNew(STextBlock).Text_Lambda([this,bHealth](){return FText::FromString(bHealth ? TEXT("생명력") : bRogueHUD ? TEXT("격분") : TEXT("분노"));})
-            .Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(Art.Ivory).ShadowOffset(FVector2D(1,1))]
-        + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,5,0,0)
-        [SNew(STextBlock).Text_Lambda([this,bHealth](){return bHealth ? HealthText : RageText;})
-            .Font(FCoreStyle::GetDefaultFontStyle("Bold",12)).ColorAndOpacity(Art.Ivory).ShadowOffset(FVector2D(1,1))]
+    .VAlign(VAlign_Top)
+    [SNew(SBox).HeightOverride(144)
+        [SNew(SOverlay)
+            + SOverlay::Slot()
+            [SNew(SPGResourceOrb).Frame(&OrbFrameBrush).Health(bHealth)
+                .Ratio_Lambda([this,bHealth](){return bHealth ? HealthRatio : RageRatio;})]
+            // Reserve a chord inside the glass; long values shrink without crossing the frame.
+            + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+            [SNew(SBox).WidthOverride(82).HeightOverride(19)
+                [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
+                    [SNew(STextBlock).Text_Lambda([this,bHealth](){return bHealth ? HealthText : RageText;})
+                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",11)).ColorAndOpacity(Art.Ivory)
+                        .ShadowColorAndOpacity(FLinearColor(0,0,0,.95f)).ShadowOffset(FVector2D(0,1.5f))]]]
+        ]
     ];
 }
 
@@ -98,10 +102,6 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
             + SOverlay::Slot().VAlign(VAlign_Bottom).HAlign(HAlign_Center)
             [SNew(STextBlock).Text_Lambda([this,Index](){return SkillKeys[Index];})
                 .Font(FCoreStyle::GetDefaultFontStyle("Bold",10)).ColorAndOpacity(Art.Ivory).ShadowOffset(FVector2D(1,1))]
-            + SOverlay::Slot().VAlign(VAlign_Top).HAlign(HAlign_Center)
-            [SNew(SBox).WidthOverride(32).HeightOverride(2)
-                [SNew(SImage).Image(FCoreStyle::Get().GetBrush("WhiteBrush"))
-                    .ColorAndOpacity_Lambda([this,Index](){return SkillIds[Index]==RefundSkillID && RefundSkillID>0 ? FLinearColor(1,.08f,.06f) : Index==7 && bAfterimageReady ? FLinearColor(1,.65f,.12f) : FLinearColor::Transparent;})]]
         ]
     ];
 }
@@ -141,6 +141,16 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
         Skills->AddSlot().AutoWidth().Padding(Index==7 ? 10.f : 2.f,0,2,0)[MakeSkill(Index)];
     return SNew(SSafeZone).Visibility(EVisibility::SelfHitTestInvisible)
     [SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
+        + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+        [SNew(SBox).WidthOverride(4).HeightOverride(4)
+            .Visibility_Lambda([this]()
+            {
+                const auto* PC = GetOwningPlayer();
+                const auto* Player = Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+                return PC && !PC->bShowMouseCursor && Player && Player->GetCameraMode() == EPGCameraMode::Action3D
+                    ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
+            })
+            [SNew(SImage).Image(FCoreStyle::Get().GetBrush("WhiteBrush")).ColorAndOpacity(Art.Ivory)]]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0,28)
         [SNew(SBox).WidthOverride(430)
             .Visibility_Lambda([this](){return bShowBoss ? EVisibility::HitTestInvisible : EVisibility::Collapsed;})
@@ -158,10 +168,8 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
             + SVerticalBox::Slot().AutoHeight().Padding(0,12,0,0)[MakeActions()]]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(16,0,16,12)
         [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
-            [SNew(SBox).Tag(TEXT("PGCombatHUDLayout")).WidthOverride(900).HeightOverride(226)
+            [SNew(SBox).Tag(TEXT("PGCombatHUDLayout")).WidthOverride(900).HeightOverride(172)
                 [SNew(SVerticalBox)
-                    + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-                    [SNew(SBox).HeightOverride(54)[MakeBuildPanel()]]
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
                     [SNew(SHorizontalBox)
                         + SHorizontalBox::Slot().AutoWidth()[MakeResource(true)]
@@ -234,42 +242,11 @@ void UPGUIMainHUD::Refresh()
     RageText=FText::FromString(FString::Printf(TEXT("%.0f / %.0f"),Rage,MaxRage));
     const auto* Profile = UPGProfileSubsystem::Get(this);
     bRogueHUD = Profile && Profile->GetCatalog() && Profile->GetCatalog()->bRoguelikeRuns;
-    RefundSkillID=0; bAfterimageReady=false;
-    for (int32 I=0; I<3; ++I) {BuildActive[I]=BuildCore[I]=false; BuildBranches[I]=0;}
-    BuildStatus=BuildProc=FText::GetEmpty();
     if (bRogueHUD && ASC)
     {
         const auto State = ASC->GetBuildCombatState();
-        RefundSkillID=State.RefundSkillID;
-        bAfterimageReady=State.FrenzyMaxStacks>0 && State.FrenzyStacks==State.FrenzyMaxStacks && ASC->GetPerkPercent(EPGCombatPerk::FrenzyAfterimage)>0;
         RageRatio = State.FrenzyMaxStacks > 0 ? float(State.FrenzyStacks)/State.FrenzyMaxStacks : 0;
-        RageText = FText::FromString(State.FrenzyStacks>0 ? FString::Printf(TEXT("%d/%d · %.1f초"),State.FrenzyStacks,State.FrenzyMaxStacks,State.FrenzySeconds) : FString::Printf(TEXT("0 / %d"),State.FrenzyMaxStacks));
-        int32 ActiveFamilies = 0;
-        const EPGCombatPerk Roots[] = {EPGCombatPerk::Bleed, EPGCombatPerk::Shockwave, EPGCombatPerk::Frenzy};
-        const EPGCombatPerk Cores[] = {EPGCombatPerk::BleedRecast, EPGCombatPerk::ShockFracture, EPGCombatPerk::FrenzyAfterimage};
-        for (int32 I=0; I<3; ++I)
-        {
-            int32 Branches = 0;
-            for (int32 Offset=1; Offset<=3; ++Offset) if (ASC->GetPerkPercent(EPGCombatPerk(uint8(Roots[I])+Offset)) > 0) ++Branches;
-            BuildBranches[I]=Branches;
-            BuildActive[I]=ASC->GetPerkPercent(Roots[I])>0;
-            BuildCore[I]=ASC->GetPerkPercent(Cores[I])>0;
-            if (BuildActive[I]) ++ActiveFamilies;
-        }
-        BuildSummary = FText::FromString(ActiveFamilies==0 ? TEXT("시련을 돌파하고 새로운 힘을 선택하세요.") : TEXT("같은 계열의 강화를 모아 힘을 키우세요."));
-        FString Status = State.TargetName.IsEmpty() ? TEXT("") : State.TargetName;
-        if (State.BleedStacks > 0) Status += FString::Printf(TEXT("\n출혈 %d중첩 · %.1f초"),State.BleedStacks,State.BleedSeconds);
-        if (ASC->GetPerkPercent(EPGCombatPerk::ShockFracture) > 0 && !State.TargetName.IsEmpty())
-            Status += State.WeaknessSeconds > 0 ? FString::Printf(TEXT("\n방어 약화 · %.1f초"),State.WeaknessSeconds) : FString::Printf(TEXT("\n공명 적중 %d/%d"),State.ShockHits,State.ShockHitsRequired);
-        if (State.FrenzyStacks > 0)
-            Status += FString::Printf(TEXT("\n격분 공격 속도 +%.0f%%"),(ASC->GetFrenzyRate()-1.f)*100);
-        BuildStatus = FText::FromString(Status);
-        TArray<FString> Procs;
-        if (State.bShockProc) Procs.Add(TEXT("충격파 발동"));
-        if (State.bRefundProc) Procs.Add(TEXT("핏빛 순환 · 쿨다운 반환"));
-        if (State.bAfterimageProc) Procs.Add(TEXT("격분의 잔상 · 중첩 소비"));
-        if (State.FrenzyStacks == State.FrenzyMaxStacks && ASC->GetPerkPercent(EPGCombatPerk::FrenzyAfterimage)>0) Procs.Add(TEXT("잔상 준비 · 회피로 발동"));
-        BuildProc = FText::FromString(FString::Join(Procs,TEXT("\n")));
+        RageText = FText::FromString(FString::Printf(TEXT("%d / %d"),State.FrenzyStacks,State.FrenzyMaxStacks));
     }
     for(int32 Index=0;Index<8;++Index)
     {

@@ -20,6 +20,7 @@ private:
     friend class APGPlayerController;
     TSharedPtr<class SCanvas> Canvas;
     TArray<TSharedPtr<FPGLootLabelEntry>> Entries;
+    TArray<TWeakObjectPtr<class APGLootDrop>> CachedDrops;
     UPROPERTY(Transient) TMap<int32,TObjectPtr<UTexture2D>> Icons;
     FText Overflow;
     int32 HiddenCount = 0;

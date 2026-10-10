@@ -65,17 +65,25 @@ void UPGUILootOverlay::NativeConstruct()
 }
 void UPGUILootOverlay::ReleaseSlateResources(bool bReleaseChildren)
 {
-    Super::ReleaseSlateResources(bReleaseChildren); Canvas.Reset(); Entries.Empty(); Icons.Empty();
+    Super::ReleaseSlateResources(bReleaseChildren); Canvas.Reset(); Entries.Empty(); Icons.Empty(); CachedDrops.Empty(); RefreshIn=0;
 }
 void UPGUILootOverlay::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
     Super::NativeTick(Geometry,DeltaTime);
     RefreshIn -= DeltaTime;
-    if (RefreshIn<=0) { RefreshIn=.1f; Refresh(Geometry); }
+    // Discovery is throttled; camera projection and layout must follow every rendered frame.
+    if (RefreshIn<=0)
+    {
+        RefreshIn=.1f;
+        CachedDrops.Reset();
+        for (TActorIterator<APGLootDrop> It(GetWorld()); It; ++It) CachedDrops.Add(*It);
+    }
+    Refresh(Geometry);
 }
 void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
 {
     for (const auto& Entry : Entries) Entry->bVisible = false;
+    const int32 PreviousHiddenCount=HiddenCount;
     HiddenCount=0;
     auto* PC=GetOwningPlayer();
     auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
@@ -87,19 +95,25 @@ void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
     const auto* Settings=GetDefault<UPGUIStyleSettings>();
     const FVector2D ViewSize=Geometry.GetLocalSize();
     const FSlateRect Bounds(310,170,ViewSize.X-24,ViewSize.Y-190);
-    APGLootDrop* Target=Player->IsGameplayInputAllowed() ? APGLootDrop::FindNearestPickup(Player) : nullptr;
+    APGLootDrop* Target=nullptr;
+    double BestPickupDistance=FMath::Square(Catalog->PickupRadius);
     struct FCandidate { APGLootDrop* Drop; const FPGItemDataRow* Def; double Distance; FVector2D Anchor; };
     TArray<FCandidate> Candidates;
-    for (TActorIterator<APGLootDrop> It(GetWorld());It;++It)
+    for (const auto& WeakDrop : CachedDrops)
     {
-        const auto* Def=Catalog->FindItem(It->GetItem().DefinitionId);
-        const double Distance=FVector::DistSquared(Player->GetActorLocation(),It->GetActorLocation());
+        auto* Drop=WeakDrop.Get();
+        if (!IsValid(Drop) || !Drop->GetItem().Guid.IsValid()) continue;
+        const auto* Def=Catalog->FindItem(Drop->GetItem().DefinitionId);
+        const double Distance=FVector::DistSquared(Player->GetActorLocation(),Drop->GetActorLocation());
         if (!Def || Distance>FMath::Square(FMath::Max(Settings->LootLabelDistance,Catalog->PickupRadius))) continue;
+        if (Player->IsGameplayInputAllowed() && (Distance<BestPickupDistance ||
+            (Distance==BestPickupDistance && (!Target || Drop->GetItem().Guid<Target->GetItem().Guid))))
+        { BestPickupDistance=Distance; Target=Drop; }
         FVector2D Screen;
-        if (!PC->ProjectWorldLocationToScreen(It->GetLabelLocation(),Screen,true)) continue;
+        if (!PC->ProjectWorldLocationToScreen(Drop->GetLabelLocation(),Screen,true)) continue;
         Screen *= FVector2D(ViewSize.X/Width,ViewSize.Y/Height);
         if (Screen.X<0 || Screen.Y<0 || Screen.X>ViewSize.X || Screen.Y>ViewSize.Y) continue;
-        Candidates.Add({*It,Def,Distance,Screen});
+        Candidates.Add({Drop,Def,Distance,Screen});
     }
     Candidates.Sort([Target](const auto& A,const auto& B)
     {
@@ -115,7 +129,10 @@ void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
         const FVector2D Size(Settings->LootLabelWidth,48);
         if (Occupied.Num()>=Entries.Num() || !PGLootLabelLayout::Place(Candidate.Anchor,Size,Bounds,Occupied,Position)) { ++HiddenCount; continue; }
         const auto& Entry=Entries[Occupied.Num()];
+        const bool bPresentationChanged=Entry->Guid!=Candidate.Drop->GetItem().Guid || Entry->bTarget!=(Candidate.Drop==Target);
         Entry->Position=Position; Entry->Anchor=Candidate.Anchor; Entry->bTarget=Candidate.Drop==Target; Entry->bVisible=true;
+        Occupied.Add(FSlateRect(Position.X,Position.Y,Position.X+Size.X,Position.Y+Size.Y));
+        if (!bPresentationChanged) continue;
         Entry->Guid=Candidate.Drop->GetItem().Guid; Entry->Name=Candidate.Def->DisplayName;
         Entry->Color=FPGUIStyle::Get().RarityColor(Candidate.Def->Rarity);
         Entry->Hint=FText::FromString(PGInventoryPresentation::RarityName(Candidate.Def->Rarity).ToString()+TEXT(" · ")+
@@ -125,9 +142,9 @@ void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
         Entry->Brush=FSlateBrush(); Entry->Brush.SetResourceObject(Icon); Entry->Brush.ImageSize=FVector2D(30);
         if (Candidate.Def->IconPanel>=0 && Candidate.Def->IconPanel<3)
             Entry->Brush.SetUVRegion(FBox2f(FVector2f(Candidate.Def->IconPanel/3.f,0),FVector2f((Candidate.Def->IconPanel+1)/3.f,1)));
-        Occupied.Add(FSlateRect(Position.X,Position.Y,Position.X+Size.X,Position.Y+Size.Y));
     }
-    Overflow=FText::FromString(FString::Printf(TEXT("전리품 +%d개 · I → 근처 전리품"),HiddenCount));
+    if (HiddenCount>0 && HiddenCount!=PreviousHiddenCount)
+        Overflow=FText::FromString(FString::Printf(TEXT("전리품 +%d개 · I → 근처 전리품"),HiddenCount));
 }
 int32 UPGUILootOverlay::NativePaint(const FPaintArgs& Args,const FGeometry& Geometry,const FSlateRect& Culling,
     FSlateWindowElementList& Elements,int32 Layer,const FWidgetStyle& Style,bool bEnabled) const

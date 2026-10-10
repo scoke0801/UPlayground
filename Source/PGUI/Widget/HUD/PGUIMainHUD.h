@@ -42,7 +42,6 @@ private:
     TSharedRef<SWidget> MakeSkill(int32 Index);
     TSharedRef<SWidget> MakeStagePanel();
     TSharedRef<SWidget> MakeActions();
-    TSharedRef<SWidget> MakeBuildPanel();
     UPROPERTY(Transient) TObjectPtr<UTexture2D> OrbFrameTexture;
     UPROPERTY(Transient) TObjectPtr<UTexture2D> CombatPlateTexture;
     UPROPERTY(Transient) TObjectPtr<UTexture2D> PotionIconTexture;
@@ -51,9 +50,6 @@ private:
     FSlateBrush PotionIconBrush;
     FButtonStyle ActionStyle;
     FText StagePhase;
-    bool BuildActive[3] = {};
-    bool BuildCore[3] = {};
-    int32 BuildBranches[3] = {};
     FTimerHandle RefreshTimer;
     TWeakObjectPtr<class APGStageManager> Stage;
     TWeakObjectPtr<AActor> Boss;
@@ -69,15 +65,10 @@ private:
     FText SkillNames[8];
     FText SkillKeys[8];
     FText SkillReasons[8];
-    int32 RefundSkillID = 0;
-    bool bAfterimageReady = false;
     FText Objective;
     FText StageTitle;
     FText HealthText;
     FText RageText;
-    FText BuildSummary;
-    FText BuildStatus;
-    FText BuildProc;
     float HealthRatio = 0.f;
     float RageRatio = 0.f;
     bool bCanAct = false;

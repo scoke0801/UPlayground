@@ -1,5 +1,16 @@
 # 전투 HUD 재제작 — 2026-10-09
 
+## 스킬 아이콘 축소 품질 · 빌드 표시 제거 (후속 수정)
+
+- 1254×1254 원본 스킬 아이콘을 밉맵 없이 작은 슬롯에 표시하던 설정을 수정했다. 8종 모두 `StretchToPowerOfTwo`, `SimpleAverage`, `TF_Trilinear`, `NeverStream`을 사용한다. UI 압축·sRGB·최대 256px는 유지한다. 원본 PNG 재제작 없이 축소 샘플링을 보완했다.
+- `ConfigureSkillIconSampling.py`는 기존 8개 uasset을 실행별로 백업한 뒤 설정만 바꾼다. `-PGVerifySkillSampling`은 저장된 설정을 새 프로세스에서 읽기 전용 검사한다. 두 경로 모두 DT_Skill 파일 해시 보존을 검사한다. `ConfigureSkillIcons.py`에도 같은 설정을 반영해 재임포트 시 회귀하지 않게 했다.
+- 메인 HUD의 빌드 계열/강화 단계(`충격파 0/3` 포함), 대상 상태·발동 문구와 스킬 위 빌드 발동 선을 제거했다. 관련 Slate 생성 함수·상태 필드·주기적 문자열 생성도 삭제했다. 하단 예약 영역은 900×172로 줄였으며 자원·스킬·회복약의 하단 위치는 유지한다. 아래 최초 구현 기록의 빌드 표시/226px 높이보다 이 항목이 우선한다.
+- 에셋 적용: `Saved/SkillIconSampling/20261009T082130892311Z/report.json` PASS. 새 프로세스 재로드: `20261009T082218773554Z/report.json` PASS.
+- Development 에디터 빌드: `Saved/SkillIconSampling_BuildRetry.log` 성공. 첫 빌드는 다른 프리뷰 프로세스의 DLL 점유로 링크에 실패했으며, 해당 프로세스 종료 후 재실행했다.
+- 1080p 준비·격분·보스 화면과 정상 종료: `Saved/CombatHUD/20261009T082725365035Z/report.json` PASS. 표시 중인 5종 텍스처가 256×256·9 mips·비스트리밍으로 로드됨을 `ListTextures -CSV`로 확인했다. 강화 활성화 상태에서도 빌드 문구와 발동 선은 나타나지 않는다.
+- 첫 프리뷰 `20261009T082330252010Z`는 캡처 콜백 재진입으로 FAIL이었다. `PreviewCombatHUD.py`에 재진입 가드를 추가한 뒤 위 재실행이 통과했다. 실패 기록은 보존한다.
+- 720p 회복약·입력·HUD 위치/크기 회귀와 정상 종료: `Saved/CombatHUD/20261009T082842793256Z/report.json` PASS. 준비·체력 감소·회복·소진 캡처를 생성했다. 이번 후속 수정의 패키지 쿠킹/초광폭 검사는 수행하지 않았다.
+
 ## 디자인 기준과 조사
 
 - [Diablo IV 공식 UI 설계 글](https://news.blizzard.com/en-us/article/23308274/diablo-iv-quarterly-updatefebruary-2020): PC 하단 중앙 액션바, 낮은 배경 채도, 재질과 대비를 통한 정보 위계. 이 글은 2020년 개발 과정의 설명이며 현재 제품 사양으로 인용하지 않는다.

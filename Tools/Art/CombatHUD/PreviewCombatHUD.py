@@ -56,6 +56,8 @@ def tick(_dt):
             command('t.MaxFPS 60');command('DisableAllScreenMessages')
             at=now;return
         if phase==0 and now-at>12:
+            # Record actual resident sizes/mip counts, not just import settings.
+            command('ListTextures -CSV')
             capture(world,'01_Preparation')
             command('PGBuildScenario Frenzy true')
             phase=1;at=now
@@ -72,4 +74,16 @@ def tick(_dt):
     except Exception:
         finish(traceback.format_exc())
 
-handle=unreal.register_slate_post_tick_callback(tick)
+# Viewport readback can pump Slate while this callback is still on the stack.
+# Do not capture the same phase again or end PIE during the outer readback.
+ticking=False
+def guarded_tick(dt):
+    global ticking
+    if ticking:return
+    ticking=True
+    try:
+        tick(dt)
+    finally:
+        ticking=False
+
+handle=unreal.register_slate_post_tick_callback(guarded_tick)
