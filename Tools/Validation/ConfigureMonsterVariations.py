@@ -94,6 +94,7 @@ def golem_anim():
         sample.set_editor_property('sample_value',unreal.Vector(speed,0,0))
         samples.append(sample)
     blend.set_editor_property('sample_data',samples)
+    unreal.PGHumanoidLocomotionTools.rebuild_blend_space(blend)
     save(blend)
     # Use the native class directly: generated AnimBP graphs replace custom roots.
     return blend
@@ -251,7 +252,8 @@ def apply():
         cdo.set_editor_property('ai_controller_class',unreal.PGRoleAIController)
         if d['key']=='P09':
             cdo.appearance_component.set_editor_property('default_appearance',appearance(d['grade'],d['sex'],eid))
-            cdo.mesh.set_editor_property('anim_class',unreal.load_asset(BASE+'Skeleton/Anim/ABP_Enemy_SkeletonWarrior').generated_class())
+            from ConfigureHumanoidLocomotion import configure_enemy
+            configure_enemy(cdo, bool(d['grade']['shield']))
         else:
             cdo.mesh.set_editor_property('relative_scale3d',unreal.Vector(d['scale'],d['scale'],d['scale']))
             if d['key']=='Golem':
@@ -343,12 +345,34 @@ def validate():
         eid=creature['id']
         assert enemies[eid]['SkillIdList']==creature['skills']
         assert all(stats[eid][k]==v for k,v in creature['stats'].items())
+        if creature['key']!='Golem':
+            # Matching skeletons alone do not establish model-local provenance.
+            prefix='/Game/ExternalAssets/Characters/Enemies/'+creature['key']+'/Animations/'
+            cdo=unreal.get_default_object(unreal.load_class(None,enemies[eid]['ActorClass']))
+            defaults=unreal.get_default_object(cdo.mesh.get_editor_property('anim_class'))
+            for field in ('DefaultBlendSpace','StrafingBlendSpace'):
+                movement=defaults.get_editor_property(field)
+                assert movement,(eid,field)
+                samples=list(movement.get_editor_property('sample_data'))
+                assert samples,(eid,field,'empty samples')
+                for sample in samples:
+                    clip=sample.get_editor_property('animation')
+                    assert clip and clip.get_path_name().startswith(prefix),(eid,field,clip)
+                    assert unreal.PGHumanoidLocomotionTools.get_blend_sample_count(movement,sample.get_editor_property('sample_value'))>0,(eid,field,'empty interpolation')
+            for definition in SPEC['skills']:
+                if definition['id'] not in creature['skills']:continue
+                source=unreal.load_asset(BASE+definition['montage'])
+                for track in source.get_editor_property('slot_anim_tracks'):
+                    for segment in track.get_editor_property('anim_track').get_editor_property('anim_segments'):
+                        assert segment.get_editor_property('anim_reference').get_path_name().startswith(prefix),(eid,definition['id'],'non-local source')
     golem=unreal.get_default_object(unreal.load_class(None,enemies[15305]['ActorClass']))
     anim=unreal.get_default_object(golem.mesh.get_editor_property('anim_class'))
     assert isinstance(anim,unreal.PGCreatureAnimInstance)
     assert golem.mesh.get_editor_property('anim_class')==unreal.PGCreatureAnimInstance.static_class()
     blend=golem.get_editor_property('creature_locomotion')
     assert blend and len(blend.get_editor_property('sample_data'))==3
+    for speed in (0.,75.,150.,225.,255.,300.):
+        assert unreal.PGHumanoidLocomotionTools.get_blend_sample_count(blend,unreal.Vector(speed,0,0))>0,('Golem empty locomotion',speed)
     assert blend.get_editor_property('skeleton')==golem.mesh.get_editor_property('skeletal_mesh_asset').get_editor_property('skeleton')
     startup=golem.get_editor_property('character_start_up_data')
     assert startup and startup.get_path_name().startswith(DEST+'/DA_GolemStartUp')

@@ -1,0 +1,16 @@
+{
+  "destination": "/Game/DataCenter/HumanoidLocomotion",
+  "player_blueprint": "/Game/Blueprints/Actor/LocalPlayer/Animation/ABP_LocalPlayer",
+  "player_mesh": "/Game/ExternalAssets/Characters/ElfSelena/BaseMesh/Separate/SK_body",
+  "enemy_mesh": "/Game/ExternalAssets/Characters/Enemies/SkeletonEnemy/Mesh/SK_Skeleton",
+  "player_walk_speed": 170,
+  "player_run_speed": 600,
+  "player_idle_prefix": "AS_PGFrank_Sword2_Unequip_Idle_",
+  "enemy_walk_speed": 160,
+  "enemy_run_speed": 380,
+  "shield_run_speed": 300,
+  "packs": {
+    "Sword2": {"mesh": "FrankSword2", "idle": "AS_PGFrank_Sword2_Equip_Idle_", "walk": "AS_PGFrank_Sword2_8Way_Walk_", "run": "AS_PGFrank_Sword2_8Way_Run_"},
+    "Warrior": {"mesh": "FrankWarrior", "idle": "AS_PGFrank_RPG_Warrior_Idle_", "walk": "AS_PGFrank_RPG_Warrior_8Way_Walk_", "run": "AS_PGFrank_RPG_Warrior_8Way_Run_"}
+  }
+}

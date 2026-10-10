@@ -57,6 +57,7 @@ try:
                 assert comp.get_editor_property('mobility')==unreal.ComponentMobility.STATIC
             else:
                 assert comp.get_collision_enabled()==unreal.CollisionEnabled.QUERY_AND_PHYSICS,actor.get_actor_label()
+                assert comp.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA)==unreal.CollisionResponseType.ECR_BLOCK,actor.get_actor_label()
                 colliders.append(actor.get_actor_label())
     assert instances==BUILD['instances'],('Saved instance placement changed',instances,BUILD['instances'])
     assert sum(instances.values())>600

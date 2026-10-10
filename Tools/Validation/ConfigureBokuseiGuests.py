@@ -15,6 +15,7 @@ report = dict(status='RUNNING', run=str(RUN), map=MAP)
 try:
     map_file = ROOT/'Content/Art/ToonTest/Maps/L_PGToon_Bokusei_ShadingComparison.umap'
     shutil.copy2(map_file, RUN/'previous_map.umap')
+    shutil.copytree(ROOT/'Content/Art/ToonTest/BokuseiShadingComparison', RUN/'backup/assets')
     world = unreal.EditorLoadingAndSavingUtils.load_map(MAP)
     assert world
     actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)

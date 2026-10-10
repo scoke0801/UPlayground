@@ -141,6 +141,8 @@ def main():
         eid=15201+index
         cdo.set_editor_property('character_tid',eid)
         cdo.appearance_component.set_editor_property('default_appearance',asset)
+        from ConfigureHumanoidLocomotion import configure_enemy
+        configure_enemy(cdo)
         save(bp)
         row=copy.deepcopy(template)
         row.update(Name=str(eid),EnemyID=eid,EnemyName='P09 '+label,ActorClass=bp.generated_class().get_path_name())

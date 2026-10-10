@@ -147,7 +147,7 @@ def solid(name,mesh_name,location,scale=1.,yaw=0.,folder='전투 지형',visible
     component=actor.static_mesh_component
     component.set_static_mesh(MESHES[mesh_name])
     component.set_collision_profile_name('BlockAll')
-    component.set_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA,unreal.CollisionResponseType.ECR_IGNORE)
+    component.set_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA,unreal.CollisionResponseType.ECR_BLOCK)
     actor.set_actor_scale3d(unreal.Vector(*((scale,scale,scale) if isinstance(scale,(int,float)) else scale)))
     if not visible:
         component.set_visibility(False);component.set_hidden_in_game(True);component.set_cast_shadow(False)

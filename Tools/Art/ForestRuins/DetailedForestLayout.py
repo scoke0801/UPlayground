@@ -6,6 +6,7 @@ import unreal as u
 def ground_material(g):
     own,expr,connect,output,constant=[g[n] for n in ['own','expr','connect','output','constant']]
     mat=own('M_PGFR_Ground_Detailed',u.Material,u.MaterialFactoryNew())
+    mat.set_editor_property('used_with_instanced_static_meshes',True)
     lib=g['LIB'];lib.delete_all_material_expressions(mat)
     pos=expr(mat,u.MaterialExpressionWorldPosition)
     def custom(code,inputs,kind=u.CustomMaterialOutputType.CMOT_FLOAT1):

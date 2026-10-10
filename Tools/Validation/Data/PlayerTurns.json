@@ -1,0 +1,15 @@
+{
+  "destination": "/Game/DataCenter/PlayerTurns",
+  "play_rate": 1.3,
+  "combat_strafe_seconds": 1.5,
+  "start_angle": 60,
+  "allow_moving_turns": false,
+  "max_turn_seconds": 0.4,
+  "moving_pivot_angle": 125,
+  "stationary_speed": 80,
+  "movement_resume_fraction": 0.2,
+  "blend_in_seconds": 0.07,
+  "blend_out_seconds": 0.12,
+  "retarget_cancel_angle": 20,
+  "rotation_samples": 61
+}
