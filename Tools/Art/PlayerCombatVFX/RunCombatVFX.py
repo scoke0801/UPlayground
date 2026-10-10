@@ -11,15 +11,18 @@ import sys
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'Tools/Validation'))
 from RunQA import run_process,read_text,FATAL,check_automation
-from ReviewCombatVFX import first_cast,build_color
+from ReviewCombatVFX import first_cast,build_color,external_first_cast
 
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--apply',action='store_true')
     parser.add_argument('--render-only',action='store_true')
     parser.add_argument('--builds',action='store_true')
+    parser.add_argument('--external',action='store_true',help='Require the external particle layer at every contact')
+    parser.add_argument('--external-off',action='store_true',help='Render the authored layer alone for comparison')
     parser.add_argument('--build',type=int,choices=range(5),help='Only this build, for a focused visual iteration')
     args=parser.parse_args()
+    if args.external and args.external_off: parser.error('External on/off checks are mutually exclusive')
     run=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     out=ROOT/'Saved/QA'/('CombatVFX_'+run);out.mkdir(parents=True)
     version=json.loads(read_text(ROOT/'UPlayground.uproject'))['EngineAssociation']
@@ -31,12 +34,17 @@ def main():
     if args.apply:cases.append(('apply',script,'PGCombatVFX APPLY PASS'))
     if not args.render_only:
         cases.append(('reload',script+['-PGCombatVFXValidate'],'PGCombatVFX VALIDATION PASS'))
+        if args.external:
+            cases.append(('external_reload',['-nullrhi','-EnablePlugins=PythonScriptPlugin','-run=pythonscript',
+                '-script='+str(Path(__file__).with_name('ConfigureExternalVFX.py')),'-PGExternalVFXValidate'],'PGExternalVFX VALIDATE PASS'))
         cases.append(('automation',['-nullrhi','-ExecCmds=Automation RunTests PG.','-TestExit=Automation Test Queue Empty','-ReportExportPath='+str(out/'Automation')],None))
     for build in ([args.build] if args.build is not None else [0,1,2,3,4] if args.builds else [0]):
         for p1 in (False,True):
             name=f'render_b{build}_p{int(p1)}'
             extra=['/Game/Maps/RogueArena','-game','-RenderOffscreen','-windowed','-ForceRes','-ResX=1280','-ResY=720','-PGHackSlashCapture','-PGSwingFXProbe','-PGCombatVFXFixedAim','-UseFixedTimeStep','-FPS=60','-ExecCmds=t.MaxFPS 60,pg.Skill.DebugCast 1,PGHackSlashProbe']
             if p1:extra.append('-PGHackSlashP1Probe')
+            if args.external_off:
+                extra=[v.replace('-ExecCmds=t.MaxFPS', '-ExecCmds=pg.Skill.ExternalVFX 0,t.MaxFPS') for v in extra]
             if build:extra+=['-PGSwingFXMiss','-PGCombatVFXBuild='+str(build)]
             cases.append((name,extra,'PGHackSlashProbe PASS skills='+('3 p1=1' if p1 else '5')))
     gates=[]
@@ -62,10 +70,15 @@ def main():
                     path=user/'Saved/QA/HackSlashP0'/f'Skill_{skill}{miss}{suffix}.png'
                     if not path.exists() or struct.unpack('>II',path.read_bytes()[16:24])!=(1280,720):errors.append('Missing render '+str(path))
                     if f'PGCombatVFX Skill={skill} Phase={phase} Shape=' not in log:errors.append(f'Missing authored FX {skill}/{phase}')
+                    if args.external and f'PGExternalVFX Skill={skill} Phase={phase} Shape=' not in log:errors.append(f'Missing external FX {skill}/{phase}')
             if not errors and name=='render_b0_p0':
                 pixels=first_cast(user/'Saved/QA/HackSlashP0/Skill_100.png')
                 (out/'first-cast-pixels.json').write_text(json.dumps(pixels,indent=2))
                 if not pixels['pass_visible']:errors.append('Cold first cast is not visibly rendered')
+                if args.external:
+                    pixels=external_first_cast(user/'Saved/QA/HackSlashP0/Skill_100.png')
+                    (out/'external-first-cast-pixels.json').write_text(json.dumps(pixels,indent=2))
+                    if not pixels['pass_visible']:errors.append('Cold external mesh arc is not visibly rendered')
             if not errors and name.endswith('p0') and miss:
                 pixels=build_color(user/'Saved/QA/HackSlashP0/Skill_100_Miss.png')
                 (out/(name+'-pixels.json')).write_text(json.dumps(pixels,indent=2))

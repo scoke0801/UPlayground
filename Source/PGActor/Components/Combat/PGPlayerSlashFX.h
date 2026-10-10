@@ -6,12 +6,14 @@ class UNiagaraSystem;
 class UPGPlayerSkillProfile;
 class UPGAbilitySystemComponent;
 class UMaterialInstanceDynamic;
+struct FPGExternalCombatVFX;
 
 // Manually owned pooled systems: their simulation follows the attack's logical clock.
 struct FPGPlayerSlashFXInstance
 {
     TWeakObjectPtr<UNiagaraComponent> Component;
     float StartedAt = 0.f;
+    float ReferenceDuration = 0.f;
 };
 
 namespace PGPlayerSlashFX
@@ -24,5 +26,9 @@ namespace PGPlayerSlashFX
         const UPGPlayerSkillProfile* Profile, float Radius, const FVector& Location,
         const FRotator& Rotation, bool bReverse);
     void SetProgress(UNiagaraComponent* FX, const UPGPlayerSkillProfile* Profile, float Progress);
+    void SetExternalProgress(UNiagaraComponent* FX, float ReferenceDuration, float Progress);
+    UNiagaraComponent* SpawnExternal(const UObject* WorldContext, const FPGExternalCombatVFX& Definition,
+        const UPGPlayerSkillProfile* Profile, float Radius, const FVector& Location,
+        const FRotator& Rotation, bool bReverse);
     void Release(UNiagaraComponent* FX);
 }

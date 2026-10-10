@@ -54,6 +54,17 @@ def build_color(path):
             if max(rgb)>150 and max(rgb)-min(rgb)>35:values.append(rgb)
     return dict(colored_pixels=len(values),rgb=[round(sum(v[i] for v in values)/max(1,len(values)),1) for i in range(3)])
 
+def external_first_cast(path):
+    width,height,channels,rows=pixels(path)
+    assert (width,height)==(1280,720)
+    # Upper-right external mesh arc, away from the authored lower arc and impact particles.
+    count=0
+    for y in range(300,420):
+        for x in range(640,790):
+            r,g,b=rows[y][x*channels:x*channels+3]
+            if g>r+15 and b>r+15 and max(g,b)>130: count+=1
+    return dict(external_arc_pixels=count,pass_visible=count>150)
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('run',type=Path);args=parser.parse_args()
     base=args.run/'render_b0_p0/User/Saved/QA/HackSlashP0/Skill_100.png'

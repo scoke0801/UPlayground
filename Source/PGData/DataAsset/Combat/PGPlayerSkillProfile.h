@@ -8,11 +8,27 @@
 UENUM(BlueprintType)
 enum class EPGPlayerHitShape : uint8 { Fan, Disc, Projectile };
 UENUM(BlueprintType)
-enum class EPGPlayerMoveMode : uint8 { ForwardSweep, Walk, GroundLeap };
+enum class EPGPlayerMoveMode : uint8 { ForwardSweep, Walk, GroundLeap, BackwardSweep };
 
 // Visual geometry is independent of damage geometry (a thrust can use a forgiving fan hit).
 UENUM(BlueprintType)
 enum class EPGPlayerVFXShape : uint8 { Crescent, Thrust, Cleave, Orbit, Impact, Blade };
+
+// Optional external particle layer; gameplay and the authored build silhouette stay independent.
+USTRUCT(BlueprintType)
+struct PGDATA_API FPGExternalCombatVFX
+{
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UNiagaraSystem> System;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="1")) float ReferenceRadius = 200.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0.05", ClampMax="5")) float ReferenceDuration = .24f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FVector Scale = FVector::OneVector;
+    // Local offset in fractions of the attack radius.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FVector Offset = FVector::ZeroVector;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FRotator Rotation = FRotator::ZeroRotator;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", ClampMax="3")) float Intensity = .6f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bMirror = true;
+};
 
 USTRUCT(BlueprintType)
 struct PGDATA_API FPGPlayerMovementSegment
@@ -72,6 +88,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float ProjectileRange = 1000.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float ProjectileLifetime = .7f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float AttackSpeed = 1.f;
+    // Manual, one-hit frontal counter. The same committed cast owns hold and retaliation.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Counter") bool bManualCounter = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Counter") float GuardStart = .1f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Counter") float GuardEnd = .6f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Counter") float GuardHalfAngle = 65.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Counter") float GuardFailureRecovery = .25f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Counter") float GuardFailurePoseStart = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Counter") float GuardFailurePoseEnd = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") FText SkillDescription;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 FrenzyPerCastCap = 3;
     // Authored phases; when SwingNotifyName contacts exist, the closest phase supplies each stroke's damage/shape/window.
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FPGPlayerHitPhase> HitPhases;
@@ -86,6 +111,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class USoundBase> SwingSound;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UMaterialInterface> SlashMaterial;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") bool bUseAuthoredVFX = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation|External") TMap<EPGPlayerVFXShape, FPGExternalCombatVFX> ExternalVFX;
     // Ordered by resolved source contact, not the authored damage template index.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") TArray<EPGPlayerVFXShape> SwingShapes;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Presentation") EPGPlayerVFXShape DefaultSwingShape = EPGPlayerVFXShape::Crescent;

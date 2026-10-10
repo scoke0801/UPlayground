@@ -65,6 +65,22 @@ bool UPGPlayerSkillProfile::Validate(int32 ExpectedSkillID, FString& Error) cons
     const auto Fail = [&Error](const TCHAR* Reason) { Error = Reason; return false; };
     const auto TimeValid = [this](float Time) { return FMath::IsFinite(Time) && Time >= 0.f && Time <= Duration; };
     if (SkillID <= 0 || SkillID != ExpectedSkillID) return Fail(TEXT("SkillID mismatch"));
+    if (bManualCounter && (!TimeValid(GuardStart) || !TimeValid(GuardEnd) || GuardStart >= GuardEnd ||
+        GuardEnd - GuardStart > .6f || !FMath::IsFinite(GuardHalfAngle) || GuardHalfAngle <= 0.f || GuardHalfAngle > 90.f ||
+        !FMath::IsFinite(GuardFailureRecovery) || GuardFailureRecovery <= 0.f || GuardEnd + GuardFailureRecovery > Duration ||
+        !FMath::IsFinite(GuardFailurePoseStart) || !FMath::IsFinite(GuardFailurePoseEnd) ||
+        GuardFailurePoseStart < 0.f || GuardFailurePoseEnd <= GuardFailurePoseStart || !SwingNotifyName.IsNone()))
+        return Fail(TEXT("Invalid manual counter window/recovery"));
+    for (const auto& Pair : ExternalVFX)
+    {
+        const auto& FX = Pair.Value;
+        if (static_cast<uint8>(Pair.Key) > static_cast<uint8>(EPGPlayerVFXShape::Blade) || FX.System.IsNull() ||
+            !FMath::IsFinite(FX.ReferenceRadius) || FX.ReferenceRadius < 1.f ||
+            !FMath::IsFinite(FX.ReferenceDuration) || FX.ReferenceDuration < .05f || FX.ReferenceDuration > 5.f ||
+            FX.Scale.ContainsNaN() || FX.Scale.GetMin() <= 0.f || FX.Offset.ContainsNaN() || FX.Rotation.ContainsNaN() ||
+            !FMath::IsFinite(FX.Intensity) || FX.Intensity < 0.f || FX.Intensity > 3.f)
+            return Fail(TEXT("Invalid external combat VFX"));
+    }
     if (!FMath::IsFinite(ProjectileSwingRadius) || ProjectileSwingRadius < 1.f || ProjectileSwingRadius > 1500.f ||
         !FMath::IsFinite(NiagaraReferenceRadius) || NiagaraReferenceRadius < 1.f ||
         !FMath::IsFinite(NiagaraReferenceDuration) || NiagaraReferenceDuration < .05f || NiagaraReferenceDuration > 5.f ||
@@ -91,7 +107,7 @@ bool UPGPlayerSkillProfile::Validate(int32 ExpectedSkillID, FString& Error) cons
             !TimeValid(Move.End) || Move.End <= Move.Start || Move.Start < LastEnd ||
             !FMath::IsFinite(Move.Distance) || Move.Distance < 0.f || Move.Distance > 1500.f ||
             !FMath::IsFinite(Move.WalkSpeedRatio) || Move.WalkSpeedRatio < 0.f || Move.WalkSpeedRatio > 1.f ||
-            (Move.Mode != EPGPlayerMoveMode::ForwardSweep && Move.Mode != EPGPlayerMoveMode::Walk && Move.Mode != EPGPlayerMoveMode::GroundLeap))
+            (Move.Mode != EPGPlayerMoveMode::ForwardSweep && Move.Mode != EPGPlayerMoveMode::Walk && Move.Mode != EPGPlayerMoveMode::GroundLeap && Move.Mode != EPGPlayerMoveMode::BackwardSweep))
             return Fail(TEXT("Invalid/duplicate/overlapping movement segment"));
         Segments.Add(Move.SegmentId); LastEnd = Move.End;
     }
@@ -100,6 +116,7 @@ bool UPGPlayerSkillProfile::Validate(int32 ExpectedSkillID, FString& Error) cons
     float LastStart = -1.f;
     for (const auto& Hit : HitPhases)
     {
+        if (bManualCounter && Hit.Start <= GuardEnd) return Fail(TEXT("Counter contact must follow guard"));
         if (Hit.PhaseId < 0 || Phases.Contains(Hit.PhaseId) || !TimeValid(Hit.Start) || !TimeValid(Hit.End) ||
             Hit.End < Hit.Start || Hit.Start < LastStart ||
             !FMath::IsFinite(Hit.Radius) || Hit.Radius <= 0.f || Hit.Radius > 1500.f ||

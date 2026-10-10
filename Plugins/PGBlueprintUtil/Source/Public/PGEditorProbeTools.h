@@ -29,6 +29,10 @@ public:
     UFUNCTION(BlueprintCallable, Category="PG|QA")
     static bool CaptureGameViewport(UWorld* World, const FString& Filename);
 
+    /** Resize only the active PIE viewport; does not save user display settings. */
+    UFUNCTION(BlueprintCallable, Category="PG|QA")
+    static bool ResizePlayViewport(UWorld* World, int32 Width, int32 Height);
+
     /** Read imported LOD0 positions/normals/UV0, bypassing FBX material baking. */
     UFUNCTION(BlueprintCallable, Category="PG|QA")
     static bool ExportSkeletalMaterialGeometry(class USkeletalMesh* Mesh, FName MaterialSlot, const FString& Filename);

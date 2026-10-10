@@ -28,6 +28,7 @@ public:
     void Stop(bool bNotify = false, bool bCancelled = true);
     bool IsRunning() const { return CastContext.IsValid(); }
     bool CanCancel(bool bDodge) const;
+    bool TryGuardDirectHit(const AActor* Attacker);
     float GetLogicalTime() const { return LogicalTime; }
     float GetExpectedSeconds() const;
     const TSharedPtr<FPGSkillCastContext>& GetCastContext() const { return CastContext; }
@@ -46,6 +47,7 @@ private:
     friend class FPGPlayerProfileLifecycleTest;
     UPROPERTY(Transient) TObjectPtr<UPGPlayerSkillProfile> ActiveProfile;
     UPROPERTY(Transient) TArray<TObjectPtr<UObject>> PreparedLoadoutAssets;
+    UPROPERTY(Transient) TArray<TObjectPtr<class UNiagaraSystem>> PreparedExternalVFX;
     UPROPERTY(Transient) TObjectPtr<UAnimMontage> ActiveMontage;
     UPROPERTY(Transient) TObjectPtr<class UNiagaraSystem> PreparedVFX;
     UPROPERTY(Transient) TObjectPtr<class UNiagaraSystem> PreparedProjectileSwingVFX;
@@ -66,6 +68,7 @@ private:
     TArray<FPGPlayerSwingCue> SwingCues;
     int32 NextSwingCue = 0;
     bool bAimLocked = false;
+    bool bCounterTriggered = false;
     float LeapDistance = 0.f;
     FVector SavedMeshLocation = FVector::ZeroVector;
     bool FindLeapDistance(const UPGPlayerSkillProfile* Profile, const FVector& Direction, float& Distance) const;

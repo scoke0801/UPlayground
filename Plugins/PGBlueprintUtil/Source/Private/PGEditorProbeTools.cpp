@@ -8,6 +8,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SViewport.h"
 #include "Widgets/SWindow.h"
+#include "Slate/SceneViewport.h"
 #include "ImageUtils.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -124,6 +125,19 @@ ACameraActor* UPGEditorProbeTools::SpawnPlayCamera(UWorld* World, FVector Locati
     FActorSpawnParameters Params;
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     return World->SpawnActor<ACameraActor>(Location, Rotation, Params);
+}
+
+bool UPGEditorProbeTools::ResizePlayViewport(UWorld* World, int32 Width, int32 Height)
+{
+    if (!World || World->WorldType != EWorldType::PIE || Width < 320 || Height < 240 || Width > 3840 || Height > 2160) return false;
+    auto* Client = World->GetGameViewport();
+    const auto Widget = Client ? Client->GetGameViewportWidget() : nullptr;
+    if (!Widget || !Client->GetGameViewport() || !FSlateApplication::IsInitialized()) return false;
+    const auto Window = FSlateApplication::Get().FindWidgetWindow(Widget.ToSharedRef());
+    if (!Window) return false;
+    Window->Resize(FVector2D(Width, Height));
+    Client->GetGameViewport()->SetFixedViewportSize(Width, Height);
+    return true;
 }
 
 bool UPGEditorProbeTools::CaptureGameViewport(UWorld* World, const FString& Filename)

@@ -4,6 +4,7 @@
 #include "NiagaraEmitterHandle.h"
 #include "NiagaraScript.h"
 #include "NiagaraRendererProperties.h"
+#include "NiagaraMeshRendererProperties.h"
 #include "Serialization/JsonSerializer.h"
 #include "NiagaraScriptSource.h"
 #include "NiagaraGraph.h"
@@ -77,6 +78,45 @@ FString UPGNiagaraFXTools::DescribeSystem(UNiagaraSystem* System)
     return Result;
 }
 
+bool UPGNiagaraFXTools::ConfigureCombatBurst(UNiagaraSystem* System, bool bSparks, UMaterialInterface* DebrisMaterial)
+{
+    if (!System || !System->GetPathName().StartsWith(TEXT("/Game/Art/PlayerCombatFX/External/"))) return false;
+    System->Modify();
+    if (bSparks)
+    {
+        auto& Store = System->GetExposedParameters();
+        const auto Float = [&Store](const TCHAR* Name, float Value)
+        { Store.SetParameterValue(Value, FNiagaraVariable(FNiagaraTypeDefinition::GetFloatDef(), Name), true); };
+        Float(TEXT("User.Brightness"), 8.f);
+        Float(TEXT("User.Alpha_Flare"), .6f);
+        Float(TEXT("User.Camera Offset Amount"), 0.f);
+        Float(TEXT("User.Lifetime Spark"), .24f);
+        Float(TEXT("User.Lifetime_Flare"), .16f);
+        Float(TEXT("User.Velocity Spark"), 180.f);
+        Store.SetParameterValue(int32(12), FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("User.Spawn Count_Spark")), true);
+        Store.SetParameterValue(FVector2f(6.f, 120.f), FNiagaraVariable(FNiagaraTypeDefinition::GetVec2Def(), TEXT("User.Size_Flare")), true);
+    }
+    for (auto& Handle : System->GetEmitterHandles())
+        if (auto* Data = Handle.GetEmitterData())
+        {
+            Data->bLocalSpace = true;
+            Data->SimTarget = ENiagaraSimTarget::CPUSim;
+            Data->CalculateBoundsMode = ENiagaraEmitterCalculateBoundMode::Dynamic;
+            if (!bSparks && DebrisMaterial)
+                for (auto* Renderer : Data->GetRenderers())
+                    if (auto* Mesh = Cast<UNiagaraMeshRendererProperties>(Renderer))
+                    {
+                        Mesh->bOverrideMaterials = true;
+                        Mesh->OverrideMaterials.SetNum(1);
+                        Mesh->OverrideMaterials[0].ExplicitMat = DebrisMaterial;
+                    }
+        }
+    System->RequestCompile(true);
+    System->WaitForCompilationComplete(false, false);
+    System->MarkPackageDirty();
+    return System->IsValid() && !System->HasOutstandingCompilationRequests();
+}
+
 bool UPGNiagaraFXTools::ConfigureSlash(UNiagaraSystem* System)
 {
     if (!System || !System->GetPathName().StartsWith(TEXT("/Game/Art/PlayerCombatFX/"))) return false;
@@ -86,9 +126,11 @@ bool UPGNiagaraFXTools::ConfigureSlash(UNiagaraSystem* System)
     System->GetExposedParameters().SetParameterValue(FVector3f(1.f), Tint, true);
     System->GetExposedParameters().SetParameterValue(1.f, Alpha, true);
     int32 Bindings = 0;
+    const bool bCombatLayer = System->GetPathName().StartsWith(TEXT("/Game/Art/PlayerCombatFX/External/"));
     for (auto& Handle : System->GetEmitterHandles())
     {
-        if (Handle.GetName() == TEXT("Feather")) { Handle.SetIsEnabled(false, *System, false); continue; }
+        if (Handle.GetName() == TEXT("Feather") || (bCombatLayer && Handle.GetName() == TEXT("Smoke")))
+        { Handle.SetIsEnabled(false, *System, false); continue; }
         auto* Data = Handle.GetEmitterData();
         if (!Data) continue;
         Data->bLocalSpace = true;
@@ -131,5 +173,5 @@ bool UPGNiagaraFXTools::ConfigureSlash(UNiagaraSystem* System)
     // IsReadyToRun deliberately returns false in NullRHI commandlets.
     const bool bCompiled = System->IsValid() && !System->HasOutstandingCompilationRequests();
     UE_LOG(LogTemp, Display, TEXT("PGPlayerNiagara configure bindings=%d compiled=%d"), Bindings, bCompiled);
-    return Bindings >= 3 && bCompiled;
+    return Bindings >= (bCombatLayer ? 2 : 3) && bCompiled;
 }

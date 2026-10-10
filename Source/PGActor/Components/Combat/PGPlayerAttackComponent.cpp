@@ -109,6 +109,9 @@ void UPGPlayerAttackComponent::PrepareLoadout()
             if (auto* Profile = Row->PlayerProfile.LoadSynchronous())
             {
                 PreparedLoadoutAssets.Add(Profile);
+                for (const auto& Pair : Profile->ExternalVFX)
+                    if (auto* System = Pair.Value.System.LoadSynchronous())
+                    { PreparedLoadoutAssets.Add(System); PGPlayerSlashFX::Prepare(System); }
                 for (const auto& Path : {Profile->SlashMaterial.ToSoftObjectPath(), Profile->SwingSound.ToSoftObjectPath()})
                     if (!Path.IsNull()) if (auto* Asset = Path.TryLoad()) PreparedLoadoutAssets.Add(Asset);
 #if WITH_EDITOR
@@ -138,6 +141,7 @@ bool UPGPlayerAttackComponent::CanPrepare(const UPGPlayerSkillProfile* Profile, 
     if (!Player || !Profile || !Montage || !Player->GetMesh()->GetAnimInstance() ||
         !Profile->Validate(Profile->SkillID, Error)) return false;
     if (Profile->PoseKeys.Last().MontageSeconds > Montage->GetPlayLength() ||
+        (Profile->bManualCounter && Profile->GuardFailurePoseEnd > Montage->GetPlayLength()) ||
         !FMath::IsFinite(Montage->RateScale) || Montage->RateScale <= 0.f)
     { Error = TEXT("Pose mapping exceeds montage or invalid RateScale"); return false; }
     if (Player->GetCharacterMovement()->IsFalling() || Player->GetActorLocation().ContainsNaN())
@@ -205,6 +209,10 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     PGPlayerSlashFX::Prepare(PreparedVFX);
     PGPlayerSlashFX::Prepare(PreparedProjectileSwingVFX);
     PreparedSound = Profile->SwingSound.LoadSynchronous();
+    PreparedExternalVFX.Reset();
+    for (const auto& Pair : Profile->ExternalVFX)
+        if (auto* System = Pair.Value.System.LoadSynchronous())
+        { PreparedExternalVFX.Add(System); PGPlayerSlashFX::Prepare(System); }
     if (SlashMesh) SlashMesh->SetVisibility(false);
     SlashUntil = 0.; SlashStarted = 0.f;
     SlashMID = nullptr;
@@ -226,7 +234,8 @@ bool UPGPlayerAttackComponent::Start(const UPGPlayerSkillProfile* Profile, UAnim
     CastContext->FrenzyCap = Profile->FrenzyPerCastCap;
     Ended = MoveTemp(OnEnded);
     LogicalTime = 0.f;
-    Speed = FMath::Clamp(Profile->AttackSpeed * ASC->GetFrenzyRate(), .75f, 1.75f);
+    Speed = Profile->bManualCounter ? 1.f : FMath::Clamp(Profile->AttackSpeed * ASC->GetFrenzyRate(), .75f, 1.75f);
+    bCounterTriggered = false;
     bAimLocked = false; PresentedPhases.Reset();
     SwingCues = BuildSwingCues(ActiveProfile, nullptr); NextSwingCue = 0;
     Player->FaceAimDirection(); LockedForward = Player->GetActorForwardVector();
@@ -266,6 +275,7 @@ void UPGPlayerAttackComponent::Stop(bool bNotify, bool bCancelled)
     CastContext.Reset();
     for (const auto& Slash : NiagaraSlashes) PGPlayerSlashFX::Release(Slash.Component.Get());
     NiagaraSlashes.Reset();
+    PreparedExternalVFX.Reset();
     SwingCues.Reset(); NextSwingCue = 0;
     if (SlashMesh) SlashMesh->SetVisibility(false);
     SetComponentTickEnabled(false);
@@ -298,6 +308,23 @@ bool UPGPlayerAttackComponent::CanCancel(bool bDodge) const
 {
     return IsRunning() && ((bDodge && LogicalTime<ActiveProfile->EarlyDodgeUntil) || LogicalTime >= (bDodge ? ActiveProfile->DodgeCancel : ActiveProfile->AttackCancel));
 }
+bool UPGPlayerAttackComponent::TryGuardDirectHit(const AActor* Attacker)
+{
+    const auto* Enemy = Cast<APGCharacterEnemy>(Attacker);
+    const auto* Player = Cast<APGCharacterPlayer>(GetOwner());
+    if (!IsRunning() || !ActiveProfile->bManualCounter || bCounterTriggered || !Enemy || !Player ||
+        !Player->IsGameplayInputAllowed() || Player->GetPGAbilitySystemComponent()->GetHealth() <= 0.f ||
+        !Enemy->GetPGAbilitySystemComponent() || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0.f ||
+        LogicalTime < ActiveProfile->GuardStart || LogicalTime >= ActiveProfile->GuardEnd) return false;
+    const FVector Direction = (Enemy->GetActorLocation() - Player->GetActorLocation()).GetSafeNormal2D();
+    if (Direction.IsNearlyZero() || FVector::DotProduct(LockedForward, Direction) <
+        FMath::Cos(FMath::DegreesToRadians(ActiveProfile->GuardHalfAngle))) return false;
+    bCounterTriggered = true; // Consume before any effect/callback; subsequent hits remain dangerous.
+    LogicalTime = ActiveProfile->GuardEnd;
+    bAimLocked = true;
+    UE_LOG(LogTemp, Log, TEXT("PGManualCounter success skill=%d"), ActiveProfile->SkillID);
+    return true;
+}
 float UPGPlayerAttackComponent::GetExpectedSeconds() const { return IsRunning() ? ActiveProfile->Duration / Speed : 0.f; }
 
 void UPGPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
@@ -328,6 +355,8 @@ void UPGPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
                 PGPlayerSlashFX::Release(Slash.Component.Get());
                 NiagaraSlashes.RemoveAtSwap(Index);
             }
+            else if (Slash.ReferenceDuration > 0.f)
+                PGPlayerSlashFX::SetExternalProgress(Slash.Component.Get(), Slash.ReferenceDuration, Progress);
             else PGPlayerSlashFX::SetProgress(Slash.Component.Get(), ActiveProfile, Progress);
         }
     if (IsRunning() && SlashMesh && SlashMID)
@@ -371,10 +400,11 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
         while (SwingCues.IsValidIndex(NextSwingCue) && Next >= SwingCues[NextSwingCue].Time)
         {
             const auto& Cue = SwingCues[NextSwingCue++];
-            PresentHit(Cue.Presentation);
+            if (!ActiveProfile->bManualCounter || bCounterTriggered) PresentHit(Cue.Presentation);
         }
         for (const auto& Hit : ActiveProfile->HitPhases)
         {
+            if (ActiveProfile->bManualCounter && !bCounterTriggered) continue;
             // Also enter instantaneous contacts at time zero or within boundary epsilon.
             const bool bEnteringPhase = !PresentedPhases.Contains(Hit.PhaseId) && Previous <= Hit.Start;
             if (Next >= Hit.Start && (Next <= Hit.End || bEnteringPhase))
@@ -395,6 +425,14 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
         }
     }
     if (CastContext != Context) return;
+    if (ActiveProfile->bManualCounter && !bCounterTriggered && LogicalTime >= ActiveProfile->GuardEnd)
+    {
+        const float Alpha = FMath::Clamp((LogicalTime - ActiveProfile->GuardEnd) / ActiveProfile->GuardFailureRecovery, 0.f, 1.f);
+        if (auto* Anim = Player->GetMesh()->GetAnimInstance())
+            Anim->Montage_SetPosition(ActiveMontage, FMath::Lerp(ActiveProfile->GuardFailurePoseStart, ActiveProfile->GuardFailurePoseEnd, Alpha));
+        if (Alpha >= 1.f) Stop(true, false);
+        return;
+    }
     if (auto* Anim = Player->GetMesh()->GetAnimInstance())
         Anim->Montage_SetPosition(ActiveMontage, ActiveProfile->GetMontagePosition(LogicalTime));
     if (LogicalTime >= ActiveProfile->Duration) Stop(true, false);
@@ -423,7 +461,8 @@ bool UPGPlayerAttackComponent::MoveBetween(float From, float To)
             continue;
         }
         const float Fraction = (FMath::Clamp(To, Move.Start, Move.End) - FMath::Clamp(From, Move.Start, Move.End)) / (Move.End - Move.Start);
-        const FVector Delta = LockedForward * (Move.Mode==EPGPlayerMoveMode::GroundLeap ? LeapDistance : Move.Distance) * Fraction;
+        const FVector Delta = LockedForward * (Move.Mode==EPGPlayerMoveMode::BackwardSweep ? -1.f : 1.f) *
+            (Move.Mode==EPGPlayerMoveMode::GroundLeap ? LeapDistance : Move.Distance) * Fraction;
         if (Move.Mode==EPGPlayerMoveMode::GroundLeap)
         {
             const float Progress=FMath::Clamp((To-Move.Start)/(Move.End-Move.Start),0.f,1.f);
@@ -570,6 +609,26 @@ void UPGPlayerAttackComponent::PresentHit(const FPGPlayerHitPhase& Hit)
         SlashMesh->SetVisibility(true); SlashUntil = LogicalTime + ActiveProfile->SlashDuration;
     }
     const bool bProjectile = Hit.Shape == EPGPlayerHitShape::Projectile;
+    const auto ExternalShape = ActiveProfile->GetSwingShape(Hit.PhaseId);
+    if (const auto* Definition = ActiveProfile->ExternalVFX.Find(ExternalShape))
+    {
+        const float Radius = bProjectile ? ActiveProfile->ProjectileSwingRadius : Hit.Radius;
+        const float Height = ExternalShape == EPGPlayerVFXShape::Impact ? 8.f : ActiveProfile->SlashHeight;
+        const int32 Copies = ExternalShape == EPGPlayerVFXShape::Orbit ? 2 : 1;
+        for (int32 Side = 0; Side < Copies; ++Side)
+        {
+            FRotator Rotation = LockedForward.Rotation(); Rotation.Yaw += Side * 180.f;
+            if (auto* FX = PGPlayerSlashFX::SpawnExternal(this, *Definition, ActiveProfile, Radius,
+                Feet(Player) + FVector(0, 0, Height), Rotation, ActiveProfile->bReverseSlash != bool(Hit.PhaseId % 2)))
+            {
+                FX->AddTickPrerequisiteComponent(this);
+                NiagaraSlashes.Add({FX, LogicalTime, Definition->ReferenceDuration});
+                if (CVarPGSkillCast.GetValueOnGameThread())
+                    UE_LOG(LogTemp, Display, TEXT("PGExternalVFX Skill=%d Phase=%d Shape=%d System=%s"),
+                        ActiveProfile->SkillID, Hit.PhaseId, static_cast<int32>(ExternalShape), *Definition->System.ToString());
+            }
+        }
+    }
     auto* SwingSystem = bProjectile ? PreparedProjectileSwingVFX.Get() : PreparedVFX.Get();
     if (SwingSystem)
         for (int32 Side = 0; Side < (Hit.Shape == EPGPlayerHitShape::Disc ? 2 : 1); ++Side)

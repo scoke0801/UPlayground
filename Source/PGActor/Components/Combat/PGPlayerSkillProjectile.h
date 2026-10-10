@@ -19,6 +19,8 @@ private:
     UPROPERTY() TObjectPtr<class UStaticMeshComponent> Visual;
     UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> SlashMID;
     UPROPERTY(Transient) TObjectPtr<class UNiagaraComponent> NiagaraSlash;
+    UPROPERTY(Transient) TObjectPtr<class UNiagaraComponent> ExternalBlade;
+    float ExternalReferenceDuration = 0.f;
     UPROPERTY(Transient) TObjectPtr<UPGPlayerSkillProfile> VisualProfile;
     TSharedPtr<FPGSkillCastContext> CastContext;
     TSharedPtr<struct FPGSkillObservation> Observation;

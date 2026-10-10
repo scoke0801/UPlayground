@@ -412,6 +412,35 @@ bool FPGPlayerP1CooldownTest::RunTest(const FString&)
     TestTrue(TEXT("Reequipped cooldown blocks use"),A->IsOnCooldown());
     World->DestroyWorld(false); return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGExternalVFXProfileTest,"PG.HackSlash.ExternalVFXProfile",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPGExternalVFXProfileTest::RunTest(const FString&)
+{
+    auto* Profile = TestProfile();
+    const auto Before = UPGPlayerAttackComponent::BuildSwingCues(Profile, nullptr);
+    FPGExternalCombatVFX Definition;
+    Definition.System = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/Art/PlayerCombatFX/External/NS_PGExternalSlash.NS_PGExternalSlash")));
+    Profile->ExternalVFX.Add(EPGPlayerVFXShape::Cleave, Definition);
+    FString Error;
+    TestTrue(TEXT("Optional external layer accepts a valid soft reference"), Profile->Validate(Profile->SkillID, Error));
+    const auto After = UPGPlayerAttackComponent::BuildSwingCues(Profile, nullptr);
+    TestEqual(TEXT("External VFX cannot add damage contacts"), After.Num(), Before.Num());
+    for (int32 Index = 0; Index < After.Num(); ++Index)
+    {
+        TestEqual(TEXT("External VFX preserves contact timing"), After[Index].Time, Before[Index].Time);
+        TestEqual(TEXT("External VFX preserves damage"), After[Index].Presentation.DamageMultiplier, Before[Index].Presentation.DamageMultiplier);
+    }
+    auto* Snapshot = DuplicateObject<UPGPlayerSkillProfile>(Profile, GetTransientPackage());
+    Profile->ExternalVFX[EPGPlayerVFXShape::Cleave].ReferenceRadius = 0.f;
+    TestFalse(TEXT("Zero authoring radius cannot divide during spawn"), Profile->Validate(Profile->SkillID, Error));
+    TestEqual(TEXT("In-flight visual definition is a snapshot"), Snapshot->ExternalVFX[EPGPlayerVFXShape::Cleave].ReferenceRadius, 200.f);
+    Profile->ExternalVFX[EPGPlayerVFXShape::Cleave] = Definition;
+    Profile->ExternalVFX[EPGPlayerVFXShape::Cleave].Scale.X = std::numeric_limits<double>::quiet_NaN();
+    TestFalse(TEXT("Non-finite external transform rejected"), Profile->Validate(Profile->SkillID, Error));
+    Profile->ExternalVFX.Empty();
+    TestTrue(TEXT("Legacy profiles remain valid without external effects"), Profile->Validate(Profile->SkillID, Error));
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGCombatVFXBuildTest,"PG.HackSlash.CombatVFXBuildSnapshot",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FPGCombatVFXBuildTest::RunTest(const FString&)
 {

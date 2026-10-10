@@ -59,11 +59,23 @@ void APGPlayerSkillProjectile::Initialize(const UPGPlayerSkillProfile* Profile, 
         Visual->SetMaterial(0,SlashMID);
     }
     }
+    if (const auto* Definition = VisualProfile->ExternalVFX.Find(EPGPlayerVFXShape::Blade))
+    {
+        ExternalReferenceDuration = Definition->ReferenceDuration;
+        ExternalBlade = PGPlayerSlashFX::SpawnExternal(this, *Definition, VisualProfile, Hit.Radius,
+            GetActorLocation(), Forward.Rotation(), Profile->bReverseSlash);
+        if (ExternalBlade)
+        {
+            ExternalBlade->AttachToComponent(Visual, FAttachmentTransformRules::KeepWorldTransform);
+            ExternalBlade->AddTickPrerequisiteActor(this);
+        }
+    }
     Sweep(0.f); // Include enemies already touching the spawn volume.
 }
 void APGPlayerSkillProjectile::EndPlay(const EEndPlayReason::Type Reason)
 {
     PGPlayerSlashFX::Release(NiagaraSlash); NiagaraSlash = nullptr;
+    PGPlayerSlashFX::Release(ExternalBlade); ExternalBlade = nullptr;
     VisualProfile = nullptr;
     if (Observation)
     {
@@ -88,6 +100,8 @@ void APGPlayerSkillProjectile::Tick(float DeltaSeconds)
     Sweep(FMath::Min(RemainingRange,Speed*Step));
     RemainingTime -= Step;
     if (IsActorBeingDestroyed()) return;
+    PGPlayerSlashFX::SetExternalProgress(ExternalBlade, ExternalReferenceDuration, FMath::Clamp(
+        1.f - FMath::Min(RemainingTime, RemainingRange / Speed) / VisualLifetime, 0.f, 1.f));
     PGPlayerSlashFX::SetProgress(NiagaraSlash, VisualProfile, FMath::Clamp(
         1.f - FMath::Min(RemainingTime, RemainingRange / Speed) / VisualLifetime, 0.f, 1.f));
     if (SlashMID) SlashMID->SetScalarParameterValue(TEXT("Progress"), FMath::Clamp(
