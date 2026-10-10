@@ -234,7 +234,7 @@ def apply():
     TX.data['status']='APPLIED_UNVERIFIED';TX.flush();validate()
     unreal.log('PGHumanoidBoss APPLY PASS')
 
-def validate():
+def validate(validate_stage=True):
     data={k:rows(p) for k,p in TABLES.items()}
     enemy=next(r for r in data['enemies'] if r['EnemyID']==SPEC['enemy_id'])
     assert enemy['EnemyName']==SPEC['name'] and enemy['Role']=='Boss' and enemy['DropPoolId']=='Rogue.Boss'
@@ -279,7 +279,8 @@ def validate():
             assert old==new,('Unrelated table rows changed',key)
         assert [r for r in before['stages'] if r['Id']!=6]==[r for r in data['stages'] if r['Id']!=6]
     stage=next(r for r in data['stages'] if r['Id']==6)
-    assert [(x['MonsterId'],x['SpawnCount']) for x in stage['Waves'][0]['MonsterSpawnInfos']]==[(15401,1)]
+    if validate_stage:
+        assert [(x['MonsterId'],x['SpawnCount']) for x in stage['Waves'][0]['MonsterSpawnInfos']]==[(15401,1)]
     unreal.log('PGHumanoidBoss VALIDATION PASS')
 
 if __name__=='__main__':

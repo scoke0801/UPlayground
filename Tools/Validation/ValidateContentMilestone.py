@@ -71,10 +71,13 @@ def validate_content_milestone(enemies, skills, stages):
                 assert unreal.load_asset(skill[field]), (sid,field)
         assert by_id[6]['bIsBossStage'] and len(by_id[6]['Waves']) == 1
         boss_id=15401 if unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/HumanoidBoss/BP_15401') else 15106
+        if unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/DarkKnightBoss/BP_15601'):
+            from ConfigureDarkKnightBoss import SPEC as dark_knight_spec
+            if dark_knight_spec.get('auto_spawn_stage')==6:boss_id=dark_knight_spec['enemy_id']
         assert [(s['MonsterId'], s['SpawnCount']) for s in by_id[6]['Waves'][0]['MonsterSpawnInfos']] == [(boss_id,1)]
-        if boss_id==15401:
+        if unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/HumanoidBoss/BP_15401'):
             from ConfigureHumanoidBoss import validate as validate_humanoid_boss
-            validate_humanoid_boss()
+            validate_humanoid_boss(validate_stage=boss_id==15401)
     else:
         assert 15107 not in skills and 15108 not in skills, 'Partial boss migration'
     if variety:
@@ -85,5 +88,13 @@ def validate_content_milestone(enemies, skills, stages):
         from ConfigureMonsterVariations import validate as validate_monster_variations
         validate_monster_variations()
         schema = 4
+    if unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/CreatureCombat/BP_15501'):
+        from ConfigureCreatureCombat import validate as validate_creature_combat
+        validate_creature_combat()
+        schema = 5
+    if unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/DarkKnightBoss/BP_15601'):
+        from ConfigureDarkKnightBoss import validate as validate_dark_knight
+        validate_dark_knight()
+        schema = 6
     unreal.log('PGContent VALIDATION PASS ' + json.dumps(dict(schema=schema, roles=5, boss_attacks=4 if variety else 3 if schema==2 else 0, waves=15, wave_counts=expected)))
     return schema

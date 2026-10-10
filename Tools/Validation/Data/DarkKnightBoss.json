@@ -1,0 +1,36 @@
+{
+  "enemy_id": 15601,
+  "auto_spawn_stage": 6,
+  "name": "흑철의 처형자",
+  "destination": "/Game/DataCenter/DarkKnightBoss",
+  "mesh": "/Game/ExternalAssets/Characters/Dark_Knight/Dark_Knight_Male/Meshes/SKM_DKM_Full",
+  "sword": "/Game/ExternalAssets/Characters/Dark_Knight/Dark_Knight_Male/Meshes/SM_DKM_Sword",
+  "sword_idle_direction": [0, 0.75, -0.66],
+  "sword_grip_point": [0, -8, 0],
+  "source_mesh": "/Game/ExternalAssets/Animations/BossyEnemy/SkeletalMesh/SK_Mannequin_UE4_WithWeapon",
+  "source_root": "/Game/ExternalAssets/Animations/BossyEnemy/Animations/",
+  "scale": 1.35,
+  "movement_speed": 290,
+  "minimum_wait": 0.55,
+  "phase_two_sequence": [15614, 15612, 15613, 15611],
+  "motions": {
+    "Idle": "Boss_Idle",
+    "Walk": "InPlace/Movement/Boss_Walk_F_InP",
+    "Run": "InPlace/Movement/Boss_Run_F_InP",
+    "Sweep": "InPlace/Attacks/Boss_Attack_Swing_InP",
+    "Uppercut": "InPlace/Attacks/Boss_Attack_Uppercut_InP",
+    "Double": "InPlace/Attacks/Boss_Attack_SwingAndSlam_InP",
+    "Fury": "InPlace/Attacks/Boss_Attack_HandAndSwordSwing_InP",
+    "HitFront": "Boss_ReactionHit_F",
+    "HitBack": "Boss_ReactionHit_B",
+    "HitLeft": "Boss_ReactionHit_L",
+    "HitRight": "Boss_ReactionHit_R"
+  },
+  "death": "/Game/ExternalAssets/Characters/Dark_Knight/Dark_Knight_Male/Animations/Anim_DKM_Death",
+  "skills": [
+    {"id":15611,"name":"흑철 횡베기","range":400,"cooldown":4,"recovery":1.3,"phase":1,"contacts":[{"motion":"Sweep","start":0,"time":1.1,"radius":390,"half_angle":85,"damage":1.0,"pose":[0.18,0.375,0.72]}]},
+    {"id":15612,"name":"처형 올려베기","range":450,"cooldown":5,"recovery":1.6,"phase":1,"contacts":[{"motion":"Uppercut","start":0,"time":1.3,"radius":450,"half_angle":35,"damage":1.25,"pose":[0.28,0.477,0.72]}]},
+    {"id":15613,"name":"검격과 분쇄","range":410,"cooldown":7,"recovery":1.8,"phase":1,"contacts":[{"motion":"Double","start":0,"time":1.1,"radius":380,"half_angle":80,"damage":0.7,"pose":[0.1,0.282,0.42]},{"motion":"Double","start":1.35,"time":2.5,"radius":350,"half_angle":50,"damage":1.15,"pose":[0.42,0.587,0.87]}]},
+    {"id":15614,"name":"흑철 파쇄 연격","range":430,"cooldown":8,"recovery":1.9,"phase":2,"contacts":[{"motion":"Fury","start":0,"time":1.0,"radius":260,"half_angle":55,"damage":0.55,"pose":[0.24,0.395,0.44]},{"motion":"Fury","start":1.3,"time":2.4,"radius":430,"half_angle":90,"damage":1.25,"pose":[0.44,0.60,0.86]}]}
+  ]
+}

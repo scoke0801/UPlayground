@@ -12,6 +12,10 @@ def validate_hack_slash_p1(rows):
     additional={s['id'] for s in monster_spec['skills']}
     boss_spec=json.loads((root/'Tools/Validation/Data/HumanoidBoss.json').read_text(encoding='utf-8'))
     additional.update(s['id'] for s in boss_spec['skills'])
+    from MonsterVariationRoster import CREATURE_COMBAT
+    additional.update(s['id'] for s in CREATURE_COMBAT['skills'])
+    dark_knight=json.loads((root/'Tools/Validation/Data/DarkKnightBoss.json').read_text(encoding='utf-8'))
+    additional.update(s['id'] for s in dark_knight['skills'])
     assert len(rows)==len(by_id) and set(by_id)-{r['SkillID'] for r in baseline} <= additional
     # Later migrations own only these fields; validate their current contracts
     # instead of comparing them against an obsolete P1 snapshot.
