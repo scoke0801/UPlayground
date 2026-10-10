@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "faces": ["Arin", "Hichi", "Honoka", "Hwarin", "LianLian", "Lili", "Nenmir", "P09_Female", "P09_Male", "Siuha"],
+  "comparison_source": "/Game/Art/ToonTest/Maps/L_PGToon_Bokusei_ShadingComparison",
+  "comparison_map": "/Game/Art/ToonTest/Improvement/Maps/L_PGToon_ImprovedComparison",
+  "hair_proxy": "/Game/Art/ToonTest/Improvement/Hair/SM_PGBokusei_HairShadow",
+  "light_source_angle_degrees": 3.0,
+  "native_toon_adoption": false
+}

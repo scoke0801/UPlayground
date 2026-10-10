@@ -49,7 +49,11 @@ def recreate_material(name: str):
         )
     if not asset:
         raise RuntimeError(f"Could not create material {path}")
-    material_lib.delete_all_material_expressions(asset)
+    # UE 5.8 DeleteAll iterates the live array while DeleteMaterialExpression
+    # removes from it. Iterate a snapshot so repeated generation leaves no nodes.
+    for node in list(material_lib.get_material_expressions(asset)):
+        material_lib.delete_material_expression(asset, node)
+    assert not material_lib.get_material_expressions(asset), path
     return asset
 
 
@@ -75,6 +79,10 @@ def custom_input(name):
     value = unreal.CustomInput()
     value.set_editor_property("input_name", name)
     return value
+
+
+def hair_world_lighting_influence():
+    return json.loads((ROOT / 'Tools/Art/ToonTest/shading_profiles.json').read_text(encoding='utf-8'))['profiles']['hair']['world_lighting_influence']
 
 
 def shading_profile(character, slot):
@@ -128,14 +136,54 @@ def build_toon_master(name="M_PGToonCharacter", extended_alpha=False, translucen
     texture.set_editor_property('texture', unreal.load_asset('/Engine/EngineResources/WhiteSquareTexture'))
     tint = vector_parameter(material, "BaseTint", (1.0, 1.0, 1.0, 1.0), -1050, -80)
     normal = expression(material, unreal.MaterialExpressionVertexNormalWS, -1050, 100)
+    # Blend toward a continuous head volume only for opted-in hair. World position
+    # and the animated bone frame keep it stable across UV seams and mesh sections.
+    forward = vector_parameter(material, 'HeadForwardWS', (0, 1, 0, 0), -2450, 100)
+    right = vector_parameter(material, 'HeadRightWS', (1, 0, 0, 0), -2450, 200)
+    hair_normal = expression(material, unreal.MaterialExpressionCustom, -1800, -100)
+    hair_normal.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    engine_normal = unreal.CustomOutput()
+    engine_normal.set_editor_property('output_name', 'EngineNormal')
+    engine_normal.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    hair_normal.set_editor_property('additional_outputs', [engine_normal])
+    hair_inputs = [
+        (normal, '', 'N'),
+        (expression(material, unreal.MaterialExpressionTwoSidedSign, -2450, -700), '', 'Side'),
+        (expression(material, unreal.MaterialExpressionWorldPosition, -2450, -200), '', 'Position'),
+        (forward, 'RGB', 'Forward'), (right, 'RGB', 'Right'),
+        (vector_parameter(material, 'HairHeadCenterWS', (0, 0, 0, 0), -2450, -300), 'RGB', 'Center'),
+        (scalar_parameter(material, 'HairHeadFrameValid', 0, -2450, -400), '', 'Valid'),
+        (scalar_parameter(material, 'HairNormalBlend', 0, -2450, -500), '', 'Strength'),
+        (scalar_parameter(material, 'HairCenterOffset', 6, -2450, -600), '', 'Offset')]
+    hair_normal.set_editor_property('inputs', [custom_input(pin) for _, _, pin in hair_inputs])
+    hair_normal.set_editor_property('code', '''
+float3 F = Forward * rsqrt(max(dot(Forward, Forward), 1e-6));
+float3 R = Right - F * dot(Right, F);
+R *= rsqrt(max(dot(R, R), 1e-6));
+float3 U = cross(R, F);
+float3 P = Position - Center - U * Offset;
+// Ellipsoid gradient; preserve the silhouette's vertical length and a little
+// lock relief instead of flattening the entire head to a single face normal.
+float3 volume = P - U * dot(P, U) * .45;
+float len2 = dot(volume, volume);
+volume *= rsqrt(max(len2, 1e-6));
+float blend = saturate(Strength) * saturate(Valid) * step(1e-4, len2);
+// UE flips two-sided engine normals after this expression. Compensate the
+// volume term so back-facing hair cards receive the same outward illumination.
+float3 engineResult = lerp(N, volume * Side, blend);
+EngineNormal = engineResult * rsqrt(max(dot(engineResult, engineResult), 1e-6));
+float3 result = lerp(N, volume, blend);
+return result * rsqrt(max(dot(result, result), 1e-6));
+'''.strip())
+    for src, output, pin in hair_inputs:
+        assert material_lib.connect_material_expressions(src, output, hair_normal, pin)
+    normal = hair_normal
     geometric_normal = normal
     if world_lit:
         material.set_editor_property('tangent_space_normal', False)
         if translucent:
             material.set_editor_property('translucency_lighting_mode', unreal.TranslucencyLightingMode.TLM_SURFACE_PER_PIXEL_LIGHTING)
         face = scalar_parameter(material, 'FaceShading', 0, -2050, 0)
-        forward = vector_parameter(material, 'HeadForwardWS', (0, 1, 0, 0), -2050, 100)
-        right = vector_parameter(material, 'HeadRightWS', (1, 0, 0, 0), -2050, 200)
         face_normal = expression(material, unreal.MaterialExpressionCustom, -1800, 0)
         face_normal.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT3)
         face_normal.set_editor_property('inputs', [custom_input(p) for p in ['N', 'Forward', 'Right', 'Strength']])
@@ -151,9 +199,9 @@ return result * rsqrt(max(dot(result, result), 1e-6));
         for src, output, pin in [(normal, '', 'N'), (forward, 'RGB', 'Forward'), (right, 'RGB', 'Right'), (face, '', 'Strength')]:
             assert material_lib.connect_material_expressions(src, output, face_normal, pin)
         normal = face_normal
-        # Keep geometric normals for engine lighting; the flattened art normal
-        # controls only the analytic toon bands.
-        assert material_lib.connect_material_property(geometric_normal, '', unreal.MaterialProperty.MP_NORMAL)
+        # Hair volume normals also drive engine lighting. Face flattening remains
+        # confined to the analytic bands, preserving engine face self-shadowing.
+        assert material_lib.connect_material_property(geometric_normal, 'EngineNormal', unreal.MaterialProperty.MP_NORMAL)
     camera = expression(material, unreal.MaterialExpressionCameraVectorWS, -1050, 190)
     light = vector_parameter(
         material, "LightDirection", (0.35, -0.45, -0.82, 0.0), -1050, 280
@@ -182,27 +230,28 @@ return result * rsqrt(max(dot(result, result), 1e-6));
         "code",
         (ROOT / 'Tools/Art/ToonTest/ToonShading.hlsl').read_text(encoding='utf-8'),
     )
-    if world_lit:
-        custom.set_editor_property('code', custom.get_editor_property('code').replace(
-            'float spec = pow(saturate(dot(N, H)), max(SpecularPower, 1.0));', '''
-float tangentH = dot(normalize(HairTangentWS + 1e-6), H);
-float strandSpec = pow(sqrt(saturate(1.0 - tangentH * tangentH)), max(SpecularPower, 1.0));
-float spec = lerp(pow(saturate(dot(N, H)), max(SpecularPower, 1.0)), strandSpec, saturate(HairAnisotropy));'''))
+    additional_outputs = []
+    for output_name in ['ToonDiffuse', 'ToonAccent']:
+        extra = unreal.CustomOutput()
+        extra.set_editor_property('output_name', output_name)
+        extra.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+        additional_outputs.append(extra)
+    custom.set_editor_property('additional_outputs', additional_outputs)
     custom.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     extra_scalars = {
+        'ToonDetailWeight': 1.,
         'ShadowSoftness': .025, 'LightSoftness': .035, 'BandAA': .75,
         'DiffuseWrap': .12, 'ShadeStrength': 1., 'RimThreshold': .38,
         'RimSoftness': .13, 'RimLightMask': .85, 'RimBaseBlend': .65,
         'SpecularStrength': 0., 'SpecularPower': 32., 'SpecularThreshold': .5,
-        'SpecularSoftness': .075,
+        'SpecularSoftness': .075, 'HairSoftness': 0.,
     }
     extra_nodes = [(scalar_parameter(material, key, value, -1550, 900+i*90), '', key)
                    for i, (key, value) in enumerate(extra_scalars.items())]
     extra_nodes += [(vector_parameter(material, 'SpecularTint', (.83, .85, 1., 1.), -1550, 2200), 'RGB', 'SpecularTint'),
                     (expression(material, unreal.MaterialExpressionTwoSidedSign, -1550, 2300), '', 'FaceSign')]
-    if world_lit:
-        extra_nodes += [(scalar_parameter(material, 'HairAnisotropy', 0, -1550, 2400), '', 'HairAnisotropy'),
-                        (expression(material, unreal.MaterialExpressionVertexTangentWS, -1550, 2500), '', 'HairTangentWS')]
+    extra_nodes += [(scalar_parameter(material, 'HairAnisotropy', 0, -1550, 2400), '', 'HairAnisotropy'),
+                    (expression(material, unreal.MaterialExpressionVertexTangentWS, -1550, 2500), '', 'HairTangentWS')]
     if face_sdf_texture:
         sdf = expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -2100, -300)
         sdf.set_editor_property('parameter_name', 'FaceSDFTexture')
@@ -268,13 +317,13 @@ float spec = lerp(pow(saturate(dot(N, H)), max(SpecularPower, 1.0)), strandSpec,
         # A small fill keeps shadowed anime features readable, adjustable down to zero.
         influence = scalar_parameter(material, 'WorldLightingInfluence', .88, 200, 250)
         for label, code, prop in [
-            ('LitColor', 'return Color * saturate(Influence);', unreal.MaterialProperty.MP_BASE_COLOR),
-            ('FillColor', 'return Color * (1.0 - saturate(Influence)) + StateColor * StateGlow * saturate(Influence);', unreal.MaterialProperty.MP_EMISSIVE_COLOR)]:
+            ('LitColor', 'return Diffuse * saturate(Influence);', unreal.MaterialProperty.MP_BASE_COLOR),
+            ('FillColor', 'return Diffuse * (1.0 - saturate(Influence)) + Accent + StateColor * StateGlow;', unreal.MaterialProperty.MP_EMISSIVE_COLOR)]:
             route = expression(material, unreal.MaterialExpressionCustom, 450, 150 if label == 'LitColor' else 350)
             route.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT3)
             route.set_editor_property('code', code)
-            route.set_editor_property('inputs', [custom_input(p) for p in ['Color', 'Influence', 'StateColor', 'StateGlow']])
-            for src, output, pin in [(custom, '', 'Color'), (influence, '', 'Influence'), (state_color, 'RGB', 'StateColor'), (state_glow, '', 'StateGlow')]:
+            route.set_editor_property('inputs', [custom_input(p) for p in ['Diffuse', 'Accent', 'Influence', 'StateColor', 'StateGlow']])
+            for src, output, pin in [(custom, 'ToonDiffuse', 'Diffuse'), (custom, 'ToonAccent', 'Accent'), (influence, '', 'Influence'), (state_color, 'RGB', 'StateColor'), (state_glow, '', 'StateGlow')]:
                 assert material_lib.connect_material_expressions(src, output, route, pin)
             assert material_lib.connect_material_property(route, '', prop)
         for key, value, prop in [('SurfaceRoughness', .85, unreal.MaterialProperty.MP_ROUGHNESS), ('SurfaceSpecular', 0., unreal.MaterialProperty.MP_SPECULAR)]:
@@ -363,6 +412,7 @@ return saturate(Alpha) * alive;
     ):
         raise RuntimeError("Could not connect opacity mask")
 
+    connect_camera_fade(material, opacity, translucent)
     material_lib.recompile_material(material)
     save(material)
     return material
@@ -388,6 +438,35 @@ return Normal * max(Width, 0.0) * lerp(1.0, scale, saturate(OutlineDistanceScale
     for node, output, pin in inputs:
         assert material_lib.connect_material_expressions(node, output, offset, pin)
     assert material_lib.connect_material_property(offset, '', unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+
+
+def connect_camera_fade(material, opacity, translucent=False, opacity_output=''):
+    """CPD slot 7 is reserved for camera fade (0=visible); retain authored alpha/shadows."""
+    fade = scalar_parameter(material, 'CameraFadeAmount', 0.0, -600, 2100)
+    fade.set_editor_property('use_custom_primitive_data', True)
+    fade.set_editor_property('primitive_data_index', 7)
+    visible = expression(material, unreal.MaterialExpressionOneMinus, -350, 2100)
+    assert material_lib.connect_material_expressions(fade, '', visible, '')
+    dither = expression(material, unreal.MaterialExpressionMaterialFunctionCall, -100, 2100)
+    function = unreal.load_asset('/Engine/Functions/Engine_MaterialFunctions02/Utility/DitherTemporalAA')
+    assert function, 'Engine DitherTemporalAA function is required'
+    dither.set_material_function(function)
+    inputs = [str(n) for n in material_lib.get_material_expression_input_names(dither)]
+    alpha_input = next(n for n in inputs if 'Alpha' in n)
+    assert material_lib.connect_material_expressions(visible, '', dither, alpha_input)
+    result = expression(material, unreal.MaterialExpressionCustom, 150, 1900)
+    result.set_editor_property('description', 'PG camera fade; preserve shadow pass')
+    result.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    result.set_editor_property('inputs', [custom_input(n) for n in ['Opacity', 'Dither', 'Fade']])
+    result.set_editor_property('code', '''
+float coverage = Fade <= 0.0 ? 1.0 : (Fade >= 1.0 ? 0.0 : Dither);
+return Opacity * lerp(coverage, 1.0, IsShadowDepthShader());
+'''.strip())
+    for src, output, pin in [(opacity, opacity_output, 'Opacity'), (dither, '', 'Dither'), (fade, '', 'Fade')]:
+        assert material_lib.connect_material_expressions(src, output, result, pin)
+    prop = unreal.MaterialProperty.MP_OPACITY if translucent else unreal.MaterialProperty.MP_OPACITY_MASK
+    assert material_lib.connect_material_property(result, '', prop)
+    return result
 
 
 def build_outline_master(name="M_PGToonOutline", extended_alpha=False):
@@ -446,6 +525,7 @@ return (Sign < 0.0 ? 1.0 : 0.0) * step(Cutoff, alpha * MainOpacity) * Enabled * 
     ):
         raise RuntimeError("Could not connect outline face mask")
 
+    connect_camera_fade(material, backface)
     material_lib.recompile_material(material)
     save(material)
     return material

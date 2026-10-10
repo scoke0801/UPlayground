@@ -1,14 +1,36 @@
 # bOKUSEI 단계별 툰 셰이딩 비교 맵
 
+## 2026-10-09 추가 모델 기본 포즈 통일
+
+- 추가 모델의 기존 일반 플레이어 리타겟 경로를 비교 전용 Bokusei→대상 리그 경로로 교체했다. 기준은 맵에서 실제 사용하는 `PGBokusei_AS_Anime_KC_Idle`이며 생성 결과는 `PGGuestPose_<모델>_PGBokusei_AS_Anime_KC_Idle`다. 비교 전용 IK 리그/리타겟만 생성하고 원본 캐릭터 설정은 유지한다.
+- 리그별 Chest/UpperChest, 팔·다리 구분자, 손가락 Proximal/Distal 또는 1/3 이름을 매핑한다. 기존 미터 단위 리그의 루트 스케일 보정을 유지하며 모든 단계는 1.25초·재생률 1로 시작한다.
+- 적용: `Saved/BokuseiShadingComparison/Runs/20261009T144553974833Z/run.json` PASS. 3개 시점×양팔/양다리 8개 구간의 방향을 Bokusei와 비교한 최대 오차는 아린 1.56°, 화련 1.10°, Lianlian 1.56°다. 이후 재로드 검사에서 5° 초과 또는 다른 모션/시작 시점 연결을 실패 처리한다. 체형에 따른 팔·다리 길이 차이는 보존한다.
+- 새 프로세스 검증은 `Saved/BokuseiShadingComparison/GuestPreview/20261009T144807237249Z/guests-preview.json` PASS: 24개 모델의 모션 연결·포즈 방향·시점, 입력 67개와 렌더 67장을 확인했다. 세 모델 정면 캡처에서 Bokusei와 같은 팔을 내린 대기 자세를 직접 확인했다.
+
+## 2026-10-09 추가 모델 8단계 확장
+
+- 아린·화련·Lianlian에 각 8단계(총 24개)를 생성하고 X 방향으로 2,600cm 간격의 별도 무대를 배치했다. 원본 외형 에셋 대신 비교 전용 Unlit/Default Lit/SDF 재질을 사용하며 단계별 외곽선과 모델별 헤어 투사체를 연결했다. 각 모델 내부에서만 대기 모션의 Leader Pose를 공유한다.
+- `Tab` 모델 전환, 단계·얼굴·쿼터뷰 유지, 선택 모델 전체 보기와 모델별 머리 본 기반 얼굴 프레이밍을 추가했다. 가림막 12개와 헤어 투사체 6개를 기존 H/J 입력에 포함했다. 기존 Bokusei 단계 태그는 유지해 기존 검사와 구분한다.
+- UE 5.8 Development 에디터 빌드와 Python 구문 검사를 통과했다. 저장·재로드에서 24개 배치, 단계별 셰이딩 모델/외곽선/SDF/림 억제, 모델별 모션 연결을 검사한다. 전용 PIE 검사는 단계 선택, 얼굴/쿼터뷰 유지, 4모델 순환, H/J를 포함한 67개 입력 조합과 67장 렌더를 기록한다.
+- 최종 적용 근거: `Saved/BokuseiShadingComparison/Runs/20261009T141531208682Z/run.json`. 최종 새 프로세스 검증은 `Runs/20261009T141559201496Z/run.json` PASS: 입력 67개·렌더 67장, 셰이더/Python 오류 없음. `GuestPreview/20261009T141619516030Z`에 화면을 기록했으며 전체 보기에서 8단계 안내판이 모두 들어오는 구도를 직접 확인했다. 최신 결과는 `Saved/BokuseiShadingComparison/guests-preview.json`을 따른다.
+- 기존 전체 `--step preview`는 기존 Bokusei 2단계 저장 값과 현재 `shading_profiles.json` 값 불일치로 초기 검사에서 중단됐다. 이 기존 기준값 문제를 추가 모델 검증 성공으로 대체하지 않는다. 이번 변경의 검증은 `--step guests-preview`이며, 모델별 그림자 형태의 추가 미술 튜닝·장시간 패키지 성능은 별도 범위다.
+
+## 2026-10-09 추가 모델 검증
+
+- 아린·화련·Lianlian의 저장 재로드, 원본 메시/재질 연결, 배치 좌표, 외곽선, 모션 신장 검사가 통과했다. PIE에서 세 모델 각각의 대기 모션과 공통 조명 MID 방향 동기화도 확인했다.
+- 기존 8단계의 35개 본 포즈, 입력 55개(조명 19개), H/J 그림자 픽셀 검사가 통과했다. 에디터 렌더 21장 중 전체 배치와 세 모델 근접 화면을 직접 확인했다. 새 C++ 변경은 없다.
+- 생성 근거: `Saved/BokuseiShadingComparison/Runs/20261009T081303619322Z/run.json`. 최종 검증: `Saved/BokuseiShadingComparison/Runs/20261009T081412271922Z/run.json`. 렌더: `Saved/BokuseiShadingComparison/Preview/20261009T081438612720Z`.
+- 초기 렌더에서 발견한 루트 위치 초기화와 아린·화련 모션의 100배 임포트 스케일 누락을 보정했다. 추가 모델별 SDF 제작·재질 재튜닝은 이번 배치 범위에 포함하지 않는다.
+
 ## 사용법
 
 콘텐츠 브라우저의 `Art/ToonTest/Maps`에서 `L_PGToon_Bokusei_ShadingComparison`을 연다.
 
 기본 셰이딩 비교는 왼쪽부터 6단계다. 얼굴 SDF 테스트 에셋이 있으면 7/8단계도 함께 배치한다. Play(PIE) 후 뷰포트를 클릭하면 자유 카메라를 조작한다. Bokusei 비교 단계들은 같은 메시와 Leader Pose를 사용해 대기 모션을 공유한다.
 
-앞쪽 전시 줄에는 아린·화련(`DA_Hwarin`)·Lianlian을 별도 배치했다. 각 외형의 기존 툰 재질·머리 축·외곽선을 사용하며 같은 주광원 조절에 반응한다. 숫자 1–8은 Bokusei 단계 선택이고, 추가 모델은 WASD/QE와 우클릭 자유 카메라로 살펴본다. 추가 모델은 모델별 리타겟 대기 모션을 사용하며 Bokusei의 얼굴 SDF·헤어 그림자 프록시를 공유하지 않는다.
+아린·화련(`DA_Hwarin`)·Lianlian도 각각 독립된 8단계 비교 무대를 사용한다. `Tab`은 Bokusei→아린→화련→Lianlian 순환, `1–8`은 선택 모델의 단계 변경이다. `F` 얼굴·`C` 쿼터뷰와 선택 단계는 모델 전환 시 유지되며 `0/R`은 선택 모델의 전체 단계를 보여준다. 원본 메시·머리 축과 모델별 리타겟 대기 모션을 사용하며, 얼굴 SDF는 각 모델의 전용 텍스처를 사용한다. 헤어 투사체도 해당 메시·헤어 슬롯으로 구성한다.
 
-추가 모델만 갱신하려면 `python Tools/Validation/RunBokuseiShadingComparison.py --step guests`, 재로드·렌더·PIE 검증은 `--step preview`를 실행한다. 전체 `--step configure`에도 같은 배치 함수가 포함된다. `BokuseiGuestModels.py`가 위치와 모델 목록을 소유하며 기존 맵 백업은 `Saved/BokuseiShadingComparison/<실행시각>/previous_map.umap`에 저장한다. 아린·화련의 비교 전용 모션에는 임포트 루트 스케일 복원과 골반 좌표 보정을 적용한다. 원본 외형·메시·재질·리타겟 설정은 수정하지 않는다.
+추가 모델만 갱신하려면 `python Tools/Validation/RunBokuseiShadingComparison.py --step guests`, 추가 모델 재로드·렌더·PIE 검증은 `--step guests-preview`를 실행한다. 전체 `--step configure`에도 같은 배치 함수가 포함된다. `BokuseiGuestModels.py`가 위치와 모델 목록, `BokuseiGuestStages.py`가 비교 전용 재질을 소유한다. 기존 맵·비교 에셋은 `Saved/BokuseiShadingComparison/<실행시각>/previous_map.umap`과 `backup/assets`에 백업한다. 아린·화련의 비교 전용 모션에는 임포트 루트 스케일 복원과 골반 좌표 보정을 적용한다. 원본 외형·메시·재질·리타겟 설정은 수정하지 않는다.
 
 현재 Bokusei의 실제 얼굴에는 SDF를 적용했다. 1–6단계는 적용 전 얼굴 Baseline을 사용해 비교 기준을 보존하며 7단계가 적용 결과다. 제작·게임 적용·최신 8단계 검증은 [얼굴 SDF 기록](BokuseiFaceSDF_Implementation_Report.md)을 따른다.
 

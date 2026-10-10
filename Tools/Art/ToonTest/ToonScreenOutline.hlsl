@@ -7,11 +7,15 @@ float ownDepth = SceneTextureLookup(uv, 13, false).r;
 float ownStencil = SceneTextureLookup(uv, 25, false).r;
 float center = (abs(ownStencil - StencilID) < .5 && ownDepth <= depth + DepthBias) ? 1.0 : 0.0;
 float silhouette = 0.0;
+float overlap = 0.0;
+// Before DOF executes at primary render resolution. Author width in final output
+// pixels, including the view's primary/secondary screen percentage.
+float radius = clamp(WidthPixels, 0.0, 3.0) * View.ViewResolutionFraction;
 float2 offsets[8] = {float2(1,0), float2(-1,0), float2(0,1), float2(0,-1),
                      float2(.707,.707), float2(-.707,.707), float2(.707,-.707), float2(-.707,-.707)};
 [unroll] for (int i=0; i<8; ++i)
 {
-    float2 sampleUV = ClampSceneTextureUV(uv + offsets[i] * texel * clamp(WidthPixels, 0.0, 3.0), 13);
+    float2 sampleUV = ClampSceneTextureUV(uv + offsets[i] * texel * radius, 13);
     float stencil = SceneTextureLookup(sampleUV, 25, false).r;
     float customDepth = SceneTextureLookup(sampleUV, 13, false).r;
     float visibleDepth = SceneTextureLookup(sampleUV, 1, false).r;
@@ -19,6 +23,13 @@ float2 offsets[8] = {float2(1,0), float2(-1,0), float2(0,1), float2(0,-1),
     float visible = (abs(stencil - StencilID) < .5 && customDepth <= visibleDepth + DepthBias
                      && customDepth <= depth + DepthBias) ? 1.0 : 0.0;
     silhouette = max(silhouette, visible);
+    // Draw on the nearer character only. Both samples must be visible toon
+    // surfaces; large depth discontinuities separate overlapping actors without
+    // tracing facial normals, clothing texture or an occluding environment wall.
+    float separation = max(OverlapDepthCm, ownDepth * OverlapRelativeDepth);
+    float neighborToon = (abs(stencil - StencilID) < .5 && customDepth <= visibleDepth + DepthBias) ? 1.0 : 0.0;
+    overlap = max(overlap, center * neighborToon * step(separation, customDepth - ownDepth));
 }
-float mask = (1.0 - center) * silhouette * saturate(Strength);
+float mask = max((1.0 - center) * silhouette, overlap * saturate(OverlapStrength)) * saturate(Strength);
+mask *= step(1e-4, WidthPixels);
 return lerp(SceneColor.rgb, OutlineColor * View.PreExposure, mask);

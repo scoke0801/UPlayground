@@ -59,8 +59,13 @@ void UPGCharacterAppearanceComponent::AddToon(USkeletalMeshComponent* Mesh, UPGC
     Toon->HeadBone = Appearance->HeadBone;
     Toon->HeadForwardAxis = Appearance->HeadForwardAxis;
     Toon->HeadRightAxis = Appearance->HeadRightAxis;
-    for (TActorIterator<ADirectionalLight> It(GetWorld()); It; ++It)
-        if (!It->IsHidden()) { Toon->KeyLight = *It; break; }
+    Toon->DetailDistance = Appearance->ToonDetailDistance;
+    Toon->SimpleDistance = Appearance->ToonSimpleDistance;
+    Toon->FarDetailWeight = Appearance->ToonFarDetailWeight;
+    Toon->HairShadowDistance = Appearance->HairShadowDistance;
+    // Only the principal mesh owns the head occluder; modular parts share it.
+    if (Mesh == VisibleMesh) Toon->HairShadowMesh = Appearance->HairShadowMesh.LoadSynchronous();
+    Toon->KeyLight = UPGToonPresentationComponent::ResolveKeyLight(GetWorld());
     Toon->RegisterComponent();
     Toon->Initialize(Mesh);
     Presentations.Add(Toon);

@@ -5,6 +5,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "PGToonPreviewActor.h"
 #include "PGActor/Components/Rendering/PGToonPresentationComponent.h"
 #include "Engine/DirectionalLight.h"
@@ -17,6 +18,12 @@
 #include "Misc/Parse.h"
 #include "TimerManager.h"
 #include "PGUI/Widget/HUD/PGUIShadingComparison.h"
+
+namespace
+{
+    const TCHAR* ComparisonIds[] = { TEXT("Bokusei"), TEXT("Arin"), TEXT("Hwarin"), TEXT("LianLian") };
+    const TCHAR* ComparisonNames[] = { TEXT("Bokusei"), TEXT("아린"), TEXT("화련"), TEXT("Lianlian") };
+}
 
 APGShadingComparisonPawn::APGShadingComparisonPawn(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
@@ -101,6 +108,7 @@ void APGShadingComparisonPawn::SetupPlayerInputComponent(UInputComponent* Player
     }
     PlayerInputComponent->BindKey(EKeys::Zero, IE_Pressed, this, &ThisClass::ShowOverview);
     PlayerInputComponent->BindKey(EKeys::R, IE_Pressed, this, &ThisClass::ShowOverview);
+    PlayerInputComponent->BindKey(EKeys::Tab, IE_Pressed, this, &ThisClass::NextModel);
     PlayerInputComponent->BindKey(EKeys::F, IE_Pressed, this, &ThisClass::ShowFace);
     PlayerInputComponent->BindKey(EKeys::C, IE_Pressed, this, &ThisClass::ShowQuarter);
     PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &ThisClass::ToggleShadowCaster);
@@ -184,28 +192,60 @@ void APGShadingComparisonPawn::SetView(const FVector& Location, const FRotator& 
 
 void APGShadingComparisonPawn::ShowOverview()
 {
+    bOverview = true;
     SelectedView = EComparisonView::Front;
+    FVector Offset = FVector::ZeroVector;
+    if (AActor* Stage = FindStage(SelectedModel, 0))
+        if (AActor* Original = FindStage(0, 0)) Offset = Stage->GetActorLocation() - Original->GetActorLocation();
+    if (SelectedModel != 0) Offset.Y += 250.f; // Include the full width of the end-stage signs.
     if (OverviewCamera.IsValid())
-        SetView(OverviewCamera->GetActorLocation(), OverviewCamera->GetActorRotation());
-    if (HelpWidget) HelpWidget->SetViewLabel(FText::FromString(TEXT("전체 단계 비교")));
+        SetView(OverviewCamera->GetActorLocation() + Offset, OverviewCamera->GetActorRotation());
+    if (HelpWidget) HelpWidget->SetViewLabel(FText::FromString(FString::Printf(TEXT("%s · 전체 단계 비교"), ComparisonNames[SelectedModel])));
+}
+
+AActor* APGShadingComparisonPawn::FindStage(int32 Model, int32 Stage) const
+{
+    const FName Tag(* (Model == 0 ? FString::Printf(TEXT("PGShadingStage%d"), Stage)
+        : FString::Printf(TEXT("PGShadingGuestStage_%s_%d"), ComparisonIds[Model], Stage)));
+    for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+        if (It->ActorHasTag(Tag)) return *It;
+    return nullptr;
+}
+
+void APGShadingComparisonPawn::NextModel()
+{
+    for (int32 Step = 1; Step < UE_ARRAY_COUNT(ComparisonIds); ++Step)
+    {
+        const int32 Candidate = (SelectedModel + Step) % UE_ARRAY_COUNT(ComparisonIds);
+        if (!FindStage(Candidate, SelectedStage)) continue;
+        SelectedModel = Candidate;
+        if (bOverview) ShowOverview();
+        else FocusStage(SelectedStage);
+        return;
+    }
 }
 
 void APGShadingComparisonPawn::FocusStage(int32 Index)
 {
     if (Index < 0 || Index >= 8) return;
-    const FName Tag(*FString::Printf(TEXT("PGShadingStage%d"), Index));
-    for (TActorIterator<AActor> It(GetWorld()); It; ++It)
-        if (It->ActorHasTag(Tag))
+    if (AActor* Stage = FindStage(SelectedModel, Index))
         {
+            bOverview = false;
             SelectedStage = Index;
-            const FVector Base = It->GetActorLocation();
+            const FVector Base = Stage->GetActorLocation();
             const bool bFace = SelectedView == EComparisonView::Face;
             const bool bQuarter = SelectedView == EComparisonView::Quarter;
-            const FVector Target = Base + FVector(0, 0, bFace ? 139 : 90);
-            const FVector Location = Base + (bFace ? FVector(0, 135, 144) : bQuarter ? FVector(230, 390, 330) : FVector(0, 360, 125));
+            FVector Target = Base + FVector(0, 0, bFace ? 139 : 90);
+            FVector Location = Base + (bFace ? FVector(0, 135, 144) : bQuarter ? FVector(230, 390, 330) : FVector(0, 360, 125));
+            if (bFace && SelectedModel != 0)
+                if (const auto* Preview = Cast<APGToonPreviewActor>(Stage))
+                {
+                    Target = Preview->GetSkeletalMeshComponent()->GetSocketLocation(Preview->ToonPresentation->HeadBone);
+                    Location = Target + FVector(0, 135, 5);
+                }
             SetView(Location, (Target - Location).Rotation());
             static const TCHAR* Names[] = { TEXT("일반 조명"), TEXT("셀 명암"), TEXT("부위별 명암"), TEXT("림·하이라이트"), TEXT("외곽선 · 기존 툰"), TEXT("월드 그림자"), TEXT("얼굴 SDF"), TEXT("얼굴 SDF · 월드 그림자") };
-            if (HelpWidget) HelpWidget->SetViewLabel(FText::FromString(FString::Printf(TEXT("%d단계 · %s"), Index + 1, Names[Index])));
+            if (HelpWidget) HelpWidget->SetViewLabel(FText::FromString(FString::Printf(TEXT("%s · %d단계 · %s"), ComparisonNames[SelectedModel], Index + 1, Names[Index])));
             return;
         }
 }
@@ -226,7 +266,7 @@ void APGShadingComparisonPawn::ToggleShadowCaster()
 {
     bShadowCasterEnabled = !bShadowCasterEnabled;
     for (TActorIterator<AActor> It(GetWorld()); It; ++It)
-        if (It->ActorHasTag(TEXT("PGShadingShadowCaster")))
+        if (It->ActorHasTag(TEXT("PGShadingShadowCaster")) || It->ActorHasTag(TEXT("PGShadingGuestShadowCaster")))
         {
             TInlineComponentArray<UPrimitiveComponent*> Primitives(*It);
             for (UPrimitiveComponent* Primitive : Primitives)
@@ -239,8 +279,12 @@ void APGShadingComparisonPawn::ToggleHairShadow()
 {
     bHairShadowEnabled = !bHairShadowEnabled;
     for (TActorIterator<APGToonPreviewActor> It(GetWorld()); It; ++It)
-        if ((It->ActorHasTag(TEXT("PGShadingStage5")) || It->ActorHasTag(TEXT("PGShadingStage7"))) && It->HairShadowProxy->GetSkeletalMeshAsset())
-            It->HairShadowProxy->SetCastShadow(bHairShadowEnabled);
+        if (It->ActorHasTag(TEXT("PGShadingStage5")) || It->ActorHasTag(TEXT("PGShadingStage7")) || It->ActorHasTag(TEXT("PGShadingGuestWorld")))
+        {
+            if (It->HairShadowProxy->GetSkeletalMeshAsset()) It->HairShadowProxy->SetCastShadow(bHairShadowEnabled);
+            It->ToonPresentation->bHairShadowEnabled = bHairShadowEnabled;
+            if (auto* Proxy = It->ToonPresentation->GetHairShadowProxy()) Proxy->SetCastShadow(bHairShadowEnabled);
+        }
     if (HelpWidget) HelpWidget->SetHairShadowEnabled(bHairShadowEnabled);
 }
 

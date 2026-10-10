@@ -129,6 +129,7 @@ def character(spec):
             WorldLightingInfluence=.55 if face else .88,ShadeStrength=.45 if face else .6))
         if depth_hair:
             v['scalars']['OpacityCutoff']=.25
+        if p=='hair':v['scalars']['WorldLightingInfluence']=shared.hair_world_lighting_influence()
         for k,value in v['scalars'].items(): LIB.set_material_instance_scalar_parameter_value(mi,k,value)
         for k,value in v['vectors'].items(): LIB.set_material_instance_vector_parameter_value(mi,k,unreal.LinearColor(*value))
         LIB.update_material_instance(mi)

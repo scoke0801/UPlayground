@@ -29,9 +29,11 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
     void ShowOverview();
-    /** Zero-based model index. Keeps the selected view when changing stages. */
+    /** Zero-based shading stage. Keeps the selected model and view. */
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
     void FocusStage(int32 Index);
+    UFUNCTION(BlueprintCallable, Category="PG|Comparison")
+    void NextModel();
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
     void ShowFace();
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
@@ -65,6 +67,9 @@ private:
     FRotator InitialLightRotation = FRotator::ZeroRotator;
     bool bLightOrbitEnabled = false;
     int32 SelectedStage = 5;
+    int32 SelectedModel = 0;
+    bool bOverview = true;
+    AActor* FindStage(int32 Model, int32 Stage) const;
     bool bShadowCasterEnabled = false;
     bool bHairShadowEnabled = true;
     enum class EComparisonView : uint8 { Front, Face, Quarter };

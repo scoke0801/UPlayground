@@ -28,9 +28,23 @@ float3 rimTint = lerp(RimColor, RimColor * base, saturate(RimBaseBlend));
 
 float3 H = L + V;
 H *= rsqrt(max(dot(H, H), 1e-6));
-float spec = pow(saturate(dot(N, H)), max(SpecularPower, 1.0));
+float tangentH = dot(HairTangentWS * rsqrt(max(dot(HairTangentWS, HairTangentWS), 1e-6)), H);
+float strandSpec = pow(sqrt(saturate(1.0 - tangentH * tangentH)), max(SpecularPower, 1.0));
+float spec = lerp(pow(saturate(dot(N, H)), max(SpecularPower, 1.0)), strandSpec, saturate(HairAnisotropy));
 float hw = max(max(SpecularSoftness, 0.0), max(fwidth(spec), 1e-4));
-spec = smoothstep(SpecularThreshold - hw, SpecularThreshold + hw, spec);
-spec *= litWeight * step(0.0, FaceSign);
+// Hair keeps a continuous lobe: a second hard threshold magnifies tangent seams
+// and turns each low-poly lock into a separate reflective plate.
+float hairSoft = saturate(HairSoftness);
+spec = lerp(smoothstep(SpecularThreshold - hw, SpecularThreshold + hw, spec), spec, hairSoft);
+float specLight = lerp(litWeight, smoothstep(0.0, .8, lighting), hairSoft);
+spec *= specLight * step(0.0, FaceSign);
+// Preserve dark hair hue instead of laying a near-white stripe over black locks.
+float3 specTint = SpecularTint * lerp(1.0.xxx, max(sqrt(saturate(base)), .25.xxx), hairSoft);
+spec *= saturate(ToonDetailWeight);
+rim *= lerp(.5, 1.0, saturate(ToonDetailWeight));
+// Separate outputs keep lighting-independent art accents and state feedback out
+// of Default Lit's albedo. Unlit still uses the complete original expression.
+ToonDiffuse = base * band;
+ToonAccent = rimTint * rim * max(RimStrength, 0.0) + specTint * spec * max(SpecularStrength, 0.0);
 return base * band + rimTint * rim * max(RimStrength, 0.0)
-    + SpecularTint * spec * max(SpecularStrength, 0.0) + StateColor * StateGlow;
+    + specTint * spec * max(SpecularStrength, 0.0) + StateColor * StateGlow;

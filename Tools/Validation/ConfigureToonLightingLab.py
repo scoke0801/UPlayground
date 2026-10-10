@@ -33,7 +33,8 @@ def screen_outline():
     stencil = shared.expression(mat, unreal.MaterialExpressionSceneTexture, -700, 200)
     stencil.set_editor_property('scene_texture_id', unreal.SceneTextureId.PPI_CUSTOM_STENCIL)
     inputs = [(scene, 'Color', 'SceneColor'), (depth, 'Color', 'DepthDependency'), (stencil, 'Color', 'StencilDependency')]
-    for i, (key, value) in enumerate([('StencilID', 73), ('WidthPixels', 1.15), ('DepthBias', 1), ('Strength', 1)]):
+    for i, (key, value) in enumerate([('StencilID', 73), ('WidthPixels', 1.15), ('DepthBias', 1), ('Strength', 1),
+                                    ('OverlapStrength', .65), ('OverlapDepthCm', 12), ('OverlapRelativeDepth', .015)]):
         inputs.append((shared.scalar_parameter(mat, key, value, -700, 300+i*100), '', key))
     inputs.append((shared.vector_parameter(mat, 'OutlineColor', (.018, .012, .026, 1), -700, 800), 'RGB', 'OutlineColor'))
     node = shared.expression(mat, unreal.MaterialExpressionCustom, -200, 0)
@@ -99,7 +100,8 @@ def main():
                                  ('WorldLightingInfluence', .55 if face else .75 if translucent else .88), ('ShadeStrength', .45 if face else .6)]:
                 LIB.set_material_instance_scalar_parameter_value(mi, param, value)
             if profile['name'] == 'hair':
-                LIB.set_material_instance_scalar_parameter_value(mi, 'SpecularStrength', .08)
+                LIB.set_material_instance_scalar_parameter_value(mi, 'SpecularStrength', profile['scalars']['SpecularStrength'])
+                LIB.set_material_instance_scalar_parameter_value(mi, 'WorldLightingInfluence', shared.hair_world_lighting_influence())
             if overlay:
                 LIB.set_material_instance_scalar_parameter_value(mi, 'ShadeStrength', 0)
                 LIB.set_material_instance_scalar_parameter_value(mi, 'RimStrength', 0)
@@ -121,14 +123,15 @@ def main():
     REPORT.update(status='PASS', outline=outline.get_path_name(), game_mode=mode_path)
 
 
-try:
-    main()
-except Exception:
-    REPORT.update(status='FAIL', error=traceback.format_exc())
-    unreal.log_error(REPORT['error'])
-finally:
-    text = json.dumps(REPORT, ensure_ascii=False, indent=2)
-    LATEST.write_text(text, encoding='utf-8')
-    (OUT / 'configure.json').write_text(text, encoding='utf-8')
-if REPORT['status'] != 'PASS':
-    raise RuntimeError('Lighting lab configuration failed: ' + str(LATEST))
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception:
+        REPORT.update(status='FAIL', error=traceback.format_exc())
+        unreal.log_error(REPORT['error'])
+    finally:
+        text = json.dumps(REPORT, ensure_ascii=False, indent=2)
+        LATEST.write_text(text, encoding='utf-8')
+        (OUT / 'configure.json').write_text(text, encoding='utf-8')
+    if REPORT['status'] != 'PASS':
+        raise RuntimeError('Lighting lab configuration failed: ' + str(LATEST))

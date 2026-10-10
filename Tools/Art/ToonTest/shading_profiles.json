@@ -17,7 +17,8 @@
     },
     "hair": {
       "inherits": "cloth",
-      "scalars": {"DiffuseWrap": 0.15, "RimStrength": 0.07, "RimBaseBlend": 0.8, "SpecularStrength": 0.055, "SpecularPower": 32, "SpecularThreshold": 0.5, "SpecularSoftness": 0.075},
+      "world_lighting_influence": 0.25,
+      "scalars": {"HairNormalBlend": 0.65, "HairCenterOffset": 6, "HairSoftness": 0.85, "ShadowSoftness": 0.12, "LightSoftness": 0.18, "ShadeStrength": 0.8, "DiffuseWrap": 0.28, "RimStrength": 0.035, "RimSoftness": 0.24, "RimBaseBlend": 0.8, "SpecularStrength": 0.032, "SpecularPower": 18, "SpecularThreshold": 0.5, "SpecularSoftness": 0.18},
       "vectors": {"ShadowTint": [0.52, 0.51, 0.65, 1], "MidTint": [0.78, 0.78, 0.88, 1], "SpecularTint": [0.83, 0.85, 1, 1]}
     },
     "detail": {"inherits": "face", "scalars": {"ShadeStrength": 0.2, "RimStrength": 0.0}},

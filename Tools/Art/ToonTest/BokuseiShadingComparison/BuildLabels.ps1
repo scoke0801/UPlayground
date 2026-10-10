@@ -34,6 +34,6 @@ Write-PGLabel 'Toon' '5 · 외곽선 · 기존 툰' '현재 bOKUSEI 표현' 640 
 Write-PGLabel 'Shadow' '6 · 월드 그림자' '툰 + 월드 조명 · 헤어 그림자' 640 128 43
 Write-PGLabel 'FaceSDF' '7 · 얼굴 SDF' '모델 기반 얼굴 명암 · 기존 툰' 640 128 43
 Write-PGLabel 'FaceSDFWorld' '8 · 얼굴 SDF · 그림자' '얼굴 명암 + 월드 · 헤어 그림자' 640 128 38
-Write-PGLabel 'Arin' '아린' '기존 툰 재질 · 공통 조명' 640 128 43
-Write-PGLabel 'Hwarin' '화련' '기존 툰 재질 · 공통 조명' 640 128 43
-Write-PGLabel 'LianLian' 'Lianlian' '기존 툰 재질 · 공통 조명' 640 128 43
+Write-PGLabel 'Arin' '아린' '8단계 셰이딩 비교 · 공통 조명' 640 128 43
+Write-PGLabel 'Hwarin' '화련' '8단계 셰이딩 비교 · 공통 조명' 640 128 43
+Write-PGLabel 'LianLian' 'Lianlian' '8단계 셰이딩 비교 · 공통 조명' 640 128 43

@@ -195,7 +195,7 @@ guests = [a for a in all_actors if isinstance(a, unreal.PGToonPreviewActor) and 
 for guest in guests:
     base = guest.get_actor_location()
     location = base + unreal.Vector(0, 380, 115)
-    shots.append(('Guest'+str(next(t for t in guest.tags if str(t).startswith('PGShadingGuest_'))).removeprefix('PGShadingGuest_'),
+    shots.append((str(next(t for t in guest.tags if str(t).startswith('PGShadingGuestStage_'))),
                   None, location, unreal.MathLibrary.find_look_at_rotation(location, base+unreal.Vector(0, 0, 90))))
 if '-PGComparisonInputOnly' in unreal.SystemLibrary.get_command_line():
     shots = []
@@ -244,6 +244,14 @@ input_cases += ([('reset', 'R', None), ('stage', 'Eight' if STAGES == 8 else 'Si
                    ('light_view', 'R', None), ('light_clamp_up', None, None),
                    ('light_clamp_down', None, None), ('light_invalid', None, None),
                    ('light_orbit_on', 'L', None), ('light_reset', 'BackSpace', None)])
+input_cases += [('reset', 'R', None)]
+for identity in ['Arin', 'Hwarin', 'LianLian']:
+    input_cases += [('guest_overview', 'Tab', (identity, 0))]
+    input_cases += [('guest_stage', key, (identity, i)) for i, key in enumerate(['One','Two','Three','Four','Five','Six','Seven','Eight'])]
+    input_cases += [('guest_face', 'F', (identity, 7)), ('guest_face', 'Seven', (identity, 6)),
+                    ('guest_quarter', 'C', (identity, 6)), ('guest_quarter', 'Eight', (identity, 7)),
+                    ('guest_reset', 'R', (identity, 0))]
+input_cases += [('reset', 'Tab', None)]
 unreal.EditorPythonScripting.set_keep_python_script_alive(True)
 
 
@@ -324,6 +332,26 @@ def test_inputs(game_world, now):
         assert angle > 1 if kind == 'look' else angle < .001, (kind, angle)
         key(pawn, 'RightMouseButton', False)
         details = dict(angle_change=angle)
+    elif kind.startswith('guest_'):
+        identity, stage_index = stage
+        model = next(a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.PGToonPreviewActor)
+                     if a.actor_has_tag('PGShadingGuestStage_'+identity+'_'+str(stage_index)))
+        base = model.get_actor_location()
+        if kind in ['guest_overview', 'guest_reset']:
+            overview = next(c for c in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.CameraActor) if c.actor_has_tag('PGShadingOverview'))
+            expected = overview.get_actor_location()+base-runtime_models[0].get_actor_location()
+            expected += unreal.Vector(0,250,0)
+        elif kind == 'guest_face':
+            head = model.skeletal_mesh_component.get_socket_location(model.toon_presentation.head_bone)
+            expected = head+unreal.Vector(0,135,5)
+        else:
+            expected = base+(unreal.Vector(230,390,330) if kind == 'guest_quarter' else unreal.Vector(0,360,125))
+        assert math.dist(vec(location), vec(expected)) < (5 if kind == 'guest_face' else .02), (kind, identity, vec(location), vec(expected))
+        assert not pawn.is_light_orbit_enabled()
+        path = RUN/(identity+'_'+kind+'_'+str(stage_index)+'.png')
+        assert unreal.PGEditorProbeTools.capture_game_viewport(game_world, str(path))
+        REPORT['images'].append(str(path))
+        details = dict(model=identity, stage=stage_index+1, position=vec(location))
     elif kind.startswith('light_'):
         if kind == 'light_move': key(pawn, name, False)
         rotation = runtime_light.get_actor_rotation()
@@ -366,8 +394,8 @@ def test_inputs(game_world, now):
         # Validate the render inputs used by every toon slot, including the SDF face.
         sync_error = 0
         runtime_guests = [a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.PGToonPreviewActor) if a.actor_has_tag('PGShadingGuest')]
-        assert len(runtime_guests) == 3
-        for model in runtime_models[1:]+runtime_guests:
+        assert len(runtime_guests) == 24
+        for model in runtime_models[1:]+[a for a in runtime_guests if not any(a.actor_has_tag('PGShadingGuestStage_'+identity+'_0') for identity in ['Arin','Hwarin','LianLian'])]:
             assert model.toon_presentation.key_light == runtime_light
             for i in range(model.skeletal_mesh_component.get_num_materials()):
                 actual = model.skeletal_mesh_component.get_material(i).get_vector_parameter_value('LightDirection')
@@ -391,7 +419,7 @@ def test_inputs(game_world, now):
         enabled = kind == 'hair_on'
         hair_models = [a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.PGToonPreviewActor)
                        if a.hair_shadow_proxy.get_skeletal_mesh_asset()]
-        assert len(hair_models) == (2 if STAGES == 8 else 1)
+        assert len(hair_models) == (2 if STAGES == 8 else 1) + 6
         assert all(a.hair_shadow_proxy.get_editor_property('cast_shadow') == enabled for a in hair_models)
         assert not any(a.static_mesh_component.get_editor_property('cast_shadow')
                        for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.StaticMeshActor)
@@ -499,7 +527,7 @@ def tick(_dt):
             if first is None:
                 first = sample
                 runtime_guests = [a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.PGToonPreviewActor) if a.actor_has_tag('PGShadingGuest')]
-                assert len(runtime_guests) == 3
+                assert len(runtime_guests) == 24
                 REPORT['_guest_first'] = {a.get_name(): vec(a.skeletal_mesh_component.get_socket_location('Head')) for a in runtime_guests}
                 last = now
                 expected = next(c for c in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.CameraActor) if c.actor_has_tag('PGShadingOverview'))

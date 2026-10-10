@@ -182,6 +182,7 @@ def toon_variant(source, slot, basic=False):
     LIB.set_material_instance_parent(mi, source)
     scalars = dict(RimStrength=0., SpecularStrength=0.)
     if basic:
+        scalars.update(HairNormalBlend=0., HairSoftness=0.)
         cloth = json.loads((ROOT/'Tools/Art/ToonTest/shading_profiles.json').read_text(encoding='utf-8'))['profiles']['cloth']
         scalars.update({key: cloth['scalars'][key] for key in
                         ['DiffuseWrap', 'ShadowSoftness', 'LightSoftness', 'BandAA', 'ShadeStrength']})
@@ -216,7 +217,7 @@ def shadow_variants(originals, slots):
                 value = getattr(LIB, 'get_material_instance_'+kind+'_parameter_value')(source, name)
                 if value is not None:
                     getattr(LIB, 'set_material_instance_'+kind+'_parameter_value')(mi, name, value)
-        for name, value in dict(WorldLightingInfluence=.65, FaceShading=0., HairAnisotropy=0.,
+        for name, value in dict(WorldLightingInfluence=shared.hair_world_lighting_influence() if 'hair' in str(slot.material_slot_name).lower() else .65, FaceShading=0., HairAnisotropy=0.,
                                 ShadowCast=0. if 'face' in str(slot.material_slot_name).lower() else 1.).items():
             LIB.set_material_instance_scalar_parameter_value(mi, name, value)
         LIB.update_material_instance(mi)

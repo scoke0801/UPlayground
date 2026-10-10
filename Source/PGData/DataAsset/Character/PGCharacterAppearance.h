@@ -70,6 +70,12 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FName HeadBone;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FVector HeadForwardAxis = FVector::ForwardVector;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FVector HeadRightAxis = FVector::RightVector;
+    // Optional low-poly, head-local occluder. Only presentation changes; no pose evaluation.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon") TSoftObjectPtr<class UStaticMesh> HairShadowMesh;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon", meta=(ClampMin="0", Units="cm")) float HairShadowDistance = 700.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon", meta=(ClampMin="0", Units="cm")) float ToonDetailDistance = 600.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon", meta=(ClampMin="1", Units="cm")) float ToonSimpleDistance = 1600.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon", meta=(ClampMin="0", ClampMax="1")) float ToonFarDetailWeight = .35f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FPGAppearancePart> Parts;
     // Fixed monster loadout visuals; damage and grade stats belong to enemy data.
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FPGAppearanceAttachment> Attachments;

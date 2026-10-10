@@ -73,6 +73,8 @@ capturing = False
 started = time.monotonic()
 pie_requested = False
 finished = False
+stopped_at = None
+busy = False
 pending_shot = None
 pending_finalize = None
 motion_start = None
@@ -89,7 +91,7 @@ def write_report():
 
 
 def finish(error=None):
-    global finished
+    global finished, stopped_at
     if finished:
         return
     finished = True
@@ -103,11 +105,12 @@ def finish(error=None):
         unreal.log_error(error)
     write_report()
     performance.set_editor_property('bThrottleCPUWhenNotForeground', old_throttle)
-    unreal.unregister_slate_post_tick_callback(handle)
     if game:
         unreal.PGToonPreviewActor.set_preview_viewport_size(game, 0, 0)
         level.editor_request_end_play()
-    unreal.SystemLibrary.quit_editor()
+    # EndPlay is deferred. Let the world and render resources finish teardown
+    # before requesting editor shutdown, as in the other temporal probes.
+    stopped_at = time.monotonic()
 
 
 def spawn(index):
@@ -199,9 +202,20 @@ def advance(now):
 
 
 def tick(_dt):
-    global game, game_key, game_pp, camera, axes, pie_requested, phase_start, capture_start, phase_index, capturing, pending_shot, motion_start, motion_verified
+    global game, game_key, game_pp, camera, axes, pie_requested, phase_start, capture_start, phase_index, capturing, pending_shot, motion_start, motion_verified, busy
+    if busy:
+        return
+    busy = True
     try:
         now = time.monotonic()
+        if finished:
+            current_world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world()
+            if not current_world and now-stopped_at > 3:
+                population.clear()
+                game = game_key = game_pp = camera = None
+                unreal.unregister_slate_post_tick_callback(handle)
+                unreal.SystemLibrary.quit_editor()
+            return
         if now-started > OPTIONS['timeout']-30:
             finish('Fixture timeout')
             return
@@ -275,7 +289,12 @@ def tick(_dt):
                 motion_verified = True
                 REPORT.setdefault('motion_checks', []).append(dict(phase=phase['name'], actors=len(current), bone_motion=True))
         if not capturing and now-phase_start >= OPTIONS['warmup']:
-            assert motion_verified, 'Do not measure a static or invalid animation fixture'
+            # A render-state change can stall the first warmup tick past the
+            # deadline. Still require two animation samples on distinct ticks;
+            # elapsed wall time alone does not mean the fixture is ready.
+            if not motion_verified:
+                assert now-phase_start < OPTIONS['warmup']+30, 'Animation verification timed out before capture'
+                return
             REPORT['viewport_size'] = list(unreal.GameplayStatics.get_player_controller(game, 0).get_viewport_size())
             assert REPORT['viewport_size'] == [OPTIONS['width'], OPTIONS['height']]
             filename = 'toon_'+OUT.name+'_'+phase['name']+'.csv'
@@ -301,6 +320,8 @@ def tick(_dt):
                 advance(now)
     except Exception:
         finish(traceback.format_exc())
+    finally:
+        busy = False
 
 
 write_report()

@@ -109,8 +109,15 @@ def pad(values, valid, passes=12):
         coverage |= fresh
     return result, coverage
 
-def main():
-    model = json.loads((ROOT/'Saved/BokuseiFaceSDF/Model/model.json').read_text(encoding='utf-8'))
+def main(model_path=None, output=None):
+    global OUT, SETTINGS, CONFIG, SIZE
+    if output is not None:
+        OUT=Path(output)
+        SETTINGS=json.loads((OUT/'settings.json').read_text(encoding='utf-8'))
+        CONFIG=SETTINGS['bake']
+        SIZE=CONFIG['resolution']
+    model_path=Path(model_path) if model_path else ROOT/'Saved/BokuseiFaceSDF/Model/model.json'
+    model = json.loads(model_path.read_text(encoding='utf-8'))
     geometry_path = Path(model['geometry'])
     assert hashlib.sha256(geometry_path.read_bytes()).hexdigest() == model['geometry_sha256']
     geometry = json.loads(geometry_path.read_text(encoding='utf-8'))
@@ -152,9 +159,9 @@ def main():
         old[write] = sample[write]
         priority[ymin:ymax+1,xmin:xmax+1][write] = sample[:,:,4][write]
         covered |= inside
-    assert valid.sum() > 10000, 'Insufficient face UV coverage'
+    assert valid.sum() > CONFIG.get('minimum_coverage_texels',10000), 'Insufficient face UV coverage'
     print('UV coverage/conflicts',int(valid.sum()),int(conflicts.sum()),flush=True)
-    np.savez_compressed(ROOT/'Saved/BokuseiFaceSDF/Model/uv_raster.npz',raster=raster,valid=valid,conflicts=conflicts)
+    np.savez_compressed(model_path.parent/'uv_raster.npz',raster=raster,valid=valid,conflicts=conflicts)
     skin_island = largest_uv_island(valid)
     assert (conflicts&skin_island).sum() == 0, 'Mirrored/conflicting facial skin UVs require projection coordinates'
     half_width = float(np.percentile(np.abs(position[normals[:,1] > .3,0]),98))
