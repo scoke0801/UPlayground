@@ -301,6 +301,14 @@ Tools/Validation/ValidatePlayerAttacks.py
 
 # Reproducible disk-only motion planning inventory.
 !/Tools/Validation/InventoryMotionExpansion.py
+!/Tools/Validation/Data/MotionExpansion.json
+!/Tools/Validation/ConfigureMotionExpansion.py
+!/Tools/Validation/MotionExpansionContracts.py
+!/Tools/Validation/AuditMotionExpansion.py
+!/Tools/Validation/ProbeMotionExpansion.py
+!/Tools/Validation/ProbeMotionExpansionPerformance.py
+!/Tools/Validation/RunMotionExpansion.py
+!/Tools/Validation/ExportMotionExpansionEvidence.py
 
 # Dark Knight boss authoring and Art animation inventory.
 !/Tools/Validation/Data/DarkKnightBoss.json
@@ -312,3 +320,23 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/ProbeDarkKnightBoss.py
 !/Tools/Validation/PlayDarkKnightBoss.py
 !/Tools/PlayDarkKnightBoss.ps1
+
+# P09 weapon families, grade roster and reproducible UE authoring/validation.
+!/Tools/Validation/AuthorP09WeaponSpec.py
+!/Tools/Validation/P09WeaponRoster.py
+!/Tools/Validation/ConfigureP09Weapons.py
+!/Tools/Validation/RunP09WeaponVariations.py
+!/Tools/Validation/ProbeP09Weapons.py
+!/Tools/Validation/ProbeP09WeaponPoses.py
+!/Tools/Validation/ProbeP09WeaponDungeon.py
+!/Tools/Validation/TestP09Weapons.py
+!/Tools/Validation/ExportP09WeaponEvidence.py
+!/Tools/Validation/Data/P09WeaponVariations.json
+!/Tools/Art/P09Weapons/
+/Tools/Art/P09Weapons/*
+!/Tools/Art/P09Weapons/BuildWeapons.py
+
+# Supplied SFX migration and source mapping.
+!/Tools/Validation/ConfigureExternalSFX.py
+!/Tools/Validation/Data/ExternalSFX.json
+!/Tools/Validation/ConfigureConsumables.py
