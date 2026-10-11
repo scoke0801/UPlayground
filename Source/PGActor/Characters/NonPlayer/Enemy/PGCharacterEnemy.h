@@ -112,6 +112,9 @@ public:
     bool bLootResolved = false;
     bool bCanDropLoot = true;
     int32 GetLivingSummonCount() const;
+    /** Explicit summon ownership: Pawn Owner/Instigator can change during possession. */
+    UFUNCTION(BlueprintPure, Category="PG|Pattern")
+    TArray<APGCharacterEnemy*> GetLivingPatternSummons() const;
     int32 SpawnPatternSummons(const struct FPGSkillDataRow& Skill);
     TArray<TWeakObjectPtr<APGCharacterEnemy>> PatternSummons;
     // Scoped activation request shared by BT and role AI. Zero means legacy tag selection.

@@ -41,6 +41,15 @@ APGCharacterEnemy* PGCombatSpatial::FindInjuredAlly(APGCharacterEnemy* Enemy, fl
     return Best;
 }
 
+bool PGCombatSpatial::IsWaitingPosition(const FVector& Candidate, const FVector& Target,
+    float DesiredRange, float Separation, TConstArrayView<FVector> Neighbors)
+{
+    if (FMath::Abs(FVector::Dist2D(Candidate, Target) - DesiredRange) > 60.f) return false;
+    for (const FVector& Neighbor : Neighbors)
+        if (FVector::DistSquared2D(Candidate, Neighbor) < FMath::Square(Separation)) return false;
+    return true;
+}
+
 float PGCombatSpatial::PositionCost(const FVector& Candidate, const FVector& Origin, const FVector& Target,
     float DesiredRange, float Separation, TConstArrayView<FVector> Neighbors)
 {

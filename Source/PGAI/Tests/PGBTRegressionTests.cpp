@@ -131,6 +131,13 @@ bool FPGCombatPositionTest::RunTest(const FString& Parameters)
 {
     const FVector Center(0,0,0), Origin(200,0,0), Side(0,200,0);
     const TArray<FVector> Empty;
+    TestTrue(TEXT("Waiting can choose an uncrowded flank without a crowd-cost improvement"),
+        PGCombatSpatial::IsWaitingPosition(Side, Center, 200, 150, Empty));
+    TestFalse(TEXT("Cooldown waiting cannot choose a point inside the desired ring"),
+        PGCombatSpatial::IsWaitingPosition(Origin, Center, 320, 150, Empty));
+    const TArray<FVector> OccupiedFlank = {Side + FVector(20,0,0)};
+    TestFalse(TEXT("Waiting never forces a flank occupied by another enemy"),
+        PGCombatSpatial::IsWaitingPosition(Side, Center, 200, 150, OccupiedFlank));
     const float Stay = PGCombatSpatial::PositionCost(Origin, Origin, Center, 200, 150, Empty);
     TestTrue(TEXT("An uncontested valid position beats unnecessary orbiting"), Stay < PGCombatSpatial::PositionCost(Side, Origin, Center, 200, 150, Empty));
     const TArray<FVector> Crowded = {Origin + FVector(20,0,0)};

@@ -11,6 +11,9 @@ struct PGDATA_API FPGCombatPositioning
 {
     GENERATED_BODY()
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bEnabled = false;
+    // Reposition while cooldown or attack admission prevents an attack, even without crowd positioning.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bRepositionWhileWaiting = true;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="80")) float CooldownDistance = 320.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0.5")) float ReconsiderSeconds = 1.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="60")) float Separation = 180.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="60")) float MaxMoveDistance = 350.f;
@@ -54,6 +57,17 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior", meta=(ClampMin="0")) float SelectionReconsiderSeconds = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior") bool bPrioritizeGuard = true;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior", meta=(ClampMin="0")) float GuardRepeatCooldown = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Reaction") bool bReactiveGuard = false;
+    // A short, vulnerable ground sidestep. Never interrupts GAS windup/strike/recovery.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Reaction") bool bReactiveEvade = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Reaction", meta=(ClampMin="2")) float EvadeCooldown = 6.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Reaction", meta=(ClampMin="60", ClampMax="250")) float EvadeDistance = 180.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Reaction", meta=(ClampMin="0.2", ClampMax="0.6")) float EvadeSeconds = .45f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Reaction", meta=(ClampMin="0.2")) float EvadeRecovery = .4f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Reaction") float ReactionDelay = .25f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Reaction") float ReactionRange = 500.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Movement") bool bFlightOrbit = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Movement") float FlightFloorTolerance = 140.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior")
     TSoftObjectPtr<class UBehaviorTree> CombatBehaviorTree;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Role|Behavior")

@@ -28,6 +28,8 @@ public:
     UFUNCTION(BlueprintPure, Category="PG|AI")
     int32 GetPositionMoveCount() const { return PositionMoveCount; }
     UFUNCTION(BlueprintPure, Category="PG|AI")
+    int32 GetReactionMoveCount() const { return ReactionMoveCount; }
+    UFUNCTION(BlueprintPure, Category="PG|AI")
     bool IsUsingCombatBehaviorTree() const { return bUsingCombatBehaviorTree; }
     UPROPERTY(EditDefaultsOnly, Category="PG|AI")
     bool bUseCombatBehaviorTree = true;
@@ -44,6 +46,19 @@ protected:
 private:
     void TraceCombatDecision(const TCHAR* Reason, int32 SkillID = 0);
     TMap<FString, double> NextDecisionTraceAt;
+    TMap<int32, double> LastSkillUseAt;
+    double SelectionChosenAt = 0;
+    double LastGuardAt = -1.e9;
+    FGuid ObservedPlayerCast;
+    double ReactionReadyAt = -1.e9;
+    FGuid EvadedPlayerCast;
+    double NextEvadeAt = 0;
+    double EvadeUntil = 0;
+    int32 LastEvadeAttackCount = 0;
+    int32 ReactionMoveCount = 0;
+    bool TryReactiveEvade(const struct FPGEnemyDataRow& Data);
+    double NextFlightProbeAt = 0;
+    FVector SafeFlightDirection = FVector::ZeroVector;
     bool bFlightApproach = false;
     int32 SelectSkill(const struct FPGEnemyDataRow& Data, const TArray<int32>& Candidates, int32 Phase,
         const TMap<int32, float>& Weights = {});
@@ -59,10 +74,13 @@ private:
     double NextPositionAt = 0;
     FVector PositionGoal = FVector::ZeroVector;
     bool bPositionMove = false;
+    bool bPositionWaiting = false;
+    float PositionRange = 0.f;
     int32 PositionMoveCount = 0;
     bool TryPositionForCombat();
     float LastAcceptanceRadius = -1.f;
     float ApproachRange = 180.f;
+    bool bHasReadySkill = false;
     bool bHoldPosition = true;
     bool bCanSeeTarget = false;
     bool bUsingCombatBehaviorTree = false;

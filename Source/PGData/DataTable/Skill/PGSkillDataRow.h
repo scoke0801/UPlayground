@@ -9,6 +9,30 @@
 #include "PGSkillDataRow.generated.h"
 
 USTRUCT(BlueprintType)
+struct PGDATA_API FPGSkillSelectionTuning
+{
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float PreferredRange = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float RangeFalloff = 300.f;
+    // -1 prefers the target on the left, +1 on the right; zero is neutral.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float PreferredSide = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float RecentUseSeconds = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float RecentUseMultiplier = .35f;
+    bool IsValid() const
+    {
+        return FMath::IsFinite(PreferredRange) && PreferredRange >= 0.f && FMath::IsFinite(RangeFalloff) && RangeFalloff > 0.f &&
+            FMath::IsFinite(PreferredSide) && FMath::Abs(PreferredSide) <= 1.f && FMath::IsFinite(RecentUseSeconds) && RecentUseSeconds >= 0.f &&
+            FMath::IsFinite(RecentUseMultiplier) && RecentUseMultiplier > 0.f && RecentUseMultiplier <= 1.f;
+    }
+    float Evaluate(float Distance, float Side, double SecondsSinceUse) const
+    {
+        const float Range = PreferredRange > 0.f ? FMath::Max(.15f, 1.f - FMath::Abs(Distance - PreferredRange) / RangeFalloff) : 1.f;
+        const float Direction = FMath::Clamp(1.f + PreferredSide * Side * .75f, .25f, 1.75f);
+        return Range * Direction * (RecentUseSeconds > 0.f && SecondsSinceUse < RecentUseSeconds ? RecentUseMultiplier : 1.f);
+    }
+};
+
+USTRUCT(BlueprintType)
 struct PGDATA_API FPGSkillDataRow : public FTableRowBase
 {
 	GENERATED_BODY()
@@ -61,6 +85,7 @@ public:
     float MinimumActivationRange = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(ClampMin="0"))
     float SelectionWeight = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI") FPGSkillSelectionTuning SelectionTuning;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(ClampMin="1", ClampMax="3"))
     int32 AttackPressureCost = 1;
 
@@ -145,6 +170,7 @@ public:
     /** Reject malformed imported data before committing cooldowns or starting timers. */
     bool IsPatternValid() const
     {
+        if (!SelectionTuning.IsValid()) return false;
         if (!FMath::IsFinite(EnemyDamageMultiplier) || EnemyDamageMultiplier <= 0.f ||
             (!EnemyProfile.IsNull() && (!EnemyProfile.LoadSynchronous() || !EnemyProfile.Get()->IsValid()))) return false;
         if (!FMath::IsFinite(SkillRange) || SkillRange < 0.f ||

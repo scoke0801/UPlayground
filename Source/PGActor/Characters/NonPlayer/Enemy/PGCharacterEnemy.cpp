@@ -238,6 +238,15 @@ int32 APGCharacterEnemy::GetLivingSummonCount() const
     return Count;
 }
 
+TArray<APGCharacterEnemy*> APGCharacterEnemy::GetLivingPatternSummons() const
+{
+    TArray<APGCharacterEnemy*> Result;
+    for (const auto& Child : PatternSummons)
+        if (Child.IsValid() && Child->GetPGAbilitySystemComponent() && Child->GetPGAbilitySystemComponent()->GetHealth() > 0.f)
+            Result.Add(Child.Get());
+    return Result;
+}
+
 int32 APGCharacterEnemy::SpawnPatternSummons(const FPGSkillDataRow& Skill)
 {
     if (!HasAuthority() || !Skill.IsPatternValid() || Skill.Pattern != EPGAttackPattern::Summon ||
@@ -620,6 +629,8 @@ bool APGCharacterEnemy::EnsureCombatReady(const AActor* Target)
     const double Now = GetWorld()->GetTimeSeconds();
     if (!bEntranceStarted)
     {
+        // Profile/projectile damage goes through GAS directly, without OnHit.
+        bAwakenedByHit |= AbilitySystemComponent->GetHealth() < AbilitySystemComponent->GetCombatStat(EPGStatType::Health);
         if (Row->WakeDistance > 0.f && !bAwakenedByHit && (!Target ||
             FVector::Dist2D(Target->GetActorLocation(), GetActorLocation()) > Row->WakeDistance)) return false;
         bEntranceStarted = true;

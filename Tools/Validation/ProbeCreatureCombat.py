@@ -27,7 +27,7 @@ def hp(actor):
     value,found=unreal.AbilitySystemLibrary.get_float_attribute(actor,a);assert found;return value
 
 def children(world):
-    return [a for a in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.PGCharacterEnemy) if a!=actors[15502] and a.get_instigator()==actors[15502]]
+    return list(actors[15502].get_living_pattern_summons())
 
 def finish(error=None):
     global stopped,actors,player,camera,manager,child_refs

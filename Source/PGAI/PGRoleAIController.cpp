@@ -21,6 +21,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "PGActor/Components/Combat/PGPlayerAttackComponent.h"
 
 static TAutoConsoleVariable<int32> CVarPGUseCombatBT(TEXT("pg.AI.UseBehaviorTree"), 1,
     TEXT("Use role BTs for newly initialized enemies. 0 keeps the shared timer driver for comparison."));
@@ -72,6 +73,37 @@ void APGRoleAIController::Tick(float DeltaSeconds)
         !Enemy->GetPGAbilitySystemComponent() || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0) return;
     FVector Direction = bFlightApproach && CombatTarget.IsValid() ?
         (CombatTarget->GetActorLocation() - Enemy->GetActorLocation()).GetSafeNormal2D() : FVector::ZeroVector;
+    const double Now = GetWorld()->GetTimeSeconds();
+    if (Now >= NextFlightProbeAt)
+    {
+        NextFlightProbeAt = Now + .15;
+        SafeFlightDirection = FVector::ZeroVector;
+        const float Sign = Enemy->GetUniqueID() % 2 ? 1.f : -1.f;
+        if (Data->bFlightOrbit && !bFlightApproach && PendingSkill == 0 && CombatTarget.IsValid())
+        {
+            const FVector ToTarget = CombatTarget->GetActorLocation() - Enemy->GetActorLocation();
+            if (ToTarget.Size2D() < 650.f && ToTarget.Size2D() > 200.f)
+                Direction = ToTarget.GetSafeNormal2D().RotateAngleAxis(70.f * Sign, FVector::UpVector);
+        }
+        FCollisionQueryParams Query(SCENE_QUERY_STAT(PGFlightCorridor), false, Enemy);
+        const auto* Capsule = Enemy->GetCapsuleComponent();
+        const auto Shape = FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight());
+        const FVector Origin = Enemy->GetActorLocation();
+        for (float Angle : {0.f, 45.f, -45.f, 90.f, -90.f})
+        {
+            const FVector Candidate = Direction.RotateAngleAxis(Angle * Sign, FVector::UpVector);
+            const FVector Ahead = Origin + Candidate * 120.f;
+            FHitResult Ground, Wall;
+            if (!GetWorld()->LineTraceSingleByObjectType(Ground, Ahead + FVector(0,0,200), Ahead - FVector(0,0,700), FCollisionObjectQueryParams(ECC_WorldStatic), Query) || Ground.ImpactNormal.Z < .65f) continue;
+            const float WantedZ = Ground.ImpactPoint.Z + Capsule->GetScaledCapsuleHalfHeight() + FMath::Clamp(Data->FlightHeight, 0.f, 300.f);
+            if (FMath::Abs(WantedZ - Origin.Z) > FMath::Clamp(Data->FlightFloorTolerance, 30.f, 300.f)) continue;
+            if (GetWorld()->SweepSingleByChannel(Wall, Origin, FVector(Ahead.X, Ahead.Y, WantedZ), FQuat::Identity, ECC_Pawn, Shape, Query)) continue;
+            SafeFlightDirection = Candidate;
+            break;
+        }
+    }
+    Direction = SafeFlightDirection;
+    if (Direction.IsNearlyZero()) Enemy->GetCharacterMovement()->StopMovementImmediately();
     const FVector Probe = Enemy->GetActorLocation() + Direction * 100.f;
     FHitResult Floor;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(PGFlightFloor), false, Enemy);
@@ -92,6 +124,9 @@ void APGRoleAIController::OnPossess(APawn* InPawn)
     Super::OnPossess(InPawn);
     PreviousSkill = 0;
     NextDecisionTraceAt.Reset();
+    LastSkillUseAt.Reset(); SelectionChosenAt = 0; LastGuardAt = -1.e9;
+    ObservedPlayerCast.Invalidate(); ReactionReadyAt = -1.e9; NextFlightProbeAt = 0; SafeFlightDirection = FVector::ZeroVector;
+    EvadedPlayerCast.Invalidate(); NextEvadeAt = EvadeUntil = 0; LastEvadeAttackCount = ReactionMoveCount = 0;
     PendingSkill = 0;
     SequencePhase = 1;
     SequenceCursor = 0;
@@ -102,7 +137,7 @@ void APGRoleAIController::OnPossess(APawn* InPawn)
 }
 void APGRoleAIController::SetCombatThinkingEnabled(bool bEnabled)
 {
-    if (!bEnabled) { SetActorTickEnabled(false); bFlightApproach = false; }
+    if (!bEnabled) { SetActorTickEnabled(false); bFlightApproach = false; EvadeUntil = 0; }
     GetWorldTimerManager().ClearTimer(ThinkTimer);
     if (bEnabled && GetPawn())
     {
@@ -143,7 +178,7 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
     auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
     auto* Tables = UPGDataTableManager::Get(this);
     if (!Enemy || !Tables || !Enemy->GetPGAbilitySystemComponent() || Enemy->bPatternActive || Enemy->GetPGAbilitySystemComponent()->GetHealth() <= 0 ||
-        Enemy->IsBossTransitioning() || GetWorld()->GetTimeSeconds() < Enemy->NextCombatActionAt) return false;
+        Enemy->IsBossTransitioning() || EvadeUntil > 0 || GetWorld()->GetTimeSeconds() < Enemy->NextCombatActionAt) return false;
     const auto* Data = Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID());
     const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(SkillID);
     if (!Data || !Data->SkillIdList.Contains(SkillID) || !Skill || !Skill->IsPatternValid() || Skill->MinimumBossPhase > Enemy->BossPhase ||
@@ -173,6 +208,9 @@ bool APGRoleAIController::TryExecuteSkill(int32 SkillID)
     if (bActivated && Enemy->bPatternActive)
     {
         PreviousSkill = SkillID;
+        LastSkillUseAt.Add(SkillID, GetWorld()->GetTimeSeconds());
+        if (const auto* Profile = Skill->EnemyProfile.Get(); Profile && Profile->bGuardCounter)
+            LastGuardAt = GetWorld()->GetTimeSeconds();
         if (Enemy->BossPhase >= 2 && !Data->PhaseTwoSkillSequence.IsEmpty())
         {
             SequencePhase = Enemy->BossPhase;
@@ -189,7 +227,7 @@ int32 APGRoleAIController::SelectSkill(const FPGEnemyDataRow& Data, const TArray
 {
     if (SequencePhase != Phase) { SequencePhase = Phase; SequenceCursor = 0; }
     if (Candidates.IsEmpty()) return 0;
-    if (Data.Role == EPGEnemyRole::Boss)
+    if (Data.Role == EPGEnemyRole::Boss && Data.bPrioritizeGuard)
         if (auto* Tables = UPGDataTableManager::Get(this))
             for (int32 ID : Candidates)
                 if (const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ID))
@@ -245,6 +283,7 @@ void APGRoleAIController::PublishCombatBlackboard()
 void APGRoleAIController::RefreshCombatContext()
 {
     bFlightApproach = false;
+    bHasReadySkill = false;
     auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
     auto* Target = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
     bHoldPosition = true;
@@ -263,6 +302,15 @@ void APGRoleAIController::RefreshCombatContext()
     }
     if (CombatTarget.IsValid() && CombatTarget != Target) { PendingSkill = 0; ReleaseAttackReservation(); }
     CombatTarget = Target;
+    if (EvadeUntil > 0)
+    {
+        if (GetWorld()->GetTimeSeconds() < EvadeUntil && GetMoveStatus() == EPathFollowingStatus::Moving)
+        { PublishCombatBlackboard(); return; }
+        EvadeUntil = 0; StopMovement();
+        auto* Tables = UPGDataTableManager::Get(this);
+        const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
+        Enemy->NextCombatActionAt = GetWorld()->GetTimeSeconds() + (Data ? FMath::Max(.2f, Data->EvadeRecovery) : .4f);
+    }
     if (!Enemy->EnsureCombatReady(Target))
     {
         TraceCombatDecision(TEXT("entrance_locked"));
@@ -286,6 +334,7 @@ void APGRoleAIController::RefreshCombatContext()
     const FVector Delta = Target->GetActorLocation() - Enemy->GetActorLocation();
     const float Distance = Delta.Size2D();
     const double Now = GetWorld()->GetTimeSeconds();
+    const float TargetSide = FVector::DotProduct(Enemy->GetActorRightVector(), Delta.GetSafeNormal2D());
     Enemy->SetActorRotation(FMath::RInterpConstantTo(Enemy->GetActorRotation(), Delta.GetSafeNormal2D().Rotation(), FMath::Max(.05f, DecisionInterval), FMath::Max(1.f, Data->TurnSpeed)));
     Enemy->SetGuarding(Data->Role == EPGEnemyRole::Guardian);
     if (Now < RetreatUntil && GetMoveStatus() == EPathFollowingStatus::Moving) { PublishCombatBlackboard(); return; }
@@ -296,6 +345,16 @@ void APGRoleAIController::RefreshCombatContext()
     float ReadyRange = 0.f;
     float NearestRange = TNumericLimits<float>::Max();
     bCanSeeTarget = LineOfSightTo(Target);
+    if ((Data->bReactiveGuard || Data->bReactiveEvade) && bCanSeeTarget && Distance <= FMath::Max(100.f, Data->ReactionRange))
+    {
+        const auto& Cast = Target->GetPlayerAttackComponent()->GetCastContext();
+        if (Cast && Cast->CastId != ObservedPlayerCast)
+        {
+            ObservedPlayerCast = Cast->CastId;
+            ReactionReadyAt = Now + FMath::Clamp(Data->ReactionDelay, .15f, 1.f);
+        }
+    }
+    if (TryReactiveEvade(*Data)) { bHoldPosition = true; PublishCombatBlackboard(); return; }
     for (int32 ID : Data->SkillIdList)
     {
         const auto* Skill = Tables->GetRowData<FPGSkillDataRow>(ID);
@@ -306,26 +365,85 @@ void APGRoleAIController::RefreshCombatContext()
         if (Skill->Pattern == EPGAttackPattern::Summon && Enemy->GetLivingSummonCount() >= Skill->MaxLivingSummons)
         { TraceCombatDecision(TEXT("summon_limit"), ID); continue; }
         if (const auto* Profile = Skill->EnemyProfile.LoadSynchronous())
+        {
             if (Profile->bGuardCounter && Enemy->CompletedAttackPatterns < Profile->AttacksBeforeGuard)
             { TraceCombatDecision(TEXT("guard_attack_requirement"), ID); continue; }
+            if (Profile->bGuardCounter && Now - LastGuardAt < Data->GuardRepeatCooldown)
+            { TraceCombatDecision(TEXT("guard_repeat_cooldown"), ID); continue; }
+            if (Profile->bGuardCounter && Data->bReactiveGuard && (Now < ReactionReadyAt || Now > ReactionReadyAt + .75))
+            { TraceCombatDecision(TEXT("reaction_window"), ID); continue; }
+        }
         const float Range = Skill->GetPatternActivationRange();
         NearestRange = FMath::Min(NearestRange, Range);
         if (!Handler->IsSkillReadyByID(ID)) { TraceCombatDecision(TEXT("cooldown"), ID); continue; }
         ReadyRange = FMath::Max(ReadyRange, Range);
-        if (Skill->IsInActivationRange(Distance) && bCanSeeTarget) { Candidates.Add(ID); Weights.Add(ID, Skill->SelectionWeight); }
+        if (Skill->IsInActivationRange(Distance) && bCanSeeTarget)
+        {
+            Candidates.Add(ID);
+            const double* LastUse = LastSkillUseAt.Find(ID);
+            Weights.Add(ID, Skill->SelectionWeight * Skill->SelectionTuning.Evaluate(Distance, TargetSide, LastUse ? Now - *LastUse : 1.e9));
+        }
         else TraceCombatDecision(!Skill->IsInActivationRange(Distance) ? TEXT("out_of_range") : TEXT("no_line_of_sight"), ID);
     }
-    if (!Candidates.Contains(PendingSkill))
+    if (!Candidates.Contains(PendingSkill) || (Data->SelectionReconsiderSeconds > 0.f && Now - SelectionChosenAt >= FMath::Max(.5f, Data->SelectionReconsiderSeconds)))
     {
         PendingSkill = SelectSkill(*Data, Candidates, Enemy->BossPhase, Weights);
+        SelectionChosenAt = Now;
         // Keep the FIFO place if another eligible skill replaces the previous choice.
         if (PendingSkill == 0) ReleaseAttackReservation();
     }
     else TraceCombatDecision(TEXT("selection_retained"), PendingSkill);
-    ApproachRange = (ReadyRange > 0.f ? ReadyRange : NearestRange) * .8f;
+    bHasReadySkill = ReadyRange > 0.f;
+    ApproachRange = (bHasReadySkill ? ReadyRange : NearestRange) * .8f;
     if (Data->PreferredDistance > 0.f) ApproachRange = FMath::Min(ApproachRange, Data->PreferredDistance);
     if (NearestRange == TNumericLimits<float>::Max()) ApproachRange = 180.f;
+    if (!bHasReadySkill && Data->Mobility == EPGEnemyMobility::Ground && Data->Positioning.bRepositionWhileWaiting)
+        ApproachRange = FMath::Max(ApproachRange, Data->Positioning.CooldownDistance);
     PublishCombatBlackboard();
+}
+
+bool APGRoleAIController::TryReactiveEvade(const FPGEnemyDataRow& Data)
+{
+    auto* Enemy = Cast<APGCharacterEnemy>(GetPawn());
+    auto* Target = CombatTarget.Get();
+    const double Now = GetWorld()->GetTimeSeconds();
+    if (!Data.bReactiveEvade || Data.Mobility != EPGEnemyMobility::Ground || !Enemy || !Target ||
+        !bCanSeeTarget || Now < NextEvadeAt || Now < ReactionReadyAt || Now > ReactionReadyAt + .5 ||
+        !ObservedPlayerCast.IsValid() || EvadedPlayerCast == ObservedPlayerCast ||
+        Enemy->CompletedAttackPatterns <= LastEvadeAttackCount ||
+        FVector::Dist2D(Enemy->GetActorLocation(), Target->GetActorLocation()) > Data.ReactionRange) return false;
+    // Observe a real running attack, not input state or future hit geometry.
+    const auto& Cast = Target->GetPlayerAttackComponent()->GetCastContext();
+    if (!Cast || Cast->CastId != ObservedPlayerCast) return false;
+    EvadedPlayerCast = ObservedPlayerCast;
+    NextEvadeAt = Now + FMath::Max(2.f, Data.EvadeCooldown);
+    auto* Nav = UNavigationSystemV1::GetCurrent(GetWorld());
+    if (!Nav) return false;
+    const FVector Origin = Enemy->GetActorLocation();
+    const FVector Radial = (Origin - Target->GetActorLocation()).GetSafeNormal2D();
+    const float Sign = Enemy->GetUniqueID() % 2 ? 1.f : -1.f;
+    const auto* Capsule = Enemy->GetCapsuleComponent();
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(PGReactiveEvade), false, Enemy);
+    for (float Angle : {70.f, -70.f})
+    {
+        FNavLocation Point;
+        if (!Nav->ProjectPointToNavigation(Origin + Radial.RotateAngleAxis(Angle * Sign, FVector::UpVector) *
+            FMath::Clamp(Data.EvadeDistance, 60.f, 250.f), Point, FVector(50,50,100))) continue;
+        const FVector Goal = Point.Location + FVector(0,0,Capsule->GetScaledCapsuleHalfHeight()+2.f);
+        if (FVector::Dist2D(Goal, Origin) < 60.f || FMath::Abs(Goal.Z-Origin.Z) > 45.f) continue;
+        FHitResult Hit;
+        if (GetWorld()->SweepSingleByChannel(Hit, Origin, Goal, FQuat::Identity, ECC_Pawn,
+            FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight()), Params)) continue;
+        if (MoveToLocation(Point.Location, 20.f, false, true, false, true, nullptr, false) != EPathFollowingRequestResult::RequestSuccessful) continue;
+        EvadeUntil = Now + FMath::Clamp(Data.EvadeSeconds, .2f, .6f);
+        LastEvadeAttackCount = Enemy->CompletedAttackPatterns;
+        ++ReactionMoveCount;
+        PendingSkill = 0; bPositionMove = false; MoveTarget.Reset(); ReleaseAttackReservation();
+        TraceCombatDecision(TEXT("reactive_evade"));
+        return true;
+    }
+    TraceCombatDecision(TEXT("reactive_evade_no_path"));
+    return false;
 }
 
 bool APGRoleAIController::TryRetreat()
@@ -394,13 +512,24 @@ bool APGRoleAIController::TryPositionForCombat()
     auto* Target = CombatTarget.Get();
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Data = Enemy && Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
-    if (!Data || !Target || !Data->Positioning.bEnabled) return false;
+    if (!Data || !Target) return false;
     const auto& Tuning = Data->Positioning;
+    // A selected skill reaches this fallback only after execution/admission failed.
+    const bool bWaiting = Tuning.bRepositionWhileWaiting && (!bHasReadySkill || PendingSkill != 0);
     const FVector Origin = Enemy->GetActorLocation(), Center = Target->GetActorLocation();
     const float MaxTravel = FMath::Clamp(Tuning.MaxMoveDistance, 60.f, 800.f);
     float Range = FMath::Max(80.f, ApproachRange);
     const auto* Skill = PendingSkill ? Tables->GetRowData<FPGSkillDataRow>(PendingSkill) : nullptr;
     if (Skill) Range = FMath::Clamp(Range, Skill->MinimumActivationRange + 20.f, FMath::Max(Skill->MinimumActivationRange + 20.f, Skill->GetPatternActivationRange() - 30.f));
+    if (bPositionWaiting != bWaiting || FMath::Abs(PositionRange - Range) > 30.f)
+    {
+        if (bPositionMove) StopMovement();
+        bPositionMove = false;
+        NextPositionAt = 0;
+        bPositionWaiting = bWaiting;
+        PositionRange = Range;
+    }
+    if (!Tuning.bEnabled && !bWaiting) return false;
     if (FVector::Dist2D(Origin, Center) > Range + MaxTravel) { bPositionMove = false; return false; }
     const double Now = GetWorld()->GetTimeSeconds();
     if (Now < NextPositionAt) return bPositionMove && GetMoveStatus() == EPathFollowingStatus::Moving;
@@ -430,15 +559,21 @@ bool APGRoleAIController::TryPositionForCombat()
         if (Travel < 60.f || Travel > MaxTravel || (Skill && !Skill->IsInActivationRange(FVector::Dist2D(Position, Center)))) continue;
         if (GetWorld()->LineTraceTestByChannel(Position + FVector(0,0,80), Center, ECC_Visibility, Params)) continue;
         const float Cost = PGCombatSpatial::PositionCost(Position, Origin, Center, Range, Separation, Neighbors);
-        if (Cost + FMath::Max(10.f, Tuning.MinimumImprovement) < CurrentCost) Candidates.Add({Position, Cost});
+        // While waiting, a short flank step is purposeful even in an uncrowded slot.
+        // Never trade spacing for orbiting, or let the waiting policy affect ready pursuit.
+        const bool bWaitStep = bWaiting && FMath::Abs(Angle) >= 25.f && FMath::Abs(Angle) <= 80.f &&
+            PGCombatSpatial::IsWaitingPosition(Position, Center, Range, Separation, Neighbors);
+        if (Cost + FMath::Max(10.f, Tuning.MinimumImprovement) < CurrentCost || bWaitStep)
+            Candidates.Add({Position, Cost});
     }
     Candidates.Sort([](const FCandidate& A, const FCandidate& B) { return A.Cost < B.Cost; });
     // At most two path requests per reconsideration; no duplicate preflight path search.
     for (int32 Index = 0; Index < FMath::Min(2, Candidates.Num()); ++Index)
     {
-        if (MoveToLocation(Candidates[Index].Location, 35.f, false, true, false, true, nullptr, false) == EPathFollowingRequestResult::Failed)
+        if (MoveToLocation(Candidates[Index].Location, 35.f, false, true, false, true, nullptr, false) != EPathFollowingRequestResult::RequestSuccessful)
         { TraceCombatDecision(TEXT("position_request_failed")); continue; }
         PositionGoal = Candidates[Index].Location; bPositionMove = true; MoveTarget.Reset(); ++PositionMoveCount;
+        if (bWaiting) TraceCombatDecision(bHasReadySkill ? TEXT("pressure_reposition") : TEXT("cooldown_reposition"), PendingSkill);
         if (CVarPGCombatPositionDebug.GetValueOnGameThread())
         {
             DrawDebugLine(GetWorld(), Origin, PositionGoal + FVector(0,0,20), FColor::Cyan, false, Tuning.ReconsiderSeconds);
