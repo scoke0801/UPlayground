@@ -41,6 +41,92 @@ index = 0
 ready = False
 ending = False
 before = None
+before_rotation = None
+previous_identity = 'Bokusei'
+feature_probe = None
+feature_wait_until = 0
+
+
+def check_new_controls(game, pawn, model):
+    def press(name, down=True):
+        key = unreal.Key()
+        key.set_editor_property('key_name', name)
+        pawn.send_probe_input(key, down, 0)
+    def tap(name):
+        press(name)
+        press(name, False)
+    def record(name):
+        report['checks'].append(dict(feature=name, status='PASS'))
+    def capture(name):
+        path = RUN/(name+'.png')
+        assert unreal.PGEditorProbeTools.capture_game_viewport(game, str(path))
+        report['images'].append(str(path))
+
+    tap('Tilde')
+    yield .2
+    assert not pawn.is_help_visible()
+    capture('HelpHidden')
+    tap('Tilde')
+    yield .2
+    assert pawn.is_help_visible()
+    capture('HelpRestored')
+    record('help_toggle_slate_console_key')
+
+    # Check every stage in order at the shipped timing, including smooth travel.
+    tap('P')
+    yield .1
+    assert pawn.is_stage_sequence_playing()
+    first = model('Bokusei', 0).get_actor_location()+unreal.Vector(0,360,125)
+    assert (pawn.get_actor_location()-first).length() < .05
+    visited = set()
+    previous_x = pawn.get_actor_location().x
+    deadline = time.monotonic()+35
+    while pawn.is_stage_sequence_playing():
+        location = pawn.get_actor_location()
+        assert location.x >= previous_x-.01, 'Sequence moved backwards'
+        assert abs(location.y-first.y) < .01 and abs(location.z-first.z) < .01
+        previous_x = location.x
+        for stage in range(8):
+            if abs(location.x-model('Bokusei', stage).get_actor_location().x) < .05:
+                visited.add(stage)
+        assert time.monotonic() < deadline
+        yield .03
+    assert (pawn.get_actor_location()-(model('Bokusei',7).get_actor_location()+unreal.Vector(0,360,125))).length() < .05
+    visited.add(7)
+    assert visited == set(range(8)), visited
+    capture('SequenceCompleted')
+    record('sequence_all_eight_stages_default_timing')
+
+    # Stop/restart and every manual view input must give camera control back.
+    for name in ['P','W','RightMouseButton','Three','F','C','R','Zero']:
+        tap('P')
+        yield .15
+        assert pawn.is_stage_sequence_playing()
+        press(name)
+        yield .15
+        press(name, False)
+        assert not pawn.is_stage_sequence_playing(), name
+        record('sequence_cancel_'+name)
+    tap('R')
+    yield .1
+    pawn.stage_hold_seconds = .15
+    pawn.stage_move_seconds = .25
+    for identity in ['Arin','Hwarin','LianLian','Bokusei']:
+        tap('P')
+        yield .25
+        assert pawn.is_stage_sequence_playing()
+        tap('Tab')
+        yield .1
+        assert pawn.is_stage_sequence_playing(), 'Model switch stopped sequence'
+        deadline = time.monotonic()+10
+        while pawn.is_stage_sequence_playing():
+            assert time.monotonic() < deadline
+            yield .05
+        expected = model(identity,7).get_actor_location()+unreal.Vector(0,360,125)
+        assert (pawn.get_actor_location()-expected).length() < .05, (identity, pawn.get_actor_location(), expected)
+        record('sequence_model_switch_'+identity)
+    pawn.stage_hold_seconds = 2
+    pawn.stage_move_seconds = 1
 
 
 def finish(error=None):
@@ -56,7 +142,7 @@ def finish(error=None):
 
 
 def tick(_dt):
-    global ready, sent, index, before
+    global ready, sent, index, before, before_rotation, previous_identity, feature_probe, feature_wait_until
     try:
         game = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world()
         if ending:
@@ -89,11 +175,24 @@ def tick(_dt):
             ready = True
             return
         if index == len(cases):
-            finish()
+            if feature_probe is None: feature_probe = check_new_controls(game, pawn, model)
+            if now < feature_wait_until: return
+            try:
+                feature_wait_until = now+next(feature_probe)
+            except StopIteration:
+                finish()
             return
         key_name, identity, stage, view = cases[index]
         if sent is None:
+            if key_name == 'Tab':
+                # A deliberately non-preset framing must survive model switches.
+                pawn.set_actor_location(pawn.get_actor_location()+unreal.Vector(37,-21,19), False, False)
+                pc = unreal.GameplayStatics.get_player_controller(game, 0)
+                rotation = pc.get_control_rotation()
+                pc.set_control_rotation(unreal.Rotator(pitch=(rotation.pitch+180)%360-180+3,
+                                                       yaw=(rotation.yaw+180)%360-180+7, roll=0))
             before = pawn.get_actor_location()
+            before_rotation = unreal.GameplayStatics.get_player_controller(game,0).get_control_rotation()
             key = unreal.Key()
             key.set_editor_property('key_name', key_name)
             pawn.send_probe_input(key, True, 0)
@@ -103,7 +202,11 @@ def tick(_dt):
         if now-sent < .65: return
         actor = model(identity, stage)
         base = actor.get_actor_location()
-        if view == 'overview':
+        if key_name == 'Tab':
+            expected = before+base-model(previous_identity,stage).get_actor_location()
+            rotation = unreal.GameplayStatics.get_player_controller(game,0).get_control_rotation()
+            assert (unreal.MathLibrary.get_forward_vector(rotation)-unreal.MathLibrary.get_forward_vector(before_rotation)).length() < .0001, (identity, view, before_rotation, rotation)
+        elif view == 'overview':
             overview = next(a for a in unreal.GameplayStatics.get_all_actors_of_class(game, unreal.CameraActor) if a.actor_has_tag('PGShadingOverview'))
             expected = overview.get_actor_location()+base-model('Bokusei',0).get_actor_location()
             if identity != 'Bokusei': expected += unreal.Vector(0,250,0)
@@ -126,6 +229,7 @@ def tick(_dt):
         assert unreal.PGEditorProbeTools.capture_game_viewport(game,str(path))
         report['images'].append(str(path))
         report['checks'].append(dict(key=key_name,model=identity,stage=stage+1,view=view,status='PASS'))
+        previous_identity = identity
         sent = None
         index += 1
     except BaseException:

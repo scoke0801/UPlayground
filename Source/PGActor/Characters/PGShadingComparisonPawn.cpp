@@ -9,7 +9,11 @@
 #include "PGToonPreviewActor.h"
 #include "PGActor/Components/Rendering/PGToonPresentationComponent.h"
 #include "Engine/DirectionalLight.h"
+#include "Engine/GameViewportClient.h"
 #include "EngineUtils.h"
+#include "Framework/Application/IInputProcessor.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Widgets/SViewport.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameFramework/PlayerController.h"
 #include "InputCoreTypes.h"
@@ -23,6 +27,28 @@ namespace
 {
     const TCHAR* ComparisonIds[] = { TEXT("Bokusei"), TEXT("Arin"), TEXT("Hwarin"), TEXT("LianLian") };
     const TCHAR* ComparisonNames[] = { TEXT("Bokusei"), TEXT("아린"), TEXT("화련"), TEXT("Lianlian") };
+
+    // The viewport console consumes Tilde before pawn bindings. Intercept it only
+    // while this local comparison viewport has keyboard focus; never change console settings.
+    class FPGComparisonHelpInputProcessor final : public IInputProcessor
+    {
+    public:
+        explicit FPGComparisonHelpInputProcessor(APGShadingComparisonPawn* InPawn) : Pawn(InPawn) {}
+        virtual void Tick(float, FSlateApplication&, TSharedRef<ICursor>) override {}
+        virtual bool HandleKeyDownEvent(FSlateApplication&, const FKeyEvent& Event) override
+        {
+            if (Event.GetKey() != EKeys::Tilde || Event.IsControlDown() || Event.IsAltDown() || Event.IsCommandDown()) return false;
+            APGShadingComparisonPawn* Owner = Pawn.Get();
+            if (!Owner || !Owner->IsLocallyControlled() || !Owner->GetWorld()) return false;
+            UGameViewportClient* Viewport = Owner->GetWorld()->GetGameViewport();
+            const TSharedPtr<SViewport> Widget = Viewport ? Viewport->GetGameViewportWidget() : nullptr;
+            if (!Widget || !(Widget->HasKeyboardFocus() || Widget->HasFocusedDescendants())) return false;
+            if (!Event.IsRepeat()) Owner->ToggleHelp();
+            return true;
+        }
+    private:
+        TWeakObjectPtr<APGShadingComparisonPawn> Pawn;
+    };
 }
 
 APGShadingComparisonPawn::APGShadingComparisonPawn(const FObjectInitializer& ObjectInitializer)
@@ -82,6 +108,12 @@ void APGShadingComparisonPawn::PawnClientRestart()
             HelpWidget->SetHairShadowEnabled(bHairShadowEnabled);
             UpdateLightHelp();
             HelpWidget->AddToViewport();
+            HelpWidget->SetVisibility(bHelpVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+        }
+        if (!HelpInputProcessor && FSlateApplication::IsInitialized())
+        {
+            HelpInputProcessor = MakeShared<FPGComparisonHelpInputProcessor>(this);
+            FSlateApplication::Get().RegisterInputPreProcessor(HelpInputProcessor, 0);
         }
         ShowOverview();
     }
@@ -89,6 +121,10 @@ void APGShadingComparisonPawn::PawnClientRestart()
 
 void APGShadingComparisonPawn::EndPlay(const EEndPlayReason::Type Reason)
 {
+    StopStageSequence();
+    if (HelpInputProcessor && FSlateApplication::IsInitialized())
+        FSlateApplication::Get().UnregisterInputPreProcessor(HelpInputProcessor);
+    HelpInputProcessor.Reset();
     if (HelpWidget) HelpWidget->RemoveFromParent();
     HelpWidget = nullptr;
     Super::EndPlay(Reason);
@@ -109,6 +145,8 @@ void APGShadingComparisonPawn::SetupPlayerInputComponent(UInputComponent* Player
     PlayerInputComponent->BindKey(EKeys::Zero, IE_Pressed, this, &ThisClass::ShowOverview);
     PlayerInputComponent->BindKey(EKeys::R, IE_Pressed, this, &ThisClass::ShowOverview);
     PlayerInputComponent->BindKey(EKeys::Tab, IE_Pressed, this, &ThisClass::NextModel);
+    PlayerInputComponent->BindKey(EKeys::Tilde, IE_Pressed, this, &ThisClass::ToggleHelp);
+    PlayerInputComponent->BindKey(EKeys::P, IE_Pressed, this, &ThisClass::ToggleStageSequence);
     PlayerInputComponent->BindKey(EKeys::F, IE_Pressed, this, &ThisClass::ShowFace);
     PlayerInputComponent->BindKey(EKeys::C, IE_Pressed, this, &ThisClass::ShowQuarter);
     PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &ThisClass::ToggleShadowCaster);
@@ -145,6 +183,8 @@ void APGShadingComparisonPawn::Tick(float DeltaSeconds)
     const FVector Direction = View.GetUnitAxis(EAxis::X) * Axis(EKeys::W, EKeys::S)
         + View.GetUnitAxis(EAxis::Y) * Axis(EKeys::D, EKeys::A)
         + FVector::UpVector * Axis(EKeys::E, EKeys::Q);
+    if (!Direction.IsNearlyZero() || PC->IsInputKeyDown(EKeys::RightMouseButton)) StopStageSequence();
+    TickStageSequence(DeltaSeconds);
     AddMovementInput(Direction.GetClampedToMaxSize(1.f));
     if (ComparisonKeyLight.IsValid())
     {
@@ -192,6 +232,7 @@ void APGShadingComparisonPawn::SetView(const FVector& Location, const FRotator& 
 
 void APGShadingComparisonPawn::ShowOverview()
 {
+    StopStageSequence();
     bOverview = true;
     SelectedView = EComparisonView::Front;
     FVector Offset = FVector::ZeroVector;
@@ -200,7 +241,7 @@ void APGShadingComparisonPawn::ShowOverview()
     if (SelectedModel != 0) Offset.Y += 250.f; // Include the full width of the end-stage signs.
     if (OverviewCamera.IsValid())
         SetView(OverviewCamera->GetActorLocation() + Offset, OverviewCamera->GetActorRotation());
-    if (HelpWidget) HelpWidget->SetViewLabel(FText::FromString(FString::Printf(TEXT("%s · 전체 단계 비교"), ComparisonNames[SelectedModel])));
+    UpdateViewHelp();
 }
 
 AActor* APGShadingComparisonPawn::FindStage(int32 Model, int32 Stage) const
@@ -214,13 +255,20 @@ AActor* APGShadingComparisonPawn::FindStage(int32 Model, int32 Stage) const
 
 void APGShadingComparisonPawn::NextModel()
 {
+    const AActor* Previous = FindStage(SelectedModel, bOverview ? 0 : SelectedStage);
+    if (!Previous) return;
     for (int32 Step = 1; Step < UE_ARRAY_COUNT(ComparisonIds); ++Step)
     {
         const int32 Candidate = (SelectedModel + Step) % UE_ARRAY_COUNT(ComparisonIds);
-        if (!FindStage(Candidate, SelectedStage)) continue;
+        const AActor* Next = FindStage(Candidate, bOverview ? 0 : SelectedStage);
+        if (!Next) continue;
+        const FVector Offset = Next->GetActorLocation() - Previous->GetActorLocation();
         SelectedModel = Candidate;
-        if (bOverview) ShowOverview();
-        else FocusStage(SelectedStage);
+        // Translate the user's framing, including an in-progress sequence, without
+        // reapplying presets or resetting their viewing angle, height or distance.
+        SetActorLocation(GetActorLocation() + Offset);
+        StageSequenceStart += Offset;
+        UpdateViewHelp();
         return;
     }
 }
@@ -230,6 +278,7 @@ void APGShadingComparisonPawn::FocusStage(int32 Index)
     if (Index < 0 || Index >= 8) return;
     if (AActor* Stage = FindStage(SelectedModel, Index))
         {
+            StopStageSequence();
             bOverview = false;
             SelectedStage = Index;
             const FVector Base = Stage->GetActorLocation();
@@ -244,10 +293,74 @@ void APGShadingComparisonPawn::FocusStage(int32 Index)
                     Location = Target + FVector(0, 135, 5);
                 }
             SetView(Location, (Target - Location).Rotation());
-            static const TCHAR* Names[] = { TEXT("일반 조명"), TEXT("셀 명암"), TEXT("부위별 명암"), TEXT("림·하이라이트"), TEXT("외곽선 · 기존 툰"), TEXT("월드 그림자"), TEXT("얼굴 SDF"), TEXT("얼굴 SDF · 월드 그림자") };
-            if (HelpWidget) HelpWidget->SetViewLabel(FText::FromString(FString::Printf(TEXT("%s · %d단계 · %s"), ComparisonNames[SelectedModel], Index + 1, Names[Index])));
+            UpdateViewHelp();
             return;
         }
+}
+
+void APGShadingComparisonPawn::UpdateViewHelp()
+{
+    if (!HelpWidget) return;
+    static const TCHAR* Names[] = { TEXT("일반 조명"), TEXT("셀 명암"), TEXT("부위별 명암"), TEXT("림·하이라이트"), TEXT("외곽선 · 기존 툰"), TEXT("월드 그림자"), TEXT("얼굴 SDF"), TEXT("얼굴 SDF · 월드 그림자") };
+    HelpWidget->SetViewLabel(FText::FromString(bOverview
+        ? FString::Printf(TEXT("%s · 전체 단계 비교"), ComparisonNames[SelectedModel])
+        : FString::Printf(TEXT("%s · %d단계 · %s%s"), ComparisonNames[SelectedModel], SelectedStage + 1,
+            Names[SelectedStage], bStageSequencePlaying ? TEXT(" · 자동 진행 중") : TEXT(""))));
+}
+
+void APGShadingComparisonPawn::ToggleHelp()
+{
+    bHelpVisible = !bHelpVisible;
+    if (HelpWidget) HelpWidget->SetVisibility(bHelpVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+}
+
+void APGShadingComparisonPawn::StopStageSequence()
+{
+    if (!bStageSequencePlaying) return;
+    bStageSequencePlaying = false;
+    UpdateViewHelp();
+}
+
+void APGShadingComparisonPawn::ToggleStageSequence()
+{
+    if (bStageSequencePlaying)
+    {
+        StopStageSequence();
+        return;
+    }
+    if (!FindStage(SelectedModel, 0)) return;
+    FocusStage(0);
+    StageSequenceStart = GetActorLocation();
+    StageSequenceElapsed = 0.f;
+    bStageSequencePlaying = true;
+    UpdateViewHelp();
+}
+
+void APGShadingComparisonPawn::TickStageSequence(float DeltaSeconds)
+{
+    if (!bStageSequencePlaying) return;
+    const AActor* Current = FindStage(SelectedModel, SelectedStage);
+    const AActor* Next = SelectedStage < 7 ? FindStage(SelectedModel, SelectedStage + 1) : nullptr;
+    if (!Current || !Next)
+    {
+        StopStageSequence();
+        return;
+    }
+    const float Hold = FMath::Max(0.f, StageHoldSeconds);
+    const float Duration = FMath::Max(.1f, StageMoveSeconds);
+    StageSequenceElapsed += DeltaSeconds;
+    const float Alpha = FMath::Clamp((StageSequenceElapsed - Hold) / Duration, 0.f, 1.f);
+    const float SmoothAlpha = Alpha * Alpha * (3.f - 2.f * Alpha);
+    const FVector Destination = StageSequenceStart + Next->GetActorLocation() - Current->GetActorLocation();
+    SetActorLocation(FMath::Lerp(StageSequenceStart, Destination, SmoothAlpha));
+    if (Alpha >= 1.f)
+    {
+        ++SelectedStage;
+        StageSequenceStart = Destination;
+        StageSequenceElapsed = 0.f;
+        if (SelectedStage == 7) bStageSequencePlaying = false;
+        UpdateViewHelp();
+    }
 }
 
 void APGShadingComparisonPawn::ShowFace()
@@ -330,6 +443,17 @@ bool APGShadingComparisonPawn::SendProbeInput(FKey Key, bool bPressed, float Axi
     APlayerController* PC = Cast<APlayerController>(GetController());
     if (PC && PC->IsLocalController() && FParse::Param(FCommandLine::Get(), TEXT("PGShadingComparisonProbe")))
     {
+        // Exercise the real pre-console Slate route for the conflicting console key.
+        if (Key == EKeys::Tilde && FSlateApplication::IsInitialized())
+        {
+            UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
+            const TSharedPtr<SViewport> Widget = Viewport ? Viewport->GetGameViewportWidget() : nullptr;
+            if (!Widget) return false;
+            FSlateApplication& Slate = FSlateApplication::Get();
+            Slate.SetKeyboardFocus(Widget, EFocusCause::SetDirectly);
+            const FKeyEvent Event(Key, FModifierKeysState(), 0, false, 0, 0);
+            return bPressed ? Slate.ProcessKeyDownEvent(Event) : Slate.ProcessKeyUpEvent(Event);
+        }
         if (Key.IsAxis1D())
             return PC->InputKey(FInputKeyEventArgs(nullptr, FInputDeviceId::CreateFromInternalId(0), Key,
                 AxisValue, 1.f / 60.f, 1, FPlatformTime::Cycles64()));

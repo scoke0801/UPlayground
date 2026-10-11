@@ -251,7 +251,8 @@ for identity in ['Arin', 'Hwarin', 'LianLian']:
     input_cases += [('guest_face', 'F', (identity, 7)), ('guest_face', 'Seven', (identity, 6)),
                     ('guest_quarter', 'C', (identity, 6)), ('guest_quarter', 'Eight', (identity, 7)),
                     ('guest_reset', 'R', (identity, 0))]
-input_cases += [('reset', 'Tab', None)]
+input_cases += [('guest_return', 'Tab', ('Bokusei', 0))]
+previous_guest_identity = 'Bokusei'
 unreal.EditorPythonScripting.set_keep_python_script_alive(True)
 
 
@@ -268,7 +269,7 @@ def key(pawn, name, pressed, axis=0):
 
 
 def test_inputs(game_world, now):
-    global probe, probe_at, probe_start, probe_rotation, probe_light_rotation, probe_index
+    global probe, probe_at, probe_start, probe_rotation, probe_light_rotation, probe_index, previous_guest_identity
     pc = unreal.GameplayStatics.get_player_controller(game_world, 0)
     pawn = pc.get_controlled_pawn()
     assert isinstance(pawn, unreal.PGShadingComparisonPawn) and pc.get_view_target() == pawn
@@ -334,10 +335,17 @@ def test_inputs(game_world, now):
         details = dict(angle_change=angle)
     elif kind.startswith('guest_'):
         identity, stage_index = stage
-        model = next(a for a in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.PGToonPreviewActor)
-                     if a.actor_has_tag('PGShadingGuestStage_'+identity+'_'+str(stage_index)))
+        def stage_tag(model_id):
+            return 'PGShadingStage'+str(stage_index) if model_id == 'Bokusei' else 'PGShadingGuestStage_'+model_id+'_'+str(stage_index)
+        all_models = unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.SkeletalMeshActor)
+        model = next(a for a in all_models if a.actor_has_tag(stage_tag(identity)))
         base = model.get_actor_location()
-        if kind in ['guest_overview', 'guest_reset']:
+        if name == 'Tab':
+            previous = next(a for a in all_models if a.actor_has_tag(stage_tag(previous_guest_identity)))
+            expected = probe_start+base-previous.get_actor_location()
+            assert math.dist(vec(unreal.MathLibrary.get_forward_vector(pc.get_control_rotation())),
+                             vec(unreal.MathLibrary.get_forward_vector(probe_rotation))) < .0001
+        elif kind == 'guest_reset':
             overview = next(c for c in unreal.GameplayStatics.get_all_actors_of_class(game_world, unreal.CameraActor) if c.actor_has_tag('PGShadingOverview'))
             expected = overview.get_actor_location()+base-runtime_models[0].get_actor_location()
             expected += unreal.Vector(0,250,0)
@@ -352,6 +360,7 @@ def test_inputs(game_world, now):
         assert unreal.PGEditorProbeTools.capture_game_viewport(game_world, str(path))
         REPORT['images'].append(str(path))
         details = dict(model=identity, stage=stage_index+1, position=vec(location))
+        previous_guest_identity = identity
     elif kind.startswith('light_'):
         if kind == 'light_move': key(pawn, name, False)
         rotation = runtime_light.get_actor_rotation()

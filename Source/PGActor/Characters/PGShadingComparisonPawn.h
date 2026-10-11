@@ -22,6 +22,10 @@ public:
     float FastMultiplier = 3.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Comparison", meta=(ClampMin="0.01"))
     float LookSensitivity = .25f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Comparison|Sequence", meta=(ClampMin="0", Units="s"))
+    float StageHoldSeconds = 2.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Comparison|Sequence", meta=(ClampMin="0.1", Units="s"))
+    float StageMoveSeconds = 1.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Comparison|Light", meta=(ClampMin="1", Units="Degrees"))
     float LightRotationSpeed = 45.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Comparison|Light", meta=(ClampMin="1", Units="Degrees"))
@@ -34,6 +38,14 @@ public:
     void FocusStage(int32 Index);
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
     void NextModel();
+    UFUNCTION(BlueprintCallable, Category="PG|Comparison")
+    void ToggleHelp();
+    UFUNCTION(BlueprintPure, Category="PG|Comparison")
+    bool IsHelpVisible() const { return bHelpVisible; }
+    UFUNCTION(BlueprintCallable, Category="PG|Comparison")
+    void ToggleStageSequence();
+    UFUNCTION(BlueprintPure, Category="PG|Comparison")
+    bool IsStageSequencePlaying() const { return bStageSequencePlaying; }
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
     void ShowFace();
     UFUNCTION(BlueprintCallable, Category="PG|Comparison")
@@ -69,6 +81,14 @@ private:
     int32 SelectedStage = 5;
     int32 SelectedModel = 0;
     bool bOverview = true;
+    bool bHelpVisible = true;
+    bool bStageSequencePlaying = false;
+    float StageSequenceElapsed = 0.f;
+    FVector StageSequenceStart = FVector::ZeroVector;
+    TSharedPtr<class IInputProcessor> HelpInputProcessor;
+    void UpdateViewHelp();
+    void StopStageSequence();
+    void TickStageSequence(float DeltaSeconds);
     AActor* FindStage(int32 Model, int32 Stage) const;
     bool bShadowCasterEnabled = false;
     bool bHairShadowEnabled = true;

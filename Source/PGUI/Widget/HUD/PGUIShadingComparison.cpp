@@ -31,7 +31,10 @@ TSharedRef<SWidget> UPGUIShadingComparison::RebuildWidget()
                     .Text(FText::FromString(TEXT("WASD 이동   ·   Q / E 하강 / 상승   ·   우클릭 + 마우스 회전   ·   Shift 빠르게")))]
                 + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
                 [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
-                    .Text(FText::FromString(TEXT("Tab 모델 변경   ·   1–8 단계   ·   F 얼굴   ·   C 쿼터뷰   ·   0 / R 전체 보기")))]
+                    .Text(FText::FromString(TEXT("Tab 모델 변경 · 시점 유지   ·   1–8 단계   ·   F 얼굴   ·   C 쿼터뷰   ·   0 / R 전체 보기")))]
+                + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 4, 0, 0)
+                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+                    .Text(FText::FromString(TEXT("` 안내 숨김 / 표시   ·   P 1→8단계 자동 진행 / 정지   ·   직접 카메라 조작 시 정지")))]
                 + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 4, 0, 0)
                 [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
                     .Text_Lambda([this]() { return FText::FromString(FString::Printf(
