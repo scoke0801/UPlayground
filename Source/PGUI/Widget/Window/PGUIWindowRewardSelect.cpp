@@ -138,13 +138,14 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::MakeResult()
         LootIcon = Def->Icon.LoadSynchronous(); LootBrush.SetResourceObject(LootIcon); LootBrush.ImageSize = FVector2D(112);
         if (Def->IconPanel >= 0 && Def->IconPanel < 3)
             LootBrush.SetUVRegion(FBox2f(FVector2f(Def->IconPanel/3.f,0),FVector2f((Def->IconPanel+1)/3.f,1)));
-        const auto Color = Style.RarityColor(Def->Rarity);
+        const auto Rarity = Def->GetRarity(Result.Loot);
+        const auto Color = Style.RarityColor(Rarity);
         Loot->AddSlot().AutoHeight().Padding(0,18)
             [SNew(SHorizontalBox)
                 + SHorizontalBox::Slot().AutoWidth()[SNew(SBox).WidthOverride(112).HeightOverride(112)[SNew(SImage).Image(&LootBrush)]]
                 + SHorizontalBox::Slot().FillWidth(1).Padding(20,0,0,0).VAlign(VAlign_Center)
                 [SNew(SVerticalBox)
-                    + SVerticalBox::Slot().AutoHeight()[Text(RarityName(Def->Rarity).ToString()+TEXT(" · ")+SlotName(Def->Slot).ToString(),16,Color,true)]
+                    + SVerticalBox::Slot().AutoHeight()[Text(RarityName(Rarity).ToString()+TEXT(" · ")+SlotName(Def->Slot).ToString(),16,Color,true)]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)[Text(Def->DisplayName,26,Style.Text,true)]]];
         for (const auto& Option : Compare(Result.Loot,nullptr))
             Loot->AddSlot().AutoHeight().Padding(0,0,0,10)

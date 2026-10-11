@@ -15,7 +15,7 @@ class UInputAction;
 /**
  *
  */
-UCLASS()
+UCLASS(Config=Game)
 class PGACTOR_API APGPlayerController : public APlayerController, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
@@ -27,6 +27,12 @@ public:
     void CloseSettings();
     void SetPreferredCameraMode(EPGCameraMode Mode);
     void RefreshCameraInputMode();
+    UPROPERTY(EditDefaultsOnly, Config, Category="PG|Input") FKey InventoryKey = EKeys::I;
+    UPROPERTY(EditDefaultsOnly, Config, Category="PG|Input") FKey StatsKey = EKeys::K;
+    bool HasInventoryFocus() const;
+    void ToggleStats();
+    bool OpenGrowthPanel();
+    void SuppressInventoryClick();
     void ToggleInventory();
     void CloseInventory();
     void PickupNearest();
@@ -62,6 +68,8 @@ private:
 
 	// 마지막 클릭이 처리되었는지 여부 (현재 프레임)
 	bool bLastClickConsumed = false;
+    uint64 InventoryClickGuardFrame = 0;
+    bool bInventoryClickGuard = false;
 
 protected:
 	// The native HUD replaces the legacy blueprint by default.

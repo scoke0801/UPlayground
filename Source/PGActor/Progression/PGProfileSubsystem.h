@@ -17,8 +17,17 @@ public:
     const UPGProgressionData* GetCatalog() const { return Catalog; }
     bool TryPickup(const FPGItemInstance& Item);
     bool Equip(FGuid Guid);
+    bool EquipToSlot(FGuid Guid, EPGEquipmentSlot Slot);
+    int32 GetBagCount() const;
     bool Unequip(EPGEquipmentSlot Slot);
     bool Discard(FGuid Guid);
+    bool PreviewSalvage(const TArray<FGuid>& Targets, bool bJunkOnly, TMap<FName, int64>& Rewards, FString& Reason) const;
+    bool Salvage(const TArray<FGuid>& Targets, bool bJunkOnly, int64 ExpectedRevision, const TMap<FName, int64>& ExpectedRewards);
+    bool PreviewImprint(FGuid Guid, FName Effect, FPGItemInstance& Result, TMap<FName, int64>& Cost, FString& Reason) const;
+    bool Imprint(FGuid Guid, FName Effect, int64 ExpectedRevision, int32 ExpectedPercent, const TMap<FName, int64>& ExpectedCost);
+    bool PreviewCraft(FGuid Guid, FName Recipe, FPGItemInstance& Result, TMap<FName, int64>& Cost, FString& Reason) const;
+    bool Craft(FGuid Guid, FName Recipe, int64 ExpectedRevision, const FPGItemInstance& ExpectedResult, const TMap<FName, int64>& ExpectedCost);
+    bool SetItemMark(FGuid Guid, bool bFavorite, bool bJunk);
     bool SelectBuild(FName Id);
     bool SelectCharacter(FName Id);
     bool SelectActiveSkills(const TArray<int32>& Skills);
@@ -28,6 +37,10 @@ public:
     int32 GetEffectivePerk(EPGCombatPerk Perk) const;
     bool IsRewardEligible(const struct FPGRewardStatDataRow& Reward) const;
     bool BeginNewRun(int32 RequestedSeed = 0);
+    bool GrantExperience(FGuid Run, FGuid Token, int64 Amount);
+    bool ApplyInvestments(FGuid Run, const TMap<EPGStatType, int32>& Expected, const TMap<EPGStatType, int32>& Draft);
+    bool HasPendingLevelNotice() const { return bPendingLevelNotice; }
+    void AcknowledgeLevelNotice() { bPendingLevelNotice = false; }
     bool EnsureRunSeed();
     bool MarkRunAssisted();
     bool ConfigureBuildScenario(const TArray<int32>& RewardIds);
@@ -47,18 +60,29 @@ public:
     int32 RetryProbeRemaining = -1;
     int32 RetryProbeFailures = 0;
 private:
+    friend class FPGEquipmentExpansionTest;
+    friend class FPGCraftingTest;
+    friend class FPGSalvageTest;
+    friend class FPGLegendaryTest;
+    bool bPendingLevelNotice = false;
+    friend class FPGLevelProgressionTest;
+    TMap<FGuid, int64> PendingExperience;
     friend class FPGProfileTest;
+    friend class FPGEquipmentMigrationTest;
     friend class FPGCustomLoadoutTest;
     friend class FPGLootTransactionTest;
     UPROPERTY() TObjectPtr<UPGProfileSave> Profile;
     UPROPERTY() TObjectPtr<UPGProgressionData> Catalog;
     bool bReadOnly = false;
+    bool bUnsupportedSave = false;
     bool bCommitting = false;
     int32 ActiveSlot = -1;
     FString TestSlotPrefix;
     UPROPERTY() TArray<TObjectPtr<UObject>> PreparedSkillAssets;
     UPROPERTY(Transient) FPGItemInstance PendingBossReward;
-    bool Commit(UPGProfileSave* Candidate);
+    bool Commit(UPGProfileSave* Candidate, bool bRestorePlayer = true);
+    bool UpgradeItems(UPGProfileSave* Candidate) const;
+    bool BackupLegacySlots() const;
     void LoadProfile();
     void RefreshPlayer();
     FString SlotName(int32 Index) const;

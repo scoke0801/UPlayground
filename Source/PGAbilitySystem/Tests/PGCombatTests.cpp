@@ -59,6 +59,20 @@ bool FPGCombatIntegrationTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Owned equipment removal preserves actor weapon"), Source->GetCombatStat(EPGStatType::Attack), 30.f);
         Source->SetEquipmentBonuses({});
     }
+    Source->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(), 75.f);
+    for (int32 Index = 0; Index < 20; ++Index)
+    {
+        Source->SetProfileBonuses({{EPGStatType::Health, 50}});
+        TestEqual(TEXT("Max health gear cannot heal"), Source->GetHealth(), 75.f);
+        Source->SetProfileBonuses({{EPGStatType::Health, 80}});
+        TestEqual(TEXT("Replacement preserves current health"), Source->GetHealth(), 75.f);
+        Source->SetProfileBonuses({});
+        TestEqual(TEXT("Repeated unequip cannot heal"), Source->GetHealth(), 75.f);
+    }
+    Source->SetProfileBonuses({{EPGStatType::Health, 50}});
+    Source->RestoreHealth(500.f);
+    Source->SetProfileBonuses({});
+    TestEqual(TEXT("Removing max health clamps current"), Source->GetHealth(), 100.f);
     TestTrue(TEXT("Stat reward applied"), Source->ApplyStatBonus(EPGStatType::Attack, 5.f));
     TestEqual(TEXT("Reward persists"), Source->GetCombatStat(EPGStatType::Attack), 25.f);
     Target->SetNumericAttributeBase(UPGAtrributeSet::GetMaxHealthAttribute(), 0.f);

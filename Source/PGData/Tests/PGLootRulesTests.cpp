@@ -32,6 +32,8 @@ bool FPGLootRulesTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Elite replaces zero global and pool chances with one item"), PGLootRules::Roll(*Catalog, Pool.Id, A, First));
         TestTrue(TEXT("Reordered data remains selectable"), PGLootRules::Roll(*Reordered, Pool.Id, B, Second));
         TestTrue(TEXT("Zero weight cannot be selected"), First.DefinitionId == 2 || First.DefinitionId == 3);
+        TestEqual(TEXT("New drops carry instance metadata"), First.ItemVersion, 1);
+        TestTrue(TEXT("Generated metadata validates"), PGEquipmentRules::ValidateInstance(First));
         TestEqual(TEXT("Definition independent of authoring order"), First.DefinitionId, Second.DefinitionId);
         TestTrue(TEXT("Options independent of map order"), First.Options.OrderIndependentCompareEqual(Second.Options));
         TestTrue(TEXT("Roll stays in authored range"), First.Options[EPGStatType::Attack] >= First.DefinitionId * 10 && First.Options[EPGStatType::Attack] <= First.DefinitionId * 10 + 10);
@@ -56,6 +58,10 @@ bool FPGLootRulesTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Empty effective guaranteed pool blocked"), PGLootRules::ValidatePools(*Catalog, Error));
     Catalog->DropPools[0] = Pool; Catalog->DropPools[0].DropChance = 2.f;
     TestFalse(TEXT("Invalid chance blocked"), PGLootRules::ValidatePools(*Catalog, Error));
+    Catalog->DropPools[0] = Pool; Catalog->DropPools[0].Entries = {{1, 1.f}};
+    Catalog->Items[0].Rarity = EPGItemRarity::MythicUnique;
+    TestFalse(TEXT("Unreleased mythic grade cannot drop"), PGLootRules::Roll(*Catalog, Pool.Id, Random, Item));
+    TestFalse(TEXT("Locked grade never exposes a payable identity"), Item.Guid.IsValid());
     return true;
 }
 #endif

@@ -3,6 +3,7 @@
 #include "GameFramework/SaveGame.h"
 #include "PGShared/Shared/Structure/PGInventoryTypes.h"
 #include "PGShared/Shared/Enum/PGRewardTypes.h"
+#include "PGShared/Shared/Structure/PGLevelState.h"
 #include "PGProfileSave.generated.h"
 
 UCLASS()
@@ -10,6 +11,12 @@ class PGACTOR_API UPGProfileSave : public USaveGame
 {
     GENERATED_BODY()
 public:
+    static constexpr int32 CurrentVersion = 8;
+    UPROPERTY(SaveGame) TSet<FName> LegendaryRecipes;
+    UPROPERTY(SaveGame) TMap<FName, int64> Materials;
+    UPROPERTY(SaveGame) FPGLevelState Growth;
+    UPROPERTY(SaveGame) TSet<FGuid> ExperienceClaims;
+    // Keep the constructor default at v1 so absent fields in old files migrate explicitly.
     UPROPERTY(SaveGame) int32 Version = 1;
     UPROPERTY(SaveGame) int64 Revision = 0;
     UPROPERTY(SaveGame) TArray<FPGItemInstance> Items;

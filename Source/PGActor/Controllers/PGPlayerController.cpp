@@ -140,7 +140,8 @@ void APGPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
     InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ThisClass::ToggleSettings).bExecuteWhenPaused = true;
-    InputComponent->BindKey(EKeys::I, IE_Pressed, this, &ThisClass::ToggleInventory).bExecuteWhenPaused = true;
+    InputComponent->BindKey(InventoryKey, IE_Pressed, this, &ThisClass::ToggleInventory).bExecuteWhenPaused = true;
+    InputComponent->BindKey(StatsKey, IE_Pressed, this, &ThisClass::ToggleStats).bExecuteWhenPaused = true;
     InputComponent->BindKey(EKeys::E, IE_Pressed, this, &ThisClass::PickupNearest);
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
@@ -156,6 +157,7 @@ void APGPlayerController::SetupInputComponent()
 
 void APGPlayerController::Tick(float DeltaTime)
 {
+    if (bInventoryClickGuard && FSlateApplication::IsInitialized() && FSlateApplication::Get().GetPressedMouseButtons().IsEmpty()) bInventoryClickGuard=false;
 	Super::Tick(DeltaTime);
     RefreshCameraInputMode();
 
@@ -294,6 +296,7 @@ void APGPlayerController::CheckMouseOver()
 
 bool APGPlayerController::IsPointerOverUI() const
 {
+    if (bInventoryClickGuard || GFrameCounter <= InventoryClickGuardFrame) return true;
     if (!bShowMouseCursor || !FSlateApplication::IsInitialized()) return false;
     FSlateApplication& Slate = FSlateApplication::Get();
     const FWidgetPath Path = Slate.LocateWindowUnderMouse(Slate.GetCursorPos(), Slate.GetInteractiveTopLevelWindows());
@@ -308,7 +311,11 @@ void APGPlayerController::CloseInventory()
 {
     if (!InventoryWidget) return;
     if (auto* UI = UPGUIManager::Get(this)) UI->ReleaseModalInput(InventoryWidget);
+    SuppressInventoryClick();
     InventoryWidget->RemoveFromParent(); InventoryWidget = nullptr;
+    bCameraInputModeInitialized=false; RefreshCameraInputMode();
+    if (FSlateApplication::IsInitialized())
+        if (const auto* UI=UPGUIManager::Get(this); !UI || !UI->IsWindowOpen()) FSlateApplication::Get().SetAllUserFocusToGameViewport();
     if (auto* LocalPawn = Cast<APGCharacterPlayer>(GetPawn()))
         if (auto* ASC = LocalPawn->GetPGAbilitySystemComponent()) ASC->ClearBufferedInput();
 }
@@ -326,21 +333,54 @@ void APGPlayerController::ToggleInventory()
 {
     if (InventoryWidget)
     {
-        CloseInventory(); return;
+        InventoryWidget->ToggleRightPanel(); return;
     }
     auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
     if (!LocalCharacter || !LocalCharacter->IsGameplayInputAllowed()) return;
     auto* UI = UPGUIManager::Get(this);
     if (!UI) return;
-    LocalCharacter->GetPGAbilitySystemComponent()->CancelAllAbilities();
     LocalCharacter->GetPGAbilitySystemComponent()->ClearBufferedInput();
     InventoryWidget = CreateWidget<UPGUIInventory>(this);
     if (!InventoryWidget) return;
     InventoryWidget->AddToViewport(90);
-    bool bBuildPhase = false;
-    for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It)
-          if (It->GetCurrentStageState() == EPGStageState::BuildPhase || It->GetCurrentStageState() == EPGStageState::RunPreparation) { bBuildPhase = true; break; }
-    UI->AcquireModalInput(InventoryWidget, !bBuildPhase);
+    InventoryWidget->SetKeyboardFocus();
+    bCameraInputModeInitialized=false; RefreshCameraInputMode();
+}
+void APGPlayerController::ToggleStats()
+{
+    if (!InventoryWidget)
+    {
+        ToggleInventory();
+        if (InventoryWidget)
+        {
+            InventoryWidget->SetStatsTab();
+            if (InventoryWidget->IsRightPanelOpen()) InventoryWidget->ToggleRightPanel();
+        }
+    }
+    else InventoryWidget->ToggleStatsPanel();
+}
+bool APGPlayerController::OpenGrowthPanel()
+{
+    auto* UI = UPGUIManager::Get(this);
+    auto* GrowthPlayer = Cast<APGCharacterPlayer>(GetPawn());
+    if (!UI || UI->IsWindowOpen() || SettingsWidget || !GrowthPlayer || !GrowthPlayer->IsGameplayInputAllowed() ||
+        (InventoryWidget && InventoryWidget->HasPendingEdit())) return false;
+    if (!InventoryWidget) ToggleStats();
+    else InventoryWidget->SetStatsTab();
+    if (!InventoryWidget || !InventoryWidget->IsStatsPanelOpen()) return false;
+    if (auto* Profile = UPGProfileSubsystem::Get(this)) Profile->AcknowledgeLevelNotice();
+    return true;
+}
+bool APGPlayerController::HasInventoryFocus() const
+{
+    return InventoryWidget && FSlateApplication::IsInitialized() && FSlateApplication::Get().IsActive() &&
+        (InventoryWidget->HasUserFocus(const_cast<APGPlayerController*>(this)) ||
+         InventoryWidget->HasUserFocusedDescendants(const_cast<APGPlayerController*>(this)));
+}
+void APGPlayerController::SuppressInventoryClick()
+{
+    InventoryClickGuardFrame=GFrameCounter+1;
+    bInventoryClickGuard=true;
 }
 void APGPlayerController::PickupNearest()
 {
@@ -367,6 +407,7 @@ void APGPlayerController::PGHUDCapture()
 void APGPlayerController::ToggleSettings()
 {
     if (SettingsWidget) { CloseSettings(); return; }
+    if (InventoryWidget) { InventoryWidget->HandleEscape(); return; }
     if (!IsLocalController()) return;
     // Do not discard unsaved inventory edits or cover a reward/result decision.
     auto* UI = UPGUIManager::Get(this);
@@ -410,7 +451,7 @@ void APGPlayerController::RefreshCameraInputMode()
         return;
     }
     const auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
-    const bool bCapture = LocalCharacter && LocalCharacter->GetCameraMode() == EPGCameraMode::Action3D
+    const bool bCapture = !InventoryWidget && LocalCharacter && LocalCharacter->GetCameraMode() == EPGCameraMode::Action3D
         && !IsInputKeyDown(EKeys::LeftAlt) && !IsInputKeyDown(EKeys::RightAlt) && !IsPaused();
     if (bCameraInputModeInitialized && bCapture == bActionMouseCaptured) return;
     bCameraInputModeInitialized = true;
@@ -427,6 +468,7 @@ void APGPlayerController::RefreshCameraInputMode()
         FInputModeGameAndUI Input;
         Input.SetHideCursorDuringCapture(false);
         Input.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        if (InventoryWidget) Input.SetWidgetToFocus(InventoryWidget->TakeWidget());
         SetInputMode(Input);
     }
 }

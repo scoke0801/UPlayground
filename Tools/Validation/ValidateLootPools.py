@@ -3,6 +3,14 @@ import math
 
 
 def validate_loot_pools(catalog, enemies):
+    # Older --skip-build binaries lack U3 reflection; keep their regression checks usable.
+    generation = getattr(catalog, 'validate_equipment_generation', None)
+    if generation is not None:
+        # Unreal consumes the bool return: success yields Error, failure yields None.
+        assert generation() is not None, 'Native equipment generation validation failed'
+    else:
+        import unreal
+        unreal.log('PGEquipment U3 validation SKIPPED: existing binary has no generation schema')
     items = {i.get_editor_property('id'): i for i in catalog.get_editor_property('items')}
     pools = {}
     for pool in catalog.get_editor_property('drop_pools'):
@@ -16,7 +24,8 @@ def validate_loot_pools(catalog, enemies):
             iid, weight = entry.get_editor_property('item_id'), entry.get_editor_property('weight')
             assert iid in items and iid not in ids, (name, iid)
             assert math.isfinite(weight) and weight >= 0, (name, iid, weight)
-            assert items[iid].get_editor_property('base_options'), (name, iid)
+            if generation is None or not items[iid].get_editor_property('use_option_pool'):
+                assert items[iid].get_editor_property('base_options'), (name, iid)
             ids.add(iid)
             total += weight
         assert math.isfinite(total) and 0 < total <= 3.402823466e38, name

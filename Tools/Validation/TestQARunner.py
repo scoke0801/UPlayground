@@ -4,6 +4,14 @@ from RunQA import check_automation, check_cycle, check_loot_cycle, check_retry, 
 
 
 class QAEvidenceTests(unittest.TestCase):
+    def test_inventory_resume_requires_one_clean_matching_phase(self):
+        from RunInventoryCycle import check_phase
+        valid='LogTemp: Display: PGInventoryU8 phase=u8resume failures=0 revision=23'
+        self.assertEqual(check_phase(valid,'u8resume'),[])
+        for invalid in ('', valid.replace('failures=0','failures=1'), valid+valid,
+                        valid+'\nPGInventoryU8 FAIL checkpoint', valid.replace('u8resume','u8seed')):
+            self.assertTrue(check_phase(invalid,'u8resume'))
+
     def test_imported_plant_drop_is_required_after_wave_replacement(self):
         from MonsterVariationRoster import SPEC, CREATURE_COMBAT
         guaranteed={i for grade in SPEC['p09_grades'] if grade['grade']=='Elite' for i in grade['ids']}

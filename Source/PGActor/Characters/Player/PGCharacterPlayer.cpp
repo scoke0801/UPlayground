@@ -668,7 +668,8 @@ bool APGCharacterPlayer::IsGameplayInputAllowed() const
     if (!bIsCanControl || !PC || PC->IsMoveInputIgnored() || GetWorld()->IsPaused() || bDeathStarted) return false;
     if (UPGUIManager::Get(this) && UPGUIManager::Get(this)->IsWindowOpen()) return false;
     const UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
-    return !Viewport || !Viewport->Viewport || Viewport->Viewport->HasFocus();
+    return !Viewport || !Viewport->Viewport || Viewport->Viewport->HasFocus() ||
+        (Cast<APGPlayerController>(PC) && Cast<APGPlayerController>(PC)->HasInventoryFocus());
 }
 void APGCharacterPlayer::UpdateAim()
 {
@@ -690,7 +691,8 @@ bool APGCharacterPlayer::IsConsumableInputAllowed() const
     if (!PC || !GetWorld() || GetWorld()->IsPaused() || bDeathStarted || PC->IsMoveInputIgnored()) return false;
     if (const auto* UI = UPGUIManager::Get(this); UI && UI->IsWindowOpen()) return false;
     const auto* Viewport = GetWorld()->GetGameViewport();
-    return !Viewport || !Viewport->Viewport || Viewport->Viewport->HasFocus();
+    return !Viewport || !Viewport->Viewport || Viewport->Viewport->HasFocus() ||
+        (Cast<APGPlayerController>(PC) && Cast<APGPlayerController>(PC)->HasInventoryFocus());
 }
 void APGCharacterPlayer::Input_HealingPotion(const FInputActionValue& InputActionValue)
 {

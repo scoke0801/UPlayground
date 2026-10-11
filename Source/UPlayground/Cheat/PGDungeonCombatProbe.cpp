@@ -41,7 +41,7 @@ void UPGCheatManager::PGDungeonStep(FString Action)
             Profile->bInjectSaveFailure=false;
             auto* Catalog=const_cast<UPGProgressionData*>(Profile->GetCatalog());
             const int32 Capacity=Catalog->BagCapacity;
-            Catalog->BagCapacity=Before;
+            Catalog->BagCapacity=Profile->GetBagCount();
             Valid &= !Treasure->TryPickup(Player) && !Profile->HasClaimedLoot(Reward.Guid);
             Catalog->BagCapacity=Capacity;
             Valid &= Treasure->TryPickup(Player) && Profile->HasClaimedLoot(Reward.Guid) && Profile->GetProfile()->Items.Num()==Before+1;

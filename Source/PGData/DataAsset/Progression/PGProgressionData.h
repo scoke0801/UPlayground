@@ -3,6 +3,11 @@
 #include "Engine/DataAsset.h"
 #include "PGData/DataTable/Item/PGItemDataRow.h"
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
+#include "PGEquipmentRules.h"
+#include "PGLevelRules.h"
+#include "PGSalvageRules.h"
+#include "PGLegendaryRules.h"
+#include "PGCraftingRules.h"
 #include "PGProgressionData.generated.h"
 
 USTRUCT(BlueprintType)
@@ -48,6 +53,24 @@ class PGDATA_API UPGProgressionData : public UDataAsset
 {
     GENERATED_BODY()
 public:
+    UPROPERTY(EditAnywhere, Category="Crafting") TArray<FPGTemperRecipe> TemperRecipes = PGCraftingRules::DefaultTempers();
+    UPROPERTY(EditAnywhere, Category="Crafting") TArray<FPGMasterworkStep> MasterworkSteps = PGCraftingRules::DefaultMasterworks();
+    UPROPERTY(EditAnywhere, Category="Legendary") TArray<FPGLegendaryEffect> LegendaryEffects = PGLegendaryRules::Defaults();
+    const FPGLegendaryEffect* FindLegendary(FName Id) const { return LegendaryEffects.FindByPredicate([Id](const auto& E){return E.Id==Id;}); }
+    void InitializeLegendary(FPGItemInstance& Item) const
+    {
+        const auto* Def=FindItem(Item.DefinitionId);
+        const auto* Effect=Def ? FindLegendary(Def->LegendaryEffect) : nullptr;
+        if (Effect && Item.Rarity==EPGItemRarity::Legendary)
+        { Item.LegendaryEffect=Effect->Id; Item.LegendaryPercent=PGLegendaryRules::Strength(*Effect,Def->Slot); }
+    }
+    UPROPERTY(EditAnywhere, Category="Salvage") FPGSalvageRules SalvageRules;
+    UPROPERTY(EditAnywhere, Category="Level") FPGLevelRules LevelRules;
+    UFUNCTION(BlueprintCallable, Category="Equipment") bool ValidateEquipmentGeneration(FString& Error) const;
+#if WITH_EDITOR
+    virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+#endif
+    UPROPERTY(EditAnywhere, Category="Equipment") TArray<FPGEquipmentRarityRule> RarityRules = PGEquipmentRules::DefaultRarities();
     UPROPERTY(EditAnywhere, Category="Consumables") TObjectPtr<class UPGConsumableData> HealingPotion;
     UPROPERTY(EditAnywhere, Category="Roguelike") bool bRoguelikeRuns = false;
     UPROPERTY(EditAnywhere, Category="Roguelike") TArray<int32> StartingItems;
@@ -63,6 +86,7 @@ public:
     UPROPERTY(EditAnywhere) TArray<FPGItemDataRow> Items;
     // Empty enemy pool IDs retain the legacy global chance and item weights.
     UPROPERTY(EditAnywhere, Category="Loot") TArray<FPGDropPool> DropPools;
+    UPROPERTY(EditAnywhere, Category="Loot") FName InvalidEquipmentFallbackPool;
     UPROPERTY(EditAnywhere) TArray<FPGBuildDefinition> Builds;
     UPROPERTY(EditAnywhere, Category="Characters") TArray<TSoftObjectPtr<class UPGCharacterAppearance>> PlayableCharacters;
     UPROPERTY(EditAnywhere, Category="Skills") TArray<int32> SelectableActiveSkills;

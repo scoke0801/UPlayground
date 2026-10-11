@@ -122,7 +122,8 @@ void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
     Candidates.Sort([Target](const auto& A,const auto& B)
     {
         if ((A.Drop==Target)!=(B.Drop==Target)) return A.Drop==Target;
-        if (A.Def->Rarity!=B.Def->Rarity) return A.Def->Rarity>B.Def->Rarity;
+        const auto ARarity=A.Def->GetRarity(A.Drop->GetItem()), BRarity=B.Def->GetRarity(B.Drop->GetItem());
+        if (ARarity!=BRarity) return ARarity>BRarity;
         if (A.Distance!=B.Distance) return A.Distance<B.Distance;
         return A.Drop->GetItem().Guid<B.Drop->GetItem().Guid;
     });
@@ -139,8 +140,9 @@ void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
         Occupied.Add(FSlateRect(Position.X,Position.Y,Position.X+Size.X,Position.Y+Size.Y));
         if (!bPresentationChanged) continue;
         Entry->Guid=Candidate.Drop->GetItem().Guid; Entry->Name=Candidate.Def->DisplayName;
-        Entry->Color=FPGUIStyle::Get().RarityColor(Candidate.Def->Rarity);
-        Entry->Hint=FText::FromString(PGInventoryPresentation::RarityName(Candidate.Def->Rarity).ToString()+TEXT(" · ")+
+        const auto Rarity=Candidate.Def->GetRarity(Candidate.Drop->GetItem());
+        Entry->Color=FPGUIStyle::Get().RarityColor(Rarity);
+        Entry->Hint=FText::FromString(PGInventoryPresentation::RarityName(Rarity).ToString()+TEXT(" · ")+
             PGInventoryPresentation::SlotName(Candidate.Def->Slot).ToString()+(Entry->bTarget ? TEXT("   [E] 획득") : TEXT("")));
         auto& Icon=Icons.FindOrAdd(Candidate.Def->Id);
         if (!Icon) Icon=Candidate.Def->Icon.LoadSynchronous();

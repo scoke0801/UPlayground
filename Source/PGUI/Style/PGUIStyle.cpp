@@ -30,5 +30,13 @@ FSlateFontInfo FPGUIStyle::Font(int32 Size, bool bBold) const
 
 FLinearColor FPGUIStyle::RarityColor(EPGItemRarity Rarity) const
 {
+    switch (Rarity)
+    {
+    case EPGItemRarity::Epic: return FLinearColor(.65f,.25f,.8f);
+    case EPGItemRarity::Legendary: return FLinearColor(1.f,.42f,.1f);
+    case EPGItemRarity::Unique: return FLinearColor(.75f,.52f,.28f);
+    case EPGItemRarity::MythicUnique: return FLinearColor(.9f,.13f,.25f);
+    default: break;
+    }
     return Rarity == EPGItemRarity::Rare ? Rare : Rarity == EPGItemRarity::Magic ? Magic : Muted;
 }

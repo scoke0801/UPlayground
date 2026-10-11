@@ -1,0 +1,22 @@
+{
+  "mode": "built-in image_gen",
+  "style": "subculture anime, cel-shaded charcoal / ivory / champagne gold",
+  "assets": [
+    {
+      "source": "T_PGInventoryFrame.png",
+      "destination": "/Game/UI/Inventory/T_PGInventoryFrame",
+      "prompt": "Use case: ui-mockup. Asset type: production texture for a live Unreal anime ARPG inventory UI, landscape 1536x1024. Create ONE flat rectangular menu background, front view, filling entire canvas. Style: premium Japanese/Korean subculture anime game UI, crisp hand-painted 2D cel shading, clean confident dark outlines, broad smooth two-tone planes, NO realistic distressed texture. Charcoal blue-black enamel interior, ivory and champagne-gold metal border, restrained red enamel diamond at top center. Slim angular clipped corners, small stylized wing-like metal accents only in corners, elegant readable craftsmanship like a cel-shaded fantasy equipment screen. Frame is outer 4 percent only. Interior 90 percent empty nearly uniform deep charcoal for native widgets. No compartment lines, no grid, no text, no symbols resembling letters, no icons, no numbers, no buttons, no characters, no scenery, no leather grain, no filigree, no scratches, no gritty gothic horror, no purple gradients, no bloom, no watermark. Opaque. This art frames a Diablo/POE-like inventory in a bright cel-shaded anime action game."
+    },
+    {
+      "source": "T_PGStatsFrame.png",
+      "destination": "/Game/UI/Inventory/T_PGStatsFrame",
+      "prompt": "Use case: ui-mockup. Asset type: production anime ARPG character-stat panel background, PORTRAIT 1024x1536. One front-facing rectangular empty stats dossier panel filling entire canvas. Original premium Japanese/Korean subculture cel-shaded fantasy game UI. Crisp hand-painted 2D anime lines, smooth two-tone enamel planes, NO realistic gritty texture. Palette charcoal blue-black, ivory and champagne gold with restrained muted turquoise enamel. Slim gold frame along outer 4 percent with angular clipped corners and tiny ivory wing corners. At very top center only, a small elegant stylized faceted turquoise crystal between two ivory wings, no bigger than 10 percent of panel height. Bottom has a very subtle engraved geometric compass motif, in outer 5 percent. Entire central 80 percent is completely empty deep charcoal for Korean stat rows added by engine. Flat orthographic UI texture, no perspective. No text, no letters, no numbers, no buttons, no grid, no weapons, no characters, no scenery, no bloom, no photoreal leather, no grunge, no gothic filigree, no watermark. Opaque. Match charcoal and champagne-gold cel-shaded inventory HUD."
+    },
+    {
+      "source": "T_PGStatsEmblem.png",
+      "destination": "/Game/UI/Inventory/T_PGStatsEmblem",
+      "transparent": true,
+      "prompt": "Use case: stylized-concept. Asset type: transparent game UI emblem, square 1024x1024. Original premium Japanese/Korean subculture anime fantasy ARPG emblem representing an adventurer's equipment and stats. One centered symmetrical heraldic composition: a slender ivory silver sword pointing down over a small charcoal enamel shield, champagne gold metal edges and a small faceted turquoise crystal in the shield. Two compact stylized ivory wing motifs flank the shield. Crisp confident ink outlines, beautifully hand-painted flat 2D cel shading with two or three broad color planes, clean readable large silhouette. Restrained elegant fantasy design, friendly heroic anime tone matching cel-shaded characters. Entire emblem fully inside canvas with generous transparent outer space. NO text, no letters, no numerals, no border around image, no backdrop, no floor, no drop shadow, no glow, no grunge, no realistic scratches, no photorealism, no gradient atmosphere, no logo, no watermark. Genuine transparent background."
+    }
+  ]
+}

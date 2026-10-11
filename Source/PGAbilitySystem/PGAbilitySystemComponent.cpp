@@ -4,6 +4,7 @@
 #include "PGAbilitySystemComponent.h"
 #include "PGAtrributeSet.h"
 #include "GameplayEffect.h"
+#include "GameplayEffectAggregator.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -211,6 +212,55 @@ float UPGAbilitySystemComponent::GetCombatStat(EPGStatType Type) const
     const auto Attribute = AttributeForStat(Type);
     return Attribute.IsValid() ? GetNumericAttribute(Attribute) : 0.f;
 }
+FPGCombatStatDetails UPGAbilitySystemComponent::GetStatDetails(EPGStatType Type, TOptional<float> ReplacementProfile)
+{
+    FPGCombatStatDetails Result;
+    const auto Attribute = AttributeForStat(Type);
+    if (!bStatsInitialized || !Attribute.IsValid()) return Result;
+    FGameplayEffectAttributeCaptureSpec Capture(FGameplayEffectAttributeCaptureDefinition(Attribute, EGameplayEffectAttributeCaptureSource::Target, true));
+    CaptureAttributeForGameplayEffect(Capture);
+    FAggregator Snapshot;
+    if (!Capture.AttemptGetAttributeAggregatorSnapshot(Snapshot)) return Result;
+    auto Magnitude = [&](FActiveGameplayEffectHandle Handle)
+    {
+        float Value = 0.f;
+        if (const auto* Effect = GetActiveGameplayEffect(Handle); Effect && !Effect->bIsInhibited)
+            for (int32 I = 0; I < Effect->Spec.Def->Modifiers.Num(); ++I)
+                if (Effect->Spec.Def->Modifiers[I].Attribute == Attribute)
+                    Value += Effect->Spec.GetModifierMagnitude(I);
+        return Value;
+    };
+    Result.Base = GetNumericAttributeBase(Attribute);
+    Result.Weapon = Magnitude(EquipmentEffect);
+    Result.Profile = Magnitude(ProfileEffect);
+    Result.Current = GetCombatStat(Type);
+    // Other includes non-additive interactions and final attribute clamps.
+    Result.Other = Result.Current - Result.Base - Result.Weapon - Result.Profile;
+    for (const auto Handle : GetActiveEffects(FGameplayEffectQuery()))
+    {
+        if (Handle == EquipmentEffect || Handle == ProfileEffect) continue;
+        const auto* Effect = GetActiveGameplayEffect(Handle);
+        if (!Effect || Effect->bIsInhibited || Effect->Spec.GetPeriod() > 0.f) continue;
+        for (int32 I = 0; I < Effect->Spec.Def->Modifiers.Num(); ++I)
+        {
+            const auto& Modifier = Effect->Spec.Def->Modifiers[I];
+            if (Modifier.Attribute == Attribute)
+                Result.OtherModifiers.Emplace(Modifier.ModifierOp, Effect->Spec.GetModifierMagnitude(I));
+        }
+    }
+    Snapshot.RemoveAggregatorMod(ProfileEffect);
+    Snapshot.AddAggregatorMod(ReplacementProfile.Get(Result.Profile), EGameplayModOp::Additive,
+        EGameplayModEvaluationChannel::Channel0, nullptr, nullptr, false);
+    FAggregatorEvaluateParameters Params;
+    // Match OnAttributeAggregatorDirty: persistent attributes have no execution source/target tags.
+    Params.IncludePredictiveMods = IsNetSimulating();
+    Result.Expected = Snapshot.Evaluate(Params);
+    Result.Expected = FMath::IsFinite(Result.Expected) ? FMath::Max(0.f, Result.Expected) : 0.f;
+    if (Type == EPGStatType::CriticalRate) Result.Expected = FMath::Min(10000.f, Result.Expected);
+    Result.bValid = true;
+    return Result;
+}
+
 float UPGAbilitySystemComponent::GetHealth() const { return GetNumericAttribute(UPGAtrributeSet::GetCurrentHealthAttribute()); }
 
 float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Source, EPGDamageType& OutType)

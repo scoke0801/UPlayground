@@ -35,6 +35,9 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> CombatPlate = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Combat/T_PGCombatPlate.T_PGCombatPlate")));
     UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> CombatPotionIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Combat/T_PGCombatPotion.T_PGCombatPotion")));
     UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> MenuFrame;
+    UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> InventoryFrame = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Inventory/T_PGInventoryFrame.T_PGInventoryFrame")));
+    UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> StatsFrame = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Inventory/T_PGStatsFrame.T_PGStatsFrame")));
+    UPROPERTY(Config, EditAnywhere, Category="Art") TSoftObjectPtr<class UTexture2D> StatsEmblem = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Inventory/T_PGStatsEmblem.T_PGStatsEmblem")));
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> RewardOpenSound;
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> RewardConfirmSound;
     UPROPERTY(Config, EditAnywhere, Category="Rewards") TSoftObjectPtr<class USoundBase> VictorySound;

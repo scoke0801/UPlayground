@@ -18,6 +18,18 @@
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FPGConfirmedGuardHit, AActor*);
 
+struct FPGCombatStatDetails
+{
+    float Base = 0.f;
+    float Weapon = 0.f;
+    float Profile = 0.f;
+    float Other = 0.f;
+    float Current = 0.f;
+    float Expected = 0.f;
+    TArray<TPair<TEnumAsByte<EGameplayModOp::Type>, float>> OtherModifiers;
+    bool bValid = false;
+};
+
 /**
  * 플레이그라운드 프로젝트의 커스텀 어빌리티 시스템 컴포넌트
  * 플레이어의 입력 처리와 무기 어빌리티 관리를 담당
@@ -128,6 +140,7 @@ public:
     void InitializeCombatStats(const TMap<EPGStatType, int32>& Stats);
     static FGameplayAttribute AttributeForStat(EPGStatType Type);
     float GetCombatStat(EPGStatType Type) const;
+    FPGCombatStatDetails GetStatDetails(EPGStatType Type, TOptional<float> ReplacementProfile = {});
     float GetHealth() const;
     float ReceiveCombatHit(UPGAbilitySystemComponent* Source, EPGDamageType& OutType);
     void SetCombatPerks(const TMap<EPGCombatPerk, int32>& Perks);

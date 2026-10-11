@@ -107,12 +107,16 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     System->Profile->Items = {First}; System->Profile->Equipment.Reset();
     for (int32 Cycle = 0; Cycle < 20; ++Cycle)
     {
-        TestTrue(TEXT("Equipment save succeeds"), System->Equip(First.Guid));
+        auto* Equipped = DuplicateObject<UPGProfileSave>(System->Profile, System);
+        Equipped->Equipment.Add(EPGEquipmentSlot::Weapon, First.Guid);
+        TestTrue(TEXT("Equipment save succeeds"), System->Commit(Equipped));
         const int64 Revision = System->Profile->Revision;
         auto* Disk = Cast<UPGProfileSave>(UGameplayStatics::LoadGameFromSlot(System->SlotName(System->ActiveSlot), 0));
         TestTrue(TEXT("On-disk snapshot valid"), System->Validate(Disk));
         if (Disk) TestEqual(TEXT("On-disk revision"), Disk->Revision, Revision);
-        TestTrue(TEXT("Unequip save succeeds"), System->Unequip(EPGEquipmentSlot::Weapon));
+        auto* Unequipped = DuplicateObject<UPGProfileSave>(System->Profile, System);
+        Unequipped->Equipment.Reset();
+        TestTrue(TEXT("Unequip save succeeds"), System->Commit(Unequipped));
         TestEqual(TEXT("No item loss over cycles"), System->Profile->Items.Num(), 1);
     }
     auto* Previous = Cast<UPGProfileSave>(UGameplayStatics::LoadGameFromSlot(System->SlotName(1-System->ActiveSlot), 0));

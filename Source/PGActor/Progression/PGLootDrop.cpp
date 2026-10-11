@@ -46,18 +46,19 @@ void APGLootDrop::InitializeItem(const FPGItemInstance& InItem)
     const auto* Catalog = Profile ? Profile->GetCatalog() : nullptr;
     const auto* Def = Catalog ? Catalog->FindItem(Item.DefinitionId) : nullptr;
     if (!Def) return;
-    const auto Color = FPGUIStyle::Get().RarityColor(Def->Rarity);
+    const auto Rarity = Def->GetRarity(Item);
+    const auto Color = FPGUIStyle::Get().RarityColor(Rarity);
     if (auto* Material = Catalog->BeamMaterial.LoadSynchronous())
     {
-        const float Height = FMath::Max(0.f, Catalog->BeamHeights.FindRef(Def->Rarity));
+        const float Height = FMath::Max(0.f, Catalog->BeamHeights.FindRef(Rarity));
         auto* Dynamic = UMaterialInstanceDynamic::Create(Material, this); Dynamic->SetVectorParameterValue(TEXT("GradeColor"), Color);
         BeamMesh->SetMaterial(0, Dynamic); BeamMesh->SetRelativeScale3D(FVector(.06f,.06f,Height / 100.f));
         BeamMesh->SetRelativeLocation(FVector(0,0,Height / 2.f)); BeamMesh->SetVisibility(Height > 0);
     }
-    if (const auto* Asset = Catalog->DropBeams.Find(Def->Rarity))
+    if (const auto* Asset = Catalog->DropBeams.Find(Rarity))
         if (auto* System = Asset->LoadSynchronous()) { Beam->SetAsset(System); Beam->SetVariableLinearColor(TEXT("User.Color"), Color); Beam->Activate(true); }
     // Sound starts at spawn; pickup remains responsive during the visual arc.
-    if (const auto* Asset = Catalog->DropSounds.Find(Def->Rarity))
+    if (const auto* Asset = Catalog->DropSounds.Find(Rarity))
         if (auto* Sound = Asset->LoadSynchronous()) UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation());
     ArcElapsed = 0; ArcDuration = FMath::Max(.05f, Catalog->DropArcDuration); ArcHeight = FMath::Max(0.f, Catalog->DropArcHeight);
     SetActorTickEnabled(true);
@@ -94,6 +95,9 @@ void APGLootDrop::SpawnForEnemy(APGCharacterEnemy* Enemy)
         Enemy->LootGuid = FGuid::NewDeterministicGuid(Profile->GetProfile()->RunId.ToString() + Enemy->GetPathName());
         Enemy->LootSeed = int32(FCrc::StrCrc32(*Enemy->GetPathName()) ^ uint32(Profile->GetProfile()->RunSeed));
     }
+    const int32 Experience = Profile->GetCatalog()->LevelRules.KillExperience;
+    if (Experience > 0)
+        Profile->GrantExperience(Profile->GetProfile()->RunId, Enemy->LootGuid, Experience);
     if (Profile->HasClaimedLoot(Enemy->LootGuid)) return;
     FRandomStream Random(Enemy->LootSeed);
     FPGItemInstance Item;

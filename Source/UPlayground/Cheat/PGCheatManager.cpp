@@ -33,6 +33,20 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "PGUI/Widget/Window/PGUIWindowRewardSelect.h"
 #include "PGData/DataTable/Reward/PGRewardStatDataRow.h"
+
+void UPGCheatManager::PGExperience(int32 Amount)
+{
+    if (auto* Profile = UPGProfileSubsystem::Get(this); Profile && Amount >= 0 && (Amount == 0 || Profile->MarkRunAssisted()))
+    {
+        const bool bSaved = Amount == 0 || Profile->GrantExperience(Profile->GetProfile()->RunId, FGuid::NewGuid(), Amount);
+        const auto& Growth = Profile->GetProfile()->Growth;
+        UE_LOG(LogTemp, Display, TEXT("PGExperience saved=%d level=%d xp=%lld earned=%d unspent=%d"),
+            bSaved, Growth.Level, Growth.Experience, Growth.EarnedPoints, Growth.UnspentPoints);
+        int32 Rewards = 0;
+        for (const auto& Pair : Profile->GetProfile()->StageRewardCounts) Rewards += Pair.Value;
+        UE_LOG(LogTemp, Display, TEXT("PGExperienceLedger claims=%d rewards=%d"), Profile->GetProfile()->ExperienceClaims.Num(), Rewards);
+    }
+}
 #include "EngineUtils.h"
 #include "Engine/GameViewportClient.h"
 #include "PGActor/Manager/PGStageManager.h"

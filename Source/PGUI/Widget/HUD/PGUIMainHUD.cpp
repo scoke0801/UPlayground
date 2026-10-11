@@ -146,6 +146,20 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
     [SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(28,32)
         [SNew(SPGDungeonMinimap).World(GetWorld())]
+        + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center).Padding(16,0)
+        [SNew(SButton).Tag(TEXT("PGGrowth.Notice")).ButtonStyle(&ActionStyle).ContentPadding(FMargin(12.f,8.f))
+            .Visibility_Lambda([this]()
+            {
+                const auto* P=UPGProfileSubsystem::Get(this);
+                return P && P->GetProfile() && (P->HasPendingLevelNotice() || P->GetProfile()->Growth.UnspentPoints>0) ? EVisibility::Visible : EVisibility::Collapsed;
+            })
+            .OnClicked_Lambda([this]() { if (auto* PC=Cast<APGPlayerController>(GetOwningPlayer())) { PC->SuppressInventoryClick(); PC->OpenGrowthPanel(); } return FReply::Handled(); })
+            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",16)).ColorAndOpacity(Art.Ivory).Text_Lambda([this]()
+            {
+                const auto* P=UPGProfileSubsystem::Get(this);
+                return P && P->GetProfile() ? FText::FromString(FString::Printf(TEXT("%s미분배 포인트 %d"),
+                    P->HasPendingLevelNotice() ? TEXT("레벨 상승 · ") : TEXT(""),P->GetProfile()->Growth.UnspentPoints)) : FText::GetEmpty();
+            })]]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
         [SNew(SBox).WidthOverride(4).HeightOverride(4)
             .Visibility_Lambda([this]()
@@ -315,6 +329,12 @@ void UPGUIMainHUD::Refresh()
             SkillBrushes[Index].ImageSize=FVector2D(48,48);
             SkillBrushes[Index].DrawAs=SkillTextures[Index] ? ESlateBrushDrawType::Image : ESlateBrushDrawType::NoDrawType;
         }
+    }
+    if (Profile && Profile->HasPendingLevelNotice())
+    {
+        FString Reason;
+        if (Profile->CanChangeSkills(Reason))
+            if (auto* PC=Cast<APGPlayerController>(GetOwningPlayer())) PC->OpenGrowthPanel();
     }
     if(!Stage.IsValid() && GetWorld()) for(TActorIterator<APGStageManager> It(GetWorld());It;++It) {Stage=*It;break;}
     StageTitle=FText::FromString(Stage.IsValid() ? FString::Printf(TEXT("제 %d 시련"),Stage->GetCurrentStageId()) : TEXT("탐험"));
