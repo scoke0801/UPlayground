@@ -268,9 +268,14 @@ def tick(_dt):
             for command in ['DisableAllScreenMessages', 'r.ScreenPercentage 100', 'r.DynamicRes.OperationMode 0',
                             'r.VSync 0', 't.MaxFPS 0', 'r.Streaming.FullyLoadUsedTextures 1']:
                 console(command)
+            if OPTIONS.get('history_percentage') is not None:
+                console('r.TSR.History.ScreenPercentage '+str(OPTIONS['history_percentage']))
+            if OPTIONS.get('hzb_occlusion') is not None:
+                console('r.HZBOcclusion '+str(OPTIONS['hzb_occlusion']))
             REPORT['settings'] = {key: unreal.SystemLibrary.get_console_variable_float_value(key) for key in
                 ['r.ScreenPercentage', 'r.DynamicRes.OperationMode', 'r.VSync', 't.MaxFPS', 'sg.ShadowQuality',
-                 'sg.PostProcessQuality', 'r.Shadow.Virtual.Enable', 'r.Shadow.Virtual.ResolutionLodBiasDirectional', 'r.AntiAliasingMethod']}
+                 'sg.PostProcessQuality', 'r.Shadow.Virtual.Enable', 'r.Shadow.Virtual.ResolutionLodBiasDirectional', 'r.AntiAliasingMethod',
+                 'r.TSR.History.ScreenPercentage', 'r.TSR.History.R11G11B10', 'sg.AntiAliasingQuality', 'r.HZBOcclusion']}
             REPORT['settings']['mass.UseProcessingQueue'] = unreal.SystemLibrary.get_console_variable_float_value('mass.UseProcessingQueue')
             REPORT.update(overlays=overlays, phase_plan=PHASES)
             prepare(PHASES[0])
@@ -311,7 +316,8 @@ def tick(_dt):
             REPORT['phases'].append({**phase, 'csv': str(ROOT/'Saved/Profiling/CSV'/('toon_'+OUT.name+'_'+phase['name']+'.csv')),
                 'sample_seconds': now-capture_start, 'capture_start': capture_start, 'capture_end': now})
             write_report()
-            if OPTIONS.get('lod_candidate') and phase['name'] in ['full_a', 'lod1', 'lod2']:
+            if ((OPTIONS.get('lod_candidate') and phase['name'] in ['full_a', 'lod1', 'lod2']) or
+                (OPTIONS.get('capture') and phase['name'] == 'full_a')):
                 for i, actor in enumerate(population):
                     actor.skeletal_mesh_component.set_play_rate(0)
                     actor.skeletal_mesh_component.set_position(CLIPS[i % len(CLIPS)]['duration']*.25, False)

@@ -241,6 +241,44 @@ bool FPGCameraCollisionTest::RunTest(const FString&)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGCameraFadeBoundsTest, "PG.Camera.FadeBoundsEquivalence",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FPGCameraFadeBoundsTest::RunTest(const FString&)
+{
+    const auto Init = UWorld::InitializationValues().AllowAudioPlayback(false).CreatePhysicsScene(false).CreateNavigation(false).CreateAISystem(false);
+    auto* World = UWorld::CreateWorld(EWorldType::Game, false, NAME_None, nullptr, true, ERHIFeatureLevel::Num, &Init);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Player = World->SpawnActor<APGCharacterPlayer>();
+    auto* Data = NewObject<UPGQuarterViewData>(Player);
+    Player->QuarterViewData = Data;
+    Player->ConfigureQuarterView();
+    Player->SetCameraMode(EPGCameraMode::Action3D);
+    auto* Body = NewObject<UCapsuleComponent>(Player);
+    Body->SetCapsuleSize(42.f, 96.f);
+    FRandomStream Random(101026);
+    for (float Scale : {.5f, 1.f, 3.f})
+        for (float Pitch : {0.f, 45.f, 90.f})
+        {
+            Body->SetWorldTransform(FTransform(FRotator(Pitch, 37.f, 0.f), FVector(1200.f, -500.f, 250.f), FVector(Scale)));
+            const FVector Center = Body->GetComponentLocation();
+            const float Radius = Body->GetScaledCapsuleRadius();
+            const FVector Axis = Body->GetUpVector() * FMath::Max(0.f, Body->GetScaledCapsuleHalfHeight() - Radius);
+            const float Inner = Radius + Data->CameraBodyClearance;
+            const float Outer = Inner + Data->CameraBodyFadeDistance;
+            for (int32 Index = 0; Index < 256; ++Index)
+            {
+                const FVector View = Center + Random.VRand() * Random.FRandRange(0.f, 2000.f);
+                const float Distance = FMath::Sqrt(FMath::PointDistToSegmentSquared(View, Center - Axis, Center + Axis));
+                const float Expected = 1.f - FMath::SmoothStep(Inner, Outer, Distance);
+                if (!TestTrue(TEXT("Broad-phase preserves rotated/scaled capsule fade"),
+                    FMath::IsNearlyEqual(Player->GetCameraBodyFade(View, Body), Expected, 1e-5f))) return false;
+            }
+            TestEqual(TEXT("Outer boundary is fully restored"), Player->GetCameraBodyFade(Center + Axis + Body->GetUpVector() * Outer, Body), 0.f);
+            TestEqual(TEXT("Capsule center is fully hidden"), Player->GetCameraBodyFade(Center, Body), 1.f);
+        }
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGCameraSettingsTest, "PG.Camera.SettingsPersistence",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FPGCameraSettingsTest::RunTest(const FString&)

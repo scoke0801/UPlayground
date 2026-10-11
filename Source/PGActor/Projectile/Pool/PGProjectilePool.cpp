@@ -33,7 +33,7 @@ APGPooledProjectile* UPGProjectilePool::RequestProjectile()
 	// 사용 가능한 투사체가 있으면 재사용
 	if (AvailableProjectiles.Num() > 0)
 	{
-		Projectile = AvailableProjectiles.Pop();
+		Projectile = AvailableProjectiles.Pop(EAllowShrinking::No);
 		
 		// 유효성 체크
 		if (!IsValid(Projectile))
@@ -62,7 +62,7 @@ void UPGProjectilePool::ReturnProjectile(APGPooledProjectile* Projectile)
 	if (!IsValid(Projectile)) return;
 
 	// 활성 목록에서 제거하고 사용 가능 목록으로 이동
-	if (ActiveProjectiles.Remove(Projectile) > 0)
+	if (ActiveProjectiles.RemoveSwap(Projectile, EAllowShrinking::No) > 0)
 	{
 		AvailableProjectiles.Add(Projectile);
 	}

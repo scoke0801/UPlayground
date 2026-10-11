@@ -64,6 +64,9 @@ private:
     FVector LastLight = FVector::ZeroVector;
     FVector LastForward = FVector::ZeroVector;
     FVector LastRight = FVector::ZeroVector;
+    FVector LastHeadCenter = FVector::ZeroVector;
+    bool bHeadFrameInitialized = false;
+    bool bLastHeadFrameValid = false;
     float LightRetrySeconds = 0.f;
     float QualitySeconds = 0.f;
     float LastDetailWeight = -1.f;

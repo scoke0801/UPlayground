@@ -176,10 +176,15 @@ def main():
     parser.add_argument('--sample', type=float, default=12)
     parser.add_argument('--width', type=int, default=1280)
     parser.add_argument('--height', type=int, default=720)
+    parser.add_argument('--history-percentage', type=int, choices=(100, 150, 200),
+                        help='Diagnostic TSR history override; does not save project settings')
+    parser.add_argument('--hzb-occlusion', type=int, choices=(0, 1),
+                        help='Diagnostic hardware-query/HZB comparison; does not save project settings')
     parser.add_argument('--lod-candidate', action='store_true')
     parser.add_argument('--fixed-lod', type=int, choices=(0, 1, 2),
                         help='Use the candidate mesh at this LOD for every ablation')
     parser.add_argument('--repeats-only', action='store_true', help='Three identical 50-character phases for CPU diagnosis')
+    parser.add_argument('--capture', action='store_true', help='Capture fixed poses after the first full phase, outside timing samples')
     parser.add_argument('--trace', action='store_true', help='Record CPU/frame trace with per-capture named regions')
     args = parser.parse_args()
     if args.lod_candidate and (args.fixed_lod is not None or args.repeats_only):
@@ -215,6 +220,10 @@ def main():
     if args.lod_candidate or args.fixed_lod is not None:
         sources += ['Content/Art/ToonTest/Advanced/Performance/SK_Inori_ToonLOD.uasset',
                     'Saved/ToonTest/performance_lod.json']
+    sources += ['Tools/Art/ToonTest/ToonShading.hlsl', 'Tools/Art/ToonTest/ToonScreenOutline.hlsl']
+    sources += [str(p.relative_to(ROOT)) for p in (ROOT/'Content/Art/ToonTest').rglob('M_*.uasset')]
+    if (ROOT/'Config/DefaultScalability.ini').exists():
+        sources.append('Config/DefaultScalability.ini')
     (out/'source_hashes.json').write_text(json.dumps({p: hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in sources}, indent=2))
     monitor = [dict(seconds=0, competitors=initial, gpu=gpu_sample())]
     started = time.monotonic()

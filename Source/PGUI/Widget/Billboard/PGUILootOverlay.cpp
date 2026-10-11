@@ -99,14 +99,18 @@ void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
     double BestPickupDistance=FMath::Square(Catalog->PickupRadius);
     struct FCandidate { APGLootDrop* Drop; const FPGItemDataRow* Def; double Distance; FVector2D Anchor; };
     TArray<FCandidate> Candidates;
+    Candidates.Reserve(CachedDrops.Num());
+    const FVector PlayerLocation = Player->GetActorLocation();
+    const double MaxLabelDistanceSquared = FMath::Square(FMath::Max(Settings->LootLabelDistance,Catalog->PickupRadius));
+    const bool bCanPickup = Player->IsGameplayInputAllowed();
     for (const auto& WeakDrop : CachedDrops)
     {
         auto* Drop=WeakDrop.Get();
         if (!IsValid(Drop) || !Drop->GetItem().Guid.IsValid()) continue;
         const auto* Def=Catalog->FindItem(Drop->GetItem().DefinitionId);
-        const double Distance=FVector::DistSquared(Player->GetActorLocation(),Drop->GetActorLocation());
-        if (!Def || Distance>FMath::Square(FMath::Max(Settings->LootLabelDistance,Catalog->PickupRadius))) continue;
-        if (Player->IsGameplayInputAllowed() && (Distance<BestPickupDistance ||
+        const double Distance=FVector::DistSquared(PlayerLocation,Drop->GetActorLocation());
+        if (!Def || Distance>MaxLabelDistanceSquared) continue;
+        if (bCanPickup && (Distance<BestPickupDistance ||
             (Distance==BestPickupDistance && (!Target || Drop->GetItem().Guid<Target->GetItem().Guid))))
         { BestPickupDistance=Distance; Target=Drop; }
         FVector2D Screen;
@@ -123,6 +127,7 @@ void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
         return A.Drop->GetItem().Guid<B.Drop->GetItem().Guid;
     });
     TArray<FSlateRect> Occupied;
+    Occupied.Reserve(FMath::Min(Entries.Num(), Candidates.Num()));
     for (const auto& Candidate : Candidates)
     {
         FVector2D Position;
@@ -149,11 +154,13 @@ void UPGUILootOverlay::Refresh(const FGeometry& Geometry)
 int32 UPGUILootOverlay::NativePaint(const FPaintArgs& Args,const FGeometry& Geometry,const FSlateRect& Culling,
     FSlateWindowElementList& Elements,int32 Layer,const FWidgetStyle& Style,bool bEnabled) const
 {
+    TArray<FVector2D> Points;
     for (const auto& Entry : Entries)
     {
         if (!Entry->bVisible) continue;
+        if (Points.IsEmpty()) Points.SetNumUninitialized(2);
         const FVector2D End(Entry->Position.X+GetDefault<UPGUIStyleSettings>()->LootLabelWidth*.5,Entry->Position.Y+48);
-        TArray<FVector2D> Points{Entry->Anchor,End};
+        Points[0]=Entry->Anchor; Points[1]=End;
         FSlateDrawElement::MakeLines(Elements,Layer,Geometry.ToPaintGeometry(),Points,ESlateDrawEffect::None,
             Entry->Color.CopyWithNewOpacity(Entry->bTarget ? .65f : .22f),true,1.f);
     }

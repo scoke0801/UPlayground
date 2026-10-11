@@ -72,6 +72,7 @@ void UPGToonPresentationComponent::Initialize(USkeletalMeshComponent* InMesh)
     RestoreMaterials();
     Mesh = InMesh;
     LastLight = LastForward = LastRight = FVector::ZeroVector;
+    bHeadFrameInitialized = false;
     LightRetrySeconds = 0.f;
     QualitySeconds = 0.f;
     LastDetailWeight = -1.f;
@@ -138,15 +139,25 @@ void UPGToonPresentationComponent::RefreshPresentation()
     if (HeadMaterials.IsEmpty() || (bDistant && HeadUpdateSeconds > 0.f))
         return;
     HeadUpdateSeconds = bDistant ? (1.f / 15.f) : 0.f;
-    const FTransform Head = Mesh->DoesSocketExist(HeadBone) ? Mesh->GetSocketTransform(HeadBone) : Mesh->GetComponentTransform();
+    const bool bHeadFrameValid = Mesh->DoesSocketExist(HeadBone);
+    const FTransform Head = bHeadFrameValid ? Mesh->GetSocketTransform(HeadBone) : Mesh->GetComponentTransform();
     const FVector Forward = Head.TransformVectorNoScale(HeadForwardAxis).GetSafeNormal(SMALL_NUMBER, FVector::ForwardVector);
     const FVector Right = Head.TransformVectorNoScale(HeadRightAxis).GetSafeNormal(SMALL_NUMBER, FVector::RightVector);
     // Position changes even without rotation. Keep the hair lighting volume
     // attached to the animated head during locomotion and world translation.
-    for (UMaterialInstanceDynamic* MID : HeadMaterials)
+    const FVector HeadCenter = Head.GetLocation();
+    const bool bCenterChanged = !bHeadFrameInitialized || HeadCenter != LastHeadCenter;
+    const bool bValidityChanged = !bHeadFrameInitialized || bHeadFrameValid != bLastHeadFrameValid;
+    if (bCenterChanged || bValidityChanged)
     {
-        MID->SetVectorParameterValue(TEXT("HairHeadCenterWS"), FLinearColor(Head.GetLocation()));
-        MID->SetScalarParameterValue(TEXT("HairHeadFrameValid"), Mesh->DoesSocketExist(HeadBone) ? 1.f : 0.f);
+        for (UMaterialInstanceDynamic* MID : HeadMaterials)
+        {
+            if (bCenterChanged) MID->SetVectorParameterValue(TEXT("HairHeadCenterWS"), FLinearColor(HeadCenter));
+            if (bValidityChanged) MID->SetScalarParameterValue(TEXT("HairHeadFrameValid"), bHeadFrameValid ? 1.f : 0.f);
+        }
+        LastHeadCenter = HeadCenter;
+        bLastHeadFrameValid = bHeadFrameValid;
+        bHeadFrameInitialized = true;
     }
     if (!Forward.Equals(LastForward, .0001) || !Right.Equals(LastRight, .0001))
     {

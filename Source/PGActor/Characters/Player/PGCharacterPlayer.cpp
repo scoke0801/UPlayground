@@ -587,11 +587,17 @@ float APGCharacterPlayer::GetCameraBodyFade(const FVector& ViewLocation, const U
     const UPGQuarterViewData* Data = QuarterViewData ? QuarterViewData.Get() : GetDefault<UPGQuarterViewData>();
     const UCapsuleComponent* Capsule = Body ? Body : GetCapsuleComponent();
     const float Radius = Capsule->GetScaledCapsuleRadius();
-    const FVector Axis = Capsule->GetUpVector() * FMath::Max(0.f, Capsule->GetScaledCapsuleHalfHeight() - Radius);
+    const float HalfSegment = FMath::Max(0.f, Capsule->GetScaledCapsuleHalfHeight() - Radius);
     const FVector Center = Capsule->GetComponentLocation();
-    const float Distance = FMath::Sqrt(FMath::PointDistToSegmentSquared(ViewLocation, Center - Axis, Center + Axis));
     const float Inner = Radius + FMath::Max(0.f, Data->CameraBodyClearance);
-    return 1.f - FMath::SmoothStep(Inner, Inner + FMath::Max(1.f, Data->CameraBodyFadeDistance), Distance);
+    const float Outer = Inner + FMath::Max(1.f, Data->CameraBodyFadeDistance);
+    // Conservative sphere contains the expanded capsule, including rotated bodies.
+    if (FVector::DistSquared(ViewLocation, Center) >= FMath::Square(Outer + HalfSegment)) return 0.f;
+    const FVector Axis = Capsule->GetUpVector() * HalfSegment;
+    const float DistanceSquared = FMath::PointDistToSegmentSquared(ViewLocation, Center - Axis, Center + Axis);
+    if (DistanceSquared >= FMath::Square(Outer)) return 0.f;
+    if (DistanceSquared <= FMath::Square(Inner)) return 1.f;
+    return 1.f - FMath::SmoothStep(Inner, Outer, FMath::Sqrt(DistanceSquared));
 }
 
 bool APGCharacterPlayer::ShouldHideForCamera(const FVector& ViewLocation, bool bWasHidden) const
@@ -753,10 +759,13 @@ bool APGCharacterPlayer::CanStartSkill(bool bDodge) const
     const UAnimInstance* Anim = GetMesh()->GetAnimInstance();
     if (!Anim) return false;
     const UAnimMontage* Montage = Anim->GetCurrentActiveMontage();
-    if (!Montage || bSkillWindowOpen) return true;
+    if (!Montage) return true;
+    // Legacy combo notifies must not let another attack interrupt this montage.
+    if (!bDodge) return false;
+    if (bSkillWindowOpen) return true;
     const float Length = Montage->GetPlayLength();
     const float Remaining = Length > 0.f ? (Length - Anim->Montage_GetPosition(Montage)) / Length : 0.f;
-    return Remaining <= (bDodge ? DodgeCancelFraction : AttackCancelFraction);
+    return Remaining <= DodgeCancelFraction;
 }
 void APGCharacterPlayer::SetSkillCancelPolicy(float AttackFraction, float DodgeFraction)
 {

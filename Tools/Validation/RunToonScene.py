@@ -27,7 +27,7 @@ def main():
             '-nosound','-nop4','-unattended','-culture=en','-csvGpuStats','-csvAllCategoriesDisabled','-csvCategories=Basic,Global,GPU',
             '-DisablePlugins=RiderLink','-ddc=InstalledNoZenLocalFallback',
             '-PGTestProfile=ToonScene_'+out.name+'_'+mode,'-UserDir='+str(dest/'User'),'-abslog='+str(dest/'scene.log'),
-            '-ExecCmds=PGToonSceneProbe']
+            '-ExecCmds=r.TSR.History.ScreenPercentage,r.HZBOcclusion,PGToonSceneProbe']
         if mode=='action':command+=['-PGToonActionCamera']
         code,timeout=run_process(command,ROOT,dest/'stdout.log',240)
         log=read_text(dest/'scene.log')
@@ -37,6 +37,8 @@ def main():
         data=metrics(csvs[0])
         assert all(data.get(k,{}).get('samples',0)>500 for k in ['FrameTime','GPUTime','GameThreadTime','RenderThreadTime']),data
         row=dict(camera=mode,status='PASS',command=[str(c) for c in command],csv=str(csvs[0]),metrics=data,
+            tsr_history=re.findall(r'r\.TSR\.History\.ScreenPercentage\s*=\s*"([0-9.]+)"',log),
+            hzb_occlusion=re.findall(r'r\.HZBOcclusion\s*=\s*"([0-9.]+)"',log),
             workload=re.findall(r'PGToonScene PASS[^\r\n]+',log))
         report['cameras'].append(row)
         (out/'report.json').write_text(json.dumps(report,indent=2),encoding='utf-8')

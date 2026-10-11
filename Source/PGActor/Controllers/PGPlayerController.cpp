@@ -56,11 +56,12 @@ void APGPlayerController::UpdateHiddenComponents(const FVector& ViewLocation, TS
     }
     if (CameraHiddenPlayer.Get() != ViewCharacter) ResetCameraFade();
     CameraHiddenPlayer = ViewCharacter;
-    TSet<TWeakObjectPtr<UMeshComponent>> CurrentMeshes;
+    TSet<TWeakObjectPtr<UMeshComponent>, DefaultKeyFuncs<TWeakObjectPtr<UMeshComponent>>, TInlineSetAllocator<32>> CurrentMeshes;
+    TArray<AActor*> Actors;
     auto FadeCharacter = [&](ACharacter* Subject, float Fade)
     {
         if (Fade <= 0.f) return;
-        TArray<AActor*> Actors;
+        Actors.Reset();
         Subject->GetAttachedActors(Actors, true, true);
         Actors.Add(Subject);
         for (AActor* Actor : Actors)

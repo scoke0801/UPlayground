@@ -94,6 +94,7 @@ private:
     friend class FPGDodgeDirectionTest;
     friend class FPGCameraModesTest;
     friend class FPGCameraCollisionTest;
+    friend class FPGCameraFadeBoundsTest;
     FVector MoveInputDirection = FVector::ZeroVector;
     bool bTrackAttackAim = false;
     UPROPERTY(Transient) TObjectPtr<class UPGPlayerLocomotionData> LocomotionData;

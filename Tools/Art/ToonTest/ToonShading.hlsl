@@ -26,11 +26,25 @@ rim *= lerp(1.0, smoothstep(0.0, .65, saturate(dot(N, L))), saturate(RimLightMas
 rim *= step(0.0, FaceSign);
 float3 rimTint = lerp(RimColor, RimColor * base, saturate(RimBaseBlend));
 
+float spec = 0.0;
+float3 specTint = 0.0.xxx;
+// Material-instance controls are uniform across a draw. Non-specular skin and
+// cloth do not need half-vector, tangent lobes, powers or their derivatives.
+[branch] if (SpecularStrength > 0.0)
+{
 float3 H = L + V;
 H *= rsqrt(max(dot(H, H), 1e-6));
-float tangentH = dot(HairTangentWS * rsqrt(max(dot(HairTangentWS, HairTangentWS), 1e-6)), H);
-float strandSpec = pow(sqrt(saturate(1.0 - tangentH * tangentH)), max(SpecularPower, 1.0));
-float spec = lerp(pow(saturate(dot(N, H)), max(SpecularPower, 1.0)), strandSpec, saturate(HairAnisotropy));
+float anisotropy = saturate(HairAnisotropy);
+float normalSpec = 0.0;
+float strandSpec = 0.0;
+[branch] if (anisotropy < 1.0)
+    normalSpec = pow(saturate(dot(N, H)), max(SpecularPower, 1.0));
+[branch] if (anisotropy > 0.0)
+{
+    float tangentH = dot(HairTangentWS * rsqrt(max(dot(HairTangentWS, HairTangentWS), 1e-6)), H);
+    strandSpec = pow(sqrt(saturate(1.0 - tangentH * tangentH)), max(SpecularPower, 1.0));
+}
+spec = lerp(normalSpec, strandSpec, anisotropy);
 float hw = max(max(SpecularSoftness, 0.0), max(fwidth(spec), 1e-4));
 // Hair keeps a continuous lobe: a second hard threshold magnifies tangent seams
 // and turns each low-poly lock into a separate reflective plate.
@@ -39,8 +53,9 @@ spec = lerp(smoothstep(SpecularThreshold - hw, SpecularThreshold + hw, spec), sp
 float specLight = lerp(litWeight, smoothstep(0.0, .8, lighting), hairSoft);
 spec *= specLight * step(0.0, FaceSign);
 // Preserve dark hair hue instead of laying a near-white stripe over black locks.
-float3 specTint = SpecularTint * lerp(1.0.xxx, max(sqrt(saturate(base)), .25.xxx), hairSoft);
+specTint = SpecularTint * lerp(1.0.xxx, max(sqrt(saturate(base)), .25.xxx), hairSoft);
 spec *= saturate(ToonDetailWeight);
+}
 rim *= lerp(.5, 1.0, saturate(ToonDetailWeight));
 // Separate outputs keep lighting-independent art accents and state feedback out
 // of Default Lit's albedo. Unlit still uses the complete original expression.
