@@ -27,7 +27,10 @@ protected:
     void StrikeElitePattern();
     void FinishElitePattern();
     void UpdatePattern();
-    void UpdateAim();
+    void UpdateAim(float DeltaSeconds = 0.f);
+    void BeginMotionSwing();
+    void BeginMotionSettle();
+    void SetMotionSegment(float StartFraction, float EndFraction, double StartAt, double EndAt);
     void ShowTelegraph(const FVector& Center, bool bLine, bool bRecovery = false);
     void BeginRecovery();
     void BeginProfile();
@@ -54,6 +57,8 @@ protected:
     UPROPERTY(Transient) FPGSkillDataRow EliteData;
     FTimerHandle PatternTimer;
     FTimerHandle UpdateTimer;
+    FTimerHandle MotionTimer;
+    double RecoveryStartedAt = 0;
     TWeakObjectPtr<AActor> PatternTarget;
     TArray<TWeakObjectPtr<AActor>> ActiveProjectiles;
     FVector PatternOrigin = FVector::ZeroVector;

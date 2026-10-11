@@ -11,12 +11,15 @@ from PlayableCharacterTransaction import restore,write_json
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--apply',action='store_true');parser.add_argument('--runtime',action='store_true');parser.add_argument('--render',action='store_true');parser.add_argument('--automation',action='store_true')
     parser.add_argument('--motions',action='store_true')
+    parser.add_argument('--encounter-only',action='store_true',help='Validate the retained boss without requiring it in the stage-six roster')
     args=parser.parse_args()
+    if args.encounter_only and args.apply:parser.error('--encounter-only cannot author the stage roster')
     out=ROOT/'Saved/QA'/('HumanoidBoss_'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f'))
     out.mkdir(parents=True);os.environ['PG_HUMANOID_RUN']=str(out)
     version=json.loads(read_text(ROOT/'UPlayground.uproject'))['EngineAssociation']
     engine=Path(os.environ.get('ProgramFiles','C:/Program Files'))/'Epic Games'/('UE_'+version)/'Engine/Binaries/Win64'
     flags=['-unattended','-nop4','-nosound','-culture=ko','-DisablePlugins=RiderLink','-ddc=InstalledNoZenLocalFallback','-EnablePlugins=PythonScriptPlugin','-UserDir='+str(out/'User'),'-PGTestProfile='+out.name]
+    if args.encounter_only:flags.append('-PGHumanoidEncounterOnly')
     script=str(ROOT/'Tools/Validation/ConfigureHumanoidBoss.py')
     cases=[]
     if args.apply:cases.append(('apply','UnrealEditor-Cmd.exe',['-nullrhi','-run=pythonscript','-script='+script],'PGHumanoidBoss APPLY PASS'))

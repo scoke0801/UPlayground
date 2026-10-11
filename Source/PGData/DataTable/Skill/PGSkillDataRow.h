@@ -6,6 +6,7 @@
 #include "PGShared/Shared/Enum/PGSkillEnumTypes.h"
 #include "PGAttackPattern.h"
 #include "PGData/Combat/PGEnemyAttackProfile.h"
+#include "PGData/Combat/PGEnemyMotionTempo.h"
 #include "PGSkillDataRow.generated.h"
 
 USTRUCT(BlueprintType)
@@ -113,6 +114,9 @@ public:
     float HalfAngleDegrees = 65.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="0"))
     float AimTrackingSeconds = 0.f;
+    // Zero preserves legacy facing. Positive values bound turning during anticipation only.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="0"))
+    float AimTurnRate = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="1"))
     float TravelDistance = 650.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pattern", meta=(ClampMin="1"))
@@ -162,6 +166,8 @@ public:
     bool bSyncMontageToPattern = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph", meta=(ClampMin="0.01", ClampMax="0.99"))
     float ImpactMontageFraction = .5f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph")
+    FPGEnemyMotionTempo MotionTempo;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph", meta=(ClampMin="0"))
     float ImpactVFXScale = 1.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Telegraph")
@@ -178,7 +184,10 @@ public:
             MinimumActivationRange >= GetPatternActivationRange() ||
             !FMath::IsFinite(SelectionWeight) || SelectionWeight < 0.f ||
             AttackPressureCost < 1 || AttackPressureCost > 3) return false;
-        if (!FMath::IsFinite(ImpactVFXScale) || ImpactVFXScale < 0.f) return false;
+        if (!FMath::IsFinite(ImpactVFXScale) || ImpactVFXScale < 0.f || !FMath::IsFinite(AimTurnRate) || AimTurnRate < 0.f) return false;
+        if (!MotionTempo.IsValid(WindupMontageFraction, ImpactMontageFraction, TelegraphDuration, RecoveryDuration)) return false;
+        if (MotionTempo.bEnabled && (!bSyncMontageToPattern || ElitePresentationMontage.IsNull() || !EnemyProfile.IsNull() ||
+            (Pattern != EPGAttackPattern::Sweep && Pattern != EPGAttackPattern::Thrust))) return false;
         if (bSyncMontageToPattern && (!FMath::IsFinite(WindupMontageFraction) ||
             !FMath::IsFinite(ImpactMontageFraction) || WindupMontageFraction < 0.f ||
             ImpactMontageFraction <= WindupMontageFraction || ImpactMontageFraction >= 1.f)) return false;

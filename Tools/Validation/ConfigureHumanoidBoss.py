@@ -147,6 +147,8 @@ def contact(values,definition,montages):
         inner_radius=definition.get('inner_radius',260),damage_multiplier=multiplier,bHeavyImpact=key in ('Combo3','Counter','Ring'),
         montage=montages[key],start_fraction=0.,contact_fraction=SPEC['contact_fractions'][key],end_fraction=SPEC['end_fractions'][key]).items():
         x.set_editor_property(prop,value)
+    x.set_editor_property('swing_start_fraction',definition.get('swing_start_fraction',0.))
+    x.set_editor_property('swing_seconds',definition.get('swing_seconds',0.))
     return x
 
 def apply():
@@ -179,7 +181,9 @@ def apply():
             factory=unreal.DataAssetFactory();factory.set_editor_property('data_asset_class',unreal.PGEnemyAttackProfile)
             profile=own('DA_'+d['profile'],unreal.PGEnemyAttackProfile,factory)
             primary=[contact(v,d,montages) for v in d['contacts']]
-            profile.set_editor_property('contacts',primary)
+            final_primary=[contact(v,d,montages) for v in d['contacts']]
+            if 'final_end_fraction' in d:final_primary[-1].set_editor_property('end_fraction',d['final_end_fraction'])
+            profile.set_editor_property('contacts',final_primary)
             profile.set_editor_property('phase_two_contacts',primary+[contact(v,d,montages) for v in d['phase_two_contacts']] if 'phase_two_contacts' in d else [])
             profile.set_editor_property('guard_counter',d.get('guard',False))
             if d.get('guard'):
@@ -262,7 +266,7 @@ def validate(validate_stage=True):
                 contacts=profile.get_editor_property(prop);assert len(contacts)==len(expected)
                 for hit,values in zip(contacts,expected):
                     start,time,key,multiplier,radius,angle=values
-                    for field,value in [('motion_start',start),('time',time),('damage_multiplier',multiplier),('radius',radius),('half_angle',angle),('contact_fraction',SPEC['contact_fractions'][key]),('end_fraction',SPEC['end_fractions'][key])]:
+                    for field,value in [('motion_start',start),('time',time),('damage_multiplier',multiplier),('radius',radius),('half_angle',angle),('contact_fraction',SPEC['contact_fractions'][key]),('end_fraction',d.get('final_end_fraction',SPEC['end_fractions'][key]) if prop=='contacts' and values==expected[-1] else SPEC['end_fractions'][key]),('swing_start_fraction',d.get('swing_start_fraction',0.)),('swing_seconds',d.get('swing_seconds',0.))]:
                         assert abs(hit.get_editor_property(field)-value)<1.e-5,(d['id'],field)
                     assert hit.get_editor_property('montage')==unreal.load_asset(DEST+'/AM_'+key)
     hashfile=RUN/'source-hashes.json'
@@ -284,5 +288,6 @@ def validate(validate_stage=True):
     unreal.log('PGHumanoidBoss VALIDATION PASS')
 
 if __name__=='__main__':
-    if '-PGHumanoidValidate' in unreal.SystemLibrary.get_command_line():validate()
+    if '-PGHumanoidValidate' in unreal.SystemLibrary.get_command_line():
+        validate(validate_stage='-PGHumanoidEncounterOnly' not in unreal.SystemLibrary.get_command_line())
     else:apply()

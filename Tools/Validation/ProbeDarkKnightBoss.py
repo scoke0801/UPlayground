@@ -14,7 +14,7 @@ started=time.monotonic();stopped=None;phase='setup';at=0.;index=0
 boss=player=None;origin=None;cast_at=0.;health_before=0.;locked=None
 cases=[('sweep',15611,250,False),('uppercut',15612,300,False),('double',15613,250,False),
        ('uppercut_side_safe',15612,300,True),('fury',15614,220,False)]
-report=dict(status='RUNNING',assisted=True,direct_input=False,saved_stage_roster=STAGE_ROSTER,cases=[],samples=[])
+report=dict(status='RUNNING',assisted=True,direct_input=False,saved_stage_roster=STAGE_ROSTER,cases=[],samples=[],motion_samples=[])
 
 def console(world,text):unreal.SystemLibrary.execute_console_command(world,text)
 def attr(actor,name):
@@ -48,6 +48,13 @@ def tick(dt):
     if not world:return
     t=unreal.GameplayStatics.get_time_seconds(world)
     try:
+        if boss and phase in ('windup','recover','end') and boss.get_editor_property('pattern_active'):
+            anim=boss.mesh.get_anim_instance();montage=anim.get_current_active_montage()
+            if montage:
+                hand=boss.mesh.get_socket_location('hand_r')
+                report['motion_samples'].append(dict(case=cases[index][0],time=t-cast_at,
+                    montage=montage.get_path_name(),position=anim.montage_get_position(montage),rate=anim.montage_get_play_rate(montage),
+                    hand=[hand.x,hand.y,hand.z],recovering=boss.get_editor_property('pattern_recovering')))
         if phase=='setup':
             player=unreal.GameplayStatics.get_player_pawn(world,0)
             if not player or now-started<5:return
@@ -100,6 +107,9 @@ def tick(dt):
         if phase=='end':
             if boss.get_editor_property('pattern_active'):return
             assert not controller.try_execute_skill(15612),'Minimum recovery wait skipped'
+            if label=='double':
+                bridge=[s for s in report['motion_samples'] if s['case']==label and 1.2<s['time']<1.65]
+                assert bridge and all(1.4<s['rate']<1.55 for s in bridge),'Compressed combo connection returned'
             report['cases'].append(dict(label=label,skill=sid,damage=health_before-attr(player,'CurrentHealth'),elapsed=t-cast_at))
             index+=1
             phase='start' if index<len(cases) else 'death_start';at=t+.65;return

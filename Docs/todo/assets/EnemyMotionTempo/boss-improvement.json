@@ -1,0 +1,113 @@
+{
+  "status": "PASS",
+  "saved_profiles": "Saved/QA/BossMotionTempo_20261011T090913778619",
+  "dark_runtime": "Saved/DarkKnightBoss/20261011T091228",
+  "dark_cases": [
+    {
+      "label": "sweep",
+      "skill": 15611,
+      "damage": 160.0,
+      "elapsed": 2.416701592504978
+    },
+    {
+      "label": "uppercut",
+      "skill": 15612,
+      "damage": 300.0,
+      "elapsed": 2.9289494082331657
+    },
+    {
+      "label": "double",
+      "skill": 15613,
+      "damage": 352.0,
+      "elapsed": 4.303852699697018
+    },
+    {
+      "label": "uppercut_side_safe",
+      "skill": 15612,
+      "damage": 0.0,
+      "elapsed": 2.9058634974062443
+    },
+    {
+      "label": "fury",
+      "skill": 15614,
+      "damage": 288.0,
+      "elapsed": 4.322824794799089
+    }
+  ],
+  "dark_autonomous": [
+    15611,
+    15612,
+    15613,
+    15614
+  ],
+  "humanoid_render": "Saved\\QA\\HumanoidBoss_20261011T090956074020",
+  "humanoid_cases": [
+    {
+      "label": "combo1",
+      "skill": 15401,
+      "damage": 224.0,
+      "elapsed": 2.9837770983576775
+    },
+    {
+      "label": "thrust",
+      "skill": 15402,
+      "damage": 240.0,
+      "elapsed": 1.8261400945484638
+    },
+    {
+      "label": "guard_success",
+      "skill": 15404,
+      "damage": 176.0,
+      "elapsed": 2.57859268784523
+    },
+    {
+      "label": "charge",
+      "skill": 15403,
+      "damage": 224.0,
+      "elapsed": 3.8703244999051094
+    },
+    {
+      "label": "combo2",
+      "skill": 15401,
+      "damage": 384.0,
+      "elapsed": 4.315235987305641
+    },
+    {
+      "label": "ring_safe",
+      "skill": 15405,
+      "damage": 0.0,
+      "elapsed": 3.4651970975100994
+    },
+    {
+      "label": "ring_hit",
+      "skill": 15405,
+      "damage": 208.0,
+      "elapsed": 3.4677979983389378
+    },
+    {
+      "label": "guard_fail",
+      "skill": 15404,
+      "damage": 0.0,
+      "elapsed": 3.470425095409155
+    }
+  ],
+  "rates": {
+    "dark_double_bridge_before": 3.7168,
+    "dark_double_bridge_after": 1.474920392,
+    "dark_double_second_windup_after": 1.46034646,
+    "humanoid_thrust_swing_after": 0.800000131,
+    "humanoid_combo_recovery_after": 0.722361087
+  },
+  "humanoid_autonomous": [
+    15401,
+    15402,
+    15404,
+    15405
+  ],
+  "reaction_regression": "Saved/QA/MotionExpansion_20261011T085940214199",
+  "automation": "Saved/QA/HumanoidBoss_20261011T085942396320/Automation",
+  "editor_exit_codes": {
+    "dark": 0,
+    "humanoid": 0
+  }
+}

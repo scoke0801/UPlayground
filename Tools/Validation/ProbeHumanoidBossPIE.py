@@ -13,7 +13,7 @@ level=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem);assert level.load
 assert unreal.PGEditorProbeTools.begin_play_window()
 started=time.monotonic();stopped=None;phase='setup';at=0.;index=0
 player=boss=None;origin=None;cast_at=0.;health_before=0.;locked=None
-report=dict(status='RUNNING',assisted=True,direct_input=False,cases=[],samples=[])
+report=dict(status='RUNNING',assisted=True,direct_input=False,cases=[],samples=[],motion_samples=[])
 cases=[('combo1',15401,250),('thrust',15402,400),('guard_success',15404,250),('charge',15403,700),
        ('combo2',15401,250),('ring_safe',15405,160),('ring_hit',15405,450),('guard_fail',15404,250)]
 
@@ -29,10 +29,12 @@ def capture(world,label):
     if render:assert unreal.PGEditorProbeTools.capture_game_viewport(world,(OUT/(label+'.png')).as_posix()),'Empty game capture: '+label
 
 def position(distance):
-    player.set_actor_location(origin,False,True)
+    # Keep the long charge lane inside the arena instead of placing its start in a wall.
+    offset=distance*.5 if distance>550 else 0.
+    player.set_actor_location(unreal.Vector(origin.x+offset,origin.y,origin.z),False,True)
     half=boss.capsule_component.get_scaled_capsule_half_height()
     ground=origin.z-player.capsule_component.get_scaled_capsule_half_height()
-    boss.set_actor_location_and_rotation(unreal.Vector(origin.x-distance,origin.y,ground+half),unreal.Rotator(),False,True)
+    boss.set_actor_location_and_rotation(unreal.Vector(origin.x+offset-distance,origin.y,ground+half),unreal.Rotator(),False,True)
 
 def finish(error=None):
     global stopped
@@ -53,6 +55,11 @@ def tick(dt):
     if not world:return
     t=unreal.GameplayStatics.get_time_seconds(world)
     try:
+        if boss and phase in ('windup','recover','end') and boss.get_editor_property('pattern_active'):
+            anim=boss.mesh.get_anim_instance();montage=anim.get_current_active_montage()
+            if montage:
+                report['motion_samples'].append(dict(case=cases[index][0],time=t-cast_at,
+                    position=anim.montage_get_position(montage),rate=anim.montage_get_play_rate(montage)))
         if phase=='setup':
             player=unreal.GameplayStatics.get_player_pawn(world,0)
             if not player or now-started<5:return
@@ -64,6 +71,8 @@ def tick(dt):
             found=[e for e in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.PGCharacterEnemy) if e.get_editor_property('character_tid')==15401]
             if not found:return
             boss=found[0];boss.get_controller().set_combat_thinking_enabled(False)
+            if player.get_editor_property('character_movement').is_falling():return
+            origin=player.get_actor_location()
             for w in unreal.WidgetLibrary.get_all_widgets_of_class(world,unreal.UserWidget,True):
                 if not isinstance(w,unreal.PGUIMainHUD):w.remove_from_parent()
             position(250)
@@ -119,6 +128,11 @@ def tick(dt):
         if phase=='end':
             if boss.get_editor_property('pattern_active'):return
             assert not controller.try_execute_skill(15402),'Post-recovery wait was skipped'
+            samples=[s for s in report['motion_samples'] if s['case']==label]
+            if label=='thrust':
+                assert any(.61<s['time']<.79 and abs(s['rate']-.8)<.02 for s in samples),'Missing accelerated thrust'
+            if label=='combo1':
+                assert any(1.85<s['time']<2.75 and .70<s['rate']<.75 for s in samples),'Recovery clip was truncated'
             report['cases'].append(dict(label=label,skill=sid,damage=health_before-attr(player,'CurrentHealth'),elapsed=t-cast_at))
             index+=1
             if index<len(cases):phase='start';at=t+.6;return
@@ -133,16 +147,24 @@ def tick(dt):
             assert any(isinstance(w,unreal.PGUIWindowRewardSelect) and w.is_in_viewport() for w in unreal.WidgetLibrary.get_all_widgets_of_class(world,unreal.UserWidget,True)),'Missing victory results'
             console(world,'PGProfileStatus');console(world,'PGBossEncounter 15401');phase='restart';at=t+1;return
         if phase=='restart':
+            if player.get_editor_property('character_movement').is_falling():return
             fresh=[e for e in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.PGCharacterEnemy) if e.get_editor_property('character_tid')==15401 and e!=boss]
             if not fresh:return
             boss=fresh[0];boss.get_controller().set_combat_thinking_enabled(False)
+            origin=player.get_actor_location()
             assert boss.get_editor_property('boss_phase')==1 and not boss.get_editor_property('guarding')
             capture(world,'restart');position(250)
             unreal.log('PGHumanoidProbe Autonomous BEGIN')
+            console(world,'pg.AI.DebugDecisions 1');console(world,'pg.AI.DebugEnemyID 15401')
             console(world,'PGBossDamage '+str(attr(boss,'CurrentHealth')-attr(boss,'MaxHealth')*.49))
             boss.get_controller().set_combat_thinking_enabled(True)
             report['autonomous_skills']=[];cast_at=t;phase='autonomous';at=t+1.4;return
         if phase=='autonomous':
+            # Reactive guard requires observed player casts, not a stationary passive target.
+            if t>=report.get('next_player_cast',0):
+                player.set_actor_rotation(unreal.Rotator(),False)
+                console(world,'PGMotionExpansionCast 118')
+                report['next_player_cast']=t+1.8
             if t-cast_at<25:return
             log=(OUT/'runtime.log').read_text(encoding='utf-8-sig',errors='replace').split('PGHumanoidProbe Autonomous BEGIN')[-1]
             report['autonomous_skills']=sorted(set(map(int,re.findall(r'PGPattern Windup skill=(154\d+)',log))))

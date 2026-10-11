@@ -165,7 +165,18 @@ def tick(dt):
             hand=visual.get_socket_transform('hand_r',unreal.RelativeTransformSpace.RTS_WORLD)
             contact=unreal.MathLibrary.transform_location(hand,unreal.Vector(*SPEC['grips'][definitions[eid]['sex']]['translation']))
             error=(contact-gear.get_world_location()).length();assert error<1.,(eid,'grip contact',error)
-            samples.append(dict(time=t-cast_at,points=points,grip_error=error))
+            anim=enemy.mesh.get_anim_instance()
+            montage=unreal.load_asset(row['ElitePresentationMontage'])
+            samples.append(dict(time=t-cast_at,points=points,grip_error=error,
+                                position=anim.montage_get_position(montage),
+                                rate=anim.montage_get_play_rate(montage),
+                                health=attr(player,'CurrentHealth'),yaw=enemy.get_actor_rotation().yaw))
+            if '-PGEnemyTempoEvidence' in command:
+                duration=row['TelegraphDuration']+row['RecoveryDuration']
+                frame=int((t-cast_at)/duration*24)
+                label='tempo_'+str(frame).zfill(2)
+                if 0<=frame<24 and label not in captured:
+                    capture(world,str(eid)+'_'+str(sid)+'_'+label);captured.add(label)
             for label,fraction in [('windup',.55),('impact',1.02)]:
                 if label not in captured and t-cast_at>=row['TelegraphDuration']*fraction:
                     if label=='windup':
@@ -180,7 +191,22 @@ def tick(dt):
             delta=max(math.dist(s['points']['hand_r'],samples[0]['points']['hand_r']) for s in samples)
             assert delta>2.,(eid,sid,'montage clock without moving hand',delta)
             assert not enemy.get_editor_property('pattern_recovering')
-            report['casts'].append(dict(enemy=eid,skill=sid,damage=damage,hand_delta=delta,samples=samples))
+            tempo_evidence=None
+            tempo=row.get('MotionTempo',{})
+            if tempo.get('bEnabled'):
+                length=montage.get_play_length();impact=row['ImpactMontageFraction']
+                expected_rates=[length*(tempo['SwingStartFraction']-row['WindupMontageFraction'])/(row['TelegraphDuration']-tempo['SwingSeconds']),
+                                length*(impact-tempo['SwingStartFraction'])/tempo['SwingSeconds'],
+                                length*(tempo['SettleStartFraction']-impact)/tempo['FollowThroughSeconds'],
+                                length*(1-tempo['SettleStartFraction'])/(row['RecoveryDuration']-tempo['FollowThroughSeconds'])]
+                for rate in expected_rates:
+                    assert any(abs(s['rate']-rate)<.01 for s in samples),(eid,sid,'missing motion phase',rate)
+                first_hit=next(s['time'] for s in samples if s['health']<health_before-.01)
+                assert first_hit>=row['TelegraphDuration']-.03,(eid,sid,'damage moved before warning end',first_hit)
+                gaps=[b['time']-a['time'] for a,b in zip(samples,samples[1:])]
+                assert first_hit<=row['TelegraphDuration']+max(gaps,default=0)+.08,(eid,sid,'late damage',first_hit)
+                tempo_evidence=dict(expected_rates=expected_rates,first_hit=first_hit,warning=row['TelegraphDuration'])
+            report['casts'].append(dict(enemy=eid,skill=sid,damage=damage,hand_delta=delta,samples=samples,tempo=tempo_evidence))
             unreal.log('PGP09Weapons CAST '+str(eid)+' '+str(sid))
             index+=1
             if index==len(cases):

@@ -72,7 +72,15 @@
         "MinimumActivationRange": 0,
         "EnemyDamageMultiplier": 1.0,
         "bHeavyImpactFeedback": false
-      }
+      },
+      "tempo": {
+        "bEnabled": true,
+        "SwingStartFraction": 0.06,
+        "SwingSeconds": 0.12,
+        "SettleStartFraction": 0.6,
+        "FollowThroughSeconds": 0.32
+      },
+      "aim_turn_rate": 240
     },
     {
       "id": 15752,
@@ -96,7 +104,15 @@
         "MinimumActivationRange": 0,
         "EnemyDamageMultiplier": 1.1,
         "bHeavyImpactFeedback": false
-      }
+      },
+      "tempo": {
+        "bEnabled": true,
+        "SwingStartFraction": 0.17,
+        "SwingSeconds": 0.17,
+        "SettleStartFraction": 0.7,
+        "FollowThroughSeconds": 0.36
+      },
+      "aim_turn_rate": 240
     },
     {
       "id": 15753,
@@ -120,7 +136,15 @@
         "MinimumActivationRange": 0,
         "EnemyDamageMultiplier": 1.4,
         "bHeavyImpactFeedback": true
-      }
+      },
+      "tempo": {
+        "bEnabled": true,
+        "SwingStartFraction": 0.06,
+        "SwingSeconds": 0.14,
+        "SettleStartFraction": 0.6,
+        "FollowThroughSeconds": 0.36
+      },
+      "aim_turn_rate": 210
     },
     {
       "id": 15754,
@@ -141,7 +165,15 @@
         "MinimumActivationRange": 0,
         "EnemyDamageMultiplier": 1.25,
         "bHeavyImpactFeedback": true
-      }
+      },
+      "tempo": {
+        "bEnabled": true,
+        "SwingStartFraction": 0.06,
+        "SwingSeconds": 0.16,
+        "SettleStartFraction": 0.55,
+        "FollowThroughSeconds": 0.42
+      },
+      "aim_turn_rate": 180
     },
     {
       "id": 15755,
@@ -162,7 +194,15 @@
         "MinimumActivationRange": 0,
         "EnemyDamageMultiplier": 1.3,
         "bHeavyImpactFeedback": true
-      }
+      },
+      "tempo": {
+        "bEnabled": true,
+        "SwingStartFraction": 0.08,
+        "SwingSeconds": 0.15,
+        "SettleStartFraction": 0.65,
+        "FollowThroughSeconds": 0.36
+      },
+      "aim_turn_rate": 180
     },
     {
       "id": 15756,
@@ -183,7 +223,15 @@
         "MinimumActivationRange": 0,
         "EnemyDamageMultiplier": 1.65,
         "bHeavyImpactFeedback": true
-      }
+      },
+      "tempo": {
+        "bEnabled": true,
+        "SwingStartFraction": 0.15,
+        "SwingSeconds": 0.2,
+        "SettleStartFraction": 0.65,
+        "FollowThroughSeconds": 0.42
+      },
+      "aim_turn_rate": 150
     },
     {
       "id": 15757,

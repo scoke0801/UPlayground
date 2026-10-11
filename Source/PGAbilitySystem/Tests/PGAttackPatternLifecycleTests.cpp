@@ -16,6 +16,7 @@
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "TimerManager.h"
+#include "Animation/AnimMontage.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGAttackPatternLifecycleTest, "PG.Content.PatternLifecycle", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FPGAttackPatternLifecycleTest::RunTest(const FString&)
@@ -132,11 +133,35 @@ bool FPGAttackPatternLifecycleTest::RunTest(const FString&)
     for (const auto& Bolt : Bolts)
         TestTrue(TEXT("Cancel removes every remaining fan projectile"), !Bolt.IsValid() || Bolt->IsActorBeingDestroyed());
     Row.Pattern = EPGAttackPattern::Sweep;
+    Row.bSyncMontageToPattern = true;
+    Row.WindupMontageFraction = 0.f;
+    Row.ElitePresentationMontage = NewObject<UAnimMontage>();
+    Row.MotionTempo.bEnabled = true;
+    Row.MotionTempo.SwingSeconds = .2f;
+    Row.AimTrackingSeconds = .99f;
+    Row.AimTurnRate = 180.f;
+    Enemy->SetActorRotation(FRotator::ZeroRotator);
+    Player->SetActorLocation(FVector(0,150,90));
     Start();
+    TestTrue(TEXT("Tempo schedules its swing without changing the damage timer"), World->GetTimerManager().TimerExists(Ability->MotionTimer));
+    TestTrue(TEXT("Activation no longer snaps toward a side target"), FMath::IsNearlyZero(Enemy->GetActorRotation().Yaw));
+    Ability->UpdateAim(.02f);
+    TestTrue(TEXT("Anticipation facing is bounded in degrees per second"), FMath::IsNearlyEqual(Enemy->GetActorRotation().Yaw, 3.6f, .01f));
+    const FVector SwingFacing = Ability->PatternForward;
+    Ability->PatternStartedAt = World->GetTimeSeconds() - .9;
+    Ability->UpdatePattern();
+    TestTrue(TEXT("Tracking ends before the swing even with a longer tracking window"), Ability->PatternForward.Equals(SwingFacing));
+    Source->CancelAbilityHandle(Handle);
+    TestFalse(TEXT("Cancel removes the pending swing/settle timer"), World->GetTimerManager().TimerExists(Ability->MotionTimer));
+    Ability->BeginMotionSwing(); Ability->BeginMotionSettle();
+    TestFalse(TEXT("Late presentation callbacks cannot reactivate an attack"), Enemy->bPatternActive);
+    Start(); Ability->BeginRecovery();
+    TestTrue(TEXT("Recovery schedules stance restoration"), World->GetTimerManager().TimerExists(Ability->MotionTimer));
     Source->SetNumericAttributeBase(UPGAtrributeSet::GetCurrentHealthAttribute(), 0.f);
     Ability->UpdatePattern();
     TestFalse(TEXT("Source death cancels its sequence"), Enemy->bPatternActive);
     TestFalse(TEXT("Source death clears delayed hits"), World->GetTimerManager().TimerExists(Ability->PatternTimer));
+    TestFalse(TEXT("Source death also clears presentation timers"), World->GetTimerManager().TimerExists(Ability->MotionTimer));
     TestEqual(TEXT("Dead attacker never delivers the queued hit"), Target->GetHealth(), 900.f);
     World->DestroyWorld(false);
     GEngine->DestroyWorldContext(World);

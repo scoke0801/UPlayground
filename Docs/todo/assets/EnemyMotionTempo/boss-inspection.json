@@ -1,0 +1,473 @@
+{
+  "bosses": [
+    {
+      "enemy": 15106,
+      "name": "황혼의 기사",
+      "skills": [
+        {
+          "id": 15106,
+          "name": "황혼 횡베기",
+          "pattern": "Sweep",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [],
+          "presentation_path": "/Game/DataCenter/CombatCycle/AM_EliteSlam_Presentation.AM_EliteSlam_Presentation"
+        },
+        {
+          "id": 15107,
+          "name": "황혼 돌진 강타",
+          "pattern": "ChargeSlam",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [],
+          "presentation_path": "/Game/DataCenter/CombatCycle/AM_EliteSlam_Presentation.AM_EliteSlam_Presentation"
+        },
+        {
+          "id": 15108,
+          "name": "황혼 파동",
+          "pattern": "HazardSequence",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [],
+          "presentation_path": "/Game/DataCenter/CombatCycle/AM_EliteSlam_Presentation.AM_EliteSlam_Presentation"
+        },
+        {
+          "id": 15109,
+          "name": "황혼의 일식",
+          "pattern": "RingBurst",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [],
+          "presentation_path": "/Game/DataCenter/CombatCycle/AM_EliteSlam_Presentation.AM_EliteSlam_Presentation"
+        }
+      ]
+    },
+    {
+      "enemy": 15401,
+      "name": "월식의 검성",
+      "skills": [
+        {
+          "id": 15401,
+          "name": "초승연참",
+          "pattern": "Sweep",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [
+            {
+              "phase": 1,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 0.8500000238418579,
+                  "start_fraction": 0.0,
+                  "contact_fraction": 0.3160000145435333,
+                  "end_fraction": 0.38999998569488525,
+                  "montage": "/Game/DataCenter/HumanoidBoss/AM_Combo1.AM_Combo1",
+                  "length": 1.2666666507720947,
+                  "windup_rate": 0.4709019633395446,
+                  "follow_rate": 0.937333291371653,
+                  "follow_seconds": 0.09999996423721313,
+                  "blend_in": 0.11999999731779099
+                },
+                {
+                  "motion_start": 0.949999988079071,
+                  "time": 1.75,
+                  "start_fraction": 0.0,
+                  "contact_fraction": 0.25699999928474426,
+                  "end_fraction": 0.41999998688697815,
+                  "montage": "/Game/DataCenter/HumanoidBoss/AM_Combo2.AM_Combo2",
+                  "length": 1.1666666269302368,
+                  "windup_rate": 0.37479164727342656,
+                  "follow_rate": 0.15847220477130716,
+                  "follow_seconds": 1.2000000000000002,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            },
+            {
+              "phase": 2,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 0.8500000238418579,
+                  "start_fraction": 0.0,
+                  "contact_fraction": 0.3160000145435333,
+                  "end_fraction": 0.38999998569488525,
+                  "montage": "/Game/DataCenter/HumanoidBoss/AM_Combo1.AM_Combo1",
+                  "length": 1.2666666507720947,
+                  "windup_rate": 0.4709019633395446,
+                  "follow_rate": 0.937333291371653,
+                  "follow_seconds": 0.09999996423721313,
+                  "blend_in": 0.11999999731779099
+                },
+                {
+                  "motion_start": 0.949999988079071,
+                  "time": 1.75,
+                  "start_fraction": 0.0,
+                  "contact_fraction": 0.25699999928474426,
+                  "end_fraction": 0.41999998688697815,
+                  "montage": "/Game/DataCenter/HumanoidBoss/AM_Combo2.AM_Combo2",
+                  "length": 1.1666666269302368,
+                  "windup_rate": 0.37479164727342656,
+                  "follow_rate": 0.9508330019315898,
+                  "follow_seconds": 0.20000004768371582,
+                  "blend_in": 0.11999999731779099
+                },
+                {
+                  "motion_start": 1.9500000476837158,
+                  "time": 2.950000047683716,
+                  "start_fraction": 0.0,
+                  "contact_fraction": 0.34200000762939453,
+                  "end_fraction": 0.8899999856948853,
+                  "montage": "/Game/DataCenter/HumanoidBoss/AM_Combo3.AM_Combo3",
+                  "length": 2.433333396911621,
+                  "windup_rate": 0.8322000403086349,
+                  "follow_rate": 0.9877530552472047,
+                  "follow_seconds": 1.350000023841858,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": 15402,
+          "name": "월영 찌르기",
+          "pattern": "Thrust",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [
+            {
+              "phase": 1,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 0.800000011920929,
+                  "start_fraction": 0.0,
+                  "contact_fraction": 0.30000001192092896,
+                  "end_fraction": 1.0,
+                  "montage": "/Game/DataCenter/HumanoidBoss/AM_Thrust.AM_Thrust",
+                  "length": 0.6666666865348816,
+                  "windup_rate": 0.25000001365939784,
+                  "follow_rate": 0.4666666726271309,
+                  "follow_seconds": 1.0,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": 15403,
+          "name": "월락 돌진",
+          "pattern": "ChargeSlam",
+          "aim_turn_rate": 0,
+          "synced": true,
+          "phases": [],
+          "windup_rate": 0.5217681344695714,
+          "follow_rate": 0.5858384046410069,
+          "presentation_path": "/Game/DataCenter/HumanoidBoss/AM_Charge.AM_Charge"
+        },
+        {
+          "id": 15404,
+          "name": "검막 반격",
+          "pattern": "Sweep",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [
+            {
+              "phase": 1,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 0.6499999761581421,
+                  "start_fraction": 0.0,
+                  "contact_fraction": 0.25999999046325684,
+                  "end_fraction": 0.699999988079071,
+                  "montage": "/Game/DataCenter/HumanoidBoss/AM_Counter.AM_Counter",
+                  "length": 1.6666666269302368,
+                  "windup_rate": 0.6666666507720947,
+                  "follow_rate": 0.586666649500529,
+                  "follow_seconds": 1.25,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            }
+          ],
+          "guard_seconds": {
+            "guard_start_seconds": 0.3700000047683716,
+            "guard_hold_seconds": 1.0,
+            "guard_accept_seconds": 0.27000001072883606,
+            "guard_end_seconds": 0.5699999928474426,
+            "counter_telegraph_seconds": 0.6499999761581421
+          }
+        },
+        {
+          "id": 15405,
+          "name": "원월 파동",
+          "pattern": "RingBurst",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [
+            {
+              "phase": 1,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 1.4500000476837158,
+                  "start_fraction": 0.0,
+                  "contact_fraction": 0.2840000092983246,
+                  "end_fraction": 1.0,
+                  "montage": "/Game/DataCenter/HumanoidBoss/AM_Ring.AM_Ring",
+                  "length": 2.4666666984558105,
+                  "windup_rate": 0.48312644293796814,
+                  "follow_rate": 0.8830666665792464,
+                  "follow_seconds": 2.0,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "enemy": 15601,
+      "name": "흑철의 처형자",
+      "skills": [
+        {
+          "id": 15611,
+          "name": "흑철 횡베기",
+          "pattern": "Sweep",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [
+            {
+              "phase": 1,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 1.100000023841858,
+                  "start_fraction": 0.18000000715255737,
+                  "contact_fraction": 0.375,
+                  "end_fraction": 0.7200000286102295,
+                  "montage": "/Game/DataCenter/DarkKnightBoss/AM_Sweep.AM_Sweep",
+                  "length": 5.866666793823242,
+                  "windup_rate": 1.0399999618530273,
+                  "follow_rate": 1.5569232397813093,
+                  "follow_seconds": 1.2999999999999998,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": 15612,
+          "name": "처형 올려베기",
+          "pattern": "Sweep",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [
+            {
+              "phase": 1,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 1.2999999523162842,
+                  "start_fraction": 0.2800000011920929,
+                  "contact_fraction": 0.47699999809265137,
+                  "end_fraction": 0.7200000286102295,
+                  "montage": "/Game/DataCenter/DarkKnightBoss/AM_Uppercut.AM_Uppercut",
+                  "length": 6.400000095367432,
+                  "windup_rate": 0.9698461886129446,
+                  "follow_rate": 0.972000136554243,
+                  "follow_seconds": 1.6,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": 15613,
+          "name": "검격과 분쇄",
+          "pattern": "Sweep",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [
+            {
+              "phase": 1,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 1.100000023841858,
+                  "start_fraction": 0.10000000149011612,
+                  "contact_fraction": 0.28200000524520874,
+                  "end_fraction": 0.41999998688697815,
+                  "montage": "/Game/DataCenter/DarkKnightBoss/AM_Double.AM_Double",
+                  "length": 6.733333110809326,
+                  "windup_rate": 1.1140605680821027,
+                  "follow_rate": 3.7167993827184205,
+                  "follow_seconds": 0.25,
+                  "blend_in": 0.11999999731779099
+                },
+                {
+                  "motion_start": 1.350000023841858,
+                  "time": 2.5,
+                  "start_fraction": 0.41999998688697815,
+                  "contact_fraction": 0.5870000123977661,
+                  "end_fraction": 0.8700000047683716,
+                  "montage": "/Game/DataCenter/DarkKnightBoss/AM_Double.AM_Double",
+                  "length": 6.733333110809326,
+                  "windup_rate": 0.9777972387741684,
+                  "follow_rate": 1.0586295661043248,
+                  "follow_seconds": 1.7999999999999998,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": 15614,
+          "name": "흑철 파쇄 연격",
+          "pattern": "Sweep",
+          "aim_turn_rate": 0,
+          "synced": false,
+          "phases": [
+            {
+              "phase": 1,
+              "contacts": [
+                {
+                  "motion_start": 0.0,
+                  "time": 1.0,
+                  "start_fraction": 0.23999999463558197,
+                  "contact_fraction": 0.39500001072883606,
+                  "end_fraction": 0.4399999976158142,
+                  "montage": "/Game/DataCenter/DarkKnightBoss/AM_Fury.AM_Fury",
+                  "length": 6.566666603088379,
+                  "windup_rate": 1.017833429157733,
+                  "follow_rate": 0.9849998599952927,
+                  "follow_seconds": 0.2999999523162842,
+                  "blend_in": 0.11999999731779099
+                },
+                {
+                  "motion_start": 1.2999999523162842,
+                  "time": 2.4000000953674316,
+                  "start_fraction": 0.4399999976158142,
+                  "contact_fraction": 0.6000000238418579,
+                  "end_fraction": 0.8600000143051147,
+                  "montage": "/Game/DataCenter/DarkKnightBoss/AM_Fury.AM_Fury",
+                  "length": 6.566666603088379,
+                  "windup_rate": 0.9551515382511839,
+                  "follow_rate": 0.8985964495675607,
+                  "follow_seconds": 1.9000000000000004,
+                  "blend_in": 0.11999999731779099
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dark_knight_runtime": {
+    "path": "Saved\\DarkKnightBoss\\20261011T080942",
+    "status": "PASS",
+    "cases": [
+      {
+        "label": "sweep",
+        "skill": 15611,
+        "damage": 160.0,
+        "elapsed": 2.418060589581728
+      },
+      {
+        "label": "uppercut",
+        "skill": 15612,
+        "damage": 200.0,
+        "elapsed": 2.9143458008766174
+      },
+      {
+        "label": "double",
+        "skill": 15613,
+        "damage": 296.0,
+        "elapsed": 4.424185212701559
+      },
+      {
+        "label": "uppercut_side_safe",
+        "skill": 15612,
+        "damage": 0.0,
+        "elapsed": 2.928150586783886
+      },
+      {
+        "label": "fury",
+        "skill": 15614,
+        "damage": 288.0,
+        "elapsed": 4.363219402730465
+      }
+    ],
+    "samples": 762,
+    "screenshots": 13
+  },
+  "humanoid_runtime": {
+    "path": "Saved/QA/HumanoidBoss_20261011T081249318033",
+    "status": "FAIL",
+    "cases": [
+      {
+        "label": "combo1",
+        "skill": 15401,
+        "damage": 224.0,
+        "elapsed": 2.975290298461914
+      },
+      {
+        "label": "thrust",
+        "skill": 15402,
+        "damage": 160.0,
+        "elapsed": 1.8116116002202034
+      },
+      {
+        "label": "guard_success",
+        "skill": 15404,
+        "damage": 176.0,
+        "elapsed": 2.578649301081896
+      },
+      {
+        "label": "charge",
+        "skill": 15403,
+        "damage": 224.0,
+        "elapsed": 3.8771466985344887
+      },
+      {
+        "label": "combo2",
+        "skill": 15401,
+        "damage": 384.0,
+        "elapsed": 4.35699750110507
+      },
+      {
+        "label": "ring_safe",
+        "skill": 15405,
+        "damage": 0.0,
+        "elapsed": 3.468170702457428
+      },
+      {
+        "label": "ring_hit",
+        "skill": 15405,
+        "damage": 208.0,
+        "elapsed": 3.4719723984599113
+      },
+      {
+        "label": "guard_fail",
+        "skill": 15404,
+        "damage": 0.0,
+        "elapsed": 3.4813218005001545
+      }
+    ],
+    "autonomous_skills": [
+      15401,
+      15402,
+      15405
+    ],
+    "error": "Traceback (most recent call last):\n  File \"C:/UsingProject/UnrealProject/UPlayground/Tools/Validation/ProbeHumanoidBossPIE.py\", line 149, in tick\n    assert {15401,15404,15405}.issubset(report['autonomous_skills']),report['autonomous_skills']\nAssertionError: [15401, 15402, 15405]\n"
+  }
+}

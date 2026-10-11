@@ -13,6 +13,7 @@ def main():
     parser.add_argument('--step', choices=['inspect', 'apply', 'validate', 'runtime', 'grips', 'dungeon', 'poses'], default='validate')
     parser.add_argument('--render', action='store_true')
     parser.add_argument('--enemy', type=int)
+    parser.add_argument('--tempo', action='store_true', help='Record attack timing and intermediate poses')
     args = parser.parse_args()
     out = ROOT/'Saved/QA'/('P09Weapons_'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f'))
     out.mkdir(parents=True)
@@ -24,6 +25,7 @@ def main():
              '-ddc=InstalledNoZenLocalFallback', '-EnablePlugins=PythonScriptPlugin',
              '-UserDir='+str(out/'User'), '-PGTestProfile='+out.name]
     if args.enemy: flags.append('-PGP09WeaponEnemy='+str(args.enemy))
+    if args.tempo: flags.append('-PGEnemyTempoEvidence')
     steps = [args.step, 'validate'] if args.step in ('apply','grips') else [args.step]
     results = []
     print(out, flush=True)

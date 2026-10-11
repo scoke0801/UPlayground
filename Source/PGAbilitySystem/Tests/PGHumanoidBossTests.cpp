@@ -19,6 +19,12 @@ bool FPGHumanoidBossDataTest::RunTest(const FString&)
     FPGEnemyAttackContact A, B; A.Time = .85f; B.Time = 1.75f; B.MotionStart = .95f;
     Profile->Contacts = {A, B};
     TestTrue(TEXT("Ordered contacts accepted"), Profile->IsValid());
+    Profile->Contacts[0].SwingStartFraction = .1f;
+    Profile->Contacts[0].SwingSeconds = .2f;
+    TestTrue(TEXT("Preparation and swing fit inside the contact warning"), Profile->IsValid());
+    Profile->Contacts[0].SwingSeconds = .85f;
+    TestFalse(TEXT("Swing must leave visible preparation"), Profile->IsValid());
+    Profile->Contacts[0].SwingSeconds = 0.f;
     Profile->Contacts[1].Time = .5f;
     TestFalse(TEXT("Unordered contacts rejected"), Profile->IsValid());
     Profile->Contacts = {A}; Profile->bGuardCounter = true;

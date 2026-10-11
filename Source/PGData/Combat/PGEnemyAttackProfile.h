@@ -24,6 +24,8 @@ struct PGDATA_API FPGEnemyAttackContact
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float StartFraction = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float ContactFraction = .5f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float EndFraction = 1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float SwingStartFraction = 0.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float SwingSeconds = 0.f;
 
     bool IsValid(float PreviousTime) const
     {
@@ -35,7 +37,10 @@ struct PGDATA_API FPGEnemyAttackContact
             FMath::IsFinite(InnerRadius) && InnerRadius >= 0.f && (Shape != EPGAttackPattern::RingBurst || (InnerRadius > 0.f && InnerRadius < Radius)) &&
             FMath::IsFinite(DamageMultiplier) && DamageMultiplier > 0.f &&
             FMath::IsFinite(StartFraction) && FMath::IsFinite(ContactFraction) && FMath::IsFinite(EndFraction) &&
-            StartFraction >= 0.f && StartFraction < ContactFraction && ContactFraction < EndFraction && EndFraction <= 1.f;
+            StartFraction >= 0.f && StartFraction < ContactFraction && ContactFraction < EndFraction && EndFraction <= 1.f &&
+            FMath::IsFinite(SwingSeconds) && SwingSeconds >= 0.f &&
+            (SwingSeconds == 0.f || (SwingSeconds >= .05f && SwingSeconds <= Time - MotionStart - .05f &&
+                FMath::IsFinite(SwingStartFraction) && SwingStartFraction > StartFraction && SwingStartFraction < ContactFraction));
     }
 };
 

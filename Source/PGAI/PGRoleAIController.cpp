@@ -316,12 +316,6 @@ void APGRoleAIController::RefreshCombatContext()
         TraceCombatDecision(TEXT("entrance_locked"));
         PendingSkill = 0; ReleaseAttackReservation(); StopMovement(); PublishCombatBlackboard(); return;
     }
-    if (Enemy->bPatternActive || Enemy->IsBossTransitioning() || GetWorld()->GetTimeSeconds() < Enemy->NextCombatActionAt)
-    {
-        TraceCombatDecision(Enemy->bPatternActive ? TEXT("pattern_locked") :
-            Enemy->IsBossTransitioning() ? TEXT("phase_transition") : TEXT("recovery_locked"));
-        PendingSkill = 0; StopMovement(); PublishCombatBlackboard(); return;
-    }
     auto* Tables = UPGDataTableManager::Get(this);
     const auto* Data = Tables ? Tables->GetRowData<FPGEnemyDataRow>(Enemy->GetCharacterTID()) : nullptr;
     auto* Handler = Enemy->GetSkillHandler();
@@ -334,6 +328,25 @@ void APGRoleAIController::RefreshCombatContext()
     const FVector Delta = Target->GetActorLocation() - Enemy->GetActorLocation();
     const float Distance = Delta.Size2D();
     const double Now = GetWorld()->GetTimeSeconds();
+    // Observe during attacks/recovery so their completion does not restart every reaction delay.
+    const bool bReactive = Data->bReactiveGuard || Data->bReactiveEvade;
+    if (bReactive) bCanSeeTarget = LineOfSightTo(Target);
+    if (bReactive && bCanSeeTarget && Distance <= FMath::Max(100.f, Data->ReactionRange))
+    {
+        const auto& Cast = Target->GetPlayerAttackComponent()->GetCastContext();
+        if (Cast && Cast->CastId != ObservedPlayerCast)
+        {
+            ObservedPlayerCast = Cast->CastId;
+            ReactionReadyAt = Now + FMath::Clamp(Data->ReactionDelay, .15f, 1.f);
+        }
+    }
+    if (Enemy->bPatternActive || Enemy->IsBossTransitioning() || GetWorld()->GetTimeSeconds() < Enemy->NextCombatActionAt)
+    {
+        TraceCombatDecision(Enemy->bPatternActive ? TEXT("pattern_locked") :
+            Enemy->IsBossTransitioning() ? TEXT("phase_transition") : TEXT("recovery_locked"));
+        PendingSkill = 0; StopMovement(); PublishCombatBlackboard(); return;
+    }
+    if (!bReactive) bCanSeeTarget = LineOfSightTo(Target);
     const float TargetSide = FVector::DotProduct(Enemy->GetActorRightVector(), Delta.GetSafeNormal2D());
     Enemy->SetActorRotation(FMath::RInterpConstantTo(Enemy->GetActorRotation(), Delta.GetSafeNormal2D().Rotation(), FMath::Max(.05f, DecisionInterval), FMath::Max(1.f, Data->TurnSpeed)));
     Enemy->SetGuarding(Data->Role == EPGEnemyRole::Guardian);
@@ -344,16 +357,6 @@ void APGRoleAIController::RefreshCombatContext()
     TMap<int32, float> Weights;
     float ReadyRange = 0.f;
     float NearestRange = TNumericLimits<float>::Max();
-    bCanSeeTarget = LineOfSightTo(Target);
-    if ((Data->bReactiveGuard || Data->bReactiveEvade) && bCanSeeTarget && Distance <= FMath::Max(100.f, Data->ReactionRange))
-    {
-        const auto& Cast = Target->GetPlayerAttackComponent()->GetCastContext();
-        if (Cast && Cast->CastId != ObservedPlayerCast)
-        {
-            ObservedPlayerCast = Cast->CastId;
-            ReactionReadyAt = Now + FMath::Clamp(Data->ReactionDelay, .15f, 1.f);
-        }
-    }
     if (TryReactiveEvade(*Data)) { bHoldPosition = true; PublishCombatBlackboard(); return; }
     for (int32 ID : Data->SkillIdList)
     {

@@ -60,6 +60,13 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     if (auto* AI = Cast<AAIController>(Enemy->GetController())) AI->StopMovement();
     UpdateAim();
     if (AttackProfile) { BeginProfile(); return; }
+    if (Row.MotionTempo.bEnabled)
+    {
+        const float AnticipationSeconds = Row.TelegraphDuration - Row.MotionTempo.SwingSeconds;
+        SetMotionSegment(Row.WindupMontageFraction, Row.MotionTempo.SwingStartFraction,
+            PatternStartedAt, PatternStartedAt + AnticipationSeconds);
+        GetWorld()->GetTimerManager().SetTimer(MotionTimer, this, &ThisClass::BeginMotionSwing, AnticipationSeconds, false);
+    }
     ShowTelegraph(StrikeCenter, Row.Pattern == EPGAttackPattern::ChargeSlam || Row.Pattern == EPGAttackPattern::AimedProjectile || Row.Pattern == EPGAttackPattern::Thrust);
     GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &ThisClass::UpdatePattern, .02f, true);
     GetWorld()->GetTimerManager().SetTimer(PatternTimer, this, &ThisClass::StrikeElitePattern, FMath::Max(.05f, Row.TelegraphDuration), false);
@@ -67,14 +74,16 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     Enemy->PublishBossPresentation();
 }
 
-void UPGEnemyAbilityAttack::UpdateAim()
+void UPGEnemyAbilityAttack::UpdateAim(float DeltaSeconds)
 {
     auto* Enemy = GetEnemyCharacterFromActorInfo();
     // Legacy slams keep the original facing and offset; new roles aim only during windup.
     if (EliteData.Pattern != EPGAttackPattern::LegacySlam && PatternTarget.IsValid())
     {
         const FVector Direction = (PatternTarget->GetActorLocation() - PatternOrigin).GetSafeNormal2D();
-        if (!Direction.IsNearlyZero()) PatternForward = Direction;
+        if (!Direction.IsNearlyZero())
+            PatternForward = EliteData.AimTurnRate > 0.f ?
+                FMath::RInterpConstantTo(PatternForward.Rotation(), Direction.Rotation(), DeltaSeconds, EliteData.AimTurnRate).Vector() : Direction;
         Enemy->SetActorRotation(PatternForward.Rotation());
     }
     switch (EliteData.Pattern)
@@ -165,9 +174,10 @@ void UPGEnemyAbilityAttack::UpdatePattern()
             GetWorld()->GetTimerManager().SetTimer(PatternTimer, this, &ThisClass::StrikeElitePattern, EliteData.LandingTelegraphSeconds, false);
         }
     }
-    else if (!bStriking && Now - PatternStartedAt < FMath::Min(EliteData.AimTrackingSeconds, EliteData.TelegraphDuration))
+    else if (!bStriking && Now - PatternStartedAt < FMath::Min(EliteData.AimTrackingSeconds,
+        EliteData.TelegraphDuration - (EliteData.MotionTempo.bEnabled ? EliteData.MotionTempo.SwingSeconds : 0.f)))
     {
-        UpdateAim();
+        UpdateAim(Delta);
         if (Telegraph)
         {
             Telegraph->SetWorldLocation(StrikeCenter);
@@ -309,7 +319,14 @@ void UPGEnemyAbilityAttack::BeginRecovery()
     GuardStage = AttackProfile && AttackProfile->bGuardCounter ? EGuardStage::Recovery : EGuardStage::None;
     Enemy->bPatternRecovering = true; Enemy->SetGuarding(false);
     Enemy->GetEnemyPresentation()->BeginRecovery();
-    if (EliteData.bSyncMontageToPattern)
+    RecoveryStartedAt = GetWorld()->GetTimeSeconds();
+    if (EliteData.MotionTempo.bEnabled)
+    {
+        SetMotionSegment(EliteData.ImpactMontageFraction, EliteData.MotionTempo.SettleStartFraction,
+            RecoveryStartedAt, RecoveryStartedAt + EliteData.MotionTempo.FollowThroughSeconds);
+        GetWorld()->GetTimerManager().SetTimer(MotionTimer, this, &ThisClass::BeginMotionSettle, EliteData.MotionTempo.FollowThroughSeconds, false);
+    }
+    else if (EliteData.bSyncMontageToPattern)
         if (auto* Anim = Enemy->GetMesh()->GetAnimInstance())
             if (auto* Montage = EliteData.ElitePresentationMontage.Get())
             {
@@ -327,7 +344,12 @@ void UPGEnemyAbilityAttack::FinishElitePattern() { EndAbility(CachedSpecHandle, 
 void UPGEnemyAbilityAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* Info,
     const FGameplayAbilityActivationInfo Activation, bool bReplicate, bool bCancelled)
 {
-    if (GetWorld()) { GetWorld()->GetTimerManager().ClearTimer(PatternTimer); GetWorld()->GetTimerManager().ClearTimer(UpdateTimer); }
+    if (GetWorld())
+    {
+        GetWorld()->GetTimerManager().ClearTimer(PatternTimer);
+        GetWorld()->GetTimerManager().ClearTimer(UpdateTimer);
+        GetWorld()->GetTimerManager().ClearTimer(MotionTimer);
+    }
     if (Telegraph) { Telegraph->DestroyComponent(); Telegraph = nullptr; }
     if (bCancelled) for (const auto& Projectile : ActiveProjectiles) if (Projectile.IsValid()) Projectile->Destroy();
     ActiveProjectiles.Reset();

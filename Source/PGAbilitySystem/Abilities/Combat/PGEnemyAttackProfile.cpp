@@ -74,15 +74,32 @@ void UPGEnemyAbilityAttack::UpdateProfileMotion()
     const auto& Hit = Contacts[Index];
     if (MotionIndex != Index)
     {
-        MotionIndex = Index; PlayProfileMontage(Hit.Montage.LoadSynchronous());
+        MotionIndex = Index;
+        auto* Montage = Hit.Montage.LoadSynchronous();
+        if (ProfileMontage != Montage) PlayProfileMontage(Montage);
     }
     if (!ProfileMontage) return;
     const float EndTime = Contacts.IsValidIndex(Index + 1) ? Contacts[Index + 1].MotionStart : Hit.Time + EliteData.RecoveryDuration;
-    const float Fraction = Time <= Hit.Time ?
-        FMath::Lerp(Hit.StartFraction, Hit.ContactFraction, FMath::Clamp((Time - Hit.MotionStart) / (Hit.Time - Hit.MotionStart), 0.f, 1.f)) :
-        FMath::Lerp(Hit.ContactFraction, Hit.EndFraction, FMath::Clamp((Time - Hit.Time) / FMath::Max(.01f, EndTime - Hit.Time), 0.f, 1.f));
+    float From = Hit.StartFraction, To = Hit.ContactFraction, Start = Hit.MotionStart, End = Hit.Time;
+    if (Time >= Hit.Time && ContactIndex > Index)
+    {
+        From = Hit.ContactFraction; To = Hit.EndFraction; Start = Hit.Time; End = EndTime;
+    }
+    else if (Hit.SwingSeconds > 0.f)
+    {
+        const float SwingAt = Hit.Time - Hit.SwingSeconds;
+        if (Time < SwingAt) { To = Hit.SwingStartFraction; End = SwingAt; }
+        else { From = Hit.SwingStartFraction; Start = SwingAt; }
+    }
+    const float Duration = FMath::Max(.01f, End - Start);
+    const float Fraction = FMath::Lerp(From, To, FMath::Clamp((Time - Start) / Duration, 0.f, 1.f));
     if (auto* Anim = GetEnemyCharacterFromActorInfo()->GetMesh()->GetAnimInstance())
+    {
+        // Correct the authoritative clock at AI ticks, but advance poses on every rendered frame.
         Anim->Montage_SetPosition(ProfileMontage, ProfileMontage->GetPlayLength() * Fraction);
+        Anim->Montage_SetPlayRate(ProfileMontage, Time >= End ? 0.f : ProfileMontage->GetPlayLength() * (To - From) / Duration);
+        Anim->Montage_Resume(ProfileMontage);
+    }
 }
 
 void UPGEnemyAbilityAttack::StrikeProfileContact()

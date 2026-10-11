@@ -187,6 +187,8 @@ def apply():
                    EnemyProfile='None',PlayerProfile='None',bSyncMontageToPattern=True,WindupMontageFraction=0.,ImpactMontageFraction=d['contact'],MinimumBossPhase=1,ChainSkillIdList=[],
                    AimTrackingSeconds=row['TelegraphDuration']*.25,RecoveryDamageBonus=.2)
         row['SelectionTuning'].update(PreferredRange=700. if d['family']=='Staff' and sid!=15759 else 240.,RangeFalloff=500.,RecentUseSeconds=6.)
+        if 'tempo' in d:
+            row.update(MotionTempo=d['tempo'], AimTurnRate=d['aim_turn_rate'])
         skills[sid]=row
     for d in SPEC['monsters']:
         eid=d['id'];tier=['Normal','Veteran','Elite'].index(d['grade']);source_id=15201 if d['sex']=='Female' else 15202
@@ -257,6 +259,9 @@ def validate():
         row=skills[d['id']]
         for key,value in d['patch'].items():assert abs(row[key]-value)<.0001 if isinstance(value,(int,float)) else row[key]==value,(d['id'],key)
         assert abs(row['ImpactMontageFraction']-d['contact'])<.0001
+        if 'tempo' in d:
+            assert abs(row['AimTurnRate']-d['aim_turn_rate'])<.0001
+            for key,value in d['tempo'].items():assert abs(row['MotionTempo'][key]-value)<.0001,(d['id'],key)
         clip=unreal.load_asset(DEST+'/Motion/AS_'+d.get('motion_key',str(d['id'])))
         assert not clip.get_editor_property('enable_root_motion') and not unreal.AnimationLibrary.get_animation_notify_events(clip)
         poses=[clip.get_anim_pose_at_time(clip.get_play_length()*f,unreal.AnimPoseEvaluationOptions()) for f in (0,.25,.5,.75)]

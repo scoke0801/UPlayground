@@ -156,7 +156,7 @@ def apply():
     for eid in [15504,15203,15204]:
         enemies[eid]['Positioning'].update(bEnabled=True,ReconsiderSeconds=1.2,Separation=150.,MaxMoveDistance=240.,MinimumImprovement=45.)
     enemies[15501]['bFlightOrbit']=True
-    enemies[15401].update(bPrioritizeGuard=False,GuardRepeatCooldown=14.,bReactiveGuard=True,ReactionDelay=.25,ReactionRange=500.)
+    enemies[15401].update(bPrioritizeGuard=True,GuardRepeatCooldown=14.,bReactiveGuard=True,ReactionDelay=.25,ReactionRange=500.)
     enemies[15204].update(bReactiveEvade=True,ReactionDelay=.3,ReactionRange=450.,EvadeCooldown=6.,EvadeDistance=180.,EvadeSeconds=.45,EvadeRecovery=.4)
     skills[15542]['Desc']='이동 식물 강한 물기' # Single confirmed contact, not a claimed multi-hit attack.
     for sid,preferred in [(15511,200),(15512,310),(15521,230),(15522,700),(15523,850)]:
@@ -199,7 +199,7 @@ def validate():
         am=unreal.load_asset(row['EntranceMontage']);assert am
         cdo=unreal.get_default_object(unreal.load_class(None,row['ActorClass']))
         assert am.get_editor_property('skeleton')==cdo.mesh.get_editor_property('skeletal_mesh_asset').get_editor_property('skeleton')
-    assert enemies[15401]['bReactiveGuard'] and not enemies[15401]['bPrioritizeGuard'] and enemies[15401]['GuardRepeatCooldown']>=14.
+    assert enemies[15401]['bReactiveGuard'] and enemies[15401]['bPrioritizeGuard'] and enemies[15401]['GuardRepeatCooldown']>=14.
     assert enemies[15204]['bReactiveEvade'] and enemies[15204]['EvadeCooldown']>=6. and enemies[15204]['EvadeRecovery']>=.39
     assert not enemies[15201]['bReactiveEvade'] and not enemies[15202]['bReactiveEvade']
     if (OUT/'before.json').exists():
