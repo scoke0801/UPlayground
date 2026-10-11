@@ -343,7 +343,8 @@ def validate():
             assert enemies[eid]['SkillIdList']==grade['skills'] and enemies[eid]['EnemyName']==grade['title']
     for creature in SPEC['creatures']:
         eid=creature['id']
-        assert enemies[eid]['SkillIdList']==creature['skills']
+        from MotionExpansionContracts import enemy_skills
+        assert enemies[eid]['SkillIdList']==enemy_skills(eid,creature['skills'])
         assert all(stats[eid][k]==v for k,v in creature['stats'].items())
         if creature['key']!='Golem':
             # Matching skeletons alone do not establish model-local provenance.

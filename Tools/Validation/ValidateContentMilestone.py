@@ -96,5 +96,14 @@ def validate_content_milestone(enemies, skills, stages):
         from ConfigureDarkKnightBoss import validate as validate_dark_knight
         validate_dark_knight()
         schema = 6
+    from MotionExpansionContracts import installed
+    if installed():
+        from ConfigureMotionExpansion import validate as validate_expansion
+        validate_expansion()
+        schema = 7
+    if unreal.EditorAssetLibrary.does_asset_exist('/Game/DataCenter/P09Weapons/BP_15701'):
+        from ConfigureP09Weapons import validate as validate_p09_weapons
+        validate_p09_weapons()
+        schema = 8
     unreal.log('PGContent VALIDATION PASS ' + json.dumps(dict(schema=schema, roles=5, boss_attacks=4 if variety else 3 if schema==2 else 0, waves=15, wave_counts=expected)))
     return schema

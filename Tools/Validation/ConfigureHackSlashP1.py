@@ -10,6 +10,7 @@ import unreal
 from ConfigureAttackMotion import configure_montage_blend
 
 ROOT = Path(unreal.Paths.project_dir()).resolve()
+SFX_SPEC = json.loads((ROOT/'Tools/Validation/Data/ExternalSFX.json').read_text(encoding='utf-8'))
 DEST = '/Game/DataCenter/HackSlashP1'
 SPEC = json.loads((ROOT/'Tools/Validation/HackSlashP1.json').read_text(encoding='utf-8'))
 BACKUP = ROOT/'Saved/Backups/HackSlashP1'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
@@ -56,7 +57,7 @@ for item in SPEC['skills']:
         'early_dodge_until':item['early_dodge'],'attack_cancel':item['attack'],'attack_speed':1.,'frenzy_per_cast_cap':3,
         'projectile_speed':1800.,'projectile_range':1000.,'projectile_lifetime':.7,'movement_segments':moves,'hit_phases':phases,
         'pose_keys':[props(unreal.PGPlayerPoseKey(),{'time':t,'montage_seconds':m}) for t,m in pose],
-        'slash_material':unreal.load_asset('/Game/DataCenter/HackSlashP0/M_PlayerSlash'),'swing_sound':unreal.load_asset('/Game/DataCenter/CombatCycle/S_Normal')})
+        'slash_material':unreal.load_asset('/Game/DataCenter/HackSlashP0/M_PlayerSlash'),'swing_sound':unreal.load_asset('/Game/ExternalAssets/Sound/SFX/'+SFX_SPEC['player_swings'][str(item['id'])])})
     save(profile)
     by_id[item['id']].update(PlayerProfile=profile.get_path_name(),SkillCoolTime=item['cooldown'],Desc=item['name'])
     mapping.append({'skill':item['id'],'montage':montage.get_path_name(),'length':length,'pose':pose,'continuous_review_complete':False})

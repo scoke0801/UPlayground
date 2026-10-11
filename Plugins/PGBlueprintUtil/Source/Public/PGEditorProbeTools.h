@@ -10,6 +10,12 @@ class PGBLUEPRINTUTIL_API UPGEditorProbeTools : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 public:
+    /** Temporary fixture actor, restricted to PIE worlds; never edits a level asset. */
+    UFUNCTION(BlueprintCallable, Category="PG|QA")
+    static AActor* SpawnPlayActor(UWorld* World, TSubclassOf<AActor> ActorClass, FTransform Transform);
+    /** Compose project-owned clips; recalculates section links and duration after replacing segments. */
+    UFUNCTION(BlueprintCallable, Category="PG|QA")
+    static bool ConfigureMotionMontage(class UAnimMontage* Montage, const TArray<class UAnimSequence*>& Clips);
     /** Creates navigation data for a newly authored editor world; never saves it. */
     UFUNCTION(BlueprintCallable, Category="PG|Editor")
     static class AActor* EnsureEditorNavigation(UWorld* World, class ANavMeshBoundsVolume* Bounds);

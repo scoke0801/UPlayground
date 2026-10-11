@@ -1,4 +1,38 @@
 #include "PGEditorProbeTools.h"
+#include "Engine/World.h"
+#include "GameFramework/Actor.h"
+
+AActor* UPGEditorProbeTools::SpawnPlayActor(UWorld* World, TSubclassOf<AActor> ActorClass, FTransform Transform)
+{
+    if (!World || World->WorldType != EWorldType::PIE || !ActorClass) return nullptr;
+    FActorSpawnParameters Params;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    return World->SpawnActor<AActor>(ActorClass, Transform, Params);
+}
+#include "Animation/AnimMontage.h"
+#include "Animation/AnimSequence.h"
+
+bool UPGEditorProbeTools::ConfigureMotionMontage(UAnimMontage* Montage, const TArray<UAnimSequence*>& Clips)
+{
+    if (!Montage || Clips.IsEmpty()) return false;
+    for (const auto* Clip : Clips)
+        if (!Clip || Clip->GetSkeleton() != Montage->GetSkeleton() || Clip->GetPlayLength() <= 0.f) return false;
+    Montage->Modify();
+    Montage->SlotAnimTracks.Reset();
+    auto& Track = Montage->SlotAnimTracks.AddDefaulted_GetRef(); Track.SlotName = TEXT("DefaultSlot");
+    float Offset = 0.f;
+    for (auto* Clip : Clips)
+    {
+        auto& Segment = Track.AnimTrack.AnimSegments.AddDefaulted_GetRef();
+        Segment.SetAnimReference(Clip); Segment.StartPos = Offset; Segment.AnimStartTime = 0.f;
+        Segment.AnimEndTime = Clip->GetPlayLength(); Segment.AnimPlayRate = 1.f; Segment.LoopingCount = 1;
+        Offset += Clip->GetPlayLength();
+    }
+    Montage->CompositeSections.Reset(); Montage->Notifies.Reset();
+    Montage->SetCompositeLength(Offset); Montage->AddAnimCompositeSection(TEXT("Default"), 0.f);
+    Montage->PostEditChange(); Montage->MarkPackageDirty();
+    return FMath::IsNearlyEqual(Montage->GetPlayLength(), Offset, .001f);
+}
 #include "Editor.h"
 #include "PlayInEditorDataTypes.h"
 #include "Settings/LevelEditorPlaySettings.h"

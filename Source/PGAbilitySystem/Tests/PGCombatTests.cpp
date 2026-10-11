@@ -132,7 +132,17 @@ bool FPGInputBufferTest::RunTest(const FString& Parameters)
     ASC->ClearBufferedInput(); // Shared UI, focus-loss, profile and death cleanup.
     ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
     TestFalse(TEXT("Input cleanup requires a fresh press to resume"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+    ASC->ClearBufferedInput();
+    // Remove the dodge ability so a fresh press genuinely waits in the buffer.
+    ASC->ClearAbility(DodgeHandle);
+    ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Roll);
     ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Normal);
+    TestTrue(TEXT("Attack hold is remembered while a dodge is pending"), ASC->bNormalAttackHeld);
+    TestEqual(TEXT("Attack press preserves the pending dodge"), ASC->BufferedInput, FGameplayTag(PGGamePlayTags::InputTag_Roll));
+    ASC->BufferExpiresAt = World->GetTimeSeconds() - 1.;
+    ASC->RetryBufferedInput();
+    ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
+    TestTrue(TEXT("Held attack resumes when pending dodge expires"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
     ASC->CancelAbilityHandle(Handle);
     ASC->bRepeatNormalAttackWhileHeld = false;
     ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);

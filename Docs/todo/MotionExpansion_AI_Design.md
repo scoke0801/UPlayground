@@ -1,8 +1,10 @@
 # 보유 모션 활용과 스킬 및 몬스터 AI 확장 기획
 
-2026-10-10. 상태: 목록 대조 및 작업 방향 기획 완료, 신규 전투 기능 구현 전.
+P3 후속 구현: 창병·대검병·술사 18종의 무기·등급·모션·스폰 연결은 [P09 구현 보고서](P09WeaponVariations_Implementation_Report.md)를 따른다. 아래 최초 기획의 도약·고공 전이 범위와 구분한다.
 
-후속 개선: P0 AI 행동 선택 진단을 추가했다. 적용 범위·사용법·검증 상태는 [AI 개선 기록](MotionExpansion_AI_Implementation_Report.md)을 따른다. 신규 모션 채택과 전투 기능 구현은 별도 단계다.
+2026-10-10 최초 기획. 후속 구현 상태는 [모션·AI 개선 기록](MotionExpansion_AI_Implementation_Report.md)을 기준으로 한다.
+
+후속 개선: P0 진단에 이어 플레이어 3스킬, 생물형 추가 공격·각성/등장, 상황 선택과 제한된 반응 AI를 구현했다. 아래 수치는 최초 기획값이며 실제 연결·검증·미완료 범위는 개선 기록을 따른다. 전체 후보와 실제 채택 목록은 계속 구분한다.
 
 후속 요청으로 [Dark Knight 보스 제작](DarkKnightBoss_Implementation_Report.md)을 진행하고, [Art 전체 애니메이션 사용 후보 목록](ArtAnimation_UsageCatalog.md)을 추가했다. 아래는 최초 확장 기획이며 보스의 실제 적용 상태는 후속 제작 기록을 따른다.
 
@@ -167,4 +169,4 @@
 
 [기존 플레이어 기획](../Design/MotionBasedSkills/PlayerSkills_Design.md), [몬스터 기획](../Design/MotionBasedSkills/MonsterSkills_Design.md), [검성 설계](../Design/HumanoidBoss/HumanoidBoss_Design.md)는 모션 후보와 초기 의도를 참고한다. 이후 구현된 검성 반격·신규 생물형·방향 이동을 재개발 목록에 중복 포함하지 않는다. 이전 문서의 액티브 슬롯 설명과 수치 표는 실제 저장 데이터 및 최신 적용 스크립트와 다시 대조한다. 특히 기초 HackSlash JSON만으로 후속 다단 접점·VFX 적용 상태까지 판단하지 않는다.
 
-이번 변경은 이 기획, 정적 목록 생성기와 목록 결과에 한정한다. C++·게임 에셋·전투 수치는 수정하지 않았으며 신규 기능 빌드/플레이 테스트 결과를 주장하지 않는다.
+최초 기획 작성 시에는 이 문서와 정적 목록만 변경했다. 이후 C++·게임 에셋의 구현과 검증 결과는 [모션·AI 개선 기록](MotionExpansion_AI_Implementation_Report.md)에 별도로 누적한다.

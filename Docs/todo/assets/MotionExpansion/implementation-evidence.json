@@ -1,0 +1,380 @@
+{
+  "status": "VERIFIED_IMPLEMENTED_SCOPE",
+  "scope": "P0/P1 and implemented P2; P3 weapon/high-air/leap candidates remain unadopted",
+  "paths": {
+    "apply": "Saved/QA/MotionExpansion_20261010T112632736719",
+    "runtime": "Saved/QA/MotionExpansion_20261010T113126999117",
+    "audit": "Saved/QA/MotionExpansion_20261010T113803805748",
+    "qa": "Saved/QA/20261010T115022Z_cb28ebd6",
+    "performance": "Saved/QA/MotionExpansion_20261010T114148391900"
+  },
+  "candidate_count": 207,
+  "adopted_bindings": 19,
+  "unique_sources": 19,
+  "player": [
+    {
+      "skill": 116,
+      "counter_success": false,
+      "damage": 278.125,
+      "travel": [
+        -156.11530596879743,
+        256.1795721720491,
+        0.0
+      ]
+    },
+    {
+      "skill": 117,
+      "counter_success": false,
+      "damage": 244.75,
+      "travel": [
+        114.48426118821385,
+        -187.86453301056667,
+        0.0
+      ]
+    },
+    {
+      "skill": 118,
+      "counter_success": true,
+      "damage": 367.125,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "skill": 118,
+      "counter_success": false,
+      "damage": 0.0,
+      "travel": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "enemy_skills": [
+    15513,
+    15310,
+    15311,
+    15312,
+    15313
+  ],
+  "entrances": [
+    {
+      "enemy": 15501,
+      "observed_lock": true
+    },
+    {
+      "enemy": 15502,
+      "observed_lock": true
+    },
+    {
+      "enemy": 15503,
+      "observed_lock": true
+    },
+    {
+      "enemy": 15504,
+      "observed_lock": true
+    }
+  ],
+  "autonomous": [
+    {
+      "skill": 15513,
+      "selected": [
+        15511,
+        15512,
+        15513
+      ]
+    },
+    {
+      "skill": 15310,
+      "selected": [
+        15302,
+        15303,
+        15310
+      ]
+    },
+    {
+      "skill": 15311,
+      "selected": [
+        15306,
+        15307,
+        15311
+      ]
+    },
+    {
+      "skill": 15312,
+      "selected": [
+        15304,
+        15312
+      ]
+    },
+    {
+      "skill": 15313,
+      "selected": [
+        15304,
+        15305,
+        15312,
+        15313
+      ]
+    }
+  ],
+  "reaction": {
+    "count": 1,
+    "travel": 117.13595226221689,
+    "repeat_blocked": true
+  },
+  "automation": {
+    "succeeded": 49,
+    "succeededWithWarnings": 11,
+    "failed": 0,
+    "notRun": 0,
+    "inProcess": 0
+  },
+  "limitations": [
+    "Assisted PIE, not direct-input balance acceptance",
+    "No 20-minute packaged soak",
+    "No pre-change performance baseline",
+    "Dormant pose listed as saved reference verification",
+    "Current PIE frame p95 exceeds the 60fps budget; performance acceptance is not passed"
+  ],
+  "preserved_inventories": {
+    "art-animation-inventory.csv": {
+      "rows": 17376,
+      "sha256": "3ebe4c1719db4245122866d6cae9af0e58b7668a377a4a32d277ea83153546ff"
+    },
+    "dark-knight-use-manifest.csv": {
+      "rows": 12,
+      "sha256": "34e146cefb665a72c3cd2b6f7423a2c85fe40813457eae7bfec8d284a4af88cf"
+    }
+  },
+  "performance": {
+    "status": "CAPTURED",
+    "phases": [
+      {
+        "authored_population": 5,
+        "live_enemies": 10,
+        "csv": "C:\\UsingProject\\UnrealProject\\UPlayground\\Saved\\QA\\MotionExpansion_20261010T114148391900\\User\\Saved\\Profiling\\CSV\\motion_MotionExpansion_20261010T114148391900_5.csv",
+        "metrics": {
+          "GPUMem/LocalUsedMB": {
+            "samples": 954,
+            "mean": 4935.582192662474,
+            "median": 4933.6367,
+            "p95": 4965.6367,
+            "p99": 4965.6367,
+            "maximum": 4965.6367
+          },
+          "FrameTime": {
+            "samples": 954,
+            "mean": 10.486830922431865,
+            "median": 10.2507,
+            "p95": 12.6445,
+            "p99": 15.103,
+            "maximum": 24.3981,
+            "budget_exceedances": [
+              {
+                "threshold_ms": 16.666666666666668,
+                "count": 2,
+                "percent": 0.20964360587002095
+              },
+              {
+                "threshold_ms": 33.333333333333336,
+                "count": 0,
+                "percent": 0.0
+              },
+              {
+                "threshold_ms": 50,
+                "count": 0,
+                "percent": 0.0
+              },
+              {
+                "threshold_ms": 100,
+                "count": 0,
+                "percent": 0.0
+              }
+            ]
+          },
+          "RenderThreadTime": {
+            "samples": 954,
+            "mean": 0.0021274633123689727,
+            "median": 0.0019,
+            "p95": 0.0028,
+            "p99": 0.0035,
+            "maximum": 0.0624
+          },
+          "GameThreadTime": {
+            "samples": 954,
+            "mean": 10.44019716981132,
+            "median": 10.28195,
+            "p95": 12.376,
+            "p99": 13.7258,
+            "maximum": 22.5208
+          },
+          "GPUTime": {
+            "samples": 954,
+            "mean": 8.562279035639413,
+            "median": 8.8156,
+            "p95": 9.89,
+            "p99": 10.8099,
+            "maximum": 17.3553
+          }
+        },
+        "position_requests": 3
+      },
+      {
+        "authored_population": 20,
+        "live_enemies": 25,
+        "csv": "C:\\UsingProject\\UnrealProject\\UPlayground\\Saved\\QA\\MotionExpansion_20261010T114148391900\\User\\Saved\\Profiling\\CSV\\motion_MotionExpansion_20261010T114148391900_20.csv",
+        "metrics": {
+          "GPUMem/LocalUsedMB": {
+            "samples": 879,
+            "mean": 4965.135135722412,
+            "median": 4965.0117,
+            "p95": 4965.8867,
+            "p99": 4965.8867,
+            "maximum": 4965.8867
+          },
+          "FrameTime": {
+            "samples": 879,
+            "mean": 11.365209783845279,
+            "median": 11.2107,
+            "p95": 13.2687,
+            "p99": 14.5577,
+            "maximum": 23.5101,
+            "budget_exceedances": [
+              {
+                "threshold_ms": 16.666666666666668,
+                "count": 1,
+                "percent": 0.11376564277588168
+              },
+              {
+                "threshold_ms": 33.333333333333336,
+                "count": 0,
+                "percent": 0.0
+              },
+              {
+                "threshold_ms": 50,
+                "count": 0,
+                "percent": 0.0
+              },
+              {
+                "threshold_ms": 100,
+                "count": 0,
+                "percent": 0.0
+              }
+            ]
+          },
+          "RenderThreadTime": {
+            "samples": 879,
+            "mean": 0.0022408418657565415,
+            "median": 0.0019,
+            "p95": 0.0029,
+            "p99": 0.0045,
+            "maximum": 0.0779
+          },
+          "GameThreadTime": {
+            "samples": 879,
+            "mean": 11.3598188850967,
+            "median": 11.3093,
+            "p95": 13.007,
+            "p99": 13.7453,
+            "maximum": 23.5114
+          },
+          "GPUTime": {
+            "samples": 879,
+            "mean": 8.53951387940842,
+            "median": 8.6221,
+            "p95": 10.0026,
+            "p99": 10.5119,
+            "maximum": 15.3878
+          }
+        },
+        "position_requests": 15
+      },
+      {
+        "authored_population": 50,
+        "live_enemies": 55,
+        "csv": "C:\\UsingProject\\UnrealProject\\UPlayground\\Saved\\QA\\MotionExpansion_20261010T114148391900\\User\\Saved\\Profiling\\CSV\\motion_MotionExpansion_20261010T114148391900_50.csv",
+        "metrics": {
+          "FrameTime": {
+            "samples": 647,
+            "mean": 15.455712673879443,
+            "median": 15.1609,
+            "p95": 18.9508,
+            "p99": 21.4527,
+            "maximum": 35.7665,
+            "budget_exceedances": [
+              {
+                "threshold_ms": 16.666666666666668,
+                "count": 137,
+                "percent": 21.174652241112828
+              },
+              {
+                "threshold_ms": 33.333333333333336,
+                "count": 1,
+                "percent": 0.1545595054095827
+              },
+              {
+                "threshold_ms": 50,
+                "count": 0,
+                "percent": 0.0
+              },
+              {
+                "threshold_ms": 100,
+                "count": 0,
+                "percent": 0.0
+              }
+            ]
+          },
+          "GPUMem/LocalUsedMB": {
+            "samples": 647,
+            "mean": 4811.491571097373,
+            "median": 4786.0117,
+            "p95": 4898.0117,
+            "p99": 4898.0117,
+            "maximum": 4898.0117
+          },
+          "RenderThreadTime": {
+            "samples": 647,
+            "mean": 0.0021275115919629057,
+            "median": 0.0018,
+            "p95": 0.0028,
+            "p99": 0.0037,
+            "maximum": 0.0616
+          },
+          "GameThreadTime": {
+            "samples": 647,
+            "mean": 15.416282380216384,
+            "median": 15.1924,
+            "p95": 18.9524,
+            "p99": 21.2231,
+            "maximum": 26.244
+          },
+          "GPUTime": {
+            "samples": 647,
+            "mean": 8.674217310664606,
+            "median": 8.3785,
+            "p95": 10.2849,
+            "p99": 10.9853,
+            "maximum": 17.1895
+          }
+        },
+        "position_requests": 46
+      }
+    ],
+    "resolution": [
+      1280,
+      720
+    ],
+    "assisted": true,
+    "seed": 173001,
+    "limitation": "Current editor PIE only; no pre-change baseline, packaged 20-minute acceptance, or direct-input balance claim.",
+    "disabled_stage_actors": 5,
+    "all_frame_p95_within_60fps_budget": false
+  },
+  "performance_environment": {
+    "gpu": "NVIDIA GeForce RTX 3060 Ti, 581.29, 18, 2591, 47, 1770, 61.47",
+    "other_unreal_processes": []
+  }
+}

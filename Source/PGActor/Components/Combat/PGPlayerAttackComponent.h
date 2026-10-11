@@ -26,10 +26,10 @@ public:
     bool CanPrepare(const UPGPlayerSkillProfile* Profile, const class UAnimMontage* Montage, FString& Error) const;
     bool Start(const UPGPlayerSkillProfile* Profile, UAnimMontage* Montage, bool bRefundEligible, FPGPlayerAttackEnded OnEnded);
     void Stop(bool bNotify = false, bool bCancelled = true);
-    bool IsRunning() const { return CastContext.IsValid(); }
+    UFUNCTION(BlueprintPure, Category="PG|Combat") bool IsRunning() const { return CastContext.IsValid(); }
     bool CanCancel(bool bDodge) const;
     bool TryGuardDirectHit(const AActor* Attacker);
-    float GetLogicalTime() const { return LogicalTime; }
+    UFUNCTION(BlueprintPure, Category="PG|Combat") float GetLogicalTime() const { return LogicalTime; }
     float GetExpectedSeconds() const;
     const TSharedPtr<FPGSkillCastContext>& GetCastContext() const { return CastContext; }
     static TArray<FPGPlayerSwingCue> BuildSwingCues(const UPGPlayerSkillProfile* Profile, const UAnimMontage* Montage);

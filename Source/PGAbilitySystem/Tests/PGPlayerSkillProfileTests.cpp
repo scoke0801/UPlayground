@@ -259,6 +259,21 @@ bool FPGPlayerProfileLifecycleTest::RunTest(const FString&)
         Attack->SwingCues=UPGPlayerAttackComponent::BuildSwingCues(Attack->ActiveProfile,nullptr);
         Attack->NextSwingCue=0;
     };
+    Begin();
+    Attack->ActiveProfile->EarlyDodgeUntil=.1f;
+    Attack->ActiveProfile->DodgeCancel=.4f;
+    Attack->ActiveProfile->AttackCancel=.5f;
+    TestTrue(TEXT("Early dash can cancel startup"),Attack->CanCancel(true));
+    TestFalse(TEXT("Attack cannot cancel startup"),Attack->CanCancel(false));
+    Attack->LogicalTime=.2f;
+    TestFalse(TEXT("Dash respects the protected motion interval"),Attack->CanCancel(true));
+    Attack->LogicalTime=.6f;
+    TestTrue(TEXT("Dash can cancel recovery"),Attack->CanCancel(true));
+    TestFalse(TEXT("Attack cannot cancel even after the legacy attack threshold"),Attack->CanCancel(false));
+    Attack->LogicalTime=Attack->ActiveProfile->Duration-UE_SMALL_NUMBER;
+    TestFalse(TEXT("Attack waits until the motion finishes"),Attack->CanCancel(false));
+    Attack->Stop();
+    TestFalse(TEXT("Completed motion has no dash cancellation window"),Attack->CanCancel(true));
     Begin(); auto Context=Attack->CastContext;
     auto* Montage=NewObject<UAnimMontage>();
     for (float Time : {0.f,.35f,.48f})
@@ -354,6 +369,25 @@ bool FPGPlayerProfileLifecycleTest::RunTest(const FString&)
     TestEqual(TEXT("Leap ends at safe destination"),Player->GetActorLocation().X,600.,.1);
     Attack->Advance(.03f); TestTrue(TEXT("Dodge after recovery threshold allowed"),Attack->CanCancel(true));
     Attack->Stop();
+    Player->SetActorLocation(FVector(0,0,98)); Begin();
+    Dash.Mode = EPGPlayerMoveMode::BackwardSweep; Dash.Distance = 220.f;
+    Attack->ActiveProfile->MovementSegments = {Dash}; Attack->Advance(.6f);
+    TestEqual(TEXT("Backward sweep travels behind locked facing"), Player->GetActorLocation().X, -220., .1);
+    Attack->Stop();
+    auto* PC = World->SpawnActor<APlayerController>(); PC->Possess(Player); Player->SetIsCanControl(true);
+    Begin(); Attack->ActiveProfile->bManualCounter = true;
+    Attack->LogicalTime = .2f; Attack->bCounterTriggered = false;
+    LandingTarget->SetActorLocation(Player->GetActorLocation() - FVector(150,0,0));
+    TestFalse(TEXT("Rear hit cannot trigger counter"), Attack->TryGuardDirectHit(LandingTarget));
+    LandingTarget->SetActorLocation(Player->GetActorLocation() + FVector(150,0,0));
+    EPGDamageType DamageType;
+    const float BeforeGuard = Player->GetPGAbilitySystemComponent()->GetHealth();
+    TestEqual(TEXT("Direct frontal hit is blocked"), Player->GetPGAbilitySystemComponent()->ReceiveCombatHit(LandingTarget->GetPGAbilitySystemComponent(), DamageType), 0.f);
+    TestTrue(TEXT("Counter consumes window once"), Attack->bCounterTriggered);
+    TestEqual(TEXT("Blocked hit leaves health intact"), Player->GetPGAbilitySystemComponent()->GetHealth(), BeforeGuard);
+    TestTrue(TEXT("Second hit remains dangerous"), Player->GetPGAbilitySystemComponent()->ReceiveCombatHit(LandingTarget->GetPGAbilitySystemComponent(), DamageType) > 0.f);
+    Attack->Stop();
+    TestFalse(TEXT("Cancel removes defense"), Attack->TryGuardDirectHit(LandingTarget));
     World->DestroyWorld(false); return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGPlayerP1ProjectileTest,"PG.HackSlash.ProjectileLifetimeAndSweep",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

@@ -125,7 +125,8 @@ def validate():
         for key,value in d['patch'].items():
             assert abs(row[key]-value)<1.e-5 if isinstance(value,(int,float)) else row[key]==value,(d['id'],key)
     for d in SPEC['monsters']:
-        row=enemies[d['id']];assert row['Mobility']==d['mobility'] and row['SkillIdList']==d['skills']
+        from MotionExpansionContracts import enemy_skills
+        row=enemies[d['id']];assert row['Mobility']==d['mobility'] and row['SkillIdList']==enemy_skills(d['id'],d['skills'])
         cdo=unreal.get_default_object(unreal.load_class(None,row['ActorClass']))
         assert cdo.get_editor_property('character_tid')==d['id']
         assert cdo.get_editor_property('ai_controller_class')==unreal.PGRoleAIController.static_class()

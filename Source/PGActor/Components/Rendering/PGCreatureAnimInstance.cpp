@@ -30,6 +30,8 @@ struct FPGCreatureAnimProxy : FAnimInstanceProxy
     {
         FAnimInstanceProxy::PreUpdate(Instance, DeltaSeconds);
         const auto* Owner = Instance->GetOwningActor();
+        if (const auto* Enemy = Cast<APGCharacterEnemy>(Owner))
+            Movement.SetBlendSpace(Enemy->IsCombatDormant() ? Enemy->DormantLocomotion.Get() : Enemy->CreatureLocomotion.Get());
         const FVector Velocity = Owner ? Owner->GetVelocity() : FVector::ZeroVector;
         const float Speed = Velocity.Size2D();
         if (bDirectional && Owner && Speed > 1.f)

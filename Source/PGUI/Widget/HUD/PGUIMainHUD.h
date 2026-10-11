@@ -29,6 +29,11 @@ private:
     FLinearColor BossStatusColor = FLinearColor::White;
     void Refresh();
     FReply ActivateSlot(int32 Index);
+    void BeginAttackHold();
+    void EndAttackHold();
+    void RepeatAttackHold();
+    FTimerHandle AttackHoldTimer;
+    TWeakObjectPtr<class UPGAbilitySystemComponent> HeldAttackASC;
     TSharedRef<SWidget> MakeResource(bool bHealth);
     TSharedRef<SWidget> MakeHealingPotion();
     void RefreshHealingPotion();

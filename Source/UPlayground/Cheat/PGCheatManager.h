@@ -16,6 +16,9 @@ class UPLAYGROUND_API UPGCheatManager : public UCheatManager
 	GENERATED_BODY()
 
 public:
+    UFUNCTION(Exec) void PGMotionExpansionCast(int32 SkillID = 116);
+    UFUNCTION(Exec) void PGMotionExpansionHit();
+    UFUNCTION(Exec) void PGMotionExpansionHoldAttacks(int32 EnemyID = 15204);
     UFUNCTION(Exec) void PGStageStatus();
     UFUNCTION(Exec) void PGDungeonStep(FString Action = TEXT("status"));
     UFUNCTION(Exec) void PGStartStage(int32 StageId = 1);

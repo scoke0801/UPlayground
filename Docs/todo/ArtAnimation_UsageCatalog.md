@@ -1,5 +1,7 @@
 # Art 애니메이션 보유 목록과 사용 후보
 
+P09 후속 채택: 창병·대검병·술사의 42개 고유 원본과 43개 실제 연결은 [P09 사용 CSV](assets/P09Weapons/motion-use-manifest.csv), 소비 몬스터·그립·공격 검증은 [P09 구현 보고서](P09WeaponVariations_Implementation_Report.md)에 별도 기록한다. 아래 전체 후보 목록과 기존 보스 목록은 유지한다.
+
 2026-10-10 Unreal Engine 5.8 AssetRegistry 조회. `/Game/Art` 전체를 재귀 탐색해 AnimSequence, AnimMontage, BlendSpace, AnimBlueprint 등 실제 애니메이션 클래스를 수집했다. `Animation`, `Animations`, `AnimationTests` 및 다른 이름의 하위 폴더까지 포함한다.
 
 **17,376개 애니메이션 관련 에셋**을 [전체 사용 후보 CSV](assets/MotionExpansion/art-animation-inventory.csv)에 기록했다. [집계 JSON](assets/MotionExpansion/art-animation-summary.json)과 `Saved/DarkKnightBoss/inspect01`의 엔진 실행 로그가 근거다. CSV는 모든 에셋의 정확한 패키지 경로, 클래스, 직접 참조 수와 참조자를 제공한다.
@@ -36,8 +38,9 @@
 
 ## 작업에 사용하는 목록
 
-- **플레이어 확장**: AnimeKatana의 Run_Thrust/Run_Attack_V1, Grruzam 카타나의 Revenge_Guard 세트, Frank 방향 회피를 [확장 기획](MotionExpansion_AI_Design.md)의 스킬 후보로 유지한다. 해당 대상에서의 접점·그립 검증 전에는 채택 확정으로 올리지 않는다.
-- **몬스터 확장**: CreatureModels의 현재 전투 연결 23개와 미연결 후보 19개를 [기존 대조 CSV](assets/MotionExpansion/inventory.csv)에서 확인한다. 생성 코드의 연결 기준이며 전체 참조 분류와 목적이 다르다.
+- **이번 확장 실제 연결**: [모션 확장 사용 manifest](assets/MotionExpansion/motion-expansion-use-manifest.csv)와 [검증 요약](assets/MotionExpansion/implementation-evidence.json)을 별도로 제공한다. 플레이어 3스킬·몬스터 5스킬·등장 4종의 검증 범위는 [개선 기록](MotionExpansion_AI_Implementation_Report.md)을 따른다. 수면 대기는 저장 참조 검증으로 따로 표시한다. 최초 Art 집계의 참조 수는 검사 당시 스냅샷이며 신규 연결을 반영한 전역 재집계 수치가 아니다.
+- **플레이어 확장**: AnimeKatana Run_Thrust, Grruzam 카타나 Revenge_Guard, Frank 후방 회피 중 이번에 연결한 정확한 원본·변환본은 위 사용 manifest를 따른다. Run_Attack_V1 등 나머지는 [확장 기획](MotionExpansion_AI_Design.md)의 후보이며, 다른 캐릭터·장비 조합까지 검증됐다는 뜻은 아니다.
+- **몬스터 확장**: CreatureModels의 확장 전 전투 연결 23개와 미연결 후보 19개를 [기존 대조 CSV](assets/MotionExpansion/inventory.csv)에서 확인한다. 생성 코드 기준의 최초 스냅샷이며 최신 연결은 위 사용 manifest와 usage audit를 따른다.
 - **기존 인간형 보스**: Art/AnimationTests의 AnimeKatana·GrruzamSword·FrankSlash 원본을 사용한 검성 15401은 기존 적용 기록을 따른다.
 - **신규 Dark Knight 보스**: 사용자가 지정한 `ExternalAssets/Animations/BossyEnemy`를 별도 전용 원본으로 사용한다. 이 팩은 Art 집계 바깥에 있으며 `/Game/DataCenter/DarkKnightBoss`에 대상 변환본을 생성한다. [보스 제작 기록](DarkKnightBoss_Implementation_Report.md)의 실제 연결 목록과 구분한다.
 

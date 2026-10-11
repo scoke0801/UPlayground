@@ -103,6 +103,8 @@ bool UPGPlayerSkillProfile::Validate(int32 ExpectedSkillID, FString& Error) cons
     float LastEnd = 0.f;
     for (const auto& Move : MovementSegments)
     {
+        if (Move.bUseMontageRootMotion && Move.Mode != EPGPlayerMoveMode::ForwardSweep && Move.Mode != EPGPlayerMoveMode::BackwardSweep)
+            return Fail(TEXT("Root motion requires a grounded sweep movement segment"));
         if (Move.SegmentId.IsNone() || Segments.Contains(Move.SegmentId) || !TimeValid(Move.Start) ||
             !TimeValid(Move.End) || Move.End <= Move.Start || Move.Start < LastEnd ||
             !FMath::IsFinite(Move.Distance) || Move.Distance < 0.f || Move.Distance > 1500.f ||

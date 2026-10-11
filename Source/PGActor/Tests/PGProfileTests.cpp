@@ -176,6 +176,14 @@ bool FPGCustomLoadoutTest::RunTest(const FString&)
     TestFalse(TEXT("Reentrant commit rejected"),System->Commit(Candidate)); System->bCommitting=false;
     TestTrue(TEXT("Four slots commit atomically"),System->Commit(Candidate)); System->LoadProfile();
     TestTrue(TEXT("All four slots survive disk reload"),System->Profile->CustomActiveSkills==TArray<int32>({113,114,110,112}));
+    System->Catalog->SelectableActiveSkills.Append({116,117,118});
+    System->LoadProfile();
+    TestTrue(TEXT("Catalog expansion preserves existing choices"),System->Profile->CustomActiveSkills==TArray<int32>({113,114,110,112}));
+    Candidate=DuplicateObject<UPGProfileSave>(System->Profile,System);
+    Candidate->CustomActiveSkills={118,116,117,114};
+    TestTrue(TEXT("Expansion choices commit through existing save contract"),System->Commit(Candidate));
+    System->LoadProfile();
+    TestTrue(TEXT("All three expansion IDs survive disk reload in chosen order"),System->Profile->CustomActiveSkills==TArray<int32>({118,116,117,114}));
     FString Reason; TestFalse(TEXT("No live safe stage rejects public selection"),System->CanChangeSkills(Reason));
     UGameplayStatics::DeleteGameInSlot(System->SlotName(0),0); UGameplayStatics::DeleteGameInSlot(System->SlotName(1),0);
     return true;

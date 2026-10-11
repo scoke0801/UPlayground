@@ -39,6 +39,9 @@ struct PGDATA_API FPGPlayerMovementSegment
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float End = .2f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) EPGPlayerMoveMode Mode = EPGPlayerMoveMode::ForwardSweep;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float Distance = 0.f;
+    // Sample montage root translation on the profile clock, then use the same collision sweep.
+    // Distance is ignored; the sequence owns displacement. Rotation/height remain gameplay-owned.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bUseMontageRootMotion = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) float WalkSpeedRatio = .6f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bEndCastOnBlock = false;
 };

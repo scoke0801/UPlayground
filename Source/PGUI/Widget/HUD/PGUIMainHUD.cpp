@@ -91,7 +91,9 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
     [SNew(SButton).ButtonStyle(&Art.Button).IsFocusable(false).ContentPadding(3)
         // Keep the icon readable during preparation; gameplay activation still uses the input guard.
         .ToolTipText_Lambda([this,Index](){return FText::FromString(SkillNames[Index].ToString()+TEXT("\n")+SkillReasons[Index].ToString());})
-        .OnClicked_Lambda([this,Index](){return bCanAct && SkillIds[Index]>0 && Cooldowns[Index]<=0.f ? ActivateSlot(Index) : FReply::Handled();})
+        .OnPressed_Lambda([this,Index](){ if (Index == 0) BeginAttackHold(); })
+        .OnReleased_Lambda([this,Index](){ if (Index == 0) EndAttackHold(); })
+        .OnClicked_Lambda([this,Index](){return Index != 0 && bCanAct && SkillIds[Index]>0 && Cooldowns[Index]<=0.f ? ActivateSlot(Index) : FReply::Handled();})
         [SNew(SOverlay)
             + SOverlay::Slot().Padding(0,0,0,14)[SNew(SImage).Image(&SkillBrushes[Index])]
             + SOverlay::Slot().Padding(0,0,0,14)
@@ -204,6 +206,7 @@ void UPGUIMainHUD::NativeConstruct()
 }
 void UPGUIMainHUD::NativeDestruct()
 {
+    EndAttackHold();
     if(GetWorld()) GetWorld()->GetTimerManager().ClearTimer(RefreshTimer);
     if (auto* Messages = UPGMessageManager::Get(this)) Messages->UnregisterDelegate(EPGUIMessageType::BossPresentation, BossPresentationHandle);
     if (auto* Messages = UPGMessageManager::Get(this)) Messages->UnregisterDelegate(EPGUIMessageType::ConsumableChanged, ConsumableHandle);
@@ -214,7 +217,39 @@ void UPGUIMainHUD::NativeDestruct()
 }
 void UPGUIMainHUD::ReleaseSlateResources(bool bReleaseChildren)
 {
+    EndAttackHold();
     Super::ReleaseSlateResources(bReleaseChildren);
+}
+
+void UPGUIMainHUD::BeginAttackHold()
+{
+    EndAttackHold();
+    auto* Player = Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+    if (!Player || !Player->IsGameplayInputAllowed() || !GetWorld()) return;
+    auto* ASC = Player->GetPGAbilitySystemComponent();
+    if (!ASC) return;
+    HeldAttackASC = ASC;
+    ASC->OnAbilityInputPressed(PGMainHUD::Tag(0));
+    GetWorld()->GetTimerManager().SetTimer(AttackHoldTimer, this, &ThisClass::RepeatAttackHold, 1.f / 60.f, true);
+}
+
+void UPGUIMainHUD::EndAttackHold()
+{
+    if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(AttackHoldTimer);
+    if (auto* ASC = HeldAttackASC.Get()) ASC->OnAbilityInputReleased(PGMainHUD::Tag(0));
+    HeldAttackASC.Reset();
+}
+
+void UPGUIMainHUD::RepeatAttackHold()
+{
+    auto* Player = Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+    auto* ASC = HeldAttackASC.Get();
+    if (!Player || !Player->IsGameplayInputAllowed() || !ASC || ASC != Player->GetPGAbilitySystemComponent())
+    {
+        EndAttackHold();
+        return;
+    }
+    ASC->OnAbilityInputHeld(PGMainHUD::Tag(0));
 }
 
 FReply UPGUIMainHUD::ActivateSlot(int32 Index)

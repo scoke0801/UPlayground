@@ -16,6 +16,10 @@ def validate_hack_slash_p1(rows):
     additional.update(s['id'] for s in CREATURE_COMBAT['skills'])
     dark_knight=json.loads((root/'Tools/Validation/Data/DarkKnightBoss.json').read_text(encoding='utf-8'))
     additional.update(s['id'] for s in dark_knight['skills'])
+    from MotionExpansionContracts import additional_ids
+    additional.update(additional_ids())
+    from P09WeaponRoster import SPEC as p09_weapons
+    additional.update(s['id'] for s in p09_weapons['skills'])
     assert len(rows)==len(by_id) and set(by_id)-{r['SkillID'] for r in baseline} <= additional
     # Later migrations own only these fields; validate their current contracts
     # instead of comparing them against an obsolete P1 snapshot.
@@ -60,7 +64,10 @@ def validate_hack_slash_p1(rows):
         if item['id']==114:
             for key,value in [('projectile_speed',1800),('projectile_range',1000),('projectile_lifetime',.7)]: assert abs(p.get_editor_property(key)-value)<.0001
     catalog=unreal.load_asset('/Game/DataCenter/Progression/DA_PGProgression')
-    assert list(catalog.get_editor_property('selectable_active_skills'))==[110,111,112,113,114]
+    from MotionExpansionContracts import installed, SPEC as expansion
+    selectable=list(catalog.get_editor_property('selectable_active_skills'))
+    base=[110,111,112,113,114]
+    assert selectable==base or (installed() and selectable==base+[x['id'] for x in expansion['player']])
     assert list(catalog.get_editor_property('default_active_skills'))==[111,112,110,114]
     unreal.log('PGHackSlashP1 VALIDATION PASS profiles=3 selectable=5 non_target_rows_unchanged=1')
     return {r['SkillID']:r for r in baseline}

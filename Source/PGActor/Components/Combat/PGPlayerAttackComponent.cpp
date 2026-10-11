@@ -306,7 +306,9 @@ void UPGPlayerAttackComponent::EndPlay(const EEndPlayReason::Type Reason)
 
 bool UPGPlayerAttackComponent::CanCancel(bool bDodge) const
 {
-    return IsRunning() && ((bDodge && LogicalTime<ActiveProfile->EarlyDodgeUntil) || LogicalTime >= (bDodge ? ActiveProfile->DodgeCancel : ActiveProfile->AttackCancel));
+    // Attacks and skills must finish; only a dash may interrupt the authored motion.
+    return bDodge && IsRunning() &&
+        (LogicalTime < ActiveProfile->EarlyDodgeUntil || LogicalTime >= ActiveProfile->DodgeCancel);
 }
 bool UPGPlayerAttackComponent::TryGuardDirectHit(const AActor* Attacker)
 {
@@ -461,8 +463,19 @@ bool UPGPlayerAttackComponent::MoveBetween(float From, float To)
             continue;
         }
         const float Fraction = (FMath::Clamp(To, Move.Start, Move.End) - FMath::Clamp(From, Move.Start, Move.End)) / (Move.End - Move.Start);
-        const FVector Delta = LockedForward * (Move.Mode==EPGPlayerMoveMode::BackwardSweep ? -1.f : 1.f) *
+        FVector Delta = LockedForward * (Move.Mode==EPGPlayerMoveMode::BackwardSweep ? -1.f : 1.f) *
             (Move.Mode==EPGPlayerMoveMode::GroundLeap ? LeapDistance : Move.Distance) * Fraction;
+        if (Move.bUseMontageRootMotion)
+        {
+            const float PoseFrom = ActiveProfile->GetMontagePosition(FMath::Clamp(From, Move.Start, Move.End));
+            const float PoseTo = ActiveProfile->GetMontagePosition(FMath::Clamp(To, Move.Start, Move.End));
+            const FVector LocalDelta = ActiveMontage->ExtractRootMotionFromTrackRange(
+                PoseFrom, PoseTo, FAnimExtractContext()).GetTranslation();
+            // Profile displacement is authored in gameplay centimetres, independent of cosmetic mesh scale.
+            Delta = Player->GetMesh()->GetComponentTransform().TransformVectorNoScale(LocalDelta);
+            Delta.Z = 0.f;
+            if (Delta.ContainsNaN()) return false;
+        }
         if (Move.Mode==EPGPlayerMoveMode::GroundLeap)
         {
             const float Progress=FMath::Clamp((To-Move.Start)/(Move.End-Move.Start),0.f,1.f);

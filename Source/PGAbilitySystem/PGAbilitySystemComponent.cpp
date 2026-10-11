@@ -51,10 +51,10 @@ void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInpu
     if (!InInputTag.IsValid() || HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead)) return;
     if (const APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetAvatarActor()))
         if (!Player->IsGameplayInputAllowed()) { ClearBufferedInput(); return; }
+    if (InInputTag == PGGamePlayTags::InputTag_Skill_Normal) bNormalAttackHeld = true;
     if (BufferedInput == PGGamePlayTags::InputTag_Roll && InInputTag != PGGamePlayTags::InputTag_Roll &&
         GetWorld() && GetWorld()->GetTimeSeconds() < BufferExpiresAt) return;
     ClearBufferedInput(false);
-    if (InInputTag == PGGamePlayTags::InputTag_Skill_Normal) bNormalAttackHeld = true;
     const double InputAt = GetWorld() ? GetWorld()->GetTimeSeconds() : -1.;
     if (TryInput(InInputTag, InputAt)) return;
     // Toggle actions must never turn on later after an unrelated state change.
@@ -218,6 +218,9 @@ float UPGAbilitySystemComponent::ReceiveCombatHit(UPGAbilitySystemComponent* Sou
     TGuardValue<int32> Processing(DamageProcessingDepth, DamageProcessingDepth + 1);
     OutType = EPGDamageType::Normal;
     if (!Source || GetHealth() <= 0.f || HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead)) return 0.f;
+    // Only the direct hostile GAS hit path can consume a manual counter; DoT/procs use their own path.
+    if (auto* Player = Cast<APGCharacterPlayer>(GetAvatarActor()); Player && Source != this &&
+        Player->GetPlayerAttackComponent()->TryGuardDirectHit(Source->GetAvatarActor())) return 0.f;
     TGuardValue<int32> SourceProcessing(Source->DamageProcessingDepth, Source->DamageProcessingDepth + 1);
     const UPGCombatTuningData* Tuning = CombatTuning ? CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
     const bool bCritical = FMath::FRand() * 10000.f < FMath::Clamp(Source->GetCombatStat(EPGStatType::CriticalRate), 0.f, 10000.f);

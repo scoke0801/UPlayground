@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "player": [
+    {"id":116,"name":"섬광 찌르기","cooldown":4,"duration":0.72,"hit":0.30,"damage":1.25,"radius":290,"angle":38,"dodge":0.44,"attack":0.56,"description":"짧게 전진해 정면의 적을 찌릅니다. 벽과 적의 몸을 통과하지 않습니다."},
+    {"id":117,"name":"후퇴 절단","cooldown":6,"duration":0.92,"hit":0.22,"damage":1.10,"radius":260,"angle":100,"dodge":0.72,"attack":0.78,"description":"정면을 한 번 벤 뒤 뒤로 물러납니다. 후퇴 중 무적은 부여되지 않습니다."},
+    {"id":118,"name":"검막 반격","cooldown":8,"duration":1.45,"hit":0.92,"damage":1.65,"radius":310,"angle":110,"dodge":0.98,"attack":1.16,"description":"짧은 정면 방어 중 직접 타격을 한 번 막으면 반격합니다. 뒤쪽 공격과 지속 피해는 막지 못합니다."}
+  ],
+  "enemy_skills": [
+    {"id":15513,"enemy":15501,"base":15511,"name":"그리핀 교차 발톱","source":"/Game/Art/CreatureModels/Griffin/Animations/AS_PG_Griffin_Attack_2","patch":{"TelegraphDuration":0.9,"RecoveryDuration":1.1,"SkillCoolTime":5,"SkillRange":360,"TelegraphRadius":330,"HalfAngleDegrees":65},"selection":{"PreferredRange":290,"RangeFalloff":300,"RecentUseSeconds":7}},
+    {"id":15310,"enemy":15302,"base":15302,"name":"여왕의 왼발 휩쓸기","source":"/Game/ExternalAssets/Characters/Enemies/SpiderQueen/Animations/Anim_Attack_Left","patch":{"SkillCoolTime":5,"HalfAngleDegrees":55},"selection":{"PreferredRange":300,"RangeFalloff":350,"PreferredSide":-1,"RecentUseSeconds":6}},
+    {"id":15311,"enemy":15304,"base":15306,"name":"엔트의 왼가지 휩쓸기","source":"/Game/ExternalAssets/Characters/Enemies/Ent/Animations/Anim_Hand_Attack_L","patch":{"SkillCoolTime":5,"RecoveryDuration":1.4},"selection":{"PreferredRange":270,"RangeFalloff":350,"PreferredSide":-1,"RecentUseSeconds":6}},
+    {"id":15312,"enemy":15303,"base":15304,"name":"리치의 왼손 망령탄","source":"/Game/ExternalAssets/Characters/Enemies/Lich/Animations/Anim_Attack_Left","patch":{"SkillCoolTime":5},"selection":{"PreferredRange":650,"RangeFalloff":700,"PreferredSide":-1,"RecentUseSeconds":6}},
+    {"id":15313,"enemy":15303,"base":15523,"name":"리치의 망령 소환","source":"/Game/ExternalAssets/Characters/Enemies/Lich/Animations/Anim_Call","patch":{"SummonEnemyID":15201,"SummonCount":2,"MaxLivingSummons":2,"SkillCoolTime":14,"TelegraphDuration":1.6,"RecoveryDuration":1.4,"SelectionWeight":0.7},"selection":{"PreferredRange":700,"RangeFalloff":900,"RecentUseSeconds":15}}
+  ],
+  "entrances": [
+    {"enemy":15501,"clips":["/Game/Art/CreatureModels/Griffin/Animations/AS_PG_Griffin_Agr"],"duration":0.8,"wake":1000},
+    {"enemy":15502,"clips":["/Game/Art/CreatureModels/MainPlant/Animations/AS_PG_MainPlant_Awake"],"duration":1.4,"wake":1100,"dormant":"/Game/Art/CreatureModels/MainPlant/Animations/AS_PG_MainPlant_Idle_Asleep"},
+    {"enemy":15503,"clips":["/Game/Art/CreatureModels/EnemyRoot/Animations/AS_PG_EnemyRoot_Uprise"],"duration":0.9,"wake":0},
+    {"enemy":15504,"clips":["/Game/Art/CreatureModels/EnemyPlant/Animations/AS_PG_EnemyPlant_Jump_In","/Game/Art/CreatureModels/EnemyPlant/Animations/AS_PG_EnemyPlant_Jump_End"],"duration":0.65,"wake":0}
+  ]
+}
