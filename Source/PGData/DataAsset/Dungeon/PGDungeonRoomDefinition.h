@@ -10,9 +10,10 @@ struct PGDATA_API FPGDungeonModulePiece
     GENERATED_BODY()
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UStaticMesh> Mesh;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<class UMaterialInterface> Material;
-    // Non-colliding authored accents. Walkable floors and sockets belong to the common kit.
+    // Flush paving may opt out; solid props block movement and navigation.
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform Transform;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bOccluder = true;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bCollision = true;
 };
 
 UCLASS(BlueprintType)

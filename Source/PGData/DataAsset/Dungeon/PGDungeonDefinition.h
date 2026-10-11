@@ -38,7 +38,13 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme") TSoftObjectPtr<UStaticMesh> BlockMesh;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme") TSoftObjectPtr<UMaterialInterface> GroundMaterial;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme") TSoftObjectPtr<UMaterialInterface> WallMaterial;
-    // Source materials are preserved; decoration is non-colliding and outside sockets.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme") TSoftObjectPtr<UStaticMesh> BoundaryMesh;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme") TArray<TSoftObjectPtr<UStaticMesh>> BoundaryVariants;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme", meta=(ClampMin="100")) float BoundarySegmentLength = 400.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme", meta=(ClampMin="0")) float BoundaryOverlap = 30.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme", meta=(ClampMin="0")) float BoundaryGroundInset = 30.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gates", meta=(ClampMin="200")) float CombatBarrierHeight = 500.f;
+    // Source materials are preserved; solid decoration stays outside reserved sockets.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme") TArray<TSoftObjectPtr<UStaticMesh>> RuinMeshes;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme") TArray<TSoftObjectPtr<UStaticMesh>> ExteriorMeshes;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Theme", meta=(ClampMin="0", ClampMax="8")) int32 PropsPerRoom = 4;

@@ -133,10 +133,17 @@ def tick(dt):
         elif phase=='claimed' and now-at>delay:
             assert len(u.GameplayStatics.get_all_actors_of_class(world,u.PGDungeonTreasure))==report['treasures']-1
             capture(world,'03_claimed')
-            player.set_actor_location(g.get_actor_location()+u.Vector(1250,1250,100),False,True)
+            # Corner props now have real collision. The old (1250,1250) forced
+            # teleport put the capsule inside the authored corner ruin, collapsing
+            # the spring arm into the head instead of testing wall fading.
+            half=definition.get_editor_property('room_size')*.5
+            wall_probe=g.get_actor_location()+u.Vector(half*.5,half-150,100)
+            assert player.teleport(wall_probe,player.get_actor_rotation()),'No clear capsule placement for wall probe'
+            wall_probe=player.get_actor_location()
+            report['wall_probe_position']=[wall_probe.x,wall_probe.y,wall_probe.z]
             if RENDER:
                 # Static visual fixture using the production attack material; this does not test attack timing.
-                center=g.get_actor_location()+u.Vector(1100,1100,2)
+                center=u.Vector(wall_probe.x,wall_probe.y-150,g.get_actor_location().z+2)
                 material=u.load_asset('/Game/DataCenter/CombatCycle/M_EliteTelegraph'); assert material
                 telegraph=u.GameplayStatics.spawn_decal_at_location(world,material,u.Vector(180,250,250),center,u.Rotator(pitch=-90,yaw=0,roll=0),0.)
                 assert telegraph

@@ -113,8 +113,25 @@ bool APGDungeonGenerator::Assemble()
     if (!Block || !Ground || !Wall) { LastError=TEXT("Missing theme block or material"); return false; }
     const FVector Size=Block->GetBoundingBox().GetSize();
     if (Size.GetMin()<=0) { LastError=TEXT("Invalid block bounds"); return false; }
-    auto* Floors=MakeInstances(Block,Ground,true); auto* Walls=MakeInstances(Block,Wall,true);
-    Walls->ComponentTags.Add(TEXT("PGDungeonOccluder"));
+    UStaticMesh* Boundary=Definition->BoundaryMesh.LoadSynchronous();
+    if (!Boundary || Boundary->GetBoundingBox().GetSize().GetMin()<=0)
+    { LastError=TEXT("Missing/invalid authored boundary mesh"); return false; }
+    auto* Floors=MakeInstances(Block,Ground,true); auto* Walls=MakeInstances(Block,nullptr,true);
+    // A continuous collision core seals cracks in the ruined silhouette. Only the
+    // authored stone is rendered and faded; camera occlusion never opens a route.
+    Walls->SetVisibility(false); Walls->SetHiddenInGame(true);
+    auto* StoneWalls=MakeInstances(Boundary,nullptr,false);
+    StoneWalls->ComponentTags.Add(TEXT("PGDungeonOccluder"));
+    TArray<UInstancedStaticMeshComponent*> WallStyles={StoneWalls};
+    for (const auto& Reference:Definition->BoundaryVariants)
+    {
+        UStaticMesh* Variant=Reference.LoadSynchronous();
+        if (!Variant || Variant->GetBoundingBox().GetSize().GetMin()<=0)
+        { LastError=TEXT("Missing/invalid boundary variant"); return false; }
+        auto* Style=MakeInstances(Variant,nullptr,false);
+        Style->ComponentTags.Add(TEXT("PGDungeonOccluder"));
+        WallStyles.Add(Style);
+    }
     auto Box=[&](UInstancedStaticMeshComponent* C,FVector Center,FVector Dimensions)
     {
         const FVector Scale=Dimensions/Size;
@@ -122,6 +139,29 @@ bool APGDungeonGenerator::Assemble()
         const int32 Index=C->AddInstance(FTransform(FQuat::Identity,Center,Scale),true);
         C->SetCustomDataValue(Index,0,Center.X,true);
         C->SetCustomDataValue(Index,1,Center.Y,true);
+        if (C==Walls)
+        {
+            const bool AlongX=Dimensions.X>Dimensions.Y;
+            const float Length=AlongX ? Dimensions.X : Dimensions.Y;
+            const int32 Count=FMath::Max(1,FMath::CeilToInt(Length/FMath::Max(100.f,Definition->BoundarySegmentLength)));
+            const FVector BoxCenter=Center+Block->GetBoundingBox().GetCenter()*Scale;
+            for (int32 I=0; I<Count; ++I)
+            {
+                // Match ForestRuins: low masonry with occasional broken variants,
+                // overlapping ends and its original thickness/height proportions.
+                auto* Style=WallStyles[I%4==0 ? (I/4+Index)%WallStyles.Num() : 0];
+                const FBox Bounds=Style->GetStaticMesh()->GetBoundingBox();
+                const FVector MeshSize=Bounds.GetSize();
+                const bool MeshAlongX=MeshSize.X>=MeshSize.Y;
+                const FQuat Rotation(FVector::UpVector,(AlongX==MeshAlongX ? 0.f : HALF_PI));
+                const FVector ArtScale((Length/Count+FMath::Max(0.f,Definition->BoundaryOverlap))/FMath::Max(MeshSize.X,MeshSize.Y));
+                const float Offset=-Length*.5f+(I+.5f)*Length/Count;
+                FVector Position=BoxCenter+(AlongX ? FVector(Offset,0,0) : FVector(0,Offset,0));
+                Position.Z=BoxCenter.Z-Dimensions.Z*.5f-FMath::Max(0.f,Definition->BoundaryGroundInset);
+                const FVector Anchor(Bounds.GetCenter().X,Bounds.GetCenter().Y,Bounds.Min.Z);
+                Style->AddInstance(FTransform(Rotation,Position-Rotation.RotateVector(Anchor*ArtScale),ArtScale),true);
+            }
+        }
     };
     const float S=Definition->RoomSize, Gap=Definition->CorridorLength, W=Definition->CorridorWidth;
     const float H=Definition->WallHeight, T=80.f;
@@ -176,7 +216,7 @@ bool APGDungeonGenerator::Assemble()
     }
     Landscape=Landscape.ExpandBy(FVector(S*.5f+2600,S*.5f+2600,0));
     auto* Background=MakeInstances(Block,Ground,false);
-    Box(Background,Landscape.GetCenter()-FVector(0,0,180),FVector(Landscape.GetSize().X,Landscape.GetSize().Y,100));
+    Box(Background,Landscape.GetCenter()-FVector(0,0,52),FVector(Landscape.GetSize().X,Landscape.GetSize().Y,100));
     Background->SetCustomDataValue(0,0,1000000.f,true);
     Background->SetCustomDataValue(0,1,1000000.f,true);
     return AssembleModules();

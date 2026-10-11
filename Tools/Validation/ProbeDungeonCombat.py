@@ -26,6 +26,41 @@ spawned = {}
 waves = set()
 save_tested = False
 report = dict(status='RUNNING', assisted=True, direct_play=False, runs=[], recovery=[])
+report['barrier_checks']=[]
+barrier_checks=set()
+
+def check_barriers(generator, manager, player, state):
+    stage=manager.get_current_stage_id()
+    sealed=state in (u.PGStageState.IN_PROGRESS,u.PGStageState.WAVE_INTERMISSION)
+    encounter=[c for c in generator.get_components_by_class(u.StaticMeshComponent)
+               if 'PGDungeonEncounterGate' in [str(t) for t in c.component_tags]]
+    center=manager.get_dungeon_objective_location()
+    active=[]
+    for c in encounter:
+        delta=c.get_world_location()-center
+        belongs=abs(delta.x)<1500 and abs(delta.y)<1500
+        expected=sealed and belongs
+        assert (c.get_collision_enabled()!=u.CollisionEnabled.NO_COLLISION)==expected,('barrier state',stage,state,c.get_name())
+        if belongs: active.append(c)
+    key=(run,stage,str(state))
+    if key in barrier_checks or stage==6: return
+    assert active,('No socket barriers',stage)
+    original=player.get_actor_location()
+    try:
+        for c in active:
+            p=c.get_world_location(); delta=p-center
+            direction=u.Vector((1 if delta.x>0 else -1) if abs(delta.x)>abs(delta.y) else 0,
+                               (1 if delta.y>0 else -1) if abs(delta.y)>abs(delta.x) else 0,0)
+            p.z=center.z+100
+            start=p-direction*200; end=p+direction*200
+            player.set_actor_location(start,False,True)
+            player.set_actor_location(end,True,False)
+            remaining=(player.get_actor_location()-end).length()
+            assert (remaining>100) if sealed else (remaining<2),('capsule crossing',stage,state,remaining)
+    finally:
+        player.set_actor_location(original,False,True)
+    barrier_checks.add(key)
+    report['barrier_checks'].append(dict(seed=generator.get_editor_property('seed'),stage=stage,state=str(state),sealed=sealed,sockets=len(active)))
 
 def command(world, text):
     u.SystemLibrary.execute_console_command(world, text)
@@ -112,6 +147,7 @@ def tick(dt):
                 enter(player, m)
                 return
             if state in (u.PGStageState.IN_PROGRESS, u.PGStageState.WAVE_INTERMISSION):
+                check_barriers(g,m,player,state)
                 row = m.get_current_stage_data_copy()
                 budgets[stage] = sum(s.spawn_count for w in row.waves for s in w.monster_spawn_infos)
                 spawned[stage] = m.get_spawned_monsters()
@@ -128,6 +164,7 @@ def tick(dt):
                     command(world, 'PGDungeonStep summons')
                 command(world, 'PGDungeonStep kill')
             elif state == u.PGStageState.BUILD_PHASE:
+                check_barriers(g,m,player,state)
                 spawned[stage] = m.get_spawned_monsters()
                 if not save_tested:
                     command(world, 'PGSaveFailure true')
@@ -137,7 +174,9 @@ def tick(dt):
                     command(world, 'PGSaveFailure false')
                     save_tested = True
                 command(world, 'PGDungeonStep reward')
-                m.ready_for_next_stage()
+                # Completing all choices must arm the next room without a ready input.
+                if m.get_current_stage_state() == u.PGStageState.DUNGEON_TRAVERSAL:
+                    assert m.get_current_stage_id() == stage + 1
             elif state == u.PGStageState.FINISHED:
                 spawned[6] = m.get_spawned_monsters()
                 assert budgets == spawned, (budgets, spawned)
@@ -165,6 +204,8 @@ def tick(dt):
             if now - at < .5: return
             assert not actors(world)
             assert all(c.get_collision_enabled() == u.CollisionEnabled.NO_COLLISION for c in gates(g))
+            assert all(c.get_collision_enabled()==u.CollisionEnabled.NO_COLLISION for c in g.get_components_by_class(u.StaticMeshComponent)
+                       if 'PGDungeonEncounterGate' in [str(t) for t in c.component_tags])
             report['recovery'].append('unexpected destroy cancels encounter and unlocks boss gate')
             g.generate(22); phase = 'unreachable_ready'; return
         if phase == 'unreachable_ready':

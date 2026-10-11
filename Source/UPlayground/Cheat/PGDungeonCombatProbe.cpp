@@ -93,13 +93,14 @@ void UPGCheatManager::PGDungeonStep(FString Action)
         {
             const FGuid Token = Stage->RewardToken;
             if (!Token.IsValid()) return;
-            const int32 Before = Profile->GetProfile()->StageRewardCounts.FindRef(Stage->CurrentStageId);
+            const int32 RewardStageId = Stage->CurrentStageId;
+            const int32 Before = Profile->GetProfile()->StageRewardCounts.FindRef(RewardStageId);
             const bool Applied = Stage->CommitReward(Token,0);
             const bool Duplicate = Stage->CommitReward(Token,0);
-            const int32 After = Profile->GetProfile()->StageRewardCounts.FindRef(Stage->CurrentStageId);
+            const int32 After = Profile->GetProfile()->StageRewardCounts.FindRef(RewardStageId);
             const bool Valid = !Duplicate && After == Before + (Applied ? 1 : 0);
             UE_LOG(LogTemp, Display, TEXT("PGDungeonProbe reward stage=%d applied=%d duplicate=%d before=%d after=%d valid=%d"),
-                Stage->CurrentStageId, Applied, Duplicate, Before, After, Valid);
+                RewardStageId, Applied, Duplicate, Before, After, Valid);
             if (!Valid) UE_LOG(LogTemp, Error, TEXT("PGDungeonProbe reward invariant failed"));
         }
         else if (Action == TEXT("die"))

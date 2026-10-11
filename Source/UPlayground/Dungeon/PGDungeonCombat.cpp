@@ -35,13 +35,44 @@ bool APGDungeonGenerator::StartDungeonCombat()
     UStaticMesh* Mesh = Definition->GateMesh.LoadSynchronous();
     if (!Mesh) return false;
     const FVector MeshSize = Mesh->GetBoundingBox().GetSize();
+    if (MeshSize.GetMin()<=0 || !Definition->GateMaterial.LoadSynchronous()) return false;
+    // Each objective owns all of its sockets, including branches and the entrance.
+    // Navigation was validated before these temporary movement barriers are added.
+    for (const auto& Room:Layout.Rooms)
+    {
+        if (Room.Objective<=0 || Room.Role==EPGDungeonRoomRole::Boss) continue;
+        for (const auto& Edge:Layout.Connections)
+        {
+            const int32 Other=Edge.A==Room.Id ? Edge.B : Edge.B==Room.Id ? Edge.A : INDEX_NONE;
+            if (Other==INDEX_NONE) continue;
+            const FVector Direction=(RoomCenter(Other)-RoomCenter(Room.Id)).GetSafeNormal();
+            const float Height=FMath::Max(200.f,Definition->CombatBarrierHeight);
+            const FVector Size=FMath::Abs(Direction.X)>.5f ? FVector(80,Definition->CorridorWidth,Height)
+                : FVector(Definition->CorridorWidth,80,Height);
+            auto* Gate=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);
+            AddInstanceComponent(Gate); Gate->SetupAttachment(RootComponent);
+            Gate->ComponentTags.Add(TEXT("PGDungeonEncounterGate"));
+            Gate->SetMobility(EComponentMobility::Movable);
+            Gate->SetStaticMesh(Mesh); Gate->SetMaterial(0,Definition->GateMaterial.LoadSynchronous());
+            Gate->SetCollisionProfileName(TEXT("BlockAll"));
+            Gate->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            Gate->SetCanEverAffectNavigation(false); Gate->SetCastShadow(false);
+            Gate->SetHiddenInGame(true); Gate->RegisterComponent();
+            const FVector Scale=Size/MeshSize;
+            Gate->SetWorldTransform(FTransform(FQuat::Identity,RoomCenter(Room.Id)+Direction*(Definition->RoomSize*.5f)
+                +FVector(0,0,Height*.5f)-Mesh->GetBoundingBox().GetCenter()*Scale,Scale));
+            EncounterGates.Add(Gate); EncounterGateObjectives.Add(Room.Objective);
+        }
+    }
+    AddTickPrerequisiteActor(CombatManager);
     for (const auto& Edge : Layout.Connections)
     {
         const int32 Other = Edge.A == BossId ? Edge.B : Edge.B == BossId ? Edge.A : INDEX_NONE;
         if (Other == INDEX_NONE) continue;
         const FVector Direction = (RoomCenter(Other) - RoomCenter(BossId)).GetSafeNormal();
-        const FVector Size = FMath::Abs(Direction.X) > .5f ? FVector(80, Definition->CorridorWidth, 320)
-            : FVector(Definition->CorridorWidth, 80, 320);
+        const float Height=FMath::Max(200.f,Definition->CombatBarrierHeight);
+        const FVector Size = FMath::Abs(Direction.X) > .5f ? FVector(80, Definition->CorridorWidth, Height)
+            : FVector(Definition->CorridorWidth, 80, Height);
         auto* Gate = NewObject<UStaticMeshComponent>(this);
         Gate->ComponentTags.Add(TEXT("PGDungeonGate"));
         AddInstanceComponent(Gate); Gate->SetupAttachment(RootComponent);
@@ -52,7 +83,7 @@ bool APGDungeonGenerator::StartDungeonCombat()
         Gate->SetCanEverAffectNavigation(false); Gate->RegisterComponent();
         const FVector Scale = Size / MeshSize;
         Gate->SetWorldTransform(FTransform(FQuat::Identity,
-            RoomCenter(BossId) + Direction * (Definition->RoomSize * .5f) + FVector(0,0,160)
+            RoomCenter(BossId) + Direction * (Definition->RoomSize * .5f) + FVector(0,0,Height*.5f)
                 - Mesh->GetBoundingBox().GetCenter() * Scale, Scale));
         BossGates.Add(Gate);
         GateClosedLocations.Add(Gate->GetComponentLocation());
@@ -70,6 +101,7 @@ void APGDungeonGenerator::StopDungeonCombat()
     SetActorTickEnabled(false);
     if (IsValid(CombatManager))
     {
+        RemoveTickPrerequisiteActor(CombatManager);
         CombatManager->StopDungeonCombat();
         // Corpses and unclaimed drops are no longer tracked by StageManager.
         TArray<AActor*> Remaining;
@@ -81,6 +113,8 @@ void APGDungeonGenerator::StopDungeonCombat()
     CombatManager = nullptr;
     for (UStaticMeshComponent* Gate : BossGates) if (IsValid(Gate)) { RemoveInstanceComponent(Gate); Gate->DestroyComponent(); }
     BossGates.Reset();
+    for (UStaticMeshComponent* Gate:EncounterGates) if (IsValid(Gate)) { RemoveInstanceComponent(Gate); Gate->DestroyComponent(); }
+    EncounterGates.Reset(); EncounterGateObjectives.Reset();
     GateClosedLocations.Reset();
     for (APGDungeonTreasure* Treasure:Treasures) if (IsValid(Treasure)) Treasure->Destroy();
     Treasures.Reset();
@@ -98,6 +132,18 @@ void APGDungeonGenerator::Tick(float DeltaSeconds)
                 Map->Observe(Player->GetActorLocation(), IsValid(CombatManager) ? CombatManager->GetCurrentStageId() : 0);
     if (!IsValid(CombatManager)) return;
     const auto StageState = CombatManager->GetCurrentStageState();
+    const bool Fighting=StageState==EPGStageState::InProgress || StageState==EPGStageState::WaveIntermission;
+    for (int32 I=0; I<EncounterGates.Num(); ++I)
+    {
+        auto* Gate=EncounterGates[I].Get();
+        const bool Sealed=Fighting && EncounterGateObjectives[I]==CombatManager->GetCurrentStageId();
+        const auto Collision=Sealed ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision;
+        if (Gate->GetCollisionEnabled()!=Collision)
+        {
+            Gate->SetCollisionEnabled(Collision); Gate->SetHiddenInGame(!Sealed);
+            UE_LOG(LogTemp,Display,TEXT("PGDungeon encounter gate objective=%d sealed=%d"),EncounterGateObjectives[I],Sealed);
+        }
+    }
     const bool Failed = StageState == EPGStageState::Failed || StageState == EPGStageState::Finished;
     const bool Locked = !Failed && (CombatManager->GetCurrentStageId() < 6 ||
         StageState == EPGStageState::InProgress || StageState == EPGStageState::WaveIntermission);
@@ -114,7 +160,7 @@ void APGDungeonGenerator::Tick(float DeltaSeconds)
         auto* Gate=BossGates[I].Get();
         const auto Collision = Locked ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision;
         if (Gate->GetCollisionEnabled() != Collision) Gate->SetCollisionEnabled(Collision);
-        const FVector Destination=GateClosedLocations[I]-FVector(0,0,Locked ? 0 : 360);
+        const FVector Destination=GateClosedLocations[I]-FVector(0,0,Locked ? 0 : FMath::Max(200.f,Definition->CombatBarrierHeight)+40.f);
         Gate->SetWorldLocation(FMath::VInterpConstantTo(Gate->GetComponentLocation(),Destination,DeltaSeconds,360.f/FMath::Max(.1f,Definition->GateTransitionSeconds)));
         Gate->SetHiddenInGame(!Locked && Gate->GetComponentLocation().Equals(Destination,1.f));
     }

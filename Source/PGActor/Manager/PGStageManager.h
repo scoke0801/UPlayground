@@ -152,7 +152,7 @@ public:
     void PrepareRun(int32 StageId);
     void RestoreRunResult();
     bool IsManualReady() const { return CurrentStageState == EPGStageState::RunPreparation || CurrentStageDataCache.bManualReady; }
-    bool CanReady() const { return CurrentStageState == EPGStageState::RunPreparation || (CurrentStageState == EPGStageState::BuildPhase && bRewardCommitted); }
+    bool CanReady() const { return !bDungeonCombat && (CurrentStageState == EPGStageState::RunPreparation || (CurrentStageState == EPGStageState::BuildPhase && bRewardCommitted)); }
 	APGStageManager();
 
 protected:

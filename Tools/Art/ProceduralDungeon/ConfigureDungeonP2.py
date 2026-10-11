@@ -3,9 +3,7 @@ import hashlib
 import json
 import math
 import shutil
-import struct
 import time
-import wave
 from datetime import datetime
 from pathlib import Path
 import unreal as u
@@ -90,13 +88,37 @@ ruins=[p for p in definition.get_editor_property('ruin_meshes')]
 # Convert soft references by loading known saved kit paths.
 ruins=[u.load_asset(DEST+'/Meshes/'+n) for n in ['sm_ChapelColumn_01_04','sm_Grave_01_01','sm_ChapelWall_03_02']]
 cube=u.load_asset('/Engine/BasicShapes/Cube'); cylinder=u.load_asset('/Engine/BasicShapes/Cylinder')
+paving=copy_mesh('/Game/ExternalAssets/LevelDesign/RuinedCrypt/Environment/GroundStones_01/sm_GroundStones_01_01')
+boundary=[copy_mesh('/Game/Environment/ForestRuins/Meshes/SM_PGFR_HD_StoneWall_0'+str(i)) for i in [1,2]]
+# Generate real simple collision only on dungeon-owned copies. Original art is read-only.
+mesh_editor=u.get_editor_subsystem(u.StaticMeshEditorSubsystem)
+for mesh in ruins:
+    for section in range(mesh.get_num_sections(0)):
+        mesh_editor.enable_section_collision(mesh,True,0,section)
+    assert mesh_editor.set_convex_decomposition_collisions(mesh,8,24,100000),mesh.get_path_name()
+    # UE reports convex hulls separately from box/sphere/capsule primitives.
+    assert mesh_editor.get_convex_collision_count(mesh)>0,mesh.get_path_name()
+    mesh.get_editor_property('body_setup').set_editor_property('collision_trace_flag',u.CollisionTraceFlag.CTF_USE_SIMPLE_AND_COMPLEX)
+    save(mesh)
 
 def piece(mesh,location,scale,yaw=0,material=None,occluder=False):
+    if mesh in (cube,cylinder) and not occluder:
+        # Replace prototype rectangles/discs with the sanctuary's actual stone paving.
+        bounds=paving.get_bounds(); origin=bounds.origin; ext=bounds.box_extent
+        # Keep individual stones at a natural aspect ratio; stretching a whole
+        # rubble patch into the former long glyph strips creates blade-like slabs.
+        sx=min(320.,max(220.,min(scale[0],scale[1])*100))/(max(ext.x,ext.y)*2)
+        sy=sx
+        sz=2.4/(ext.z*2); angle=math.radians(yaw)
+        location=(location[0]-origin.x*sx*math.cos(angle)+origin.y*sy*math.sin(angle),
+                  location[1]-origin.x*sx*math.sin(angle)-origin.y*sy*math.cos(angle),.5-(origin.z-ext.z)*sz)
+        mesh=paving; scale=(sx,sy,sz); material=None
     p=u.PGDungeonModulePiece()
     p.set_editor_property('mesh',mesh)
     if material: p.set_editor_property('material',material)
     p.set_editor_property('transform',u.Transform(location=u.Vector(*location),rotation=u.Rotator(pitch=0,yaw=yaw,roll=0),scale=u.Vector(*scale)))
     p.set_editor_property('occluder',occluder)
+    p.set_editor_property('collision',occluder)
     return p
 
 def prop(mesh,x,y,height,yaw):
@@ -173,27 +195,22 @@ gate=asset('M_PGDungeonSeal',u.Material,u.MaterialFactoryNew(),DEST+'/Materials'
 LIB.delete_all_material_expressions(gate)
 uv=expr(gate,u.MaterialExpressionTextureCoordinate)
 t=expr(gate,u.MaterialExpressionTime)
-color=custom(gate,['UV','T'],'float bars=step(frac(UV.x*9),0.16); float edge=step(UV.y,0.05)+step(0.95,UV.y); return float3(1.0,0.32,0.055)*(bars*2+edge)*(0.85+0.15*sin(T*2));')
+color=custom(gate,['UV','T'],'''float waves=pow(saturate(sin(UV.x*63+sin(UV.y*17-T*3)*2)),12);
+float rise=pow(saturate(sin(UV.y*85-T*7+sin(UV.x*23))),18);
+float edge=pow(saturate(1-UV.y),7)+pow(saturate(UV.y),12);
+return lerp(float3(.035,.14,.3),float3(.12,.5,.8),waves)*(.7+waves*1.2+rise*.6)+float3(.18,.45,.65)*edge;''')
 wire(uv,color,'UV'); wire(t,color,'T')
-mask=custom(gate,['UV'],'return max(step(frac(UV.x*9),0.16),max(step(UV.y,0.05),step(0.95,UV.y)));',u.CustomMaterialOutputType.CMOT_FLOAT1)
-wire(uv,mask,'UV')
-gate.set_editor_property('blend_mode',u.BlendMode.BLEND_MASKED)
+mask=custom(gate,['UV','T'],'return .1+.16*pow(saturate(sin(UV.x*63+sin(UV.y*17-T*3)*2)),12)+.18*pow(abs(UV.y*2-1),8);',u.CustomMaterialOutputType.CMOT_FLOAT1)
+wire(uv,mask,'UV'); wire(t,mask,'T')
+gate.set_editor_property('blend_mode',u.BlendMode.BLEND_TRANSLUCENT)
 gate.set_editor_property('shading_model',u.MaterialShadingModel.MSM_UNLIT)
 gate.set_editor_property('two_sided',True)
 assert LIB.connect_material_property(color,'',u.MaterialProperty.MP_EMISSIVE_COLOR)
-assert LIB.connect_material_property(mask,'',u.MaterialProperty.MP_OPACITY_MASK)
+assert LIB.connect_material_property(mask,'',u.MaterialProperty.MP_OPACITY)
 LIB.recompile_material(gate); save(gate)
 
-sound_path=OUT/'PG_DungeonSeal.wav'
-with wave.open(str(sound_path),'wb') as stream:
-    stream.setparams((1,2,24000,0,'NONE','not compressed'))
-    values=[]
-    for i in range(16800):
-        t=i/24000; attack=min(1,t/.025); envelope=attack*math.exp(-t*6)
-        v=sum(math.sin(2*math.pi*f*t)*a for f,a in [(110,.45),(221,.22),(331,.12),(557,.06)])*envelope
-        values.append(struct.pack('<h',int(max(-1,min(1,v))*18000)))
-    stream.writeframes(b''.join(values))
-task=u.AssetImportTask(); task.set_editor_property('filename',str(sound_path)); task.set_editor_property('destination_path',DEST+'/Audio')
+sound_path=ROOT/'Content/ExternalAssets/Sound/SFX/Collision_Rock_Heavy_01.wav'
+task=u.AssetImportTask(); task.set_editor_property('filename',str(sound_path)); task.set_editor_property('destination_path',DEST+'/Audio'); task.set_editor_property('destination_name','PG_DungeonSeal')
 task.set_editor_property('automated',True); task.set_editor_property('replace_existing',True); task.set_editor_property('save',True)
 u.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 sound=u.load_asset(DEST+'/Audio/PG_DungeonSeal'); assert sound
@@ -207,6 +224,8 @@ pool.set_editor_property('drop_chance',1.); pool.set_editor_property('entries',b
 catalog.set_editor_property('drop_pools',[p for p in pools if str(p.get_editor_property('id'))!='DungeonTreasure']+[pool]); save(catalog)
 
 for key,value in dict(content_version=2,room_modules=modules,decoration_graph=graph,wall_material=stone_mat,
+    boundary_mesh=boundary[0],boundary_variants=boundary[1:],boundary_segment_length=240.,
+    boundary_overlap=30.,boundary_ground_inset=30.,combat_barrier_height=500.,
     treasure_mesh=cup,treasure_material=None,branch_loot_pool='DungeonTreasure',gate_mesh=cube,gate_material=gate,gate_sound=sound).items():
     definition.set_editor_property(key,value)
 save(definition)

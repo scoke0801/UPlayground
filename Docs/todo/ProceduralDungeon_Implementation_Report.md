@@ -2,6 +2,25 @@
 
 기준: [기획서](../Design/ProceduralDungeon_Design.md), Unreal Engine 5.8.2, 2026-10-10.
 
+## PCG 경계벽 외형 재설계 — 2026-10-10
+
+- 기존 `sm_ChapelWall_03_02`는 하부가 크게 뚫린 예배당 파손 조각이다. 이를 반복하면서 두께 80cm·지정 높이에 비균일 축척해 구멍과 얇은 단면이 반복됐다. `L_PG_ForestRuins`의 `DetailedForestLayout.py`가 실제 담장에 사용하는 `SM_PGFR_HD_StoneWall_01/02`로 교체했다.
+- 동일 석재/이끼 재질을 던전 사본으로 복제하고 가림 페이드를 연결한다. 기본 간격 240cm, 겹침 30cm, 매입 30cm로 원본의 비율을 보존한다. 4구간 단위로 변형을 섞고 별도 난수 소비 없이 배치한다. `BoundaryVariants`, `BoundarySegmentLength`, `BoundaryOverlap`, `BoundaryGroundInset`으로 조절하며 `WallHeight`는 연속 충돌 코어에만 적용한다.
+- 외부 비충돌 배경 지면을 바닥보다 130cm 낮은 위치에서 2cm 낮은 위치로 올렸다. 방 바닥의 검은 수직 단면을 가리며 방/통로 충돌 및 이동 경로는 유지한다. 원본 숲 유적 맵과 메시/재질은 변경하지 않는다.
+- `RunDungeonExploration.py --step build`, `--step assets`는 종료 코드 0/PASS. 맵 미리보기와 에셋 저장 완료. `solidrender/runtime.json`에서 돌담 588개(492/96)의 균일 축척·접지, 소품 캡슐 차단, 전투방 3출입구 봉쇄·해제 및 화면 5장을 확인했다. `05_forest_masonry.png`는 근접 검수 화면이다.
+- 첫 렌더 프로세스는 기능 검사 PASS 후 종료 코드 `0xC0000005`를 반환했다. 증거는 `Saved/QA/ProceduralDungeon/P2/wall-redesign.shutdown-failure.log` 및 `.result.json`으로 보존했다. 기존 유형의 종료 오류이며 원인 해결을 확정하지 않는다. 직접 조작·패키지 성능 검증은 수행하지 않았다.
+- `--step paths`도 종료 코드 0/PASS: 100시드 실제 내비게이션·캐릭터 캡슐 경로, 실패·취소 후 복구를 확인했다. 렌더 재실행은 화면/기능 검사를 다시 통과했지만 동일한 종료 오류가 재현돼 최종 `solidrender.result.json`은 FAIL로 유지한다. 외형 수정과 에셋 적용은 완료했으며 렌더 프로세스 종료 안정성은 미해결이다.
+
+## PCG 충돌·모델·전투 장벽 보완 — 2026-10-10
+
+- `AssembleModules`는 조각별 `bCollision`으로, PCG 출력은 충돌 활성 ISM으로 생성한다. 던전 사본의 기둥·묘비·석벽에 각각 2/8/8개 볼록 형상을 저장했다. UE의 `GetSimpleCollisionCount`는 볼록 형상을 제외하므로 `GetConvexCollisionCount`로 재로드 검증한다.
+- 경계 외형은 `sm_ChapelWall_03_02`, 평면 장식은 `sm_GroundStones_01_01`을 사용한다. 원본 `L_PG_ForestRuins`와 외부 에셋은 수정하지 않는다. 석벽의 부서진 틈은 숨긴 연속 충돌 코어가 막으며, 가림 페이드 중에도 차단한다. `BoundarySegmentLength`, `WallHeight`로 크기를 조절한다.
+- 목표 1~5의 모든 연결 소켓에 장벽을 미리 생성한다. StageManager 틱 이후 전투/웨이브 대기 상태와 목표 ID를 확인해 표시와 충돌을 함께 전환한다. 보상 단계에는 개방하고 실패·취소·재생성에 정리한다. 보스의 선행 목표 잠금은 유지한다. 장벽은 시간에 따라 흐르는 반투명 발광 재질이며 `CombatBarrierHeight` 기본값은 500cm다.
+- `RunDungeonExploration.py --step build|assets|automation|paths|combat|solidrender`로 재현한다. 에셋 변경 전 `Saved/QA/ProceduralDungeon/P2/Backups`에 백업한다.
+- 빌드 성공, 자동 테스트 60개(49 성공/11 경고 포함 성공/실패 0), 100시드 완전 경로, 3시드 16웨이브·104마리·강화 7회 완주 및 실패 복구 통과. `combat/runtime.json`의 45건은 일반방 전투·웨이브 대기·보상 단계에서 각 출입구를 실제 플레이어 캡슐로 가로질러 봉쇄/개방을 검사한다.
+- `solidrender/runtime.json`은 저장 에셋의 충돌 재로드, 기둥 캡슐 차단, 전투방 3출입구 봉쇄·해제와 화면 4장을 기록한다. 검증은 자동 이동/처치이며 사람의 직접 플레이, 회피 연속 입력 및 저사양 패키지 성능 수용은 별도다.
+- 최종 렌더는 기능 검사·화면 4장·종료 코드 0으로 통과했다. 직전 실행은 검사 완료 후 종료 시 `0xC0000005`가 발생했으며 `solidrender.shutdown-failure.log`와 `.result.json`에 보존했다. 검증용 카메라를 명시적으로 파괴한 뒤 재실행은 통과했으나 간헐 종료 오류의 원인 해결을 확정하지 않는다.
+
 ## P2 환경·탐험 통합 — 2026-10-10
 
 분기 전리품, 제작 방 변형, 보스 문 연출, PCG 환경 배치, 발견형 미니맵 보완, 환경 가림 처리를 구현했다. 아래 P2 첫 단계와 P1/P0는 당시 이력이다. 체크포인트 복원·패키지 성능·사람의 직접 완주 수용은 P3이며 자동 텔레포트·자동 처치로 대체하지 않는다.

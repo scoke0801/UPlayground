@@ -635,6 +635,9 @@ void APGStageManager::OnRewardSelected()
 {
     if (CurrentStageState != EPGStageState::BuildPhase || !bRewardCommitted) return;
     CloseRewardWindow();
+    // Dungeon encounters are armed by completing rewards and triggered by room entry.
+    // Keep manual reward selection, but do not require a separate ready confirmation.
+    if (bDungeonCombat) FinishBuildPhase();
 }
 
 void APGStageManager::GoToNextStage()

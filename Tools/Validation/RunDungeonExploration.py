@@ -10,7 +10,7 @@ OUT = ROOT / 'Saved/QA/ProceduralDungeon/P2'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--step', choices=['build', 'assets', 'automation', 'runtime', 'render', 'combat', 'paths', 'p2', 'p2render'], required=True)
+    parser.add_argument('--step', choices=['build', 'assets', 'automation', 'runtime', 'render', 'combat', 'paths', 'p2', 'p2render', 'solidrender'], required=True)
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     version = json.loads((ROOT/'UPlayground.uproject').read_text())['EngineAssociation']
@@ -36,6 +36,9 @@ def main():
             cmd += ['-nullrhi', '-PGDungeonCombat' if args.step=='combat' else '-PGDungeonPreview',
                 '-ExecutePythonScript='+str(ROOT/'Tools/Validation'/('ProbeDungeonCombat.py' if args.step=='combat' else 'ProbeProceduralDungeon.py'))]
             marker = 'PGDungeonCombat PROBE PASS' if args.step=='combat' else 'PGDungeon PROBE PASS'
+        elif args.step=='solidrender':
+            cmd += ['-PGDungeonCombat','-RenderOffscreen','-ExecutePythonScript='+str(ROOT/'Tools/Validation/ProbeDungeonSolids.py')]
+            marker = 'PGDungeonSolids PROBE PASS'
         elif args.step in ('p2','p2render'):
             cmd += ['-PGDungeonCombat','-ExecutePythonScript='+str(ROOT/'Tools/Validation/ProbeDungeonP2.py')]
             cmd += ['-RenderOffscreen','-PGDungeonP2Render'] if args.step=='p2render' else ['-nullrhi']

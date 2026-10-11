@@ -46,6 +46,8 @@ protected:
     virtual void Tick(float DeltaSeconds) override;
 private:
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> BossGates;
+    UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> EncounterGates;
+    TArray<int32> EncounterGateObjectives;
     bool StartDungeonCombat();
     void StopDungeonCombat();
     UPROPERTY() TArray<TObjectPtr<UInstancedStaticMeshComponent>> GeneratedComponents;

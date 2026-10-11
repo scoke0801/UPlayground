@@ -57,11 +57,11 @@ bool APGDungeonGenerator::AssembleModules()
             if (Bounds.Max.Z>30 && (Bounds.Intersect(FBox(FVector(-Clear,-Half,-100),FVector(Clear,Half,1000))) ||
                 Bounds.Intersect(FBox(FVector(-Half,-Clear,-100),FVector(Half,Clear,1000)))))
             { LastError=FString::Printf(TEXT("Module %s piece %s overlaps reserve %.1f: %s"),*Module->ModuleId.ToString(),*Mesh->GetName(),Clear,*Bounds.ToString()); return false; }
-            const FString Key=Mesh->GetPathName()+GetPathNameSafe(Material)+(Piece.bOccluder ? TEXT("fade") : TEXT("floor"));
+            const FString Key=Mesh->GetPathName()+GetPathNameSafe(Material)+(Piece.bOccluder ? TEXT("fade") : TEXT("floor"))+(Piece.bCollision ? TEXT("solid") : TEXT("accent"));
             auto*& Group=Groups.FindOrAdd(Key);
             if (!Group)
             {
-                Group=MakeInstances(Mesh,Material,false);
+                Group=MakeInstances(Mesh,Material,Piece.bCollision);
                 if (Piece.bOccluder) Group->ComponentTags.Add(TEXT("PGDungeonOccluder"));
             }
             const int32 I=Group->AddInstance(Piece.Transform*RoomTransform,true);
@@ -135,7 +135,7 @@ void APGDungeonGenerator::CompleteEnvironment(UPCGComponent* Component,uint32 Re
         if (!Points || Data.Tags.Num()!=1) { Valid=false; break; }
         auto* Mesh=LoadObject<UStaticMesh>(nullptr,**Data.Tags.CreateConstIterator());
         if (!Mesh) { Valid=false; break; }
-        auto* Instances=MakeInstances(Mesh,nullptr,false);
+        auto* Instances=MakeInstances(Mesh,nullptr,true);
         Instances->ComponentTags.Add(TEXT("PGDungeonOccluder"));
         for (const auto& Point:Points->GetPoints())
         {
@@ -157,7 +157,8 @@ void APGDungeonGenerator::BuildOccluders()
             for (int32 I=0; I<C->GetInstanceCount(); ++I)
             {
                 FTransform Transform; C->GetInstanceTransform(I,Transform,true);
-                Occluders.Add({C,I,C->GetStaticMesh()->GetBoundingBox().TransformBy(Transform),0.f});
+                // Geometry is static until regeneration; expand the query bounds once.
+                Occluders.Add({C,I,C->GetStaticMesh()->GetBoundingBox().TransformBy(Transform).ExpandBy(100.f),0.f});
             }
 }
 
@@ -169,20 +170,27 @@ void APGDungeonGenerator::UpdateOcclusion(float DeltaSeconds)
     FVector View; FRotator Rotation; PC->GetPlayerViewPoint(View,Rotation);
     const FVector Target=Player->GetActorLocation()-FVector(0,0,40);
     const bool Active=PC->GetViewTarget()==Player && State==EPGDungeonState::Ready;
-    TSet<UInstancedStaticMeshComponent*> Dirty;
+    const FVector ViewToTarget = Target-View;
+    const float OccludedFade = 1.f-FMath::Clamp(Definition->OccludedOpacity,0.f,1.f);
+    const float FadeSpeed = 1.f/FMath::Max(.1f,Definition->OcclusionFadeSeconds);
     FadedInstanceCount=0;
     for (auto& Entry:Occluders)
     {
         auto* C=Entry.Component.Get(); if (!C) continue;
         // Expanded line-box test protects both the player and the nearby floor telegraph.
-        const bool Blocked=Active && FMath::LineBoxIntersection(Entry.Bounds.ExpandBy(100.f),View,Target,Target-View);
-        const float Desired=Blocked ? 1.f-FMath::Clamp(Definition->OccludedOpacity,0.f,1.f) : 0.f;
-        const float Fade=FMath::FInterpConstantTo(Entry.Fade,Desired,DeltaSeconds,1.f/FMath::Max(.1f,Definition->OcclusionFadeSeconds));
+        const bool Blocked=Active && FMath::LineBoxIntersection(Entry.Bounds,View,Target,ViewToTarget);
+        const float Desired=Blocked ? OccludedFade : 0.f;
+        const float Fade=FMath::FInterpConstantTo(Entry.Fade,Desired,DeltaSeconds,FadeSpeed);
         if (!FMath::IsNearlyEqual(Fade,Entry.Fade,.001f))
-        { C->SetCustomDataValue(Entry.Index,2,Fade,false); Entry.Fade=Fade; Dirty.Add(C); }
+        {
+            // UE 5.8 tracks custom-data changes and queues an instance-only upload.
+            // MarkRenderStateDirty would recreate the entire component scene proxy
+            // every fade frame, invalidating otherwise stable rendering resources.
+            C->SetCustomDataValue(Entry.Index,2,Fade,false);
+            Entry.Fade=Fade;
+        }
         if (Fade>.01f) ++FadedInstanceCount;
     }
-    for (auto* C:Dirty) C->MarkRenderStateDirty();
 }
 
 bool APGDungeonGenerator::SpawnTreasures()
