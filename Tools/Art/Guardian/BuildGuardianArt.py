@@ -1,9 +1,6 @@
 """Original low-poly guardian armor. Blender CLI; metres, shield faces +X."""
 import json
 import math
-import random
-import struct
-import wave
 from pathlib import Path
 import bpy
 import bmesh
@@ -101,19 +98,7 @@ shoulder = model('SM_PG_GuardianPauldron',pauldron)
 shoulder.location = (.03,.72,.24)
 (OUT/'manifest.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
 
-# Short original metal/charge cues; deterministic, unclipped PCM sources.
-for name,duration,frequencies in [
-    ('S_PG_GuardClang',.22,[470,923,1471,2243]), ('S_PG_GuardWindup',.40,[190,285,570]),
-    ('S_PG_GuardLock',.10,[850,1700]), ('S_PG_GuardRecover',.25,[120,233,402]),
-    ('S_PG_GuardSlam',.22,[85,177,355,710])]:
-    rng = random.Random(15103); rate = 44100; samples = []
-    for i in range(int(rate*duration)):
-        t=i/rate; envelope=min(1,t/.003)*math.exp(-t/(duration*.24))
-        tone=sum(math.sin(math.tau*f*t)/(1+j*.5) for j,f in enumerate(frequencies))/len(frequencies)
-        value=(tone*.65+rng.uniform(-1,1)*.16*math.exp(-t/.025))*envelope
-        samples.append(struct.pack('<h',int(max(-.95,min(.95,value))*32767)))
-    with wave.open(str(OUT/(name+'.wav')),'wb') as stream:
-        stream.setnchannels(1); stream.setsampwidth(2); stream.setframerate(rate); stream.writeframes(b''.join(samples))
+# SFX are imported from ExternalAssets/Sound/SFX by ConfigureGuardianPresentation.py.
 
 camera_data=bpy.data.cameras.new('Camera'); camera=bpy.data.objects.new('Camera',camera_data); scene.collection.objects.link(camera)
 camera.location=(2.4,-2.1,1.7); target=Vector((0,.20,0))

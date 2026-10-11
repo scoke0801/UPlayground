@@ -1,5 +1,5 @@
 """Combat cycle presentation and three-stage playable preset. Back up authored assets once."""
-import unreal, os, json, shutil, math, wave, struct, random
+import unreal, os, json, shutil
 ROOT = unreal.Paths.project_dir()
 OUT = '/Game/DataCenter/CombatCycle'
 BACKUP = os.path.join(unreal.Paths.project_saved_dir(), 'Backups', 'CombatCycle')
@@ -53,19 +53,12 @@ perk_icon = import_file(os.path.join(ART, 'T_CombatPerks.png'), 'T_CombatPerks')
 perk_icon.set_editor_property('lod_group', unreal.TextureGroup.TEXTUREGROUP_UI)
 perk_icon.set_editor_property('max_texture_size', 2048); save(perk_icon)
 
-# Small original synthesized impact and rarity cues; deterministic source WAVs remain reviewable.
-os.makedirs(ART, exist_ok=True)
-sounds = {}
-for name, base, duration, metallic in [('Normal',110,.12,False),('Heavy',65,.22,False),('Critical',210,.18,True),('Common',440,.16,True),('Magic',660,.30,True),('Rare',880,.55,True)]:
-    rng = random.Random(14); rate=44100; frames=[]
-    for i in range(int(rate*duration)):
-        t=i/rate; env=(1-t/duration)**2 * min(1,t/.003)
-        value = (math.sin(2*math.pi*base*t) + .35*math.sin(2*math.pi*base*1.5*t) if metallic else .65*rng.uniform(-1,1)+math.sin(2*math.pi*(base*t-30*t*t)))
-        frames.append(struct.pack('<h', int(max(-1,min(1,value*.28*env))*32767)))
-    filename=os.path.join(ART,'S_'+name+'.wav')
-    with wave.open(filename,'wb') as stream:
-        stream.setnchannels(1); stream.setsampwidth(2); stream.setframerate(rate); stream.writeframes(b''.join(frames))
-    sounds[name]=import_file(filename,'S_'+name)
+# Source WAVs are supplied assets; do not recreate temporary synthesis.
+spec=json.load(open(os.path.join(ROOT,'Tools/Validation/Data/ExternalSFX.json'),encoding='utf-8'))
+sounds={}
+for name in ['Normal','Heavy','Critical','Common','Magic','Rare']:
+    stem=spec['replacements'][OUT+'/S_'+name]
+    sounds[name]=import_file(os.path.join(ROOT,spec['source_directory'],stem+'.wav'),'S_'+name)
 
 # Finite single-instance camera patterns, authored as three separately tunable assets.
 shakes={}

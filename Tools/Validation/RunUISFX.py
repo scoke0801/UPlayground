@@ -18,9 +18,10 @@ from RunQA import ROOT, FATAL, read_text, run_process, unexpected_errors
 def read_wave(path):
     with wave.open(str(path),'rb') as stream:
         rate, channels, width = stream.getframerate(),stream.getnchannels(),stream.getsampwidth()
-        assert width==2, (path,width)
-        samples=array.array('h',stream.readframes(stream.getnframes()))
-    if sys.byteorder!='little':
+        assert width in (2,3), (path,width)
+        raw=stream.readframes(stream.getnframes())
+        samples = array.array('h',raw) if width==2 else [int.from_bytes(raw[i:i+3], 'little', signed=True)/256 for i in range(0,len(raw),3)]
+    if width==2 and sys.byteorder!='little':
         samples.byteswap()
     mono=[sum(samples[i:i+channels])/channels/32768 for i in range(0,len(samples),channels)]
     return rate,mono,dict(channels=channels,sample_rate=rate,duration=len(mono)/rate,
@@ -55,7 +56,7 @@ def main():
     command=[engine/'Engine/Binaries/Win64/UnrealEditor.exe',ROOT/'UPlayground.uproject','/Game/Maps/RogueArena',
              '-game','-ExecCmds=t.MaxFPS 30,au.NeverDisableSubmixes 1,PGRewardProbe audio','-seconds=45','-RenderOffscreen','-windowed',
              '-ForceRes','-ResX=1280','-ResY=720','-nosplash','-unattended','-nop4','-AudioMixer','-DeterministicAudio',
-             '-ini:Engine:[Audio]:UnfocusedVolumeMultiplier=1.0,[Audio]:PlatformHeadroomDB=-3.0',
+             '-ini:Engine:[Audio]:UnfocusedVolumeMultiplier=1.0,[Audio]:PlatformHeadroomDB=-3.0,[/Script/Engine.AudioSettings]:MonoChannelUpmixMethod=Linear',
              '-PGTestProfile='+run_id,'-abslog='+str(out/'runtime.log')]
     code,timeout=run_process(command,ROOT,out/'stdout.log',150)
     log=read_text(out/'runtime.log') if (out/'runtime.log').exists() else ''
@@ -80,12 +81,16 @@ def main():
                     case['problems'].append('Expected silent UI bus')
             else:
                 ref=refs['open' if name=='burst' else 'victory' if name=='paused' else name]
-                ref_rate,reference,_=read_wave(ROOT/'Tools/Art/UISFX'/ref['filename'])
+                ref_rate,reference,_=read_wave(ROOT/manifest['source_directory']/ref['filename'])
                 assert rate==ref_rate, (rate,ref_rate)
                 case.update(compare(samples,reference))
                 # UE BaseWindowsEngine.ini reserves -3 dB of platform headroom;
                 # make it explicit above so the capture has a reproducible gain.
-                expected_gain=ref['volume']*manifest['sound_class_volume']*10**(-3/20)
+                # Linear mono upmix writes half amplitude to each stereo channel.
+                # See SignalProcessing/Private/ChannelMap.cpp in UE 5.8.
+                upmix_gain=.5 if ref['channels']==1 and stats['channels']==2 else 1.0
+                expected_gain=ref['volume']*manifest['sound_class_volume']*10**(-3/20)*upmix_gain
+                case['expected_gain']=expected_gain
                 if case['correlation']<.97:
                     case['problems'].append('Rendered waveform does not match expected sound')
                 if abs(case['gain']-expected_gain)>.01:

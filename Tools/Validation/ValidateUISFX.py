@@ -5,8 +5,8 @@ from pathlib import Path
 import unreal
 
 root = Path(unreal.Paths.project_dir()).resolve()
-source = root/'Tools/Art/UISFX'
-manifest = json.loads((source/'manifest.json').read_text(encoding='utf-8'))
+manifest = json.loads((root/'Tools/Art/UISFX/manifest.json').read_text(encoding='utf-8'))
+source = root/manifest['source_directory']
 settings_class = unreal.load_class(None,'/Script/PGUI.PGUIStyleSettings')
 assert settings_class
 settings = unreal.get_default_object(settings_class)
@@ -32,7 +32,7 @@ for slot,entry in zip(slots,manifest['sounds']):
     assert not sound.get_editor_property('looping')
     assert sound.get_editor_property('loading_behavior')==unreal.SoundWaveLoadingBehavior.FORCE_INLINE
     assert sound.get_sound_asset_compression_type()==unreal.SoundAssetCompressionType.PCM
-    assert sound.get_editor_property('num_channels')==2
+    assert sound.get_editor_property('num_channels')==entry['channels']
     assert abs(sound.get_editor_property('duration')-entry['duration'])<.001
     assert abs(sound.get_editor_property('volume')-entry['volume'])<.001
     assert sound.get_editor_property('override_concurrency')

@@ -1,4 +1,4 @@
-"""Import original UI waves and configure a dry 2D UI bus. UE Python commandlet.
+"""Import supplied UI waves and configure a dry 2D UI bus. UE Python commandlet.
 
 Source: Tools/Art/UISFX/BuildUISFX.py. Idempotent; backs up existing packages.
 Run ValidateUISFX.py in a fresh editor process after this importer.
@@ -11,8 +11,8 @@ import shutil
 import unreal
 
 ROOT = Path(unreal.Paths.project_dir()).resolve()
-SOURCE = ROOT/'Tools/Art/UISFX'
-MANIFEST = json.loads((SOURCE/'manifest.json').read_text(encoding='utf-8'))
+MANIFEST = json.loads((ROOT/'Tools/Art/UISFX/manifest.json').read_text(encoding='utf-8'))
+SOURCE = ROOT/MANIFEST['source_directory']
 DEST = MANIFEST['asset_directory']
 BACKUP = ROOT/'Saved/Backups/UISFX'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
 TOOLS = unreal.AssetToolsHelpers.get_asset_tools()

@@ -16,18 +16,20 @@ def dbfs(value):
 def measure(path):
     with wave.open(str(path), 'rb') as stream:
         width, channels, rate, count = stream.getsampwidth(), stream.getnchannels(), stream.getframerate(), stream.getnframes()
-        if width != 2 or stream.getcomptype() != 'NONE':
-            raise ValueError(f'{path}: expected uncompressed 16-bit PCM')
-        samples = array('h', stream.readframes(count))
-    if sys.byteorder != 'little':
+        if width not in (2,3) or stream.getcomptype() != 'NONE':
+            raise ValueError(f'{path}: expected uncompressed 16/24-bit PCM')
+        raw = stream.readframes(count)
+        samples = array('h', raw) if width==2 else [int.from_bytes(raw[i:i+3], 'little', signed=True) for i in range(0,len(raw),3)]
+        full_scale = 1 << (8*width-1)
+    if width==2 and sys.byteorder != 'little':
         samples.byteswap()
     if not samples or len(samples) != count*channels:
         raise ValueError(f'{path}: empty or truncated audio')
-    peak = max(abs(value) for value in samples)/32768
-    rms = math.sqrt(sum(value*value for value in samples)/len(samples))/32768
-    clipped = sum(value == -32768 or value == 32767 for value in samples)
+    peak = max(abs(value) for value in samples)/full_scale
+    rms = math.sqrt(sum(value*value for value in samples)/len(samples))/full_scale
+    clipped = sum(value == -full_scale or value == full_scale-1 for value in samples)
     block = max(channels, int(rate*.05)*channels)
-    block_rms = [math.sqrt(sum(v*v for v in samples[start:start+block])/len(samples[start:start+block]))/32768
+    block_rms = [math.sqrt(sum(v*v for v in samples[start:start+block])/len(samples[start:start+block]))/full_scale
                  for start in range(0, len(samples), block)]
     return dict(path=str(path), duration_seconds=round(count/rate, 4), sample_rate=rate, channels=channels,
         peak_dbfs=dbfs(peak), rms_dbfs=dbfs(rms), max_50ms_rms_dbfs=dbfs(max(block_rms)),
@@ -35,13 +37,12 @@ def measure(path):
 
 
 def analyze(capture_dir=None):
-    paths = sorted((ROOT/'Tools/Art/Guardian').glob('S_*.wav'))
-    paths += sorted((ROOT/'Tools/Art/CombatCycle').glob('S_*.wav'))
+    paths = sorted((ROOT/'Content/ExternalAssets/Sound/SFX').glob('*.wav'))
     source = [measure(path) for path in paths]
     captures = [measure(path) for path in sorted(capture_dir.glob('*.wav'))] if capture_dir else []
     errors = [row['path']+': silent or clipped' for row in source+captures if row['silent'] or row['clipped_samples']]
-    if len([row for row in source if 'Guard' in Path(row['path']).stem]) != 5:
-        errors.append('Expected five guardian source cues')
+    if len(source) != 51:
+        errors.append('Expected 51 supplied SFX sources')
     if capture_dir and not captures:
         errors.append('No engine master-output WAV captures')
     warnings = [row['path']+': peak above -1 dBFS' for row in captures if row['peak_dbfs'] is not None and row['peak_dbfs'] > -1]

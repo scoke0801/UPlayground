@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "source_directory": "Content/ExternalAssets/Sound/SFX",
+  "replacements": {
+    "/Game/DataCenter/CombatCycle/S_Normal": "Sword_Hit_Designed_01",
+    "/Game/DataCenter/CombatCycle/S_Heavy": "Hit_Flesh_Heavy_01",
+    "/Game/DataCenter/CombatCycle/S_Critical": "Blade_Flesh_Tear_01",
+    "/Game/DataCenter/CombatCycle/S_Common": "Dash_Glove_Short_01",
+    "/Game/DataCenter/CombatCycle/S_Magic": "Blade_Ring_Short_01",
+    "/Game/DataCenter/CombatCycle/S_Rare": "Skill_Ice_Burst_01",
+    "/Game/Art/Guardian/S_PG_GuardClang": "Blade_Parry_Shield_01",
+    "/Game/Art/Guardian/S_PG_GuardWindup": "Sword_Swing_Heavy_03",
+    "/Game/Art/Guardian/S_PG_GuardLock": "Blade_Metal_Hit_01",
+    "/Game/Art/Guardian/S_PG_GuardRecover": "Dash_Strap_Short_01",
+    "/Game/Art/Guardian/S_PG_GuardSlam": "Collision_Metal_Plate_01",
+    "/Game/Art/Consumables/S_MoonlightHealing": "Skill_Air_Burst_01",
+    "/Game/DataCenter/Audio/UI/S_PG_UI_RewardOpen": "Dash_Air_Short_01",
+    "/Game/DataCenter/Audio/UI/S_PG_UI_RewardConfirm": "Blade_Ring_Short_01",
+    "/Game/DataCenter/Audio/UI/S_PG_UI_Victory": "Skill_Ice_Burst_01",
+    "/Game/Dungeons/ForestSanctuary/Audio/PG_DungeonSeal": "Collision_Rock_Heavy_01"
+  },
+  "player_swings": {
+    "100": "Sword_Swing_Light_01",
+    "101": "Sword_Swing_Light_01",
+    "102": "Sword_Swing_Light_01",
+    "110": "Sword_Attack_Slash_01",
+    "111": "Sword_Swing_Light_01",
+    "112": "Sword_Swing_Heavy_01",
+    "113": "Sword_Swing_Light_01",
+    "114": "Sword_Swing_Light_01",
+    "116": "Sword_Swing_Light_04",
+    "117": "Sword_Swing_Light_01",
+    "118": "Sword_Swing_Light_01"
+  }
+}

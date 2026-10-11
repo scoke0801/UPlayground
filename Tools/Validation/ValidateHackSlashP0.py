@@ -61,6 +61,10 @@ def validate_hack_slash_p0(rows=None):
         additional.update(s['id'] for s in CREATURE_COMBAT['skills'])
         dark_knight=json.loads((root/'Tools/Validation/Data/DarkKnightBoss.json').read_text(encoding='utf-8'))
         additional.update(s['id'] for s in dark_knight['skills'])
+        from MotionExpansionContracts import additional_ids
+        additional.update(additional_ids())
+        from P09WeaponRoster import SPEC as p09_weapons
+        additional.update(s['id'] for s in p09_weapons['skills'])
         assert len(rows)==len(by_id) and set(by_id)-{r['SkillID'] for r in old_rows} <= additional
         for old in old_rows:
             current = regression_rows[old['SkillID']]

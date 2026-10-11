@@ -106,12 +106,14 @@ for entry in manifest['meshes']:
     mesh.set_material(0,mat); save(mesh)
 
 sounds={}
-for source in sorted(SOURCE.glob('*.wav')):
-    preserve(DEST+'/'+source.stem)
+sfx=json.loads((ROOT/'Tools/Validation/Data/ExternalSFX.json').read_text(encoding='utf-8'))
+for path,stem in sfx['replacements'].items():
+    if not path.startswith(DEST+'/'): continue
+    name=path.rsplit('/',1)[1]; preserve(path)
     task=unreal.AssetImportTask()
-    for key,value in [('filename',str(source)),('destination_path',DEST),('destination_name',source.stem),('automated',True),('replace_existing',True),('save',True)]: task.set_editor_property(key,value)
-    tools.import_asset_tasks([task]); sounds[source.stem]=unreal.load_asset(DEST+'/'+source.stem)
-    assert sounds[source.stem]
+    for key,value in dict(filename=str(ROOT/sfx['source_directory']/(stem+'.wav')),destination_path=DEST,destination_name=name,automated=True,replace_existing=True,save=True).items(): task.set_editor_property(key,value)
+    tools.import_asset_tasks([task]); sounds[name]=unreal.load_asset(path)
+    assert sounds[name]
 
 presentation_path=DATA+'/DA_PGGuardianPresentation'
 preserve(presentation_path)

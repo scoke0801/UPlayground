@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ConfigureAttackMotion import configure_montage_blend
 
 ROOT = Path(unreal.Paths.project_dir()).resolve()
+SFX_SPEC = json.loads((ROOT/'Tools/Validation/Data/ExternalSFX.json').read_text(encoding='utf-8'))
 DEST = '/Game/DataCenter/HackSlashP0'
 SPEC = json.loads((ROOT / 'Tools/Validation/HackSlashP0.json').read_text(encoding='utf-8'))
 BACKUP = ROOT / 'Saved/Backups/HackSlashP0' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
@@ -62,7 +63,6 @@ from PlayerSlashMaterial import build as build_slash_material
 build_slash_material(material)
 save(material)
 
-sound = unreal.load_asset('/Game/DataCenter/CombatCycle/S_Normal')
 mapping = []
 for item in SPEC['skills']:
     skill_id = item['id']
@@ -93,7 +93,7 @@ for item in SPEC['skills']:
     set_props(profile, {'skill_id':skill_id, 'duration':item['duration'], 'aim_lock':item.get('aim', .1),
                         'dodge_cancel':item['dodge'], 'attack_cancel':item['attack'], 'attack_speed':1.,
                         'frenzy_per_cast_cap':3, 'hit_phases':phases, 'movement_segments':[movement],
-                        'pose_keys':keys, 'slash_material':material, 'swing_sound':sound})
+                        'pose_keys':keys, 'slash_material':material, 'swing_sound':unreal.load_asset('/Game/ExternalAssets/Sound/SFX/'+SFX_SPEC['player_swings'][str(skill_id)])})
     save(profile)
     row = by_id[skill_id]
     row['PlayerProfile'] = profile.get_path_name()
