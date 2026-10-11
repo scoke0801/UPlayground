@@ -1,0 +1,935 @@
+{
+  "status": "PASS",
+  "reports": {
+    "runtime": "Saved/QA/P09Weapons_20261010T124510613379",
+    "dungeon": "Saved/QA/P09Weapons_20261010T123811310906",
+    "qa": "Saved/QA/20261010T123810Z_f9637f03"
+  },
+  "monsters": [
+    {
+      "id": 15701,
+      "family": "Spear",
+      "sex": "Female",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "창병",
+      "base": 15101,
+      "skills": [
+        15751
+      ],
+      "stats": {
+        "Health": 1250,
+        "Attack": 85,
+        "Defense": 30,
+        "MovementSpeed": 350
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15702,
+      "family": "Spear",
+      "sex": "Male",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "창병",
+      "base": 15101,
+      "skills": [
+        15751
+      ],
+      "stats": {
+        "Health": 1250,
+        "Attack": 85,
+        "Defense": 30,
+        "MovementSpeed": 350
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15703,
+      "family": "Spear",
+      "sex": "Female",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 창병",
+      "base": 15101,
+      "skills": [
+        15751,
+        15752
+      ],
+      "stats": {
+        "Health": 1875,
+        "Attack": 115,
+        "Defense": 70,
+        "MovementSpeed": 340
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15704,
+      "family": "Spear",
+      "sex": "Male",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 창병",
+      "base": 15101,
+      "skills": [
+        15751,
+        15752
+      ],
+      "stats": {
+        "Health": 1875,
+        "Attack": 115,
+        "Defense": 70,
+        "MovementSpeed": 340
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15705,
+      "family": "Spear",
+      "sex": "Female",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 창병",
+      "base": 15101,
+      "skills": [
+        15751,
+        15752,
+        15753
+      ],
+      "stats": {
+        "Health": 3000,
+        "Attack": 144,
+        "Defense": 110,
+        "MovementSpeed": 330
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15706,
+      "family": "Spear",
+      "sex": "Male",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 창병",
+      "base": 15101,
+      "skills": [
+        15751,
+        15752,
+        15753
+      ],
+      "stats": {
+        "Health": 3000,
+        "Attack": 144,
+        "Defense": 110,
+        "MovementSpeed": 330
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15707,
+      "family": "Greatsword",
+      "sex": "Female",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "대검병",
+      "base": 15101,
+      "skills": [
+        15754
+      ],
+      "stats": {
+        "Health": 1550,
+        "Attack": 95,
+        "Defense": 30,
+        "MovementSpeed": 305
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15708,
+      "family": "Greatsword",
+      "sex": "Male",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "대검병",
+      "base": 15101,
+      "skills": [
+        15754
+      ],
+      "stats": {
+        "Health": 1550,
+        "Attack": 95,
+        "Defense": 30,
+        "MovementSpeed": 305
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15709,
+      "family": "Greatsword",
+      "sex": "Female",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 대검병",
+      "base": 15101,
+      "skills": [
+        15754,
+        15755
+      ],
+      "stats": {
+        "Health": 2325,
+        "Attack": 128,
+        "Defense": 70,
+        "MovementSpeed": 295
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15710,
+      "family": "Greatsword",
+      "sex": "Male",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 대검병",
+      "base": 15101,
+      "skills": [
+        15754,
+        15755
+      ],
+      "stats": {
+        "Health": 2325,
+        "Attack": 128,
+        "Defense": 70,
+        "MovementSpeed": 295
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15711,
+      "family": "Greatsword",
+      "sex": "Female",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 대검병",
+      "base": 15101,
+      "skills": [
+        15754,
+        15755,
+        15756
+      ],
+      "stats": {
+        "Health": 3720,
+        "Attack": 162,
+        "Defense": 110,
+        "MovementSpeed": 285
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15712,
+      "family": "Greatsword",
+      "sex": "Male",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 대검병",
+      "base": 15101,
+      "skills": [
+        15754,
+        15755,
+        15756
+      ],
+      "stats": {
+        "Health": 3720,
+        "Attack": 162,
+        "Defense": 110,
+        "MovementSpeed": 285
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15713,
+      "family": "Staff",
+      "sex": "Female",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "술사",
+      "base": 15102,
+      "skills": [
+        15757
+      ],
+      "stats": {
+        "Health": 1000,
+        "Attack": 85,
+        "Defense": 30,
+        "MovementSpeed": 315
+      },
+      "drop_pool": "Rogue.Shooter"
+    },
+    {
+      "id": 15714,
+      "family": "Staff",
+      "sex": "Male",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "술사",
+      "base": 15102,
+      "skills": [
+        15757
+      ],
+      "stats": {
+        "Health": 1000,
+        "Attack": 85,
+        "Defense": 30,
+        "MovementSpeed": 315
+      },
+      "drop_pool": "Rogue.Shooter"
+    },
+    {
+      "id": 15715,
+      "family": "Staff",
+      "sex": "Female",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 술사",
+      "base": 15102,
+      "skills": [
+        15757,
+        15758
+      ],
+      "stats": {
+        "Health": 1500,
+        "Attack": 115,
+        "Defense": 70,
+        "MovementSpeed": 305
+      },
+      "drop_pool": "Rogue.Shooter"
+    },
+    {
+      "id": 15716,
+      "family": "Staff",
+      "sex": "Male",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 술사",
+      "base": 15102,
+      "skills": [
+        15757,
+        15758
+      ],
+      "stats": {
+        "Health": 1500,
+        "Attack": 115,
+        "Defense": 70,
+        "MovementSpeed": 305
+      },
+      "drop_pool": "Rogue.Shooter"
+    },
+    {
+      "id": 15717,
+      "family": "Staff",
+      "sex": "Female",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 술사",
+      "base": 15102,
+      "skills": [
+        15757,
+        15758,
+        15759
+      ],
+      "stats": {
+        "Health": 2400,
+        "Attack": 144,
+        "Defense": 110,
+        "MovementSpeed": 295
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15718,
+      "family": "Staff",
+      "sex": "Male",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 술사",
+      "base": 15102,
+      "skills": [
+        15757,
+        15758,
+        15759
+      ],
+      "stats": {
+        "Health": 2400,
+        "Attack": 144,
+        "Defense": 110,
+        "MovementSpeed": 295
+      },
+      "drop_pool": "Rogue.Crusher"
+    }
+  ],
+  "source_motion_count": 42,
+  "motion_connections": 43,
+  "casts": [
+    {
+      "enemy": 15701,
+      "skill": 15751,
+      "damage": 42.5,
+      "hand_delta": 127.97846985204345
+    },
+    {
+      "enemy": 15702,
+      "skill": 15751,
+      "damage": 42.5,
+      "hand_delta": 127.15545962701587
+    },
+    {
+      "enemy": 15703,
+      "skill": 15751,
+      "damage": 57.5,
+      "hand_delta": 126.90543615883465
+    },
+    {
+      "enemy": 15703,
+      "skill": 15752,
+      "damage": 63.25,
+      "hand_delta": 214.26289985610802
+    },
+    {
+      "enemy": 15704,
+      "skill": 15751,
+      "damage": 57.5,
+      "hand_delta": 126.6846574812948
+    },
+    {
+      "enemy": 15704,
+      "skill": 15752,
+      "damage": 63.25,
+      "hand_delta": 220.5706473876768
+    },
+    {
+      "enemy": 15705,
+      "skill": 15751,
+      "damage": 72.0,
+      "hand_delta": 126.72230748592709
+    },
+    {
+      "enemy": 15705,
+      "skill": 15752,
+      "damage": 79.1875,
+      "hand_delta": 219.76839047696333
+    },
+    {
+      "enemy": 15705,
+      "skill": 15753,
+      "damage": 100.8125,
+      "hand_delta": 125.7181256537927
+    },
+    {
+      "enemy": 15706,
+      "skill": 15751,
+      "damage": 72.0,
+      "hand_delta": 127.2526791581661
+    },
+    {
+      "enemy": 15706,
+      "skill": 15752,
+      "damage": 79.1875,
+      "hand_delta": 216.0847137999596
+    },
+    {
+      "enemy": 15706,
+      "skill": 15753,
+      "damage": 100.8125,
+      "hand_delta": 126.35601191939878
+    },
+    {
+      "enemy": 15707,
+      "skill": 15754,
+      "damage": 59.375,
+      "hand_delta": 148.74229012211484
+    },
+    {
+      "enemy": 15708,
+      "skill": 15754,
+      "damage": 59.375,
+      "hand_delta": 148.22918954608187
+    },
+    {
+      "enemy": 15709,
+      "skill": 15754,
+      "damage": 80.0,
+      "hand_delta": 149.11623920428912
+    },
+    {
+      "enemy": 15709,
+      "skill": 15755,
+      "damage": 83.1875,
+      "hand_delta": 133.0223106300401
+    },
+    {
+      "enemy": 15710,
+      "skill": 15754,
+      "damage": 80.0,
+      "hand_delta": 148.39429986093072
+    },
+    {
+      "enemy": 15710,
+      "skill": 15755,
+      "damage": 83.1875,
+      "hand_delta": 132.9833425027063
+    },
+    {
+      "enemy": 15711,
+      "skill": 15754,
+      "damage": 101.25,
+      "hand_delta": 148.10651669874647
+    },
+    {
+      "enemy": 15711,
+      "skill": 15755,
+      "damage": 105.3125,
+      "hand_delta": 134.4321106516799
+    },
+    {
+      "enemy": 15711,
+      "skill": 15756,
+      "damage": 133.625,
+      "hand_delta": 144.51553357306483
+    },
+    {
+      "enemy": 15712,
+      "skill": 15754,
+      "damage": 151.875,
+      "hand_delta": 149.28589969602766
+    },
+    {
+      "enemy": 15712,
+      "skill": 15755,
+      "damage": 105.3125,
+      "hand_delta": 134.33206557437032
+    },
+    {
+      "enemy": 15712,
+      "skill": 15756,
+      "damage": 133.625,
+      "hand_delta": 143.78920111134786
+    },
+    {
+      "enemy": 15713,
+      "skill": 15757,
+      "damage": 42.5,
+      "hand_delta": 121.31504996493636
+    },
+    {
+      "enemy": 15714,
+      "skill": 15757,
+      "damage": 42.5,
+      "hand_delta": 120.30129707168987
+    },
+    {
+      "enemy": 15715,
+      "skill": 15757,
+      "damage": 57.5,
+      "hand_delta": 120.2506382088905
+    },
+    {
+      "enemy": 15715,
+      "skill": 15758,
+      "damage": 97.75,
+      "hand_delta": 115.10711708610135
+    },
+    {
+      "enemy": 15716,
+      "skill": 15757,
+      "damage": 57.5,
+      "hand_delta": 120.8637049664574
+    },
+    {
+      "enemy": 15716,
+      "skill": 15758,
+      "damage": 97.75,
+      "hand_delta": 115.10051474893794
+    },
+    {
+      "enemy": 15717,
+      "skill": 15757,
+      "damage": 72.0,
+      "hand_delta": 126.20048749043153
+    },
+    {
+      "enemy": 15717,
+      "skill": 15758,
+      "damage": 122.375,
+      "hand_delta": 114.53797128352146
+    },
+    {
+      "enemy": 15717,
+      "skill": 15759,
+      "damage": 93.625,
+      "hand_delta": 126.74518257918717
+    },
+    {
+      "enemy": 15718,
+      "skill": 15757,
+      "damage": 72.0,
+      "hand_delta": 120.79831421864931
+    },
+    {
+      "enemy": 15718,
+      "skill": 15758,
+      "damage": 122.375,
+      "hand_delta": 111.06643032148234
+    },
+    {
+      "enemy": 15718,
+      "skill": 15759,
+      "damage": 93.625,
+      "hand_delta": 126.61491173036596
+    }
+  ],
+  "autonomous": [
+    {
+      "enemy": 15705,
+      "skill": 15751,
+      "seen": [
+        15751,
+        15752,
+        15753
+      ],
+      "maintained_melee_pressure": false
+    },
+    {
+      "enemy": 15705,
+      "skill": 15752,
+      "seen": [
+        15752
+      ],
+      "maintained_melee_pressure": false
+    },
+    {
+      "enemy": 15705,
+      "skill": 15753,
+      "seen": [
+        15753
+      ],
+      "maintained_melee_pressure": false
+    },
+    {
+      "enemy": 15711,
+      "skill": 15754,
+      "seen": [
+        15754,
+        15755
+      ],
+      "maintained_melee_pressure": false
+    },
+    {
+      "enemy": 15711,
+      "skill": 15755,
+      "seen": [
+        15754,
+        15755,
+        15756
+      ],
+      "maintained_melee_pressure": false
+    },
+    {
+      "enemy": 15711,
+      "skill": 15756,
+      "seen": [
+        15756
+      ],
+      "maintained_melee_pressure": false
+    },
+    {
+      "enemy": 15717,
+      "skill": 15757,
+      "seen": [
+        15757,
+        15758
+      ],
+      "maintained_melee_pressure": false
+    },
+    {
+      "enemy": 15717,
+      "skill": 15758,
+      "seen": [
+        15758
+      ],
+      "maintained_melee_pressure": false
+    },
+    {
+      "enemy": 15717,
+      "skill": 15759,
+      "seen": [
+        15759
+      ],
+      "maintained_melee_pressure": true
+    }
+  ],
+  "dungeon_ids": [
+    15701,
+    15702,
+    15703,
+    15704,
+    15705,
+    15706,
+    15707,
+    15708,
+    15709,
+    15710,
+    15711,
+    15712,
+    15713,
+    15714,
+    15715,
+    15716,
+    15717,
+    15718
+  ],
+  "dungeon_runs": [
+    {
+      "seed": 101026,
+      "budgets": {
+        "1": 15,
+        "2": 19,
+        "3": 20,
+        "4": 24,
+        "5": 25,
+        "6": 1
+      },
+      "spawned": {
+        "1": 15,
+        "2": 19,
+        "3": 20,
+        "4": 24,
+        "5": 25,
+        "6": 1
+      },
+      "waves": 16
+    },
+    {
+      "seed": 17,
+      "budgets": {
+        "1": 15,
+        "2": 19,
+        "3": 20,
+        "4": 24,
+        "5": 25,
+        "6": 1
+      },
+      "spawned": {
+        "1": 15,
+        "2": 19,
+        "3": 20,
+        "4": 24,
+        "5": 25,
+        "6": 1
+      },
+      "waves": 16
+    },
+    {
+      "seed": -2147483648,
+      "budgets": {
+        "1": 15,
+        "2": 19,
+        "3": 20,
+        "4": 24,
+        "5": 25,
+        "6": 1
+      },
+      "spawned": {
+        "1": 15,
+        "2": 19,
+        "3": 20,
+        "4": 24,
+        "5": 25,
+        "6": 1
+      },
+      "waves": 16
+    }
+  ],
+  "automation": {
+    "succeeded": 49,
+    "succeededWithWarnings": 11,
+    "failed": 0,
+    "notRun": 0,
+    "inProcess": 0
+  },
+  "render_frames": 108,
+  "current_artifact_hashes": {
+    "Content/DataCenter/DataTables/Actor/DT_CharacterStat.uasset": "2a85a6a3c1d57a5899eeaeee04840b01ac72b540e061d883799c603f751e6ac6",
+    "Content/DataCenter/DataTables/Actor/DT_Enemy.uasset": "54617c26830af561d3331e40d6cbd1c51cbdd4cbfe2bb5d4db2a683cb97f48d4",
+    "Content/DataCenter/DataTables/Path/DT_Death.uasset": "8c3be1c2def0f261b6fceabc57e9dc3d87c3a1c2c2eb24bbbca0e844de9067d7",
+    "Content/DataCenter/DataTables/Skill/DT_Skill.uasset": "244c6632feeb7e7d2dc1e765b3fee0eb49b00fccc6c13ce477521fa3d82d09d2",
+    "Content/DataCenter/DataTables/Stage/DT_StageData.uasset": "0a8b4932c6d2579a2f26ab4f3da41de120d833450038d27b7dea745e9eea50d8",
+    "Content/DataCenter/P09Weapons/BP_15701.uasset": "38bef59ebd5e5f066633f264e1829cee28243fe5f8fd7d3bdd96b83f2e8b7dd0",
+    "Content/DataCenter/P09Weapons/BP_15702.uasset": "b51e6543d2b58a4cc00cedd4b39e7daddd167becae43beff2367bd83046933b4",
+    "Content/DataCenter/P09Weapons/BP_15703.uasset": "da4055b0578f681604c6d401c194d98ca6cc55b2dec658c4b8a25480953988aa",
+    "Content/DataCenter/P09Weapons/BP_15704.uasset": "66f30b2dd597f040edeed7107af126cd8d0dac0be7da256ac17d9d5a682dc177",
+    "Content/DataCenter/P09Weapons/BP_15705.uasset": "2b601bcdead2a267bb5d31d2733c45f1991e898bfbe017aa77fd23142ed59596",
+    "Content/DataCenter/P09Weapons/BP_15706.uasset": "2367f1737d34af8bd02f12b020441c29ea00e75d76d0eb726429231098097273",
+    "Content/DataCenter/P09Weapons/BP_15707.uasset": "b14ae84ef6888e4a0b42a74496cce785ecfe8a1fbb44c78242e0274f840a4120",
+    "Content/DataCenter/P09Weapons/BP_15708.uasset": "679c6afb62d4e9021fb76c82dec8a39c633d437edf160680454d574f2fd6ddd7",
+    "Content/DataCenter/P09Weapons/BP_15709.uasset": "5c728de2ab17668494c4973af53d407c919ebd48f48ae100faa372fb3a755fef",
+    "Content/DataCenter/P09Weapons/BP_15710.uasset": "ad356868544084457149df11d08217eba47bf2ce7372fe10c8fec08634cda83e",
+    "Content/DataCenter/P09Weapons/BP_15711.uasset": "223abe145444fa2288fe0c24cb79156315f73027aaf3385d4c43448dddb17245",
+    "Content/DataCenter/P09Weapons/BP_15712.uasset": "a1649f59431493887aceff78cfdc62eb340d54ac1c1cdd338634ea5c3af4a9f9",
+    "Content/DataCenter/P09Weapons/BP_15713.uasset": "b78fd80c52001b6e254f897233c16a63cefbbdf073e515b15a2e3b54272b9ada",
+    "Content/DataCenter/P09Weapons/BP_15714.uasset": "559f9b624e056b6844a2f76f9d411d402501b87f8f67049034cc46a3b7760d65",
+    "Content/DataCenter/P09Weapons/BP_15715.uasset": "fe9c7ca5e71264ce433b2f4bc13bc854bfbe64b18d8daf61622617f740b326da",
+    "Content/DataCenter/P09Weapons/BP_15716.uasset": "de921b8cbec4b762858dac241ef4b33aa99d0fc87daf9d9de53a0f7dbcd82533",
+    "Content/DataCenter/P09Weapons/BP_15717.uasset": "c7d421ce2c0c556149a547c99df7839582941ffb5e3b8b37ed7af2df543126e7",
+    "Content/DataCenter/P09Weapons/BP_15718.uasset": "785494b4625660914673350830de888a5a0e3aec2390ef46258c9360a094d596",
+    "Content/DataCenter/P09Weapons/BS_Greatsword.uasset": "e0ef3409161d3daa41e5038259235f7fa15177e50e63866fa3818cf21d2e6545",
+    "Content/DataCenter/P09Weapons/BS_Spear.uasset": "6653566208e521851e7d9264b04f1c81be9a69b18dc887db2040cb65f2c4422b",
+    "Content/DataCenter/P09Weapons/DA_15701.uasset": "d744cc4946361bc65aff858a3ee18337dcbf37ebed6088b85e2fd4af30180b3c",
+    "Content/DataCenter/P09Weapons/DA_15702.uasset": "159e140faddf84429653b1114a4f4bf88ad3dd51a3bb2bf2105a5b294ec65584",
+    "Content/DataCenter/P09Weapons/DA_15703.uasset": "44e0ea452089efd89bb1846bf3454f603bb8dc0161d63c0343c633a90d7bb4b2",
+    "Content/DataCenter/P09Weapons/DA_15704.uasset": "c8b684c0b107e6a47dbc25648ce9496bf8d66a9ee4b48b5aca8799eb677fbf57",
+    "Content/DataCenter/P09Weapons/DA_15705.uasset": "510bbe1c4675900c1fe4fcc81b84fdbba2a874a154b5eac9cfad6e3d07db7194",
+    "Content/DataCenter/P09Weapons/DA_15706.uasset": "bfa1f858b322efe680abd020ef10f13472bbad9d7dccefeae2dc52198ce0e982",
+    "Content/DataCenter/P09Weapons/DA_15707.uasset": "1fa7c9c8e7c374b9d5835ffd7ecac6c3c76f62e89d351b1248bb2e17f3af7231",
+    "Content/DataCenter/P09Weapons/DA_15708.uasset": "b21e46a602edced7feebcc46ec2779c0d314ba7923d762ab9e8c1f3815dae0fa",
+    "Content/DataCenter/P09Weapons/DA_15709.uasset": "620a389603dd8da85d057bc1f000b298e4ddceb9f414e7f2214d6d7fa755a90d",
+    "Content/DataCenter/P09Weapons/DA_15710.uasset": "441dd195edbd1fe4b300b23ba08cd2b69a21f6bcd9da7b044b9ddeac9883a338",
+    "Content/DataCenter/P09Weapons/DA_15711.uasset": "aaffaf4940a49abda1b71c8e5bcd6e744b93588655eccfdbf06419bfdf453c98",
+    "Content/DataCenter/P09Weapons/DA_15712.uasset": "6c0debef033be4b6b900a8629afa6d7707638b951d5eafeb4d559fc60f9eae22",
+    "Content/DataCenter/P09Weapons/DA_15713.uasset": "c02b7a46a43ec7a66442e640a63e09ce1b600b1b803849dd915d1dae233cdfca",
+    "Content/DataCenter/P09Weapons/DA_15714.uasset": "d81a80a93eebf5a63c1f3e021a75e8fcc06879d018711c11b0be26a9a93ab986",
+    "Content/DataCenter/P09Weapons/DA_15715.uasset": "5f35355a02e788c31fde9a3ca9ef67c8241e22e495d0a11ae1efae25f4cc1957",
+    "Content/DataCenter/P09Weapons/DA_15716.uasset": "0037bb1a431145a9d86515ca3d50f32c7602b03bb7a4adf9303d83d87f8496f4",
+    "Content/DataCenter/P09Weapons/DA_15717.uasset": "86074c3798f7ee12ce5ae3a6eb79963a83674d4f94bd473bdc31c89d422b7372",
+    "Content/DataCenter/P09Weapons/DA_15718.uasset": "ebfcc030030256c23d5b6489d691d9b6a73fcfcf057f5db05dff262a7c9ea9cb",
+    "Content/DataCenter/P09Weapons/M_Edge.uasset": "6554350b9d2e2bbe2fa35b487235a80b8e92d53881872973ecc6b30916545aa4",
+    "Content/DataCenter/P09Weapons/M_Gold.uasset": "d0b1728c44ecd78e834158a82cef78cdbeaa9ff704f6ec4f22c79135a918b69c",
+    "Content/DataCenter/P09Weapons/M_Grip.uasset": "4985687e46e546f4e4b90ed409f4f732f17aab3f62ca3b2b2cd9bab0931a4d63",
+    "Content/DataCenter/P09Weapons/M_Steel.uasset": "93a5d717c1d1529b292d9c554d94a3cbdab893905195c57e78037651268c40d3",
+    "Content/DataCenter/P09Weapons/Motion/AM_15751.uasset": "915ac15b7a9df3d839c74e509f989eb9da0255f8d8bb98e384873fa28f57debd",
+    "Content/DataCenter/P09Weapons/Motion/AM_15752.uasset": "75faca1b9cde7828cf1e22090c810f9a358899bf55934b04ce91d71aacd158c9",
+    "Content/DataCenter/P09Weapons/Motion/AM_15753.uasset": "782cc3c840b4a0268a21611b7bc059152ff8e8440e4897859f8b222d66b8f392",
+    "Content/DataCenter/P09Weapons/Motion/AM_15754.uasset": "4d7b2ad0f8143b3dfaf96cf2799b2ead7c78399058e76778246597b899c58f49",
+    "Content/DataCenter/P09Weapons/Motion/AM_15755.uasset": "fcdef0998ac0cfd7a5c9c1bacff3cd38e2becaf163965dd9ab9e31986f18c6c0",
+    "Content/DataCenter/P09Weapons/Motion/AM_15756.uasset": "fd4668de5cb4f29d2b2cfbf08af63adfaffea77c264fa497919dc1bd21ac1ee5",
+    "Content/DataCenter/P09Weapons/Motion/AM_15757.uasset": "012397331d74f23e9c5e17f2283afea4437c3bc77c4f40f0d2e2240213ab666f",
+    "Content/DataCenter/P09Weapons/Motion/AM_15758.uasset": "da3606d35b658eff04930971d3ee7ecd5c1cb01a7b38cbb471099ed1c6bd3be0",
+    "Content/DataCenter/P09Weapons/Motion/AM_15759.uasset": "48a202b0d43c654e4a088529b2ea158d6d3078c663a8036e68d084018c711990",
+    "Content/DataCenter/P09Weapons/Motion/AS_15751.uasset": "2e7043a22f5ceb875214ac5b2fa50ba8ff784a309903710327acb1c0d172463d",
+    "Content/DataCenter/P09Weapons/Motion/AS_15752.uasset": "2ca7c825e1b36c22a5f9c6fe588e157c6127dba7b6313e28dd6f6f2065bf28e6",
+    "Content/DataCenter/P09Weapons/Motion/AS_15753.uasset": "6c355770fc1d79926031405b7099eee5402b2ef9fdc080e7ebad97e3395ea0f2",
+    "Content/DataCenter/P09Weapons/Motion/AS_15754.uasset": "25c6c7f85741a7172af624d74dc1df8f96c7126f811d02a6160bfb1671858315",
+    "Content/DataCenter/P09Weapons/Motion/AS_15755.uasset": "0287024dabf1c049db89da7a0609bccdda51963cf51b60fafed69a6b24279ac0",
+    "Content/DataCenter/P09Weapons/Motion/AS_15756.uasset": "ee9dd3be83bcda2c8f53b34029e7ca46a45452a58ff6fe3437c7a2775fd077d8",
+    "Content/DataCenter/P09Weapons/Motion/AS_15757.uasset": "b9a814392a5a6aab57a919d180286935ae927b35af89fc02d01ad502a7c3ca30",
+    "Content/DataCenter/P09Weapons/Motion/AS_15758.uasset": "364541a12160f7cdbfd2cc37cada919cddcf14d5526b79e7934b5de27fd3406e",
+    "Content/DataCenter/P09Weapons/Motion/AS_15759.uasset": "f42e992a07f9eeb0da775ca2d0364bc484725133cd24b82d5e542b1ef2afd9b3",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Idle.uasset": "d4d6eede3f7ae8c8183685e6b1751d83b40b6126c945d2c3c333791a0d210c55",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Run_B.uasset": "686ff5022b95759919e05962a6d6be6bd5df18769df9249b7ff8214224ddd5e0",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Run_BL.uasset": "1daaf1f3f620559b6ecedadbc624b4e8eb283b76ca5f0d71a9601ff17837a9df",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Run_BR.uasset": "5f74d59166cb9d2502d601adfd10fa4b595ab284a5281f39e3d0ee360d2b6945",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Run_F.uasset": "5e675bf9a20e9816bf7e6736710cf74d70100534ddd2c5942a24e8e0bc323ad4",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Run_FL.uasset": "9ccae1ef969806ae943e0ad16d3008694fa66b15451a7f818cb751f5eda893d3",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Run_FR.uasset": "179aac9706c199152569aabd2572f0173fa89dd3bb1dd3795dddfe65732d13ed",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Run_L.uasset": "fd54cdf91f75b0e6127a779957d291fcdc5d77de05a51749accd64c81cb31878",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Run_R.uasset": "9b1e65452ea7edf9c16c8747bdc4b562906ba3c625085e55f32dafe1bcd38744",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Walk_B.uasset": "946088339c883d62ebc43a7f6b77890cd19609c144ce19b612a1eba4f06180ab",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Walk_BL.uasset": "a3bd948e103044c350102e33683f0529876a1e46f1255048f382e03f78526cdf",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Walk_BR.uasset": "36cadeda08338d1201798af705f61c81f0cb70705b0afd81800172f5926005a8",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Walk_F.uasset": "92cae14af849d3cae4a77e4b66fe93ddc7127368724ac71143969eb6805f372a",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Walk_FL.uasset": "9bf2eee381086a0b0e4312305055bc3177dd88cd0b61c147c1f045f8629ce4c4",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Walk_FR.uasset": "4c9467d3f3c4e43a9aadb49f794929d11829c9c8279d5729bcf2009906e973b7",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Walk_L.uasset": "5497c883da69392e147131847b373b39802b3cc19d616316530b4a35a1ae5491",
+    "Content/DataCenter/P09Weapons/Motion/AS_Greatsword_Walk_R.uasset": "be890622668f5e932267a68600232587d3b38b314f109059e58948c7c16a3d8f",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Idle.uasset": "41aff3aa411f8192371c42323f86ed0e216f0cfea428fe97062248e387971980",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Run_B.uasset": "b027db5ed4cdf9c29dc2b5dfb5d565676506e30db46d3c037d4d6030499efdd9",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Run_BL.uasset": "37f5ec11d212533ee57e06bc5fbe8aa83be59e43065303f09fbb61c9158d0db0",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Run_BR.uasset": "d71f2f8fedfc449c0d1dcc4ff7561840149a832d7976ab61d84d6088ed7e8804",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Run_F.uasset": "6d360c86aa66b3f50134527639165df84fa36dafa7742715018e2d4ffffc15c4",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Run_FL.uasset": "81df9d0d8672e2a45a320b84af15e29b27a98f02126666e606d6e741f487c6cb",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Run_FR.uasset": "6786323c815b8f7923dd7adf99dd9e9816ecc12f8919736a056cb3181bf41202",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Run_L.uasset": "d699ff78ba03fc6cf4ad350bb3ed3506aa2e7d42d750a2a8db70f71ed6d5a006",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Run_R.uasset": "26c1ddda400efe9a395377e8e6aa6a0a79a43ed6d3b4d07d4511de1eacc97b49",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Walk_B.uasset": "e21b051c20b5d7635283e9663a22cb4e00118cb68f54123cee304f493973b879",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Walk_BL.uasset": "12070de641575c605a9716a0861d3ca6eb273eece2dbcf6b0b8bcc7d5b995fcb",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Walk_BR.uasset": "b5dccf133f40dc25786d34cc7e530b59d3fc9a4ff9588631f73a547ee62634b2",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Walk_F.uasset": "b7d863443fed7d2e64aa0ccbdcb897a934a5fbd94858be7acafed87c438b8711",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Walk_FL.uasset": "68e9495fd39b1ed43ed8b6e138f2ec604bae3a93227556905120710ae0ec5d09",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Walk_FR.uasset": "ab572a3ca2195ac531280f74deb10a980dacc760de858af8cf171da06dc5039f",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Walk_L.uasset": "88b6fdd0f45a87de1804cc71eab04e64fe2a540f2cd69081fce273c9f0700b37",
+    "Content/DataCenter/P09Weapons/Motion/AS_Spear_Walk_R.uasset": "da8d34e3a8658db34691610eb42944182e17619a8fc86cb8f746d7700e9d9b25",
+    "Content/DataCenter/P09Weapons/Motion/IK_Source0.uasset": "c817dd704e9e3a7ce973311c6e1c7526ed7e612114aa4a8959bbda06d935492b",
+    "Content/DataCenter/P09Weapons/Motion/IK_Source1.uasset": "0a1e22ef68840f9800eb12ea7556ffd14e8d8b5b637ea0501ad6b95befd6928a",
+    "Content/DataCenter/P09Weapons/Motion/IK_Source2.uasset": "0e822682d9e9186b84d8a6023d7bb0cdf3cff3a5457f883f60dbd167a284f73f",
+    "Content/DataCenter/P09Weapons/Motion/IK_Source3.uasset": "98fa8c25b7aee641dffe771a97e38472669a230dee57154e45dbde7cd151b8ee",
+    "Content/DataCenter/P09Weapons/Motion/IK_Target.uasset": "4c3e26cd1a2766ecbefac313831b8e310ffc44967e223293c574f71a56f19f25",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGAttack_3Combo_1_Inplace_d472f8598f.uasset": "8b43f9650ce63676219410dfcf5a2cc7e47c2ec4d03556ea0c32cfe5e0c5dc8f",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGAttack_3Combo_2_Inplace_f8e5d1711b.uasset": "6ed0764221fc86a34362f56e506e9d06a6f63a8769d4f92fed6191e015b10ab5",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGAttack_3Combo_3_Inplace_8f3d7d1fdc.uasset": "44366f82be095cf431644230ef63421c63700de3727828e00328091f9dfbdf9b",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Run_B_2096fe8848.uasset": "1a477cc6c42b3c161c5d341d5fd5444ca6b8d27a46abea9b7b814abc98cbe5d5",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Run_BL_b9acf34293.uasset": "b9048de9432c2ad0519b85b7a75966784b3d1f9f2cdbc90d028d442eb1b8e4fd",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Run_BR_acd002a276.uasset": "113870b32e96d534c62ec3454f04793694a2b45f19a5ea4031bb51c4aa191872",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Run_F_d4878144a3.uasset": "87ed4613b78b175b0315b462863e81bae8f89d9d9eb342ea4526e15cd4b14f14",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Run_FL_af34b3c5d3.uasset": "2bb1b3449de699458259aae8d2ba0833adae638b445a735614c93e4615ebb3d7",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Run_FR_7901bda3d4.uasset": "b824d468e170e6a58e42f58596018693db987bc389346a0e2cb42b52cdfc336a",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Run_L_baea9b4cab.uasset": "e6ed22663ca9324d6c569d04ccbc41caf8db97be8a48e923c19d0f992400f889",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Run_R_607ac22122.uasset": "6fce3d56e9842c5d4c6a1d406a2b47b96e4467190eb7b4d28495135e8e147fe0",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Walk_B_ba971d9b8a.uasset": "5d73dd6a0036cd16a455a5ce1e044019f05909a4ac9fa62abca67f4721220a60",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Walk_BL_a8a397657f.uasset": "37d5cb31fbe4a2bd364e7b896e088f55c0a73a6e945a8e6ac32593794fe2a602",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Walk_BR_71e7eb184c.uasset": "19c5ed6a886e52a277b6c850b57102e7846285b4c719a1fe36530e0015a04ca9",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Walk_F_c413102ef3.uasset": "2bb0364c8084511fe6e12b49136482da248d0a4e726c5168d190809367b20cb4",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Walk_FL_4f598b8444.uasset": "9b22a7eb1eef1a73e09a8e117b5ccd8e9549d2d8090af21fc9e59e72059aa8e3",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Walk_FR_9c57abf691.uasset": "6cc482d9fef3e5e1f5c1b94e0ab3e09a4e2eb0aa9315c9b655493c9ceb2d26f5",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Walk_L_d7c191698e.uasset": "0bddc1416594f1409cad9615a0d001ef63826db0a1dcfd105695c2e79ad4a31c",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_8Way_Walk_R_074875df5e.uasset": "14b1cdfd393e3da53703b745216ae5d90c63b9597b37699c2aa44503c41b485e",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_Attack01_c056a7e4a8.uasset": "736ab55c7f2bb5947814d08ae6cf473c5ee8761f7ea7d63876c8e6d3e7c0bac5",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_Attack02_cde98f8ba3.uasset": "63101e5adfbc432a4aaa05995750aab16665a1679d29257c1f6ae487b7cdb684",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_Attack03_cb1679621a.uasset": "275d1f37e91509d6a75949023ad775eb5ca6efe09bf535987ccd129368b05c11",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGFrank_RPG_Spear_Equip_Idle_01ad3e0ae9.uasset": "aabf4a270c3dbc210a599eec14c391b1a29f85e612244de52266fb0841df86d3",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Run_B_68a02963fb.uasset": "aca55f0a1caf61b76ee01755da0fdad4e1de11c81731ad9fbc646aa9e08d08df",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Run_BL_cc116346e8.uasset": "6d9311f247a2f89390d71938ff04e95b8a9f124307a4575010d52f06a2088859",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Run_BR_5bd5d4934a.uasset": "90cbee9414acb4660674297dc398794bf4f08bd20480315a4bdc3d57ec237061",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Run_F_eb842bea12.uasset": "613137ac9fc2ec0d7609fe9218e46b62761a78327057762799f876bd38fc844d",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Run_FL_de5ee6cd08.uasset": "6875b486e2e5298aec8eaaaf666abbbad7b58c7862d35aab13fa49c05289ab6d",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Run_FR_733ddcd6c9.uasset": "c7f933fcf1f2ba990cdc24dfda45d1d5a30a8369ea1eddedf9bfa0729882fc5b",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Run_L_47350bb73c.uasset": "9fe323abdcefb736c95bb6e4340df8adc39c9017de88e8bf12d4a8176e30f898",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Run_R_c6e1c9793a.uasset": "b0e2c08c4b34423d85b307a3e4ad8b058a11c15715274ace7a12c7e0c1c53899",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Walk_B_45a15e3ea7.uasset": "0a8c86f29d02efc2cdd846322d739df3f6ced0395c73082f0ad1b2e2b082d51e",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Walk_BL_f4131c625a.uasset": "53283121991916323ee91bfbeffb15308e20fabd418bc91491cf507294dd6c83",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Walk_BR_d44ab93708.uasset": "f38bb5c272bd4b5a3d87f6a8cabc9eed149df5a6a9a68af984001bd506095811",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Walk_F_9d4ee88264.uasset": "f287f09826d2c0b4ef53877c9d77a0e4d0207ef853915e23b4bf58297b8de37d",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Walk_FL_69ed554322.uasset": "cb2d4b8a4f7bf3887ff5fbe4d8cf4d230d682ada887374d729699dc28e577ed8",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Walk_FR_f349c9f71c.uasset": "1e43fd176c952abee570a5a450d0f98d2b4e2f97dd96e1b35a0f775c17170675",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Walk_L_bb76845f02.uasset": "248ff43c914c1c7174d400a5cf600b1c7080b8c927edab847a903bb1b627dbdc",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_8Way_Walk_R_42ffb86806.uasset": "016c00d1c55330f51bb82c41bc20bd529eaab8a93db28b8e011b9e31a6ac0d14",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGGreatSword_Equip_Idle_64ba534610.uasset": "acbd43b4636aac258500600c984ff773b33006fc8f3bd509585d69d24b7b3cc0",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGMagic_Attack_1_InPlace_0ea645dd94.uasset": "c669e8efba50119024f79b732da60a6f54a058b63436d2794c45ccd807223113",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGMagic_Attack_2_InPlace_3467726007h.uasset": "b90a17f7c766325de5b191ca2ed816de768aa4749a1f3b48d077370ff79a5dc2",
+    "Content/DataCenter/P09Weapons/Motion/PGSwordSaint_AS_PGMagic_Attack_3_InPlace_b9b32cb5a2.uasset": "db153448df360e25c698ef33fd6e3cee721e941fce5ec601bf2acda46b021ba3",
+    "Content/DataCenter/P09Weapons/Motion/RTG_Source0.uasset": "1b978cf537ee92112238c53206ea79ca6a2df37d7676aed2c4e5e29c0d4ce788",
+    "Content/DataCenter/P09Weapons/Motion/RTG_Source1.uasset": "4f7478a8aa615040791be9cf206eab0d3286997f82c043da56c0756e0c307b06",
+    "Content/DataCenter/P09Weapons/Motion/RTG_Source2.uasset": "d69c22ea20e69eabfbc79753912ef85575f6d45fa8be53bb5a2db29bb5e16809",
+    "Content/DataCenter/P09Weapons/Motion/RTG_Source3.uasset": "174998138fdba62c52dba1bb2f6fc95bd42b2197ec6b39444d020a940c90bdd9",
+    "Content/DataCenter/P09Weapons/SM_PG_Greatsword_0.uasset": "ad195d348fc8ef899ca0cd2dc891aa544c8ca3ab5e732e66b97adbb7ee828991",
+    "Content/DataCenter/P09Weapons/SM_PG_Greatsword_1.uasset": "5807e86ea88d953d4920004a7c6d5ebcb51a48f052190b00877c742b9f7e3300",
+    "Content/DataCenter/P09Weapons/SM_PG_Greatsword_2.uasset": "b0924e7ae9e0497c6fbce445e300e27b86c12c46f75cb726f3d02e6fdd4c5fcd",
+    "Content/DataCenter/P09Weapons/SM_PG_Spear_0.uasset": "2f865e0766871f6a5b57665f9d1a6ed0d587e9bf834e6eb16c1801ba3ec145f4",
+    "Content/DataCenter/P09Weapons/SM_PG_Spear_1.uasset": "dc1e051ef5781665d8371bc2b2eb042e0afce2b269cbcaf4eb46a7b0efc1b31c",
+    "Content/DataCenter/P09Weapons/SM_PG_Spear_2.uasset": "b315b788e13f950f486d410d8e283c1d42abba63be619102384da10a23422579",
+    "Tools/Validation/Data/P09WeaponVariations.json": "37261f0930222a6dd074eefc23eabef7355e9f1ca21c04f7b7e05175dd3bc0f6"
+  },
+  "preserved_inventories": {
+    "art-animation-inventory.csv": {
+      "rows": 17376,
+      "sha256": "3ebe4c1719db4245122866d6cae9af0e58b7668a377a4a32d277ea83153546ff"
+    },
+    "dark-knight-use-manifest.csv": {
+      "rows": 12,
+      "sha256": "34e146cefb665a72c3cd2b6f7423a2c85fe40813457eae7bfec8d284a4af88cf"
+    }
+  },
+  "limitations": [
+    "직접 조작 난이도·연속 모션·청취 수용은 별도",
+    "50체 60fps 및 장시간 패키지 성능 미검증",
+    "C++ 변경 없이 기존 바이너리로 회귀 실행"
+  ]
+}

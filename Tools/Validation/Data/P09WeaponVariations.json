@@ -1,0 +1,778 @@
+{
+  "schema": 1,
+  "families": {
+    "Spear": {
+      "source_mesh": "/Game/Art/AnimationTests/FrankSlash/Setup/FrankSpear/SK_PGFrankSpear",
+      "motions": {
+        "Idle": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_Equip_Idle_01ad3e0ae9",
+        "Walk_F": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Walk_F_c413102ef3",
+        "Walk_FR": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Walk_FR_9c57abf691",
+        "Walk_R": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Walk_R_074875df5e",
+        "Walk_BR": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Walk_BR_71e7eb184c",
+        "Walk_B": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Walk_B_ba971d9b8a",
+        "Walk_BL": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Walk_BL_a8a397657f",
+        "Walk_L": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Walk_L_d7c191698e",
+        "Walk_FL": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Walk_FL_4f598b8444",
+        "Run_F": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Run_F_d4878144a3",
+        "Run_FR": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Run_FR_7901bda3d4",
+        "Run_R": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Run_R_607ac22122",
+        "Run_BR": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Run_BR_acd002a276",
+        "Run_B": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Run_B_2096fe8848",
+        "Run_BL": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Run_BL_b9acf34293",
+        "Run_L": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Run_L_baea9b4cab",
+        "Run_FL": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_8Way_Run_FL_af34b3c5d3"
+      }
+    },
+    "Greatsword": {
+      "source_mesh": "/Game/Art/AnimationTests/FrankSlash/Setup/FrankGreatSword/SK_PGFrankGreatSword",
+      "motions": {
+        "Idle": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_Equip_Idle_64ba534610",
+        "Walk_F": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Walk_F_9d4ee88264",
+        "Walk_FR": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Walk_FR_f349c9f71c",
+        "Walk_R": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Walk_R_42ffb86806",
+        "Walk_BR": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Walk_BR_d44ab93708",
+        "Walk_B": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Walk_B_45a15e3ea7",
+        "Walk_BL": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Walk_BL_f4131c625a",
+        "Walk_L": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Walk_L_bb76845f02",
+        "Walk_FL": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Walk_FL_69ed554322",
+        "Run_F": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Run_F_eb842bea12",
+        "Run_FR": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Run_FR_733ddcd6c9",
+        "Run_R": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Run_R_c6e1c9793a",
+        "Run_BR": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Run_BR_5bd5d4934a",
+        "Run_B": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Run_B_68a02963fb",
+        "Run_BL": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Run_BL_cc116346e8",
+        "Run_L": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Run_L_47350bb73c",
+        "Run_FL": "/Game/Art/AnimationTests/FrankSlash/Animations/GreatSword/AS_PGGreatSword_8Way_Run_FL_de5ee6cd08"
+      }
+    },
+    "Staff": {
+      "carry_family": "Spear"
+    }
+  },
+  "skills": [
+    {
+      "id": 15751,
+      "family": "Spear",
+      "source": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_Attack01_c056a7e4a8",
+      "motion_key": "15751",
+      "source_mesh": "/Game/Art/AnimationTests/FrankSlash/Setup/FrankSpear/SK_PGFrankSpear",
+      "name": "창병의 회전 창격",
+      "base": 15101,
+      "contact": 0.2,
+      "patch": {
+        "Pattern": "Sweep",
+        "TelegraphDuration": 0.8,
+        "RecoveryDuration": 0.9,
+        "SkillCoolTime": 3,
+        "SkillRange": 280,
+        "TravelDistance": 280,
+        "TelegraphRadius": 280,
+        "LineHalfWidth": 42,
+        "HalfAngleDegrees": 65,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 1.0,
+        "bHeavyImpactFeedback": false
+      }
+    },
+    {
+      "id": 15752,
+      "family": "Spear",
+      "source": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_Attack02_cde98f8ba3",
+      "motion_key": "15752",
+      "source_mesh": "/Game/Art/AnimationTests/FrankSlash/Setup/FrankSpear/SK_PGFrankSpear",
+      "name": "창병의 내려 베기",
+      "base": 15101,
+      "contact": 0.335,
+      "patch": {
+        "Pattern": "Sweep",
+        "TelegraphDuration": 0.95,
+        "RecoveryDuration": 1.15,
+        "SkillCoolTime": 5,
+        "SkillRange": 280,
+        "TravelDistance": 280,
+        "TelegraphRadius": 280,
+        "LineHalfWidth": 42,
+        "HalfAngleDegrees": 50,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 1.1,
+        "bHeavyImpactFeedback": false
+      }
+    },
+    {
+      "id": 15753,
+      "family": "Spear",
+      "source": "/Game/Art/AnimationTests/FrankSlash/Animations/Spear/AS_PGFrank_RPG_Spear_Attack01_c056a7e4a8",
+      "motion_key": "15751",
+      "source_mesh": "/Game/Art/AnimationTests/FrankSlash/Setup/FrankSpear/SK_PGFrankSpear",
+      "name": "창대장의 축력 창격",
+      "base": 15101,
+      "contact": 0.2,
+      "patch": {
+        "Pattern": "Sweep",
+        "TelegraphDuration": 1.2,
+        "RecoveryDuration": 1.5,
+        "SkillCoolTime": 7,
+        "SkillRange": 280,
+        "TravelDistance": 280,
+        "TelegraphRadius": 280,
+        "LineHalfWidth": 42,
+        "HalfAngleDegrees": 85,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 1.4,
+        "bHeavyImpactFeedback": true
+      }
+    },
+    {
+      "id": 15754,
+      "family": "Greatsword",
+      "source": "/Game/Art/AnimationTests/GrruzamSword/Animations/M_Big_Sword/AS_PGAttack_3Combo_1_Inplace_d472f8598f",
+      "source_mesh": "/Game/Art/AnimationTests/GrruzamSword/Setup/Grruzam/SK_PGGrruzam",
+      "name": "대검병의 횡베기",
+      "base": 15101,
+      "contact": 0.175,
+      "patch": {
+        "Pattern": "Sweep",
+        "TelegraphDuration": 1.0,
+        "RecoveryDuration": 1.2,
+        "SkillCoolTime": 3.0,
+        "SkillRange": 250,
+        "TelegraphRadius": 250,
+        "HalfAngleDegrees": 75,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 1.25,
+        "bHeavyImpactFeedback": true
+      }
+    },
+    {
+      "id": 15755,
+      "family": "Greatsword",
+      "source": "/Game/Art/AnimationTests/GrruzamSword/Animations/M_Big_Sword/AS_PGAttack_3Combo_2_Inplace_f8e5d1711b",
+      "source_mesh": "/Game/Art/AnimationTests/GrruzamSword/Setup/Grruzam/SK_PGGrruzam",
+      "name": "대검병의 올려베기",
+      "base": 15101,
+      "contact": 0.225,
+      "patch": {
+        "Pattern": "Sweep",
+        "TelegraphDuration": 1.1,
+        "RecoveryDuration": 1.35,
+        "SkillCoolTime": 5.0,
+        "SkillRange": 250,
+        "TelegraphRadius": 250,
+        "HalfAngleDegrees": 50,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 1.3,
+        "bHeavyImpactFeedback": true
+      }
+    },
+    {
+      "id": 15756,
+      "family": "Greatsword",
+      "source": "/Game/Art/AnimationTests/GrruzamSword/Animations/M_Big_Sword/AS_PGAttack_3Combo_3_Inplace_8f3d7d1fdc",
+      "source_mesh": "/Game/Art/AnimationTests/GrruzamSword/Setup/Grruzam/SK_PGGrruzam",
+      "name": "대검대장의 내려찍기",
+      "base": 15101,
+      "contact": 0.3,
+      "patch": {
+        "Pattern": "Sweep",
+        "TelegraphDuration": 1.35,
+        "RecoveryDuration": 1.7,
+        "SkillCoolTime": 7.0,
+        "SkillRange": 250,
+        "TelegraphRadius": 250,
+        "HalfAngleDegrees": 35,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 1.65,
+        "bHeavyImpactFeedback": true
+      }
+    },
+    {
+      "id": 15757,
+      "family": "Staff",
+      "source": "/Game/Art/AnimationTests/RPGAnimations/Animations/Magic/AS_PGMagic_Attack_1_InPlace_0ea645dd94",
+      "source_mesh": "/Game/Art/AnimationTests/RPGAnimations/Setup/RPG/SK_PGRPG",
+      "name": "술사의 마력탄",
+      "base": 15102,
+      "contact": 0.48,
+      "patch": {
+        "Pattern": "AimedProjectile",
+        "HalfAngleDegrees": 180,
+        "TelegraphDuration": 1.0,
+        "RecoveryDuration": 0.9,
+        "SkillCoolTime": 3.0,
+        "SkillRange": 1000,
+        "TravelDistance": 1100,
+        "TravelSpeed": 700,
+        "TelegraphRadius": 100,
+        "LineHalfWidth": 24,
+        "HazardCount": 3,
+        "HazardSpacing": 150,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 1.0,
+        "ProjectileClass": "/Script/PGActor.PGPatternProjectile",
+        "bHeavyImpactFeedback": false
+      }
+    },
+    {
+      "id": 15758,
+      "family": "Staff",
+      "source": "/Game/Art/AnimationTests/RPGAnimations/Animations/Magic/AS_PGMagic_Attack_2_InPlace_3467726007h",
+      "source_mesh": "/Game/Art/AnimationTests/RPGAnimations/Setup/RPG/SK_PGRPG",
+      "name": "술사의 봉인 지대",
+      "base": 15105,
+      "contact": 0.48,
+      "patch": {
+        "Pattern": "HazardSequence",
+        "HalfAngleDegrees": 180,
+        "TelegraphDuration": 1.3,
+        "RecoveryDuration": 1.3,
+        "SkillCoolTime": 6.0,
+        "SkillRange": 950,
+        "TravelDistance": 1100,
+        "TravelSpeed": 700,
+        "TelegraphRadius": 150,
+        "LineHalfWidth": 24,
+        "HazardCount": 3,
+        "HazardSpacing": 150,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 0.85,
+        "ProjectileClass": "/Script/PGActor.PGPatternProjectile",
+        "bHeavyImpactFeedback": false
+      }
+    },
+    {
+      "id": 15759,
+      "family": "Staff",
+      "source": "/Game/Art/AnimationTests/RPGAnimations/Animations/Magic/AS_PGMagic_Attack_3_InPlace_b9b32cb5a2",
+      "source_mesh": "/Game/Art/AnimationTests/RPGAnimations/Setup/RPG/SK_PGRPG",
+      "name": "대마도사의 마력 폭발",
+      "base": 15114,
+      "contact": 0.5,
+      "patch": {
+        "Pattern": "Sweep",
+        "HalfAngleDegrees": 180,
+        "TelegraphDuration": 1.5,
+        "RecoveryDuration": 1.5,
+        "SkillCoolTime": 8.0,
+        "SkillRange": 360,
+        "TravelDistance": 1100,
+        "TravelSpeed": 700,
+        "TelegraphRadius": 360,
+        "LineHalfWidth": 24,
+        "HazardCount": 3,
+        "HazardSpacing": 150,
+        "MinimumActivationRange": 0,
+        "EnemyDamageMultiplier": 1.3,
+        "ProjectileClass": "/Script/PGActor.PGPatternProjectile",
+        "bHeavyImpactFeedback": true
+      }
+    }
+  ],
+  "monsters": [
+    {
+      "id": 15701,
+      "family": "Spear",
+      "sex": "Female",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "창병",
+      "base": 15101,
+      "skills": [
+        15751
+      ],
+      "stats": {
+        "Health": 1250,
+        "Attack": 85,
+        "Defense": 30,
+        "MovementSpeed": 350
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15702,
+      "family": "Spear",
+      "sex": "Male",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "창병",
+      "base": 15101,
+      "skills": [
+        15751
+      ],
+      "stats": {
+        "Health": 1250,
+        "Attack": 85,
+        "Defense": 30,
+        "MovementSpeed": 350
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15703,
+      "family": "Spear",
+      "sex": "Female",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 창병",
+      "base": 15101,
+      "skills": [
+        15751,
+        15752
+      ],
+      "stats": {
+        "Health": 1875,
+        "Attack": 115,
+        "Defense": 70,
+        "MovementSpeed": 340
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15704,
+      "family": "Spear",
+      "sex": "Male",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 창병",
+      "base": 15101,
+      "skills": [
+        15751,
+        15752
+      ],
+      "stats": {
+        "Health": 1875,
+        "Attack": 115,
+        "Defense": 70,
+        "MovementSpeed": 340
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15705,
+      "family": "Spear",
+      "sex": "Female",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 창병",
+      "base": 15101,
+      "skills": [
+        15751,
+        15752,
+        15753
+      ],
+      "stats": {
+        "Health": 3000,
+        "Attack": 144,
+        "Defense": 110,
+        "MovementSpeed": 330
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15706,
+      "family": "Spear",
+      "sex": "Male",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 창병",
+      "base": 15101,
+      "skills": [
+        15751,
+        15752,
+        15753
+      ],
+      "stats": {
+        "Health": 3000,
+        "Attack": 144,
+        "Defense": 110,
+        "MovementSpeed": 330
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15707,
+      "family": "Greatsword",
+      "sex": "Female",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "대검병",
+      "base": 15101,
+      "skills": [
+        15754
+      ],
+      "stats": {
+        "Health": 1550,
+        "Attack": 95,
+        "Defense": 30,
+        "MovementSpeed": 305
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15708,
+      "family": "Greatsword",
+      "sex": "Male",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "대검병",
+      "base": 15101,
+      "skills": [
+        15754
+      ],
+      "stats": {
+        "Health": 1550,
+        "Attack": 95,
+        "Defense": 30,
+        "MovementSpeed": 305
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15709,
+      "family": "Greatsword",
+      "sex": "Female",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 대검병",
+      "base": 15101,
+      "skills": [
+        15754,
+        15755
+      ],
+      "stats": {
+        "Health": 2325,
+        "Attack": 128,
+        "Defense": 70,
+        "MovementSpeed": 295
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15710,
+      "family": "Greatsword",
+      "sex": "Male",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 대검병",
+      "base": 15101,
+      "skills": [
+        15754,
+        15755
+      ],
+      "stats": {
+        "Health": 2325,
+        "Attack": 128,
+        "Defense": 70,
+        "MovementSpeed": 295
+      },
+      "drop_pool": "Rogue.Chaser"
+    },
+    {
+      "id": 15711,
+      "family": "Greatsword",
+      "sex": "Female",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 대검병",
+      "base": 15101,
+      "skills": [
+        15754,
+        15755,
+        15756
+      ],
+      "stats": {
+        "Health": 3720,
+        "Attack": 162,
+        "Defense": 110,
+        "MovementSpeed": 285
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15712,
+      "family": "Greatsword",
+      "sex": "Male",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 대검병",
+      "base": 15101,
+      "skills": [
+        15754,
+        15755,
+        15756
+      ],
+      "stats": {
+        "Health": 3720,
+        "Attack": 162,
+        "Defense": 110,
+        "MovementSpeed": 285
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15713,
+      "family": "Staff",
+      "sex": "Female",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "술사",
+      "base": 15102,
+      "skills": [
+        15757
+      ],
+      "stats": {
+        "Health": 1000,
+        "Attack": 85,
+        "Defense": 30,
+        "MovementSpeed": 315
+      },
+      "drop_pool": "Rogue.Shooter"
+    },
+    {
+      "id": 15714,
+      "family": "Staff",
+      "sex": "Male",
+      "grade": "Normal",
+      "armor": "003",
+      "name": "술사",
+      "base": 15102,
+      "skills": [
+        15757
+      ],
+      "stats": {
+        "Health": 1000,
+        "Attack": 85,
+        "Defense": 30,
+        "MovementSpeed": 315
+      },
+      "drop_pool": "Rogue.Shooter"
+    },
+    {
+      "id": 15715,
+      "family": "Staff",
+      "sex": "Female",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 술사",
+      "base": 15102,
+      "skills": [
+        15757,
+        15758
+      ],
+      "stats": {
+        "Health": 1500,
+        "Attack": 115,
+        "Defense": 70,
+        "MovementSpeed": 305
+      },
+      "drop_pool": "Rogue.Shooter"
+    },
+    {
+      "id": 15716,
+      "family": "Staff",
+      "sex": "Male",
+      "grade": "Veteran",
+      "armor": "007",
+      "name": "숙련 술사",
+      "base": 15102,
+      "skills": [
+        15757,
+        15758
+      ],
+      "stats": {
+        "Health": 1500,
+        "Attack": 115,
+        "Defense": 70,
+        "MovementSpeed": 305
+      },
+      "drop_pool": "Rogue.Shooter"
+    },
+    {
+      "id": 15717,
+      "family": "Staff",
+      "sex": "Female",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 술사",
+      "base": 15102,
+      "skills": [
+        15757,
+        15758,
+        15759
+      ],
+      "stats": {
+        "Health": 2400,
+        "Attack": 144,
+        "Defense": 110,
+        "MovementSpeed": 295
+      },
+      "drop_pool": "Rogue.Crusher"
+    },
+    {
+      "id": 15718,
+      "family": "Staff",
+      "sex": "Male",
+      "grade": "Elite",
+      "armor": "012",
+      "name": "정예 술사",
+      "base": 15102,
+      "skills": [
+        15757,
+        15758,
+        15759
+      ],
+      "stats": {
+        "Health": 2400,
+        "Attack": 144,
+        "Defense": 110,
+        "MovementSpeed": 295
+      },
+      "drop_pool": "Rogue.Crusher"
+    }
+  ],
+  "wave_replacements": [
+    {
+      "stage": 1,
+      "wave": 1,
+      "source": 15102,
+      "enemy": 15701
+    },
+    {
+      "stage": 1,
+      "wave": 2,
+      "source": 15102,
+      "enemy": 15702
+    },
+    {
+      "stage": 2,
+      "wave": 1,
+      "source": 15103,
+      "enemy": 15707
+    },
+    {
+      "stage": 2,
+      "wave": 1,
+      "source": 15103,
+      "enemy": 15708
+    },
+    {
+      "stage": 1,
+      "wave": 2,
+      "source": 15102,
+      "enemy": 15713
+    },
+    {
+      "stage": 1,
+      "wave": 3,
+      "source": 15102,
+      "enemy": 15714
+    },
+    {
+      "stage": 3,
+      "wave": 1,
+      "source": 15102,
+      "enemy": 15703
+    },
+    {
+      "stage": 3,
+      "wave": 1,
+      "source": 15102,
+      "enemy": 15704
+    },
+    {
+      "stage": 3,
+      "wave": 2,
+      "source": 15203,
+      "enemy": 15709
+    },
+    {
+      "stage": 3,
+      "wave": 2,
+      "source": 15203,
+      "enemy": 15710
+    },
+    {
+      "stage": 3,
+      "wave": 2,
+      "source": 15102,
+      "enemy": 15715
+    },
+    {
+      "stage": 3,
+      "wave": 2,
+      "source": 15102,
+      "enemy": 15716
+    },
+    {
+      "stage": 4,
+      "wave": 2,
+      "source": 15205,
+      "enemy": 15705
+    },
+    {
+      "stage": 4,
+      "wave": 2,
+      "source": 15206,
+      "enemy": 15706
+    },
+    {
+      "stage": 5,
+      "wave": 1,
+      "source": 15205,
+      "enemy": 15711
+    },
+    {
+      "stage": 4,
+      "wave": 3,
+      "source": 15205,
+      "enemy": 15712
+    },
+    {
+      "stage": 5,
+      "wave": 2,
+      "source": 15205,
+      "enemy": 15717
+    },
+    {
+      "stage": 5,
+      "wave": 2,
+      "source": 15206,
+      "enemy": 15718
+    }
+  ],
+  "grips": {
+    "Female": {
+      "translation": [
+        -0.009,
+        -0.055,
+        -0.03
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": [
+        0.01,
+        0.01,
+        0.01
+      ]
+    },
+    "Male": {
+      "translation": [
+        -0.009,
+        -0.06,
+        -0.033
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": [
+        0.01,
+        0.01,
+        0.01
+      ]
+    }
+  }
+}

@@ -78,10 +78,13 @@ def check_loot_cycle(log):
     rolls = re.findall(r'PGLoot rolled enemy=(\d+) pool=(\S+) seed=(-?\d+) item=(\d+) guid=([0-9A-Fa-f]+) result=([01])', log)
     problems = []
     guaranteed_pools = {'Rogue.Crusher', 'Rogue.Warden', 'Rogue.Boss'}
-    boss_id=15401 if any(int(row[0])==15401 for row in rolls) else 15106
+    boss_ids = {int(row[0]) for row in rolls if row[1] == 'Rogue.Boss'}
+    if len(boss_ids) != 1 or not boss_ids.issubset({15106, 15401, 15601}):
+        problems.append(f'Expected one supported boss identity: {sorted(boss_ids)}')
+    boss_id = next(iter(boss_ids)) if len(boss_ids) == 1 else 15106
     guaranteed = Counter(int(row[0]) for row in rolls if row[1] in guaranteed_pools)
     expected = Counter({15104: 2, 15105: 2, boss_id: 1})
-    from MonsterVariationRoster import SPEC, CREATURE_IDS
+    from MonsterVariationRoster import SPEC, CREATURE_IDS, CREATURE_COMBAT
     if any(int(row[0]) in CREATURE_IDS for row in rolls):
         guaranteed_ids = {i for grade in SPEC['p09_grades'] if grade['grade']=='Elite' for i in grade['ids']}
         guaranteed_ids.update(c['id'] for c in SPEC['creatures'] if c['base'] in (15104,15105))
@@ -90,6 +93,20 @@ def check_loot_cycle(log):
             for wave in waves:
                 for eid,count in wave:
                     if eid in guaranteed_ids: expected[eid]+=count
+        imported_ids={c['id'] for c in CREATURE_COMBAT['monsters']}
+        imported_active=any(int(row[0]) in imported_ids for row in rolls) or any(
+            re.search(rf'PGCombatBT started pawn=BP_{eid}_',log) for eid in imported_ids)
+        if imported_active:
+            guaranteed_ids.update(c['id'] for c in CREATURE_COMBAT['monsters'] if c['base'] in (15104,15105))
+            for patch in CREATURE_COMBAT['wave_replacements']:
+                if patch['source'] in guaranteed_ids: expected[patch['source']]-=1
+                if patch['enemy'] in guaranteed_ids: expected[patch['enemy']]+=1
+        from P09WeaponRoster import SPEC as WEAPONS, IDS as WEAPON_IDS
+        if any(int(row[0]) in WEAPON_IDS for row in rolls):
+            guaranteed_ids.update(m['id'] for m in WEAPONS['monsters'] if m['drop_pool'] in guaranteed_pools)
+            for patch in WEAPONS['wave_replacements']:
+                if patch['source'] in guaranteed_ids: expected[patch['source']]-=1
+                if patch['enemy'] in guaranteed_ids: expected[patch['enemy']]+=1
     if guaranteed != expected:
         problems.append(f'Guaranteed loot count mismatch: {dict(guaranteed)}')
     # result means routing to the victory screen, not drop-roll success.

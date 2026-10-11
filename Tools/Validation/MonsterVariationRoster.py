@@ -11,8 +11,12 @@ ROLE_IDS={i:g['base'] for g in SPEC['p09_grades'] for i in g['ids']}
 ROLE_IDS.update({c['id']:c['base'] for c in SPEC['creatures']})
 CREATURE_COMBAT=json.loads((Path(__file__).parent/'Data/CreatureCombat.json').read_text(encoding='utf-8'))
 ROLE_IDS.update({c['id']:c['base'] for c in CREATURE_COMBAT['monsters']})
+from P09WeaponRoster import ROLE_IDS as WEAPON_ROLE_IDS
+ROLE_IDS.update(WEAPON_ROLE_IDS)
 
 def compose(stages):
+    from P09WeaponRoster import active as weapons_active, compose as compose_weapons
+    has_weapons=weapons_active(stages)
     result=copy.deepcopy(stages)
     creature_spec=CREATURE_COMBAT
     creature_ids={d['id'] for d in creature_spec['monsters']}
@@ -38,7 +42,7 @@ def compose(stages):
             new=dict(source,MonsterId=patch['enemy'],SpawnCount=1)
             source['SpawnCount']-=1
             infos[:]=[s for s in infos if s['SpawnCount']>0]+[new]
-    return result
+    return compose_weapons(result) if has_weapons else result
 
 def validate_roster(stages):
     assert compose(stages)==stages, 'Monster variation roster differs from source'

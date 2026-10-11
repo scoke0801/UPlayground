@@ -4,6 +4,26 @@ from RunQA import check_automation, check_cycle, check_loot_cycle, check_retry, 
 
 
 class QAEvidenceTests(unittest.TestCase):
+    def test_imported_plant_drop_is_required_after_wave_replacement(self):
+        from MonsterVariationRoster import SPEC, CREATURE_COMBAT
+        guaranteed={i for grade in SPEC['p09_grades'] if grade['grade']=='Elite' for i in grade['ids']}
+        guaranteed.update(c['id'] for c in SPEC['creatures'] if c['base'] in (15104,15105))
+        guaranteed.update(c['id'] for c in CREATURE_COMBAT['monsters'] if c['base'] in (15104,15105))
+        import copy
+        waves=copy.deepcopy(SPEC['waves'])
+        for patch in CREATURE_COMBAT['wave_replacements']:
+            pack=waves[str(patch['stage'])][patch['wave']-1]
+            next(pair for pair in pack if pair[0]==patch['source'])[1]-=1
+            pack.append([patch['enemy'],1])
+        ids=[eid for stage in waves.values() for wave in stage for eid,count in wave if eid in guaranteed for _ in range(count)]+[15601]
+        rows=[f'PGLoot rolled enemy={eid} pool={"Rogue.Boss" if eid==15601 else "Rogue.Warden"} seed=1 item=15004 guid={index:032X} result={int(eid==15601)}'
+              for index,eid in enumerate(ids,1)]
+        rows+=['PGCombatBT started pawn=BP_15502_C_0',f'PGLoot boss committed item=15004 guid={len(ids):032X} wins=1']
+        self.assertEqual(check_loot_cycle('\n'.join(rows)),[])
+        self.assertTrue(check_loot_cycle('\n'.join(row for row in rows if 'enemy=15502 ' not in row)))
+        plant=next(row for row in rows if 'enemy=15502 ' in row)
+        self.assertTrue(check_loot_cycle('\n'.join(rows+[plant])))
+
     def test_loot_requires_guaranteed_drops_and_atomic_boss_result(self):
         pools={15104:'Rogue.Crusher',15105:'Rogue.Warden',15106:'Rogue.Boss'}
         rows = [f'PGLoot rolled enemy={eid} pool={pools[eid]} seed=1 item=15004 guid={index:032X} result={int(eid==15106)}'
@@ -30,10 +50,15 @@ class QAEvidenceTests(unittest.TestCase):
               for index,eid in enumerate((15104,15105,15104,15105,15401),1)]
         rows.append('PGLoot boss committed item=15004 guid='+f'{5:032X}'+' wins=1')
         complete='\n'.join(rows)
-        self.assertEqual(check_loot_cycle(complete),[])
-        self.assertTrue(check_loot_cycle('\n'.join(rows[:-1])))
-        self.assertTrue(check_loot_cycle(complete+'\n'+rows[-2]))
-        self.assertTrue(check_loot_cycle(complete.replace('wins=1','wins=2')))
+        for boss_id in (15401, 15601):
+            with self.subTest(boss_id=boss_id):
+                current=complete.replace('enemy=15401',f'enemy={boss_id}')
+                self.assertEqual(check_loot_cycle(current),[])
+                self.assertTrue(check_loot_cycle('\n'.join(current.splitlines()[:-1])))
+                self.assertTrue(check_loot_cycle(current+'\n'+current.splitlines()[-2]))
+                self.assertTrue(check_loot_cycle(current.replace('wins=1','wins=2')))
+        self.assertTrue(check_loot_cycle(complete.replace('enemy=15401','enemy=99999')))
+        self.assertTrue(check_loot_cycle(complete+'\n'+rows[-2].replace('15401','15601')))
 
     def test_telemetry_requires_assisted_commits_and_finite_samples(self):
         rows = [dict(stage=stage, run_seed=173001, assisted=True, outcome="Cleared",
