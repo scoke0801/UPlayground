@@ -332,6 +332,10 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/TestP09Weapons.py
 !/Tools/Validation/ExportP09WeaponEvidence.py
 !/Tools/Validation/Data/P09WeaponVariations.json
+!/Tools/Validation/InspectEnemyMotionTempo.py
+!/Tools/Validation/InspectBossMotionTempo.py
+!/Tools/Validation/ConfigureEnemyMotionTempo.py
+!/Tools/Validation/RunEnemyMotionTempo.py
 !/Tools/Art/P09Weapons/
 /Tools/Art/P09Weapons/*
 !/Tools/Art/P09Weapons/BuildWeapons.py
@@ -340,3 +344,23 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/ConfigureExternalSFX.py
 !/Tools/Validation/Data/ExternalSFX.json
 !/Tools/Validation/ConfigureConsumables.py
+!/Tools/Validation/ConfigurePlayableToon.py
+!/Tools/Validation/PreviewPlayableToon.py
+!/Tools/Validation/RunPlayableToon.py
+!/Tools/Validation/UpdateBokuseiComparisonLabels.py
+
+# ImageGen inventory/stat UI sources and reproducible texture import.
+!/Tools/Art/InventoryUI/
+/Tools/Art/InventoryUI/*
+!/Tools/Art/InventoryUI/*.png
+!/Tools/Art/InventoryUI/*.json
+!/Tools/Art/InventoryUI/*.py
+
+# U3 equipment data migration and regression checks.
+!/Tools/Validation/ConfigureEquipmentOptions.py
+!/Tools/Validation/TestEquipmentOptions.py
+!/Tools/Validation/ValidateEquipmentOptions.py
+
+!/Tools/Validation/ConfigureBossMotionTempo.py
+!/Tools/Validation/RunBossMotionTempo.py
+!/Tools/Validation/RunInventoryCycle.py
