@@ -70,6 +70,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FName HeadBone;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FVector HeadForwardAxis = FVector::ForwardVector;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FVector HeadRightAxis = FVector::RightVector;
+    // Per-appearance receivers preserve the shared mesh's authored materials.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon") TMap<int32, TSoftObjectPtr<class UMaterialInterface>> MaterialOverrides;
+    // Full slot array: masked hair casters and fully clipped non-hair slots.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon") TArray<TSoftObjectPtr<class UMaterialInterface>> HairShadowMaterials;
     // Optional low-poly, head-local occluder. Only presentation changes; no pose evaluation.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon") TSoftObjectPtr<class UStaticMesh> HairShadowMesh;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Presentation|Toon", meta=(ClampMin="0", Units="cm")) float HairShadowDistance = 700.f;

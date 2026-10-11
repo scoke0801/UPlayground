@@ -1,5 +1,27 @@
 # 툰 셰이딩 개선 — 진행 기록
 
+## 2026-10-11 일반 플레이어 SDF·헤어 그림자
+
+비교 맵 전용 헤어 투사를 일반 플레이어 외형 적용 경로로 확장했다. 대상은 `PlayableCharacterCatalog.PLAYER_IDS`의 Bokusei, LianLian, Honoka, Hichi(Yura), Siuha, Lili, Nenmir, Hwarin, Arin 9종이다.
+
+- `PGCharacterAppearance.MaterialOverrides`는 슬롯별 전용 얼굴 재질을, `HairShadowMaterials`는 전체 슬롯 수와 같은 길이의 헤어 투사 재질을 지정한다. 비헤어 슬롯은 완전히 잘리는 재질이다. 모델별 SDF 텍스처·강도·바이어스를 보존하고 얼굴만 월드 수광 재질로 연결한다.
+- 런타임 `PGCharacterAppearanceComponent`는 슬롯 범위·재질 참조·헤어 슬롯 수·머리 본을 적용 전 검사한다. 실패하면 현재 외형을 유지한다. 데이터는 `/Game/DataCenter/Characters/DA_*`, 전용 재질은 `/Game/DataCenter/Characters/Toon`에 저장한다.
+- 공용 `PGToonPresentationComponent`가 숨김 SkeletalMeshComponent를 만들고 보이는 메시의 Leader Pose·바운드를 공유한다. 충돌·내비게이션·색상/깊이 패스·독립 애니메이션 틱은 끈다. 기존 정적 머리 프록시가 지정된 경우 정적 경로가 우선한다.
+- 외형 교체·재초기화·EndPlay·컴포넌트 제거 시 투사체를 정리한다. 외형용 컴포넌트는 등록 전에 대상 메시를 초기화하여 BeginPlay에서 게임플레이 원본 메시를 임시 초기화하지 않는다. 대시 잔상의 기존 가시성 필터는 헤어 투사체를 제외한다.
+- 기존 모델별 SDF 방향/헤어 노멀 갱신과 거리 품질 경로를 유지한다. 플레이어 데이터의 `HairShadowDistance=1800`은 기본 쿼터뷰 최대 거리 1600cm를 포함하며, 50cm 히스테리시스와 0.2초 품질 갱신을 사용한다. 숨김 상태·그림자 토글도 반영한다.
+
+재현: UE 번들 Python으로 `Tools/Validation/RunPlayableToon.py`를 실행한다. `--step configure`는 백업→적용→새 프로세스 재로드, `--step preview`는 저장 데이터를 실제 숲 맵 플레이어에 적용해 검사한다. 새 플레이어는 모델별 얼굴 SDF 및 헤어 슬롯이 준비된 외형 데이터에 같은 두 필드를 연결하면 된다. 현재 제작 도구는 카탈로그의 단일 메시 플레이어 9종을 검사하며, 모듈형 파츠 자동 저작은 포함하지 않는다.
+
+검증:
+
+- UE 5.8 Development 에디터 빌드 PASS: `Saved/PlayableToonBuild.log`.
+- 9종 적용·새 프로세스 재로드·원본 메시/원본 재질 해시 보존 PASS: `Saved/PlayableToon/20261011T034542691030Z/run.json`.
+- 실제 숲 PIE의 23개 단계 검사·9종 헤어 on/off 렌더 18장 및 정상 종료 PASS. SDF 머리 방향·헤어 포즈 일치, 잘못된 데이터 거부, 중복 적용, 외형 교체 시 이전 프록시 제거, 원거리/근거리·숨김 복구·재초기화를 확인했다. 근거는 같은 실행의 `preview.json`이며 대표 근접 화면도 시각 확인했다.
+- 기존 선택·이동·공격 중 외형 교체 차단·저장·장비 그립·포즈 회귀 PASS(플레이어 9종/몬스터 4종): `Saved/PlayableCharacters/Runs/20261011T034827_runtime/result.json`.
+- 최초 적용은 복제 마스터 저장 누락을 재로드 검사에서 발견하여 자동 백업 복원했다. 명시적 저장 후 위 최종 실행을 통과했다. 최초 실패 기록: `Saved/PlayableToon/20261011T034435710235Z`.
+
+이번 확장의 패키지 빌드·장시간 전투 GPU 비용은 측정하지 않았다. 마스크 헤어 카드의 그림자 경계는 모델/광원 각도에 따라 날카로울 수 있으며 근접 아트 폴리싱은 별도다. 원본 재질 또는 모델을 재저작하면 전용 재질도 위 적용 도구로 갱신해야 한다.
+
 ## 목표 및 수용 기준
 
 2026-10-09 사용자 요청: 웹 조사에 근거한 P0 → P1 → P2 전체 구현 및 검증.

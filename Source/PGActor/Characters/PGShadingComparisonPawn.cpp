@@ -10,6 +10,7 @@
 #include "PGActor/Components/Rendering/PGToonPresentationComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "EngineUtils.h"
 #include "Framework/Application/IInputProcessor.h"
 #include "Framework/Application/SlateApplication.h"
@@ -26,7 +27,7 @@
 namespace
 {
     const TCHAR* ComparisonIds[] = { TEXT("Bokusei"), TEXT("Arin"), TEXT("Hwarin"), TEXT("LianLian") };
-    const TCHAR* ComparisonNames[] = { TEXT("Bokusei"), TEXT("아린"), TEXT("화련"), TEXT("Lianlian") };
+    const TCHAR* ComparisonNames[] = { TEXT(""), TEXT("아린"), TEXT("화련"), TEXT("Lianlian") };
 
     // The viewport console consumes Tilde before pawn bindings. Intercept it only
     // while this local comparison viewport has keyboard focus; never change console settings.
@@ -301,10 +302,12 @@ void APGShadingComparisonPawn::FocusStage(int32 Index)
 void APGShadingComparisonPawn::UpdateViewHelp()
 {
     if (!HelpWidget) return;
-    static const TCHAR* Names[] = { TEXT("일반 조명"), TEXT("셀 명암"), TEXT("부위별 명암"), TEXT("림·하이라이트"), TEXT("외곽선 · 기존 툰"), TEXT("월드 그림자"), TEXT("얼굴 SDF"), TEXT("얼굴 SDF · 월드 그림자") };
+    static const TCHAR* Names[] = { TEXT("일반 조명"), TEXT("셀 명암"), TEXT("부위별 명암"), TEXT("림·하이라이트"), TEXT("외곽선"), TEXT("월드 그림자"), TEXT("얼굴 SDF"), TEXT("얼굴 SDF · 월드 그림자") };
+    const FString ModelPrefix = FString(ComparisonNames[SelectedModel]).IsEmpty()
+        ? FString() : FString::Printf(TEXT("%s · "), ComparisonNames[SelectedModel]);
     HelpWidget->SetViewLabel(FText::FromString(bOverview
-        ? FString::Printf(TEXT("%s · 전체 단계 비교"), ComparisonNames[SelectedModel])
-        : FString::Printf(TEXT("%s · %d단계 · %s%s"), ComparisonNames[SelectedModel], SelectedStage + 1,
+        ? ModelPrefix + TEXT("전체 단계 비교")
+        : FString::Printf(TEXT("%s%d단계 · %s%s"), *ModelPrefix, SelectedStage + 1,
             Names[SelectedStage], bStageSequencePlaying ? TEXT(" · 자동 진행 중") : TEXT(""))));
 }
 
@@ -328,8 +331,25 @@ void APGShadingComparisonPawn::ToggleStageSequence()
         StopStageSequence();
         return;
     }
-    if (!FindStage(SelectedModel, 0)) return;
+    const AActor* FirstStage = FindStage(SelectedModel, 0);
+    if (!FirstStage) return;
     FocusStage(0);
+    // Frame the pedestal and the highest stage sign (225 cm), even when P starts in face view.
+    int32 Width = 0, Height = 0;
+    const auto* PC = Cast<APlayerController>(GetController());
+    if (PC) PC->GetViewportSize(Width, Height);
+    const float Aspect = FMath::Max(.1f, Camera->bConstrainAspectRatio ? Camera->AspectRatio
+        : Height > 0 ? static_cast<float>(Width) / Height : Camera->AspectRatio);
+    const auto* Player = PC ? PC->GetLocalPlayer() : nullptr;
+    const EAspectRatioAxisConstraint Axis = Camera->bOverrideAspectRatioAxisConstraint ? Camera->AspectRatioAxisConstraint.GetValue()
+        : Player ? Player->AspectRatioAxisConstraint.GetValue() : AspectRatio_MaintainXFOV;
+    const bool bHorizontalFOV = Camera->bConstrainAspectRatio || Axis == AspectRatio_MaintainXFOV ||
+        (Axis == AspectRatio_MajorAxisFOV && Aspect > 1.f);
+    const float HalfFOV = FMath::Tan(FMath::DegreesToRadians(FMath::Clamp(Camera->FieldOfView, 10.f, 120.f) * .5f));
+    const float VerticalFOV = HalfFOV / (bHorizontalFOV ? Aspect : FMath::Max(.1f, Camera->AspectRatio));
+    const float HorizontalFOV = bHorizontalFOV ? HalfFOV : VerticalFOV * Aspect;
+    const float Distance = FMath::Max(360.f, FMath::Max(120.f / HorizontalFOV, 145.f / VerticalFOV));
+    SetView(FirstStage->GetActorLocation() + FVector(0, Distance, 110), FRotator(0, -90, 0));
     StageSequenceStart = GetActorLocation();
     StageSequenceElapsed = 0.f;
     bStageSequencePlaying = true;

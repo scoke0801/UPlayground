@@ -35,12 +35,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Toon")
     FVector FallbackLightDirection = FVector(.35, -.45, -.82);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Toon|Quality") TObjectPtr<class UStaticMesh> HairShadowMesh;
+    // Used when no head-local static proxy is supplied; shares the visible pose.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Toon|Quality") TArray<TObjectPtr<class UMaterialInterface>> HairShadowMaterials;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Toon|Quality") bool bHairShadowEnabled = true;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Toon|Quality", meta=(ClampMin="0")) float HairShadowDistance = 700.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Toon|Quality", meta=(ClampMin="0")) float DetailDistance = 600.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Toon|Quality", meta=(ClampMin="1")) float SimpleDistance = 1600.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PG|Toon|Quality", meta=(ClampMin="0", ClampMax="1")) float FarDetailWeight = .35f;
     UFUNCTION(BlueprintPure, Category="PG|Toon|Quality") class UStaticMeshComponent* GetHairShadowProxy() const { return HairProxy; }
+    UFUNCTION(BlueprintPure, Category="PG|Toon|Quality") USkeletalMeshComponent* GetSkeletalHairShadowProxy() const { return SkeletalHairProxy; }
     static float CalculateDetailWeight(float Distance, float Near, float Far, float Minimum);
 
     UFUNCTION(BlueprintCallable, Category="PG|Toon")
@@ -53,6 +56,7 @@ public:
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+    virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
 
 private:
@@ -61,6 +65,7 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> HeadMaterials;
     UPROPERTY(Transient) TArray<TObjectPtr<class UMaterialInterface>> OriginalMaterials;
     UPROPERTY(Transient) TObjectPtr<class UStaticMeshComponent> HairProxy;
+    UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> SkeletalHairProxy;
     FVector LastLight = FVector::ZeroVector;
     FVector LastForward = FVector::ZeroVector;
     FVector LastRight = FVector::ZeroVector;

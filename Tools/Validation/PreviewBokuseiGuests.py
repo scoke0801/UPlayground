@@ -62,6 +62,14 @@ def check_new_controls(game, pawn, model):
         assert unreal.PGEditorProbeTools.capture_game_viewport(game, str(path))
         report['images'].append(str(path))
 
+    def check_framing(identity, stage, width=1280, height=720):
+        pc = unreal.GameplayStatics.get_player_controller(game, 0)
+        base = model(identity, stage).get_actor_location()
+        # Both lines of the 200x40 cm stage sign, plus the pedestal bottom.
+        for x,z in [(-100,175),(100,175),(-100,225),(100,225),(0,-6)]:
+            point = unreal.GameplayStatics.project_world_to_screen(pc, base+unreal.Vector(x,0,z), True)
+            assert point is not None and 0 < point.x < width and 0 < point.y < height, (identity,stage,x,z,point)
+
     tap('Tilde')
     yield .2
     assert not pawn.is_help_visible()
@@ -76,8 +84,11 @@ def check_new_controls(game, pawn, model):
     tap('P')
     yield .1
     assert pawn.is_stage_sequence_playing()
-    first = model('Bokusei', 0).get_actor_location()+unreal.Vector(0,360,125)
-    assert (pawn.get_actor_location()-first).length() < .05
+    first = pawn.get_actor_location()
+    sequence_offset = first-model('Bokusei', 0).get_actor_location()
+    assert sequence_offset.y > 600 and abs(sequence_offset.z-110) < .01
+    check_framing('Bokusei', 0)
+    capture('SequenceStartWithLabel')
     visited = set()
     previous_x = pawn.get_actor_location().x
     deadline = time.monotonic()+35
@@ -89,9 +100,11 @@ def check_new_controls(game, pawn, model):
         for stage in range(8):
             if abs(location.x-model('Bokusei', stage).get_actor_location().x) < .05:
                 visited.add(stage)
+                check_framing('Bokusei', stage)
         assert time.monotonic() < deadline
         yield .03
-    assert (pawn.get_actor_location()-(model('Bokusei',7).get_actor_location()+unreal.Vector(0,360,125))).length() < .05
+    assert (pawn.get_actor_location()-(model('Bokusei',7).get_actor_location()+sequence_offset)).length() < .05
+    check_framing('Bokusei', 7)
     visited.add(7)
     assert visited == set(range(8)), visited
     capture('SequenceCompleted')
@@ -122,11 +135,26 @@ def check_new_controls(game, pawn, model):
         while pawn.is_stage_sequence_playing():
             assert time.monotonic() < deadline
             yield .05
-        expected = model(identity,7).get_actor_location()+unreal.Vector(0,360,125)
+        expected = model(identity,7).get_actor_location()+sequence_offset
         assert (pawn.get_actor_location()-expected).length() < .05, (identity, pawn.get_actor_location(), expected)
+        check_framing(identity, 7)
+        capture('SequenceLabel_'+identity)
         record('sequence_model_switch_'+identity)
     pawn.stage_hold_seconds = 2
     pawn.stage_move_seconds = 1
+    for width,height in [(720,1280),(1920,800)]:
+        assert unreal.PGEditorProbeTools.resize_play_viewport(game, width, height)
+        yield .2
+        tap('F')
+        yield .2
+        tap('P')
+        yield .2
+        assert pawn.is_stage_sequence_playing(), 'P must start after the face-view input is processed'
+        check_framing('Bokusei', 0, width, height)
+        capture('SequenceLabel_'+str(width)+'x'+str(height))
+        tap('P')
+        record('sequence_label_framing_'+str(width)+'x'+str(height))
+    assert unreal.PGEditorProbeTools.resize_play_viewport(game, 1280, 720)
 
 
 def finish(error=None):
@@ -161,6 +189,12 @@ def tick(_dt):
             return next(a for a in models if a.actor_has_tag(tag))
         if not ready:
             assert unreal.PGToonPreviewActor.set_preview_viewport_size(game, 1280, 720)
+            # The Slate probe focuses the newly created PIE viewport before ordinary keys.
+            focus_key = unreal.Key()
+            focus_key.set_editor_property('key_name', 'Tilde')
+            for _ in range(2):
+                pawn.send_probe_input(focus_key, True, 0)
+                pawn.send_probe_input(focus_key, False, 0)
             # First check each rig's synchronized animation before freezing it for A/B captures.
             for identity in ['Arin','Hwarin','LianLian']:
                 leader = model(identity, 0).skeletal_mesh_component
@@ -236,5 +270,5 @@ def tick(_dt):
         finish(traceback.format_exc())
 
 
-level.editor_request_begin_play()
+assert unreal.PGEditorProbeTools.begin_play_window(1280, 720)
 handle = unreal.register_slate_post_tick_callback(tick)

@@ -52,6 +52,7 @@ void UPGToonPresentationComponent::BeginPlay()
 void UPGToonPresentationComponent::RestoreMaterials()
 {
     if (HairProxy) { HairProxy->DestroyComponent(); HairProxy = nullptr; }
+    if (SkeletalHairProxy) { SkeletalHairProxy->DestroyComponent(); SkeletalHairProxy = nullptr; }
     if (IsValid(Mesh))
     {
         for (int32 Index = 0; Index < Materials.Num(); ++Index)
@@ -104,6 +105,32 @@ void UPGToonPresentationComponent::Initialize(USkeletalMeshComponent* InMesh)
         HairProxy->bAffectDynamicIndirectLighting = false;
         HairProxy->bReceivesDecals = false;
         HairProxy->RegisterComponent();
+    }
+    else if (!HairShadowMaterials.IsEmpty() && Mesh->GetSkeletalMeshAsset() &&
+        HairShadowMaterials.Num() == Mesh->GetNumMaterials() &&
+        !HairShadowMaterials.Contains(nullptr))
+    {
+        SkeletalHairProxy = NewObject<USkeletalMeshComponent>(GetOwner());
+        SkeletalHairProxy->SetupAttachment(Mesh);
+        SkeletalHairProxy->SetSkeletalMeshAsset(Mesh->GetSkeletalMeshAsset());
+        for (int32 Index = 0; Index < HairShadowMaterials.Num(); ++Index)
+            SkeletalHairProxy->SetMaterial(Index, HairShadowMaterials[Index]);
+        SkeletalHairProxy->SetLeaderPoseComponent(Mesh);
+        SkeletalHairProxy->bUseAttachParentBound = true;
+        SkeletalHairProxy->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        SkeletalHairProxy->SetGenerateOverlapEvents(false);
+        SkeletalHairProxy->SetCanEverAffectNavigation(false);
+        SkeletalHairProxy->SetVisibility(false);
+        SkeletalHairProxy->SetCastHiddenShadow(true);
+        SkeletalHairProxy->SetCastShadow(bHairShadowEnabled && HairShadowDistance > 0.f);
+        SkeletalHairProxy->SetRenderInMainPass(false);
+        SkeletalHairProxy->SetRenderInDepthPass(false);
+        SkeletalHairProxy->SetRenderCustomDepth(false);
+        SkeletalHairProxy->bAffectDistanceFieldLighting = false;
+        SkeletalHairProxy->bAffectDynamicIndirectLighting = false;
+        SkeletalHairProxy->bReceivesDecals = false;
+        SkeletalHairProxy->RegisterComponent();
+        SkeletalHairProxy->SetComponentTickEnabled(false);
     }
     for (int32 Index = 0; Index < Mesh->GetNumMaterials(); ++Index)
     {
@@ -194,11 +221,13 @@ void UPGToonPresentationComponent::RefreshQuality(float DeltaTime)
         for (UMaterialInstanceDynamic* MID : Materials) if (MID) MID->SetScalarParameterValue(TEXT("ToonDetailWeight"), Weight);
         LastDetailWeight = Weight;
     }
-    if (HairProxy)
+    UPrimitiveComponent* ShadowProxy = HairProxy ? static_cast<UPrimitiveComponent*>(HairProxy.Get()) : SkeletalHairProxy.Get();
+    if (ShadowProxy)
     {
         // Hysteresis avoids a shadow popping repeatedly at the quality boundary.
-        const float Threshold = HairShadowDistance + (HairProxy->CastShadow ? 50.f : -50.f);
-        HairProxy->SetCastShadow(bHairShadowEnabled && HairShadowDistance > 0.f && Distance < FMath::Max(0.f, Threshold));
+        const float Threshold = HairShadowDistance + (ShadowProxy->CastShadow ? 50.f : -50.f);
+        ShadowProxy->SetCastShadow(bHairShadowEnabled && HairShadowDistance > 0.f &&
+            Mesh->IsVisible() && !Mesh->bHiddenInGame && !GetOwner()->IsHidden() && Distance < FMath::Max(0.f, Threshold));
     }
 }
 
@@ -221,4 +250,11 @@ void UPGToonPresentationComponent::EndPlay(const EEndPlayReason::Type Reason)
     RestoreMaterials();
     Mesh = nullptr;
     Super::EndPlay(Reason);
+}
+
+void UPGToonPresentationComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
+{
+    RestoreMaterials();
+    Mesh = nullptr;
+    Super::OnComponentDestroyed(bDestroyingHierarchy);
 }

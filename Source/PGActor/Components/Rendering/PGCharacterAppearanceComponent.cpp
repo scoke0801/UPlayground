@@ -15,6 +15,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Engine/DirectionalLight.h"
 #include "EngineUtils.h"
+#include "Materials/MaterialInterface.h"
 #include "Retargeter/IKRetargeter.h"
 
 UPGCharacterAppearanceComponent::UPGCharacterAppearanceComponent() { PrimaryComponentTick.bCanEverTick = false; }
@@ -35,6 +36,15 @@ bool UPGCharacterAppearanceComponent::CanApply(UPGCharacterAppearance* Appearanc
     auto* Mesh = Appearance->Mesh.LoadSynchronous();
     if (!ExpectedSource || Source->GetSkeleton() != ExpectedSource->GetSkeleton() || !Mesh ||
         !Cast<UIKRetargeter>(Appearance->Retargeter.TryLoad()) || !Appearance->MeshTransform.IsValid()) return false;
+    for (const auto& Override : Appearance->MaterialOverrides)
+        if (!Mesh->GetMaterials().IsValidIndex(Override.Key) || !Override.Value.LoadSynchronous()) return false;
+    if (!Appearance->HairShadowMaterials.IsEmpty())
+    {
+        if (Appearance->HairShadowMaterials.Num() != Mesh->GetMaterials().Num() ||
+            Mesh->GetRefSkeleton().FindBoneIndex(Appearance->HeadBone) == INDEX_NONE) return false;
+        for (const auto& Material : Appearance->HairShadowMaterials)
+            if (!Material.LoadSynchronous()) return false;
+    }
     for (const auto& Part : Appearance->Parts)
     {
         auto* PartMesh = Part.Mesh.LoadSynchronous();
@@ -64,10 +74,15 @@ void UPGCharacterAppearanceComponent::AddToon(USkeletalMeshComponent* Mesh, UPGC
     Toon->FarDetailWeight = Appearance->ToonFarDetailWeight;
     Toon->HairShadowDistance = Appearance->HairShadowDistance;
     // Only the principal mesh owns the head occluder; modular parts share it.
-    if (Mesh == VisibleMesh) Toon->HairShadowMesh = Appearance->HairShadowMesh.LoadSynchronous();
+    if (Mesh == VisibleMesh)
+    {
+        Toon->HairShadowMesh = Appearance->HairShadowMesh.LoadSynchronous();
+        for (const auto& Material : Appearance->HairShadowMaterials)
+            Toon->HairShadowMaterials.Add(Material.LoadSynchronous());
+    }
     Toon->KeyLight = UPGToonPresentationComponent::ResolveKeyLight(GetWorld());
-    Toon->RegisterComponent();
     Toon->Initialize(Mesh);
+    Toon->RegisterComponent();
     Presentations.Add(Toon);
 }
 
@@ -97,6 +112,8 @@ bool UPGCharacterAppearanceComponent::ApplyAppearance(UPGCharacterAppearance* Ap
     VisibleMesh->SetupAttachment(Source);
     VisibleMesh->SetRelativeTransform(Appearance->MeshTransform);
     VisibleMesh->SetSkeletalMesh(Appearance->Mesh.LoadSynchronous());
+    for (const auto& Override : Appearance->MaterialOverrides)
+        VisibleMesh->SetMaterial(Override.Key, Override.Value.LoadSynchronous());
     VisibleMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
     VisibleMesh->AddTickPrerequisiteComponent(Source);
     VisibleMesh->RegisterComponent();

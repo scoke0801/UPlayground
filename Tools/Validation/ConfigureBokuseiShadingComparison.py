@@ -343,7 +343,7 @@ def main():
         ('Cel', '2 · 셀 명암', [toon_variant(mi, str(slot.material_slot_name), True) for mi, slot in zip(originals, mesh.get_editor_property('materials'))]),
         ('Parts', '3 · 부위별 명암', [toon_variant(mi, str(slot.material_slot_name)) for mi, slot in zip(originals, mesh.get_editor_property('materials'))]),
         ('Rim', '4 · 림·하이라이트', originals),
-        ('Toon', '5 · 외곽선 · 기존 툰', originals),
+        ('Toon', '5 · 외곽선', originals),
         ('Shadow', '6 · 월드 그림자', shadow_variants(originals, mesh.get_editor_property('materials'))),
     ]
     if sdf_data:
@@ -465,7 +465,7 @@ def main():
             c.set_visibility(False)
     for component in model_components[1:]:
         component.set_leader_pose_component(model_components[0])
-    title = prop('안내 · bOKUSEI 셰이딩 비교', 'Plane', (0, 0, 270), (6.8, .6375, 1), labels['Title'], unreal.Rotator(roll=90))
+    title = prop('안내 · 단계별 셰이딩 비교', 'Plane', (0, 0, 270), (6.8, .6375, 1), labels['Title'], unreal.Rotator(roll=90))
     title.static_mesh_component.set_cast_shadow(False)
     for name, location, target, fov, active in [
             ('카메라 · 정면 비교', (0, 1950, 380), (0, 0, 120), 45, True),
