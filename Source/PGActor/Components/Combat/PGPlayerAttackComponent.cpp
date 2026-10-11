@@ -379,6 +379,7 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
     if (!IsRunning() || !FMath::IsFinite(Seconds) || Seconds <= 0.f) return;
     const auto Context = CastContext;
     auto* Player = CastChecked<APGCharacterPlayer>(GetOwner());
+    if (Player->GetMesh()->GlobalAnimRateScale <= 0.f) return;
     const float Until = FMath::Min(ActiveProfile->Duration, LogicalTime + Seconds);
     // Split at phase/movement boundaries and at 120 Hz so a long frame cannot skip a window
     // or evaluate both hits at the final dash position.
@@ -425,6 +426,9 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
                 if (CastContext != Context) return; // death/cancel/reentrant callbacks
             }
         }
+        // Finish simultaneous contacts, then sample the contact pose instead of advancing
+        // through the rest of this frame while the newly requested hit-stop is active.
+        if (Player->GetMesh()->GlobalAnimRateScale <= 0.f) break;
     }
     if (CastContext != Context) return;
     if (ActiveProfile->bManualCounter && !bCounterTriggered && LogicalTime >= ActiveProfile->GuardEnd)
@@ -437,7 +441,7 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
     }
     if (auto* Anim = Player->GetMesh()->GetAnimInstance())
         Anim->Montage_SetPosition(ActiveMontage, ActiveProfile->GetMontagePosition(LogicalTime));
-    if (LogicalTime >= ActiveProfile->Duration) Stop(true, false);
+    if (LogicalTime >= ActiveProfile->Duration && Player->GetMesh()->GlobalAnimRateScale > 0.f) Stop(true, false);
 }
 
 void UPGPlayerAttackComponent::UpdateWalkSpeed(float Time)

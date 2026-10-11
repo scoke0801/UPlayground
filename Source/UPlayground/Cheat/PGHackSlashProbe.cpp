@@ -26,6 +26,7 @@
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "PGData/DataTable/Skill/PGEnemyDataRow.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
 #include "PGActor/Progression/PGProfileSubsystem.h"
 #include "PGActor/Manager/PGStagePresentation.h"
@@ -85,6 +86,7 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
         FVector Origin;
         TArray<FTransform> PreviousPose;
         bool bMotionTrace=FParse::Param(FCommandLine::Get(),TEXT("PGHackSlashMotionTrace"));
+        int32 FeedbackEnemyID=0;
         bool bCombo=FParse::Param(FCommandLine::Get(),TEXT("PGHackSlashComboProbe"));
         bool bComboStarted=false;
         int32 ComboCount=0, OutgoingID=INDEX_NONE, CrossfadeSamples=0;
@@ -96,6 +98,7 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
         int32 GripSamples=0;
     };
     auto State=MakeShared<FProbe>(); TWeakObjectPtr<UWorld> WeakWorld=World;
+    FParse::Value(FCommandLine::Get(),TEXT("PGFeedbackEnemy="),State->FeedbackEnemyID);
     if (State->bP1) State->Skills={110,113,114};
     if (FParse::Value(FCommandLine::Get(),TEXT("PGGripIdentity="),State->GripIdentity))
         State->Skills={100,101,102,110,111,112,113,114};
@@ -388,8 +391,21 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
             for(int32 Index=0;Index<(State->bSwingMiss?0:2);++Index)
             {
                 const FVector Offset=Skill==110 ? F*800.f+R*(Index?100.f:-100.f) : Skill==114 ? F*(Index?700.f:30.f) : Skill==111 ? F*(Index?550.f:220.f)+R*110.f : F*(Index?-150.f:150.f);
-                auto* Target=W->SpawnActor<APGCharacterEnemy>(APGCharacterEnemy::StaticClass(),State->Origin+Offset,FRotator::ZeroRotator);
+                UClass* TargetClass=APGCharacterEnemy::StaticClass();
+                if (State->FeedbackEnemyID>0)
+                {
+                    auto* Tables=UPGDataTableManager::Get(W);
+                    const auto* Row=Tables?Tables->GetRowData<FPGEnemyDataRow>(State->FeedbackEnemyID):nullptr;
+                    TargetClass=Row?Row->ActorClass.LoadSynchronous():nullptr;
+                    if (!TargetClass || !TargetClass->IsChildOf(APGCharacterEnemy::StaticClass()))
+                        return Finish(false,TEXT("feedback enemy class missing"));
+                }
+                const FTransform TargetTransform(FRotator::ZeroRotator,State->Origin+Offset);
+                auto* Target=W->SpawnActorDeferred<APGCharacterEnemy>(TargetClass,TargetTransform,nullptr,nullptr,
+                    ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
                 if(!Target) return Finish(false,TEXT("target spawn failed"));
+                Target->AutoPossessAI=EAutoPossessAI::Disabled;
+                UGameplayStatics::FinishSpawningActor(Target,TargetTransform);
                 Target->bCanDropLoot=false; Target->GetCharacterMovement()->DisableMovement();
                 Target->GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel1);
                 Target->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -410,7 +426,8 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
             }
             State->bPlaced=true;
         }
-        if(!State->bCaptured && Attack->IsRunning() && Attack->GetLogicalTime()>=State->CaptureAt &&
+        if(!State->bCaptured && Attack->IsRunning() &&
+            (State->FeedbackEnemyID>0 ? Player->GetMesh()->GlobalAnimRateScale<=0.f : Attack->GetLogicalTime()>=State->CaptureAt) &&
             (State->bSwingFX || State->Context->HitTargets.Num()>0) && FParse::Param(FCommandLine::Get(),TEXT("PGHackSlashCapture")))
         {
             if (FParse::Param(FCommandLine::Get(),TEXT("PGNiagaraSlashProbe")))

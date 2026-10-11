@@ -8,6 +8,8 @@
 #include "Engine/Engine.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "PGData/DataAsset/Combat/PGCombatFeedbackData.h"
+#include <limits>
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGGuardianPresentationLifecycleTest, "PG.Content.GuardianPresentationLifecycle",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -77,6 +79,7 @@ bool FPGEnemyHitRecoilTest::RunTest(const FString&)
     auto* Presentation = Enemy->GetEnemyPresentation();
     auto* Mesh = Enemy->GetMesh();
     const FVector Before = Mesh->GetRelativeLocation();
+    const FQuat RotationBefore = Mesh->GetRelativeRotation().Quaternion();
     const FVector CapsuleBefore = Enemy->GetCapsuleComponent()->GetComponentLocation();
     Enemy->bPatternActive = true;
     Mesh->GlobalAnimRateScale = 0.f;
@@ -90,16 +93,41 @@ bool FPGEnemyHitRecoilTest::RunTest(const FString&)
     Advance();
     TestTrue(TEXT("The original mesh offset returns after the pulse"), Mesh->GetRelativeLocation().Equals(Before));
     TestEqual(TEXT("Recoil never restores an animation rate owned by hit-stop"), Mesh->GlobalAnimRateScale, 0.f);
+    Presentation->PlayHitRecoil(FVector::ForwardVector, 6.f, .14f, 6.f, .075f);
+    const FQuat ImpactRotation = Mesh->GetRelativeRotation().Quaternion();
+    TestFalse(TEXT("Impact adds a directional lean"), ImpactRotation.Equals(RotationBefore));
+    for (int32 I = 0; I < 100; ++I) Presentation->PlayHitRecoil(FVector::ForwardVector, 6.f, .14f, 6.f, .075f);
+    TestTrue(TEXT("Repeated hits do not accumulate lean"), Mesh->GetRelativeRotation().Quaternion().Equals(ImpactRotation,.0001));
+    for (int32 I = 0; I < 2; ++I) { ++GFrameCounter; World->Tick(LEVELTICK_All, .025f); }
+    TestTrue(TEXT("Hit-stop preserves the impact displacement"), Mesh->GetRelativeLocation().Equals(Before + FVector(6,0,0)));
+    TestTrue(TEXT("Hit-stop preserves the impact silhouette"), Mesh->GetRelativeRotation().Quaternion().Equals(ImpactRotation,.0001));
+    Advance();
+    TestTrue(TEXT("Recovery restores the complete mesh transform"), Mesh->GetRelativeLocation().Equals(Before) &&
+        Mesh->GetRelativeRotation().Quaternion().Equals(RotationBefore,.0001));
+    Presentation->PlayHitRecoil(FVector::ForwardVector, 6.f, .14f, std::numeric_limits<float>::quiet_NaN());
+    TestTrue(TEXT("Invalid lean cannot poison the mesh transform"), Mesh->GetRelativeRotation().Quaternion().Equals(RotationBefore,.0001));
+    const auto* Feedback = GetDefault<UPGCombatFeedbackData>();
+    TestTrue(TEXT("Default heavy impact has a stronger silhouette than a normal hit"), Feedback->Heavy.RecoilAngle > Feedback->Normal.RecoilAngle);
+    Enemy->SetActorRotation(FRotator(0,90,0));
+    Presentation->PlayHitRecoil(FVector::ForwardVector, 0.f, .14f, 6.f);
+    TestTrue(TEXT("Lean follows the world impact direction on a rotated parent"), Mesh->GetUpVector().X > .1f);
+    TestTrue(TEXT("Lean alone does not move the capsule or mesh origin"), Mesh->GetRelativeLocation().Equals(Before) &&
+        Enemy->GetCapsuleComponent()->GetComponentLocation().Equals(CapsuleBefore));
+    Presentation->ResetPresentation();
+    TestTrue(TEXT("Reset removes lean without resetting the actor's facing"), Enemy->GetActorRotation().Equals(FRotator(0,90,0)) &&
+        Mesh->GetRelativeRotation().Quaternion().Equals(RotationBefore,.0001));
+    Enemy->SetActorRotation(FRotator::ZeroRotator);
     Presentation->PlayHitRecoil(FVector::ForwardVector, 0.f, .14f);
     TestTrue(TEXT("Zero tuning disables recoil"), Mesh->GetRelativeLocation().Equals(Before));
     // Retargeted meshes may have a scaled parent: the authored distance is in world units.
     Enemy->SetActorScale3D(FVector(2));
-    Presentation->PlayHitRecoil(FVector::ForwardVector, 6.f, .14f);
+    Presentation->PlayHitRecoil(FVector::ForwardVector, 6.f, .14f, 6.f, .075f);
     TestTrue(TEXT("Parent scale cannot amplify the authored recoil distance"), Mesh->GetRelativeLocation().Equals(Before + FVector(3,0,0)));
     Presentation->ResetPresentation(true); // No armor data required for death cleanup.
     Presentation->PlayHitRecoil(FVector::ForwardVector, 6.f, .14f);
     Advance();
     TestTrue(TEXT("Death restores the mesh and rejects late impacts without armor data"), Mesh->GetRelativeLocation().Equals(Before));
+    TestTrue(TEXT("Death also removes the directional lean"), Mesh->GetRelativeRotation().Quaternion().Equals(RotationBefore,.0001));
     Enemy->Destroy();
     GEngine->DestroyWorldContext(World);
     World->DestroyWorld(false);

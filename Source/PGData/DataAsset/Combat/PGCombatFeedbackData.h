@@ -13,13 +13,20 @@ struct PGDATA_API FPGImpactFeedback
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="3")) float Intensity = 1.f;
     // Cosmetic mesh recoil in world centimetres; never moves the collision capsule.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="20", Units="cm")) float RecoilDistance = 6.f;
+    // Recovery starts after the victim's hit-stop; distance and lean can be disabled independently.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0.02", ClampMax="0.3", Units="s")) float RecoilDuration = .14f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="10", Units="deg")) float RecoilAngle = 3.f;
 };
 UCLASS(BlueprintType)
 class PGDATA_API UPGCombatFeedbackData : public UDataAsset
 {
     GENERATED_BODY()
 public:
+    UPGCombatFeedbackData()
+    {
+        Heavy.RecoilAngle = 6.f;
+        Critical.RecoilAngle = 4.f;
+    }
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FPGImpactFeedback Normal;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FPGImpactFeedback Heavy;
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FPGImpactFeedback Critical;

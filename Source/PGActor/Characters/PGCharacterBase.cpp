@@ -193,7 +193,8 @@ void APGCharacterBase::PlayCombatFeedback(AActor* Source, EPGDamageType Type)
     if (Source)
         if (auto* Presentation = FindComponentByClass<UPGEnemyPresentationComponent>())
             Presentation->PlayHitRecoil(GetActorLocation() - Source->GetActorLocation(),
-                Impact.RecoilDistance * Scale, Impact.RecoilDuration);
+                Impact.RecoilDistance * Scale, Impact.RecoilDuration, Impact.RecoilAngle * Scale,
+                FMath::Max(0.f, GetWorldTimerManager().GetTimerRemaining(HitStopTimer)));
     if (Attacker && !Attacker->bProfileHitFeedback) Attacker->ApplyHitStop(Stop * FMath::Clamp(Attacker->FeedbackIntensity, 0.f, 1.f));
     auto* VFX = Impact.VFX ? Impact.VFX.Get() : Data->ImpactVFX.Get();
     auto* Sound = Impact.Sound ? Impact.Sound.Get() : Data->ImpactSound.Get();

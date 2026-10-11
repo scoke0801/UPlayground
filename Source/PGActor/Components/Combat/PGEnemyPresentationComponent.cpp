@@ -99,10 +99,11 @@ void UPGEnemyPresentationComponent::ResetPresentation(bool bDead)
     else SetGuarding(bGuarding);
 }
 
-void UPGEnemyPresentationComponent::PlayHitRecoil(const FVector& WorldDirection, float Distance, float Duration)
+void UPGEnemyPresentationComponent::PlayHitRecoil(const FVector& WorldDirection, float Distance, float Duration, float Angle, float HoldSeconds)
 {
     if (bStopped || !GetWorld() || WorldDirection.ContainsNaN() || !FMath::IsFinite(Distance) ||
-        !FMath::IsFinite(Duration) || Distance <= 0.f || Duration <= 0.f) return;
+        !FMath::IsFinite(Duration) || !FMath::IsFinite(Angle) || !FMath::IsFinite(HoldSeconds) ||
+        Distance < 0.f || Angle < 0.f || (Distance == 0.f && Angle == 0.f) || Duration <= 0.f) return;
     auto* Enemy = Cast<APGCharacterEnemy>(GetOwner());
     if (!Enemy || Enemy->GetFeedbackIntensity() <= 0.f) return;
     const FVector Direction = WorldDirection.GetSafeNormal2D();
@@ -116,29 +117,42 @@ void UPGEnemyPresentationComponent::PlayHitRecoil(const FVector& WorldDirection,
     RecoilMesh = Mesh;
     RecoilPeak = Mesh->GetAttachParent()->GetComponentTransform().InverseTransformVector(
         Direction * FMath::Clamp(Distance, 0.f, 20.f));
+    const FVector Axis = Mesh->GetAttachParent()->GetComponentTransform().InverseTransformVectorNoScale(
+        FVector::CrossProduct(FVector::UpVector, Direction)).GetSafeNormal();
+    RecoilPeakRotation = FQuat(Axis, FMath::DegreesToRadians(FMath::Clamp(Angle, 0.f, 10.f)));
     RecoilSeconds = FMath::Clamp(Duration, .02f, .3f);
+    RecoilHoldSeconds = FMath::Clamp(HoldSeconds, 0.f, .15f);
     RecoilStartedAt = GetWorld()->GetTimeSeconds();
     RecoilOffset = RecoilPeak;
-    Mesh->SetRelativeLocation(Mesh->GetRelativeLocation() + RecoilOffset);
+    RecoilRotation = RecoilPeakRotation;
+    Mesh->SetRelativeLocationAndRotation(Mesh->GetRelativeLocation() + RecoilOffset,
+        RecoilRotation * Mesh->GetRelativeRotation().Quaternion());
     GetWorld()->GetTimerManager().SetTimer(RecoilTimer, this, &ThisClass::UpdateHitRecoil, 1.f / 60.f, true);
 }
 
 void UPGEnemyPresentationComponent::UpdateHitRecoil()
 {
     auto* Mesh = RecoilMesh.Get();
-    const float Alpha = float(GetWorld()->GetTimeSeconds() - RecoilStartedAt) / RecoilSeconds;
+    const float Alpha = float(GetWorld()->GetTimeSeconds() - RecoilStartedAt - RecoilHoldSeconds) / RecoilSeconds;
     if (!Mesh || Alpha >= 1.f) { ClearHitRecoil(); return; }
-    // A sharp contact followed by a soft return remains visible during attack montages/hit-stop.
-    const FVector Next = RecoilPeak * FMath::Square(1.f - FMath::Clamp(Alpha, 0.f, 1.f));
-    Mesh->SetRelativeLocation(Mesh->GetRelativeLocation() - RecoilOffset + Next);
+    // Keep the impact silhouette through hit-stop, then ease back without restarting a montage.
+    const float Weight = FMath::Square(1.f - FMath::Clamp(Alpha, 0.f, 1.f));
+    const FVector Next = RecoilPeak * Weight;
+    const FQuat Rotation = FQuat::Slerp(FQuat::Identity, RecoilPeakRotation, Weight);
+    Mesh->SetRelativeLocationAndRotation(Mesh->GetRelativeLocation() - RecoilOffset + Next,
+        Rotation * RecoilRotation.Inverse() * Mesh->GetRelativeRotation().Quaternion());
     RecoilOffset = Next;
+    RecoilRotation = Rotation;
 }
 
 void UPGEnemyPresentationComponent::ClearHitRecoil()
 {
-    if (auto* Mesh = RecoilMesh.Get()) Mesh->SetRelativeLocation(Mesh->GetRelativeLocation() - RecoilOffset);
+    if (auto* Mesh = RecoilMesh.Get())
+        Mesh->SetRelativeLocationAndRotation(Mesh->GetRelativeLocation() - RecoilOffset,
+            RecoilRotation.Inverse() * Mesh->GetRelativeRotation().Quaternion());
     RecoilMesh.Reset();
     RecoilOffset = RecoilPeak = FVector::ZeroVector;
+    RecoilRotation = RecoilPeakRotation = FQuat::Identity;
     if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(RecoilTimer);
 }
 

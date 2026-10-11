@@ -17,7 +17,7 @@ public:
     void BeginRecovery();
     void ResetPresentation(bool bDead = false);
     bool PlayGuardImpact();
-    void PlayHitRecoil(const FVector& WorldDirection, float Distance, float Duration);
+    void PlayHitRecoil(const FVector& WorldDirection, float Distance, float Duration, float Angle = 0.f, float HoldSeconds = 0.f);
     void SetDissolve(float Amount);
     UFUNCTION(BlueprintPure) bool IsAimLocked() const { return bAimLocked; }
     UFUNCTION(BlueprintPure) float GetExposureAlpha() const { return ExposureAlpha; }
@@ -36,8 +36,11 @@ private:
     TWeakObjectPtr<class USkeletalMeshComponent> RecoilMesh;
     FVector RecoilOffset = FVector::ZeroVector;
     FVector RecoilPeak = FVector::ZeroVector;
+    FQuat RecoilRotation = FQuat::Identity;
+    FQuat RecoilPeakRotation = FQuat::Identity;
     double RecoilStartedAt = 0;
     float RecoilSeconds = 0;
+    float RecoilHoldSeconds = 0;
     void UpdateHitRecoil();
     void ClearHitRecoil();
     double WindupStartedAt = 0;

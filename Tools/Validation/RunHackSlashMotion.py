@@ -17,11 +17,14 @@ def main():
     parser.add_argument('--p1', action='store_true')
     parser.add_argument('--combo', action='store_true', help='Hold/release the real basic combo and inspect outgoing/incoming weights')
     parser.add_argument('--capture', action='store_true', help='Also capture stills; readback stalls invalidate frame-time comparisons')
+    parser.add_argument('--feedback-enemy', type=int, help='Use a visible enemy data ID for impact-pose captures (for example 15701)')
     parser.add_argument('--packaged-exe', type=Path)
     parser.add_argument('--configuration', choices=('Development','DebugGame'), default='Development')
     args = parser.parse_args()
     if args.combo and args.p1:
         parser.error('--combo and --p1 are separate probes')
+    if args.feedback_enemy is not None and (args.feedback_enemy <= 0 or args.combo or args.p1):
+        parser.error('--feedback-enemy requires a positive ID and the P0 probe')
     version = json.loads(read_text(ROOT/'UPlayground.uproject'))['EngineAssociation']
     engine = Path(os.environ.get('ProgramFiles', 'C:/Program Files'))/'Epic Games'/('UE_'+version)
     run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ_')+uuid.uuid4().hex[:6]
@@ -44,6 +47,8 @@ def main():
         command.append('-PGHackSlashComboProbe')
     if args.capture:
         command.append('-PGHackSlashCapture')
+    if args.feedback_enemy is not None:
+        command.append(f'-PGFeedbackEnemy={args.feedback_enemy}')
     print(out, flush=True)
     code, timeout = run_process(command, ROOT, out/'stdout.log', 180)
     log = read_text(out/'motion.log') if (out/'motion.log').exists() else ''
