@@ -1,0 +1,17 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Use case: stylized-concept. Asset type: production-ready single reusable nine-slice UI panel texture for an anime cel-shaded fantasy action RPG in Unreal Engine, NOT a screenshot or mockup. Create ONE square panel, front orthographic flat view, filling the canvas edge to edge except a tiny transparent 4px outer gutter. A refined slim ivory enamel and champagne-gold frame with charcoal ink outlines, crisp hand-drawn cel shaded facets, small angular corner flourishes reminiscent of an adventurer's field equipment. Understated muted jade inlays only at the four corners. The large interior is solid uniform opaque deep blue charcoal, calm and empty for live Korean UI text. All ornament confined to the outermost 10 percent on each side; middle 80 percent of all four edge strips perfectly straight, uniform, repeatable/stretchable. No central crest, no top ornament, no text or lettering, no icons, no divisions, no perspective, no drop shadow, no glow, no gradients, no photorealistic metal, no grunge. Symmetric compact corners and fine controlled two-tone cel highlights. Border visually slim and readable when displayed as a 420px-wide inventory panel or 320x86 HUD plate. Actual alpha transparency ONLY outside the panel, interior opaque. Output 1024x1024.",
+  "source": "T_PGToonFrame_Source.png",
+  "outputs": {
+    "T_PGToonPanel": [
+      256,
+      256
+    ],
+    "T_PGToonPlate": [
+      128,
+      128
+    ]
+  },
+  "preparation": "Alpha-preserving bicubic resize only; original retained",
+  "sliceMargin": 0.14
+}

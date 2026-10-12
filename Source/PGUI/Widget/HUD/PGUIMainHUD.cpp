@@ -88,7 +88,7 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeSkill(int32 Index)
     const auto& Art=FPGCombatHUDStyle::Get();
     return SNew(SBox).WidthOverride(56).HeightOverride(70)
     .Visibility_Lambda([this,Index](){return SkillIds[Index]>0 ? EVisibility::Visible : EVisibility::Collapsed;})
-    [SNew(SButton).ButtonStyle(&Art.Button).IsFocusable(false).ContentPadding(3)
+    [SNew(SButton).ButtonStyle(&ActionStyle).IsFocusable(false).ContentPadding(7)
         // Keep the icon readable during preparation; gameplay activation still uses the input guard.
         .ToolTipText_Lambda([this,Index](){return FText::FromString(SkillNames[Index].ToString()+TEXT("\n")+SkillReasons[Index].ToString());})
         .OnPressed_Lambda([this,Index](){ if (Index == 0) BeginAttackHold(); })
@@ -122,11 +122,10 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
     {
         CombatPlateBrush=FSlateBrush();
         CombatPlateBrush.SetResourceObject(CombatPlateTexture);
-        CombatPlateBrush.SetUVRegion(FBox2f(FVector2f(0,.10f),FVector2f(1,.90f)));
-        CombatPlateBrush.ImageSize=FVector2D(320,86);
-        // The authored plate already matches these shallow HUD proportions. Image drawing
-        // preserves its thin bevels; Box slicing uses source-pixel corners on high-res art.
-        CombatPlateBrush.DrawAs=ESlateBrushDrawType::Image;
+        // Nine-slice margins use actual texture pixels; the imported plate is 128px.
+        CombatPlateBrush.ImageSize=FVector2D(128,128);
+        CombatPlateBrush.Margin=FMargin(.14f);
+        CombatPlateBrush.DrawAs=ESlateBrushDrawType::Box;
     }
     PotionIconTexture=GetDefault<UPGUIStyleSettings>()->CombatPotionIcon.LoadSynchronous();
     PotionIconBrush=FSlateBrush();
@@ -137,7 +136,7 @@ TSharedRef<SWidget> UPGUIMainHUD::RebuildWidget()
     FSlateBrush Hover=CombatPlateBrush,Pressed=CombatPlateBrush;
     Hover.TintColor=FLinearColor(1.18f,1.12f,1.f);
     Pressed.TintColor=FLinearColor(.65f,.65f,.70f);
-    ActionStyle.SetNormal(CombatPlateBrush).SetHovered(Hover).SetPressed(Pressed);
+    ActionStyle.SetNormal(CombatPlateBrush).SetHovered(Hover).SetPressed(Pressed).SetDisabled(CombatPlateBrush);
     auto Skills=SNew(SHorizontalBox);
     Skills->AddSlot().AutoWidth().Padding(0,0,12,0)[MakeHealingPotion()];
     for(int32 Index=0;Index<8;++Index)

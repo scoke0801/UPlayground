@@ -364,3 +364,11 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/ConfigureBossMotionTempo.py
 !/Tools/Validation/RunBossMotionTempo.py
 !/Tools/Validation/RunInventoryCycle.py
+
+# ImageGen nine-slice UI frames and reproducible import.
+!/Tools/Art/ToonUI/
+/Tools/Art/ToonUI/*
+!/Tools/Art/ToonUI/*.png
+!/Tools/Art/ToonUI/Generation.json
+!/Tools/Art/ToonUI/PrepareTextures.ps1
+!/Tools/Art/ToonUI/ImportToonUI.py
