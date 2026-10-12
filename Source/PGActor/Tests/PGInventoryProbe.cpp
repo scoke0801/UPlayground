@@ -28,6 +28,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SExpandableArea.h"
 #include "Engine/Texture2D.h"
 #include "AssetCompilingManager.h"
 #include "PGActor/Handler/Skill/PGSkillHandler.h"
@@ -370,6 +371,17 @@ void APGPlayerController::PGInventoryProbe(FString Action)
         Check(Profile->HasPendingLevelNotice(),TEXT("committed level notice"));
         InventoryWidget->SetStatsTab();
         Check(!Profile->HasPendingLevelNotice(),TEXT("manual open acknowledges notice"));
+        TFunction<void(const TSharedRef<SWidget>&)> CheckGrowthArea;
+        bool bGrowthAreaExpanded=false;
+        CheckGrowthArea=[&](const TSharedRef<SWidget>& W)
+        {
+            if (W->GetTag()==TEXT("PGGrowth.Details"))
+                bGrowthAreaExpanded=StaticCastSharedRef<SExpandableArea>(W)->IsExpanded();
+            auto* Children=W->GetChildren();
+            for (int32 I=0;I<Children->Num();++I) CheckGrowthArea(Children->GetChildAt(I));
+        };
+        CheckGrowthArea(InventoryWidget->TakeWidget());
+        Check(bGrowthAreaExpanded,TEXT("new points reveal allocation controls"));
         TFunction<TSharedPtr<SButton>(const TSharedRef<SWidget>&,FName)> Find;
         Find=[&](const TSharedRef<SWidget>& W,FName Tag)->TSharedPtr<SButton>
         {
@@ -836,6 +848,8 @@ void APGPlayerController::PGInventoryProbe(FString Action)
             TFunction<void(const TSharedRef<SWidget>&)> ScrollDetails;
             ScrollDetails=[&](const TSharedRef<SWidget>& Widget)
             {
+                if (Widget->GetType()==TEXT("SExpandableArea") && Widget->GetTag().ToString().StartsWith(TEXT("PGStatDetails.")))
+                    StaticCastSharedRef<SExpandableArea>(Widget)->SetExpanded(true);
                 if (Widget->GetType()==TEXT("SScrollBox"))
                 { StaticCastSharedRef<SScrollBox>(Widget)->ScrollToEnd(); ++Scrolled; }
                 auto* Children=Widget->GetChildren();

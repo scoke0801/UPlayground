@@ -80,6 +80,7 @@ private:
     TSharedPtr<class SUniformGridPanel> BagGrid;
     TSharedPtr<class SVerticalBox> EquippedRows, ComparisonRows, BuildRows, NearbyRows, CharacterRows;
     TSharedPtr<class SScrollBox> ComparisonScroll, BuildScroll, CharacterScroll, StatsScroll;
+    TSharedPtr<class SExpandableArea> GrowthArea;
     TSharedPtr<class SWidgetSwitcher> Tabs;
     TSharedPtr<class SBox> Frame, StatsFrame;
     TSharedPtr<class SWidgetSwitcher> EquipmentPages;
@@ -96,6 +97,7 @@ private:
     FGuid SelectedItem;
     uint8 SelectedEquipmentSlot = 255;
     FSlateBrush SelectedBrush;
+    FSlateBrush InventoryFrameBrush, StatsFrameBrush;
     UPROPERTY(Transient) TMap<FString, TObjectPtr<UTexture2D>> ArtTextures;
     TMap<FString, TSharedPtr<FSlateBrush>> ArtBrushes;
     TSharedPtr<class SVerticalBox> SkillListRows, SkillDetailRows, LoadoutRows, CharacterDetailRows;
