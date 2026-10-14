@@ -1,0 +1,13 @@
+{
+  "tool": "built-in image_gen",
+  "source": "T_PGGothicPanel.png",
+  "runtime": [
+    "/Game/UI/Inventory/T_PGGothicPanel",
+    "/Game/UI/Inventory/T_PGGothicStats"
+  ],
+  "prompt": "Use case: stylized-concept. Production game UI texture, a single square 1024 x 1024 nine-slice gothic dark fantasy panel. Inspired by classic Diablo II character sheet stone-and-silver decorative frame. Flat orthographic facing camera, full bleed perfectly square outer border aligned to all image edges. Weathered dark silver engraved acanthus filigree on four corner squares, each corner limited to outer 12 percent of image; thin straight double tarnished pewter rails along edges in outer 4 percent; interior uninterrupted charcoal marble with VERY subtle gray mineral veins, dark and low contrast so cream UI text will be legible. Center 76 percent entirely empty. Strong crisp sculpted detail corners, restrained aged metal light. No text, no letters, no symbols, no gems, no character, no UI widgets, no outer background, no perspective, no rounded corners, no drop shadow. Opaque texture.",
+  "runtime_max_texture_size": {
+    "inventory": 256,
+    "stats": 512
+  }
+}

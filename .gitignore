@@ -372,3 +372,18 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Art/ToonUI/Generation.json
 !/Tools/Art/ToonUI/PrepareTextures.ps1
 !/Tools/Art/ToonUI/ImportToonUI.py
+
+# Inventory refinement source art and repeatable import.
+!/Tools/Art/InventoryRefinement/
+/Tools/Art/InventoryRefinement/*
+!/Tools/Art/InventoryRefinement/*.png
+!/Tools/Art/InventoryRefinement/Generation.json
+!/Tools/Art/InventoryRefinement/PrepareTexture.ps1
+!/Tools/Art/InventoryRefinement/ImportInventoryRefinement.py
+
+# Gothic inventory frame source and reproducible import.
+!/Tools/Art/GothicInventory/
+/Tools/Art/GothicInventory/*
+!/Tools/Art/GothicInventory/*.png
+!/Tools/Art/GothicInventory/Generation.json
+!/Tools/Art/GothicInventory/ImportGothicInventory.py
