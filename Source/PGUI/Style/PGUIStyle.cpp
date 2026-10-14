@@ -1,6 +1,8 @@
 ﻿#include "PGUIStyle.h"
 #include "PGUIStyleSettings.h"
 #include "Styling/CoreStyle.h"
+#include "Misc/Paths.h"
+#include "Fonts/CompositeFont.h"
 
 const FPGUIStyle& FPGUIStyle::Get()
 {
@@ -25,7 +27,17 @@ FPGUIStyle::FPGUIStyle()
 
 FSlateFontInfo FPGUIStyle::Font(int32 Size, bool bBold) const
 {
-    return FCoreStyle::GetDefaultFontStyle(bBold ? "Bold" : "Regular", Size > 0 ? Size : GetDefault<UPGUIStyleSettings>()->BodyFontSize);
+    const int32 Requested = Size > 0 ? Size : GetDefault<UPGUIStyleSettings>()->BodyFontSize;
+    const int32 Step = Requested <= 14 ? 14 : Requested <= 16 ? 16 : Requested <= 20 ? 20 : Requested <= 24 ? 24 : Requested <= 28 ? 28 : Requested;
+    static const TSharedPtr<const FCompositeFont> Typeface = []
+    {
+        auto Font = MakeShared<FCompositeFont>();
+        const FString Directory = FPaths::ProjectContentDir() / TEXT("UI/Fonts");
+        Font->DefaultTypeface.AppendFont(TEXT("Regular"),Directory / TEXT("IBMPlexSansKR-Regular.ttf"),EFontHinting::Default,EFontLoadingPolicy::LazyLoad);
+        Font->DefaultTypeface.AppendFont(TEXT("Bold"),Directory / TEXT("IBMPlexSansKR-SemiBold.ttf"),EFontHinting::Default,EFontLoadingPolicy::LazyLoad);
+        return Font;
+    }();
+    return FSlateFontInfo(Typeface,Step,bBold ? TEXT("Bold") : TEXT("Regular"));
 }
 
 FLinearColor FPGUIStyle::RarityColor(EPGItemRarity Rarity) const
@@ -34,7 +46,7 @@ FLinearColor FPGUIStyle::RarityColor(EPGItemRarity Rarity) const
     {
     case EPGItemRarity::Epic: return FLinearColor(.65f,.25f,.8f);
     case EPGItemRarity::Legendary: return FLinearColor(1.f,.42f,.1f);
-    case EPGItemRarity::Unique: return FLinearColor(.75f,.52f,.28f);
+    case EPGItemRarity::Unique: return GetDefault<UPGUIStyleSettings>()->Unique;
     case EPGItemRarity::MythicUnique: return FLinearColor(.9f,.13f,.25f);
     default: break;
     }

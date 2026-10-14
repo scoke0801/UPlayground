@@ -41,7 +41,7 @@ TSharedRef<SWidget> UPGUIMainHUD::MakeActions()
         [SNew(SButton).Tag(TEXT("PGStartAction")).ButtonStyle(&ActionStyle).IsFocusable(false).ContentPadding(FMargin(16,10)).HAlign(HAlign_Center)
             .Visibility_Lambda([this](){return Stage.IsValid() && Stage->IsManualReady() && Stage->CanReady() ? EVisibility::Visible : EVisibility::Collapsed;})
             .OnClicked_Lambda([this](){if(Stage.IsValid()) Stage->ReadyForNextStage(); return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(TEXT("시련 시작  ›"))).Font(Fonts.Font(14,true)).ColorAndOpacity(Art.Ivory)]]
+            [SNew(STextBlock).Text(FText::FromString(TEXT("시련 시작  →"))).Font(Fonts.Font(14,true)).ColorAndOpacity(Art.Ivory)]]
         + SHorizontalBox::Slot().AutoWidth().Padding(8,0,0,0)
         [SNew(SButton).Tag(TEXT("PGPrepareAction")).ButtonStyle(&ActionStyle).IsFocusable(false).ContentPadding(FMargin(12,10))
             .ToolTipText(FText::FromString(TEXT("장비와 검술 정비 · I")))

@@ -20,6 +20,7 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Card = FLinearColor(.018f,.025f,.052f,.88f);
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Rare = FLinearColor(1.f,.68f,.26f);
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Magic = FLinearColor(.35f,.76f,1.f);
+    UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Unique = FLinearColor(.20f,.72f,.67f);
     UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="14", ClampMax="24")) int32 BodyFontSize = 16;
     UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="960", ClampMax="1800")) float InventoryMaxWidth = 1540.f;
     UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="8", ClampMax="48")) float ScreenMargin = 24.f;
