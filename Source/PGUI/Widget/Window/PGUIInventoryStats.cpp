@@ -22,6 +22,7 @@
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Notifications/SProgressBar.h"
 #include "PGActor/Manager/PGStageManager.h"
 #include "PGActor/Controllers/PGPlayerController.h"
 #include "EngineUtils.h"
@@ -191,35 +192,65 @@ TSharedRef<SWidget> UPGUIInventory::BuildStatsTab()
     Rows=SNew(SVerticalBox);
     const auto* Profile=UPGProfileSubsystem::Get(this);
     const bool bHasPoints=Profile && Profile->GetProfile() && Profile->GetProfile()->Growth.UnspentPoints>0;
-    Rows->AddSlot().AutoHeight().Padding(0,0,0,20)
-    [SAssignNew(GrowthArea,SExpandableArea).Tag(TEXT("PGGrowth.Details")).InitiallyCollapsed(!bHasPoints).AreaTitlePadding(FMargin(10,12)).Padding(FMargin(12))
-        .BorderImage(&Style.Card).BodyBorderImage(&Style.Card)
-        .HeaderContent()
-        [SNew(STextBlock).Font(Style.Font(20,true)).ColorAndOpacity(Style.Text)
-            .Text_Lambda([this]()
-            {
-                const auto* P=UPGProfileSubsystem::Get(this);
-                if (!P || !P->GetProfile()) return FText::FromString(TEXT("포인트 분배"));
-                const auto& Growth=P->GetProfile()->Growth;
-                return FText::FromString(FString::Printf(TEXT("레벨 %d   ·   분배 가능 %d"),Growth.Level,Growth.UnspentPoints-GrowthDraftPoints()));
-            })]
-        .BodyContent()[GrowthRows]];
+    Rows->AddSlot().AutoHeight().Padding(0,0,0,14)
+    [SNew(SBorder).BorderImage(&Style.Card).Padding(10)
+        [SNew(SHorizontalBox)
+            + SHorizontalBox::Slot().FillWidth(1)
+            [SNew(STextBlock).Font(Style.Font(20,true)).ColorAndOpacity(Style.Text)
+                .Text_Lambda([this]()
+                {
+                    const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+                    const auto* Appearance=Player && Player->AppearanceComponent ? Player->AppearanceComponent->GetAppearance() : nullptr;
+                    return Appearance ? Appearance->DisplayName : FText::FromString(TEXT("모험가"));
+                })]
+            + SHorizontalBox::Slot().AutoWidth()
+            [SNew(STextBlock).Font(Style.Font(18,true)).ColorAndOpacity(Style.Lavender)
+                .Text_Lambda([this]()
+                {
+                    const auto* P=UPGProfileSubsystem::Get(this);
+                    return P && P->GetProfile() ? FText::FromString(FString::Printf(TEXT("레벨 %d"),P->GetProfile()->Growth.Level)) : FText::GetEmpty();
+                })]]];
+    Rows->AddSlot().AutoHeight().Padding(0,0,0,14)
+    [SNew(STextBlock).Font(Style.Font(14)).ColorAndOpacity(Style.Muted)
+        .Text_Lambda([this]()
+        {
+            const auto* P=UPGProfileSubsystem::Get(this);
+            if (!P || !P->GetProfile() || !P->GetCatalog()) return FText::GetEmpty();
+            const auto& Growth=P->GetProfile()->Growth;
+            const auto& Steps=P->GetCatalog()->LevelRules.Steps;
+            return Steps.IsValidIndex(Growth.Level-1)
+                ? FText::FromString(FString::Printf(TEXT("경험치  %lld     다음 레벨  %lld"),Growth.Experience,Steps[Growth.Level-1].RequiredExperience))
+                : FText::FromString(TEXT("최대 레벨"));
+        })];
     Rows->AddSlot().AutoHeight().Padding(0,0,0,16)
         [Label(TEXT("전투 능력치"),18,Style.Text)];
-    for (const auto Stat : {EPGStatType::Attack,EPGStatType::CriticalRate,EPGStatType::CriticalDamage,
-        EPGStatType::Health,EPGStatType::Defense,EPGStatType::HealAmount,EPGStatType::MovementSpeed})
+    auto PrimaryStats=SNew(SVerticalBox);
+    auto SecondaryStats=SNew(SVerticalBox);
+    Rows->AddSlot().AutoHeight().Padding(0,0,0,16)
+    [SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().FillWidth(1).Padding(0,0,5,0)[PrimaryStats]
+        + SHorizontalBox::Slot().FillWidth(1).Padding(5,0,0,0)[SecondaryStats]];
+    int32 StatIndex=0;
+    for (const auto Stat : {EPGStatType::Attack,EPGStatType::Defense,EPGStatType::Health,
+        EPGStatType::CriticalRate,EPGStatType::CriticalDamage,EPGStatType::HealAmount,EPGStatType::MovementSpeed})
     {
-        Rows->AddSlot().AutoHeight().Padding(0,0,0,4)
+        auto Column=StatIndex++<3 ? PrimaryStats : SecondaryStats;
+        Column->AddSlot().AutoHeight().Padding(0,0,0,8)
         [SNew(SExpandableArea).Tag(FName(*FString::Printf(TEXT("PGStatDetails.%d"),int32(Stat))))
-            .InitiallyCollapsed(true).AreaTitlePadding(FMargin(8,14)).Padding(FMargin(16,8,16,14))
-            .BorderImage(FCoreStyle::Get().GetBrush("NoBorder")).BodyBorderImage(&Style.Card)
+            .InitiallyCollapsed(true).AreaTitlePadding(FMargin(6,10)).Padding(FMargin(8))
+            .BorderImage(&Style.Card).BodyBorderImage(&Style.Card)
             .HeaderContent()
             [SNew(SHorizontalBox)
                 + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)
-                [SNew(STextBlock).Text(PGInventoryPresentation::StatName(Stat)).Font(Style.Font(20)).ColorAndOpacity(Style.Text)]
+                [SNew(STextBlock).Text(PGInventoryPresentation::StatName(Stat)).Font(Style.Font(15)).ColorAndOpacity(Style.Text)]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(12,0,0,0)
                 [SNew(STextBlock).Tag(FName(*FString::Printf(TEXT("PGStat.%d"),int32(Stat))))
-                    .Font(Style.Font(26,true)).ColorAndOpacity(Style.Text)
+                    .Font(Style.Font(18,true)).ColorAndOpacity_Lambda([this,Stat]()
+                    {
+                        const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+                        const auto* ASC=Player ? Player->GetPGAbilitySystemComponent() : nullptr;
+                        return ASC && FMath::IsNearlyZero(ASC->GetCombatStat(Stat)) ? PGInventoryStyle().Muted : PGInventoryStyle().Text;
+                    })
                     .Text_Lambda([this,Stat]()
                     {
                         const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
@@ -281,6 +312,19 @@ TSharedRef<SWidget> UPGUIInventory::BuildStatsTab()
                         return FText::FromString(Value);
                     })]];
     }
+    Rows->AddSlot().AutoHeight().Padding(0,0,0,20)
+    [SAssignNew(GrowthArea,SExpandableArea).Tag(TEXT("PGGrowth.Details")).InitiallyCollapsed(!bHasPoints).AreaTitlePadding(FMargin(10,12)).Padding(FMargin(12))
+        .BorderImage(&Style.Card).BodyBorderImage(&Style.Card)
+        .HeaderContent()
+        [SNew(STextBlock).Font(Style.Font(20,true)).ColorAndOpacity(Style.Text)
+            .Text_Lambda([this]()
+            {
+                const auto* P=UPGProfileSubsystem::Get(this);
+                if (!P || !P->GetProfile()) return FText::FromString(TEXT("포인트 분배"));
+                const auto& Growth=P->GetProfile()->Growth;
+                return FText::FromString(FString::Printf(TEXT("포인트 분배   ·   %d"),Growth.UnspentPoints-GrowthDraftPoints()));
+            })]
+        .BodyContent()[GrowthRows]];
     Rows->AddSlot().AutoHeight().Padding(0,12,0,0)
         [Label(TEXT("능력치를 누르면 장비와 강화의 적용 내역을 확인할 수 있습니다."),14,Style.Muted)];
     Rows->AddSlot().AutoHeight().Padding(0,8,0,0)
@@ -308,5 +352,5 @@ TSharedRef<SWidget> UPGUIInventory::BuildStatsTab()
                 if (State.bAfterimageProc) Value+=TEXT("\n발동 · 잔상");
                 return FText::FromString(Value);
             })];
-    return SAssignNew(StatsScroll,SScrollBox)+SScrollBox::Slot()[Rows];
+    return SAssignNew(StatsScroll,SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))+SScrollBox::Slot()[Rows];
 }

@@ -21,6 +21,11 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Rare = FLinearColor(1.f,.68f,.26f);
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Magic = FLinearColor(.35f,.76f,1.f);
     UPROPERTY(Config, EditAnywhere, Category="Colors") FLinearColor Unique = FLinearColor(.20f,.72f,.67f);
+    UPROPERTY(Config, EditAnywhere, Category="Inventory") FLinearColor InventoryAccent = FLinearColor(.72f,.51f,.24f);
+    UPROPERTY(Config, EditAnywhere, Category="Inventory") FLinearColor InventoryText = FLinearColor(.91f,.85f,.73f);
+    UPROPERTY(Config, EditAnywhere, Category="Inventory") FLinearColor InventoryMuted = FLinearColor(.53f,.52f,.48f);
+    UPROPERTY(Config, EditAnywhere, Category="Inventory") FLinearColor InventoryRare = FLinearColor(.38f,.62f,.90f);
+    UPROPERTY(Config, EditAnywhere, Category="Inventory", meta=(ClampMin="0", ClampMax="0.5")) float InventoryRevealSeconds = .18f;
     UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="14", ClampMax="24")) int32 BodyFontSize = 16;
     UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="960", ClampMax="1800")) float InventoryMaxWidth = 1540.f;
     UPROPERTY(Config, EditAnywhere, Category="Layout", meta=(ClampMin="8", ClampMax="48")) float ScreenMargin = 24.f;

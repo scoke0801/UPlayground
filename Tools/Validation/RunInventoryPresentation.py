@@ -34,6 +34,7 @@ def main():
                  full=(1280, 720, 'full'), empty=(1280, 720, 'empty'), build=(1280, 720, 'build'),
                  build1080=(1920,1080,'build'), buildwide=(2560,1080,'build'), character=(1280,720,'character'), character1080=(1920,1080,'character'), characterwide=(2560,1080,'character'), failure=(1280, 720, 'failure'), interaction=(1280, 720, 'open'), states=(1280, 720, 'open'), design=(1280,720,'build'))
     cases.update(stats720=(1280,720,'stats'), stats1080=(1920,1080,'stats'), statswide=(2560,1080,'stats'))
+    cases.update(bag720=(1280,720,'full'), bag1080=(1920,1080,'full'))
     cases.update(level720=(1280,720,'stats'), level1080=(1920,1080,'stats'), levelmax=(1280,720,'stats'))
     cases.update(growth720=(1280,720,'stats'), growth1080=(1920,1080,'stats'))
     cases.update(notice720=(1280,720,'stats'))
@@ -99,6 +100,8 @@ def main():
             command[command.index('-seconds=90')] = '-seconds=20'
         if mode == 'stats':
             command.append('-PGValidateStats')
+        if name.startswith('bag') or mode == 'empty':
+            command.append('-PGShowBag')
         if name == 'imprintcombat':
             command.append('-PGImprintCombat')
         if name == 'craftcombat':
@@ -121,6 +124,8 @@ def main():
         path = out / (name + '.log')
         log = read_text(path) if path.is_file() else ''
         problems = unexpected_errors(log, name)
+        if (name.startswith('bag') or mode == 'empty') and not re.search(r'PGInventoryProbe SQUARE cells=[1-9]\d* measured=[1-9]\d* failures=0', log):
+            problems.append('Bag cell aspect ratio or capacity check failed')
         if name.startswith('expansion') and not re.search(r'PGInventoryProbe EXPANSION failures=0 slots=(9|10)', log):
             problems.append('Expanded slot equip or actual GAS stat application failed')
         if name.startswith('imprint') and 'PGInventoryProbe IMPRINT failures=0' not in log:

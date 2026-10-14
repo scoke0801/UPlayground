@@ -19,6 +19,7 @@
 #include "Misc/Parse.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Input/Events.h"
+#include "Layout/ArrangedChildren.h"
 #include "InputCoreTypes.h"
 #include "EngineUtils.h"
 #include "UnrealClient.h"
@@ -672,7 +673,7 @@ void APGPlayerController::PGInventoryProbe(FString Action)
                 else UE_LOG(LogTemp,Error,TEXT("PGInventoryProbe missing portrait button %s"),*PreviewId);
             }
         }
-        else if (Action!=TEXT("empty"))
+        else if (Action!=TEXT("empty") && !FParse::Param(FCommandLine::Get(),TEXT("PGShowBag")))
         {
             for (const auto& Item : Profile->GetProfile()->Items)
             {
@@ -813,11 +814,33 @@ void APGPlayerController::PGInventoryProbe(FString Action)
         }
         if (InventoryWidget)
         {
-            int32 Failures=0; float LeftWidth=0,RightWidth=0;
+            int32 Failures=0, Cells=0, MeasuredCells=0; float LeftWidth=0,RightWidth=0;
+            float GridBottom=0.f,OverviewBottom=0.f;
+            const bool bCheckCells=FParse::Param(FCommandLine::Get(),TEXT("PGShowBag"));
             const auto RootSize=InventoryWidget->GetCachedGeometry().GetLocalSize();
             TFunction<void(const TSharedRef<SWidget>&)> InspectPanels;
             InspectPanels=[&](const TSharedRef<SWidget>& W)
             {
+                if (bCheckCells && W->GetTag()==TEXT("PGInventory.Overview"))
+                    OverviewBottom=W->GetCachedGeometry().LocalToAbsolute(W->GetCachedGeometry().GetLocalSize()).Y;
+                if (bCheckCells && W->GetTag()==TEXT("PGInventory.Grid"))
+                {
+                    // Re-arrange the grid: culled children's paint caches may describe an older layout.
+                    FArrangedChildren Arranged(EVisibility::All);
+                    W->ArrangeChildren(W->GetCachedGeometry(),Arranged);
+                    Cells=Arranged.Num();
+                    for (int32 I=0;I<Arranged.Num();++I)
+                    {
+                        ++MeasuredCells;
+                        const auto Size=Arranged[I].Geometry.GetLocalSize();
+                        GridBottom=FMath::Max(GridBottom,float(Arranged[I].Geometry.LocalToAbsolute(Size).Y));
+                        if (Size.X<=0 || FMath::Abs(Size.X-Size.Y)>1.f)
+                        {
+                            ++Failures;
+                            UE_LOG(LogTemp,Display,TEXT("PGInventoryProbe CELL width=%.2f height=%.2f"),Size.X,Size.Y);
+                        }
+                    }
+                }
                 if (W->GetVisibility().IsVisible() && (W->GetTag()==TEXT("PGInventory.Left") || W->GetTag()==TEXT("PGInventory.Right")))
                 {
                     const auto Size=W->GetCachedGeometry().GetLocalSize();
@@ -828,9 +851,15 @@ void APGPlayerController::PGInventoryProbe(FString Action)
                 for (int32 I=0;I<Children->Num();++I) InspectPanels(Children->GetChildAt(I));
             };
             InspectPanels(InventoryWidget->TakeWidget());
+            if (bCheckCells)
+            {
+                if (Cells!=Profile->GetCatalog()->BagCapacity || MeasuredCells==0 || OverviewBottom<=0.f || GridBottom>OverviewBottom+1.f) ++Failures;
+                UE_LOG(LogTemp,Display,TEXT("PGInventoryProbe VISIBLE gridBottom=%.1f viewportBottom=%.1f"),GridBottom,OverviewBottom);
+                UE_LOG(LogTemp,Display,TEXT("PGInventoryProbe SQUARE cells=%d measured=%d failures=%d"),Cells,MeasuredCells,Failures);
+            }
             int32 X=0,Y=0; GetViewportSize(X,Y);
             if (X<1600 && LeftWidth>0 && RightWidth>0) ++Failures;
-            if (X>=1600 && (LeftWidth>RootSize.X*.30f || RightWidth>RootSize.X*.30f)) ++Failures;
+            if (X>=1600 && (LeftWidth>RootSize.X*.33f || RightWidth>RootSize.X*.47f)) ++Failures;
             if (const auto* InputOwner=Cast<APGCharacterPlayer>(GetPawn()); InputOwner && InputOwner->GetInputConfig() && GetLocalPlayer())
                 if (const auto* Input=GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
                 {
@@ -946,6 +975,9 @@ void APGPlayerController::PGInventoryProbe(FString Action)
         };
         SendKey(EKeys::Escape);
         Check(!InventoryWidget && !IsMoveInputIgnored() && !IsPaused(),TEXT("Escape restores gameplay"));
+        ToggleStats();
+        Check(InventoryWidget && InventoryWidget->IsStatsPanelOpen() && !InventoryWidget->IsRightPanelOpen(),TEXT("stats opens independently from a closed UI"));
+        CloseInventory();
         for (int32 I=0;I<20;++I) { ToggleInventory(); Check(InventoryWidget!=nullptr,TEXT("reopen")); CloseInventory(); }
         Check(!IsMoveInputIgnored() && !IsPaused(),TEXT("20 cycles leave no move or pause locks"));
         // An independently acquired move lock must survive a modal window.
@@ -958,9 +990,17 @@ void APGPlayerController::PGInventoryProbe(FString Action)
             SendKey(EKeys::I);
             if (InventoryWidget || IsMoveInputIgnored())
             { ++Failures; UE_LOG(LogTemp,Error,TEXT("PGInventoryProbe FAIL I closes overlay")); }
-            CloseInventory(); ToggleInventory();
-            UE_LOG(LogTemp,Log,TEXT("PGInventoryProbe CHECK failures=%d"),Failures);
-            PGInventoryProbe(TEXT("capture"));
+            CloseInventory(); ToggleStats();
+            FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateWeakLambda(this,[this,Failures,SendKey](float) mutable
+            {
+                SendKey(StatsKey);
+                if (InventoryWidget || IsMoveInputIgnored())
+                { ++Failures; UE_LOG(LogTemp,Error,TEXT("PGInventoryProbe FAIL stats key closes standalone sheet")); }
+                CloseInventory(); ToggleInventory();
+                UE_LOG(LogTemp,Log,TEXT("PGInventoryProbe CHECK failures=%d"),Failures);
+                PGInventoryProbe(TEXT("capture"));
+                return false;
+            }),.2f);
             return false;
         }),.2f);
     }

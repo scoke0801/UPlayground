@@ -335,6 +335,10 @@ void APGPlayerController::ToggleInventory()
     {
         InventoryWidget->ToggleRightPanel(); return;
     }
+    OpenInventoryOverlay(false);
+}
+void APGPlayerController::OpenInventoryOverlay(bool bOpenStats)
+{
     auto* LocalCharacter = Cast<APGCharacterPlayer>(GetPawn());
     if (!LocalCharacter || !LocalCharacter->IsGameplayInputAllowed()) return;
     auto* UI = UPGUIManager::Get(this);
@@ -342,21 +346,15 @@ void APGPlayerController::ToggleInventory()
     LocalCharacter->GetPGAbilitySystemComponent()->ClearBufferedInput();
     InventoryWidget = CreateWidget<UPGUIInventory>(this);
     if (!InventoryWidget) return;
+    InventoryWidget->InitializePanels(bOpenStats);
     InventoryWidget->AddToViewport(90);
+    if (bOpenStats) InventoryWidget->SetStatsTab();
     InventoryWidget->SetKeyboardFocus();
     bCameraInputModeInitialized=false; RefreshCameraInputMode();
 }
 void APGPlayerController::ToggleStats()
 {
-    if (!InventoryWidget)
-    {
-        ToggleInventory();
-        if (InventoryWidget)
-        {
-            InventoryWidget->SetStatsTab();
-            if (InventoryWidget->IsRightPanelOpen()) InventoryWidget->ToggleRightPanel();
-        }
-    }
+    if (!InventoryWidget) OpenInventoryOverlay(true);
     else InventoryWidget->ToggleStatsPanel();
 }
 bool APGPlayerController::OpenGrowthPanel()

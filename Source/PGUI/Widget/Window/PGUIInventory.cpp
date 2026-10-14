@@ -20,6 +20,8 @@
 #include "PGData/DataAsset/Combat/PGCombatTuningData.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "Engine/Texture2D.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Components/SceneCaptureComponent2D.h"
 #if WITH_EDITOR
 #include "TextureCompiler.h"
 #endif
@@ -42,6 +44,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Widgets/SToolTip.h"
 #include "Styling/CoreStyle.h"
 
 class SPGInventoryPanel : public SBorder
@@ -59,9 +62,9 @@ struct FPGInventoryCellView
     int32 DefinitionId = INDEX_NONE;
     bool bEquipped = false;
     EPGItemRarity Rarity = EPGItemRarity::Common;
-    FSlateBrush Brush;
+    FSlateBrush Brush, SlotBackground;
     TSharedPtr<SButton> Button;
-    TSharedPtr<STextBlock> Name, Badge;
+    TSharedPtr<STextBlock> Name, Badge, Mark, Grade;
 };
 
 namespace PGInventoryUI
@@ -73,12 +76,12 @@ namespace PGInventoryUI
     }
     TSharedRef<STextBlock> Text(const FString& Value, int32 Size = 0, FLinearColor Color = FLinearColor::White, bool bBold = false)
     { return Text(FText::FromString(Value),Size,Color,bBold); }
-    TSharedRef<SButton> Action(const FString& Label, TFunction<FReply()> Callback)
+    TSharedRef<SButton> Action(const FString& Label, TFunction<FReply()> Callback, bool bPrimary=false)
     {
-        return SNew(SButton).ButtonStyle(&PGInventoryStyle().Button).ContentPadding(FMargin(14,10))
+        return SNew(SButton).ButtonStyle(bPrimary ? &PGInventoryPrimaryStyle() : &PGInventoryStyle().Button).ContentPadding(FMargin(14,10))
             .OnClicked_Lambda(MoveTemp(Callback))
             [SNew(STextBlock).Text(FText::FromString(Label)).Font(PGInventoryStyle().Font(0,true))
-                .ColorAndOpacity(PGInventoryStyle().Text).OverflowPolicy(ETextOverflowPolicy::Ellipsis)];
+                .ColorAndOpacity(bPrimary ? FLinearColor(.018f,.015f,.011f) : PGInventoryStyle().Text).OverflowPolicy(ETextOverflowPolicy::Ellipsis)];
     }
     void Line(const TSharedPtr<SVerticalBox>& Rows, const FText& Value, FLinearColor Color, int32 Size = 0, bool bBold = false)
     { Rows->AddSlot().AutoHeight().Padding(0,0,0,10)[Text(Value,Size,Color,bBold)]; }
@@ -101,19 +104,44 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
 #endif
         Brush.DrawAs=ESlateBrushDrawType::Box;
         Brush.Margin=FMargin(.14f);
+        Brush.ImageSize=FVector2D(256,256);
         return Brush;
     };
     InventoryFrameBrush=MakeFrame(GetDefault<UPGUIStyleSettings>()->InventoryFrame);
     StatsFrameBrush=MakeFrame(GetDefault<UPGUIStyleSettings>()->StatsFrame);
     auto Equipment=SNew(SVerticalBox)
         + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,16)[Text(TEXT("장착 장비"),18,Style.Text,true)]
-        + SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(EquippedRows,SVerticalBox)]];
+        + SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))+SScrollBox::Slot()[SAssignNew(EquippedRows,SVerticalBox)]];
+    auto Paperdoll=SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().AutoWidth()[SAssignNew(EquipmentLeft,SVerticalBox)]
+        + SHorizontalBox::Slot().FillWidth(1).Padding(10,0)
+        [SNew(SBorder).BorderImage(&Style.Card).Padding(4)
+            [SNew(SVerticalBox)
+                + SVerticalBox::Slot().FillHeight(1)
+                [SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
+                    [SNew(SImage).Image_Lambda([this]() -> const FSlateBrush*
+                    {
+                        const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+                        const auto* Appearance=Player && Player->AppearanceComponent ? Player->AppearanceComponent->GetAppearance() : nullptr;
+                        if (CharacterPreview) return &CharacterPreviewBrush;
+                        return Art(Appearance && !Appearance->Portrait.IsNull() ? Appearance->Portrait.ToSoftObjectPath() : GetDefault<UPGUIStyleSettings>()->StatsEmblem.ToSoftObjectPath());
+                    })]]
+                + SVerticalBox::Slot().AutoHeight()
+                [SNew(SBorder).BorderImage(&Style.Card).Padding(4)
+                    [SNew(STextBlock).Justification(ETextJustify::Center).Font(Style.Font(16,true)).ColorAndOpacity(Style.Text)
+                        .Text_Lambda([this]()
+                        {
+                            const auto* Player=Cast<APGCharacterPlayer>(GetOwningPlayerPawn());
+                            const auto* Appearance=Player && Player->AppearanceComponent ? Player->AppearanceComponent->GetAppearance() : nullptr;
+                            return Appearance ? Appearance->DisplayName : FText::FromString(TEXT("모험가"));
+                        })]]]]
+        + SHorizontalBox::Slot().AutoWidth()[SAssignNew(EquipmentRight,SVerticalBox)];
     auto Bag=SNew(SVerticalBox)
         + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,12)
         [SNew(SHorizontalBox)
             + SHorizontalBox::Slot().FillWidth(1)[Text(TEXT("가방"),18,Style.Text,true)]
             + SHorizontalBox::Slot().AutoWidth()[SAssignNew(CapacityText,STextBlock).Font(Style.Font()).ColorAndOpacity(Style.Muted)]]
-        + SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(BagGrid,SUniformGridPanel).SlotPadding(FMargin(3))]]
+        + SVerticalBox::Slot().AutoHeight()[SAssignNew(BagGrid,SUniformGridPanel).Tag(TEXT("PGInventory.Grid")).SlotPadding(FMargin(2))]
         + SVerticalBox::Slot().AutoHeight().Padding(0,10,0,0)
         [SNew(STextBlock).Font(Style.Font(16)).ColorAndOpacity(Style.Muted).AutoWrapText(true)
             .Text_Lambda([this]()
@@ -123,46 +151,51 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
                     !Cells.ContainsByPredicate([](const auto& Cell){return Cell->Guid.IsValid();}) ? TEXT("필터에 맞는 장비가 없습니다.") : TEXT("장비를 선택하면 능력치를 비교하고 장착할 수 있습니다."));
             })];
     auto Comparison=SNew(SVerticalBox)
-        + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)[Text(TEXT("아이템 비교"),18,Style.Text,true)]
-        + SVerticalBox::Slot().FillHeight(1)[SAssignNew(ComparisonScroll,SScrollBox)+SScrollBox::Slot()[SAssignNew(ComparisonRows,SVerticalBox)]]
+        + SVerticalBox::Slot().FillHeight(1)[SAssignNew(ComparisonScroll,SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))+SScrollBox::Slot()[SAssignNew(ComparisonRows,SVerticalBox)]]
         + SVerticalBox::Slot().AutoHeight().Padding(0,12,0,0)
-        [SNew(SButton).ButtonStyle(&Style.Button).ContentPadding(FMargin(14,12))
+        [SNew(SButton).ButtonStyle(&PGInventoryPrimaryStyle()).ContentPadding(FMargin(14,12))
             .IsEnabled_Lambda([this](){return bKnownSelection && !bSelectedEquipped && bCanEquip;})
             .OnClicked_Lambda([this](){EquipSelected();return FReply::Handled();})
             [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(bSelectedEquipped ? TEXT("장착 중") : TEXT("선택한 아이템 장착"));})
-                .Font(Style.Font(0,true)).ColorAndOpacity(Style.Mint)]]
+                .Font(Style.Font(0,true)).ColorAndOpacity(FLinearColor(.018f,.015f,.011f))]]
         + SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)
         [SNew(SButton).ButtonStyle(&Style.Button).ContentPadding(FMargin(14,10))
             .IsEnabled_Lambda([this](){return SelectedItem.IsValid() && !bSelectedEquipped && !bSelectedFavorite && bCanWrite;})
             .OnClicked_Lambda([this](){DiscardSelected();return FReply::Handled();})
             [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(PendingDiscard.IsValid() ? TEXT("버리기 확정 · 영구 삭제") : TEXT("아이템 버리기"));})
                 .Font(Style.Font()).ColorAndOpacity(Style.Danger)]];
-    Comparison->AddSlot().AutoHeight().Padding(0,6,0,0)
+    auto Management=SNew(SVerticalBox);
+    Management->AddSlot().AutoHeight().Padding(0,6,0,0)
         [Action(TEXT("선택 장비 분해 미리보기"),[this](){PreviewSalvage(false);return FReply::Handled();})];
-    Comparison->AddSlot().AutoHeight().Padding(0,6,0,0)
+    Management->AddSlot().AutoHeight().Padding(0,6,0,0)
         [SNew(SHorizontalBox)
             + SHorizontalBox::Slot().FillWidth(1)
             [Action(TEXT("전설 각인"),[this](){CancelImprint();CancelSalvage();EquipmentPages->SetActiveWidgetIndex(4);RefreshImprint();return FReply::Handled();})]
             + SHorizontalBox::Slot().FillWidth(1).Padding(6,0,0,0)
             [Action(TEXT("담금질·명품화"),[this](){CancelImprint();CancelSalvage();EquipmentPages->SetActiveWidgetIndex(5);RefreshCraft();return FReply::Handled();})]];
-    auto CraftPage=SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(CraftRows,SVerticalBox)];
-    auto ImprintPage=SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(ImprintRows,SVerticalBox)];
-    auto SalvagePage = SNew(SScrollBox) + SScrollBox::Slot()[SAssignNew(SalvageRows,SVerticalBox)];
+    Comparison->AddSlot().AutoHeight().Padding(0,8,0,0)
+        [SNew(SExpandableArea).InitiallyCollapsed(true).AreaTitlePadding(FMargin(8,6)).Padding(0)
+            .BorderImage(FCoreStyle::Get().GetBrush("NoBorder")).BodyBorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
+            .HeaderContent()[Text(TEXT("제작 · 분해"),14,Style.Muted)]
+            .BodyContent()[Management]];
+    auto CraftPage=SNew(SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))+SScrollBox::Slot()[SAssignNew(CraftRows,SVerticalBox)];
+    auto ImprintPage=SNew(SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))+SScrollBox::Slot()[SAssignNew(ImprintRows,SVerticalBox)];
+    auto SalvagePage = SNew(SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4)) + SScrollBox::Slot()[SAssignNew(SalvageRows,SVerticalBox)];
     auto Filters = SNew(SWrapBox).UseAllottedSize(true);
     Filters->SetVisibility(TAttribute<EVisibility>::CreateLambda([this](){return EquipmentPages && EquipmentPages->GetActiveWidgetIndex()!=0 ? EVisibility::Collapsed : EVisibility::Visible;}));
     auto AddFilter = [this, &Filters](TFunction<FString()> Label, TArray<FString> Choices, TFunction<void(int32)> Select)
     {
         Filters->AddSlot().Padding(0,0,6,6)
-        [SNew(SComboButton).ButtonStyle(&PGInventoryStyle().Button).ContentPadding(FMargin(8,6))
+        [SNew(SComboButton).ButtonStyle(&PGInventoryStyle().Button).HasDownArrow(false).ContentPadding(FMargin(8,6))
             .OnGetMenuContent_Lambda([Choices,Select]() -> TSharedRef<SWidget>
             {
                 auto Rows = SNew(SVerticalBox);
                 for (int32 I=0; I<Choices.Num(); ++I)
                     Rows->AddSlot().AutoHeight()[PGInventoryUI::Action(Choices[I],[Select,I]()
                     { Select(I); FSlateApplication::Get().DismissAllMenus(); return FReply::Handled(); })];
-                return SNew(SBox).MaxDesiredHeight(360)[SNew(SScrollBox)+SScrollBox::Slot()[Rows]];
+                return SNew(SBox).MaxDesiredHeight(360)[SNew(SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))+SScrollBox::Slot()[Rows]];
             })
-            .ButtonContent()[SNew(STextBlock).Text_Lambda([Label](){return FText::FromString(Label());})
+            .ButtonContent()[SNew(STextBlock).Text_Lambda([Label](){return FText::FromString(Label()+TEXT("  ▼"));})
                 .Font(PGInventoryStyle().Font(15)).ColorAndOpacity(PGInventoryStyle().Text)]];
     };
     TArray<FString> Slots={TEXT("모든 부위")};
@@ -182,27 +215,32 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
     {
         EquipmentNavigation->AddSlot().FillWidth(1).Padding(2,0)
         [SNew(SButton).ButtonStyle(&PGInventoryTabStyle()).ContentPadding(FMargin(4,10)).HAlign(HAlign_Center)
+            .ButtonColorAndOpacity_Lambda([this,Page](){return EquipmentPages && EquipmentPages->GetActiveWidgetIndex()==Page ? FLinearColor(.23f,.018f,.012f) : FLinearColor(.02f,.021f,.022f);})
             .OnClicked_Lambda([this,Page](){if (Page==3) { CancelSalvage(); RefreshSalvage(); } EquipmentPages->SetActiveWidgetIndex(Page);return FReply::Handled();})
             [SNew(STextBlock).Text(FText::FromString(Name)).Font(PGInventoryStyle().Font(16,true))
                 .ColorAndOpacity_Lambda([this,Page](){return EquipmentPages && EquipmentPages->GetActiveWidgetIndex()==Page ? PGInventoryStyle().Lavender : PGInventoryStyle().Muted;})]];
     };
-    AddEquipmentPage(TEXT("가방"),0);
-    AddEquipmentPage(TEXT("장착"),1);
+    AddEquipmentPage(TEXT("소지품"),0);
+    AddEquipmentPage(TEXT("장비 관리"),1);
     AddEquipmentPage(TEXT("비교"),2);
     AddEquipmentPage(TEXT("재료"),3);
+    auto Overview=SNew(SScrollBox).Tag(TEXT("PGInventory.Overview")).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))
+        + SScrollBox::Slot()[SNew(SVerticalBox)
+            + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,10)[SNew(SBox).HeightOverride(280)[Paperdoll]]
+            + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,6)[Filters]
+            + SVerticalBox::Slot().AutoHeight()[Bag]];
     auto EquipmentTab=SNew(SVerticalBox)
         + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,10)
         [EquipmentNavigation]
-        + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,6)[Filters]
         + SVerticalBox::Slot().FillHeight(1)
         [SAssignNew(EquipmentPages,SWidgetSwitcher)
-            + SWidgetSwitcher::Slot()[Bag]
+            + SWidgetSwitcher::Slot()[Overview]
             + SWidgetSwitcher::Slot()[Equipment]
             + SWidgetSwitcher::Slot()[Comparison]
             + SWidgetSwitcher::Slot()[SalvagePage]
             + SWidgetSwitcher::Slot()[ImprintPage]
             + SWidgetSwitcher::Slot()[CraftPage]];
-    auto BuildTab=SAssignNew(BuildScroll,SScrollBox)
+    auto BuildTab=SAssignNew(BuildScroll,SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))
         + SScrollBox::Slot()[SNew(SVerticalBox)
             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)
                 [SNew(SBorder).BorderImage(&Style.Card).Padding(12)[SAssignNew(SkillListRows,SVerticalBox)]]
@@ -212,7 +250,7 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
                 [SNew(SBorder).BorderImage(&Style.Card).Padding(12)[SAssignNew(LoadoutRows,SVerticalBox)]]
             + SVerticalBox::Slot().AutoHeight()
                 [SNew(SBorder).BorderImage(&Style.Card).Padding(12)[SAssignNew(BuildRows,SVerticalBox)]]];
-    auto CharacterTab=SAssignNew(CharacterScroll,SScrollBox)
+    auto CharacterTab=SAssignNew(CharacterScroll,SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))
         + SScrollBox::Slot()[SNew(SVerticalBox)
             + SVerticalBox::Slot().AutoHeight()[SAssignNew(CharacterRows,SVerticalBox)]
             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,14)[SAssignNew(CharacterGrid,SUniformGridPanel).SlotPadding(FMargin(6))]
@@ -221,7 +259,7 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
         [SNew(SVerticalBox)
             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,12)
             [Action(TEXT("등급 필터 변경 · 전체 / 마법 이상 / 희귀"),[this](){MinRarity=(MinRarity+1)%3;RefreshNearby();return FReply::Handled();})]
-            + SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox)+SScrollBox::Slot()[SAssignNew(NearbyRows,SVerticalBox)]]];
+            + SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))+SScrollBox::Slot()[SAssignNew(NearbyRows,SVerticalBox)]]];
     auto TabButtons=SNew(SWrapBox).UseAllottedSize(true);
     int32 TabIndex=0;
     auto AddTab=[&](const TCHAR* Name,TFunction<FReply()> ActionCallback)
@@ -229,36 +267,39 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
         const int32 Index=TabIndex++;
         TabButtons->AddSlot().Padding(0,0,6,12)
         [SNew(SButton).ButtonStyle(&PGInventoryTabStyle()).ContentPadding(FMargin(12,10))
+            .ButtonColorAndOpacity_Lambda([this,Index](){return Tabs && Tabs->GetActiveWidgetIndex()==Index ? FLinearColor(.23f,.018f,.012f) : FLinearColor(.02f,.021f,.022f);})
             .OnClicked_Lambda(MoveTemp(ActionCallback))
-            [SNew(STextBlock).Text(FText::FromString(Name)).Font(Style.Font(16,true))
+            [SNew(STextBlock).Text(FText::FromString(Name)).Font(Style.Font(20,true))
                 .ColorAndOpacity_Lambda([this,Index](){return Tabs && Tabs->GetActiveWidgetIndex()==Index ? PGInventoryStyle().Lavender : PGInventoryStyle().Muted;})]];
     };
     AddTab(TEXT("장비"),[this](){SetBuildTab(false);return FReply::Handled();});
     AddTab(TEXT("검술"),[this](){SetBuildTab(true);return FReply::Handled();});
     AddTab(TEXT("전리품"),[this](){bBuildTab=false;Tabs->SetActiveWidgetIndex(2);RefreshNearby();return FReply::Handled();});
     AddTab(TEXT("캐릭터"),[this](){SetCharacterTab();return FReply::Handled();});
-    AddTab(TEXT("능력치"),[this](){ToggleStatsPanel();return FReply::Handled();});
     auto RightClose=Action(TEXT("닫기"),[this](){return Close();});
     RightClose->SetTag(TEXT("PGInventory.CloseRight"));
     auto Root=SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
-        + SOverlay::Slot().HAlign(HAlign_Left).Padding(12,24,0,190)
+        + SOverlay::Slot().HAlign(HAlign_Left).Padding(12,16,0,108)
         [SAssignNew(StatsFrame,SBox).Tag(TEXT("PGInventory.Left")).WidthOverride(420)
             .Visibility_Lambda([this](){return bStatsOpen ? EVisibility::Visible : EVisibility::Collapsed;})
-            [SNew(SPGInventoryPanel).BorderImage(&StatsFrameBrush).Padding(24)
+            [SNew(SPGInventoryPanel).BorderImage(&StatsFrameBrush).Padding(56)
                 [SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,12)
                     [SNew(SHorizontalBox)
-                        + SHorizontalBox::Slot().FillWidth(1)[Text(TEXT("능력치"),28,Style.Text,true)]
+                        + SHorizontalBox::Slot().FillWidth(1)[SNew(STextBlock).Font(Style.Font(24,true)).ColorAndOpacity(Style.Text)
+                            .Text_Lambda([this](){const auto* PC=Cast<APGPlayerController>(GetOwningPlayer());return FText::FromString(TEXT("능력치")+(PC ? TEXT("  [")+PC->StatsKey.GetDisplayName().ToString()+TEXT("]") : FString()));})]
                         + SHorizontalBox::Slot().AutoWidth()[Action(TEXT("닫기"),[this](){ToggleStatsPanel();return FReply::Handled();})]]
                     + SVerticalBox::Slot().FillHeight(1)[BuildStatsTab()]]]]
-        + SOverlay::Slot().HAlign(HAlign_Right).Padding(0,24,12,190)
+        + SOverlay::Slot().HAlign(HAlign_Right).Padding(0,16,12,16)
         [SAssignNew(Frame,SBox).Tag(TEXT("PGInventory.Right")).WidthOverride(420)
             .Visibility_Lambda([this](){return bRightOpen ? EVisibility::Visible : EVisibility::Collapsed;})
             [SNew(SPGInventoryPanel).BorderImage(&InventoryFrameBrush).Padding(24)
                 [SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,12)
                     [SNew(SHorizontalBox)
-                        + SHorizontalBox::Slot().FillWidth(1)[Text(TEXT("인벤토리"),28,Style.Text,true)]
+                        + SHorizontalBox::Slot().FillWidth(1)[SNew(STextBlock).Font(Style.Font(24,true)).ColorAndOpacity(Style.Text)
+                            .Text_Lambda([this](){const auto* PC=Cast<APGPlayerController>(GetOwningPlayer());return FText::FromString(TEXT("인벤토리")+(PC ? TEXT("  [")+PC->InventoryKey.GetDisplayName().ToString()+TEXT("]") : FString()));})]
+
                         + SHorizontalBox::Slot().AutoWidth()[RightClose]]
                     + SVerticalBox::Slot().AutoHeight()[TabButtons]
                     + SVerticalBox::Slot().FillHeight(1)
@@ -294,6 +335,7 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
 
 void UPGUIInventory::NativeConstruct()
 {
+    RightReveal=StatsReveal=0.f;
     Super::NativeConstruct(); BoundProfile=UPGProfileSubsystem::Get(this);
     if (BoundProfile.IsValid()) ProfileChangedHandle=BoundProfile->OnProfileChanged.AddUObject(this,&ThisClass::OnProfileChanged);
     int32 X=0,Y=0; if (GetOwningPlayer()) GetOwningPlayer()->GetViewportSize(X,Y); bCompact=X<1600;
@@ -303,11 +345,28 @@ void UPGUIInventory::NativeDestruct()
 {
     if (auto* UI=UPGUIManager::Get(this)) UI->ReleaseModalInput(this);
     if (BoundProfile.IsValid()) BoundProfile->OnProfileChanged.Remove(ProfileChangedHandle);
-    BoundProfile.Reset(); Super::NativeDestruct();
+    BoundProfile.Reset();
+    if (CharacterCapture) CharacterCapture->DestroyComponent();
+    CharacterCapture=nullptr; CharacterPreview=nullptr; CharacterPreviewBrush=FSlateBrush();
+    Super::NativeDestruct();
 }
 void UPGUIInventory::NativeTick(const FGeometry& Geometry,float DeltaTime)
 {
     Super::NativeTick(Geometry,DeltaTime);
+    UpdateCharacterPreview(DeltaTime);
+    const float Duration=GetDefault<UPGUIStyleSettings>()->InventoryRevealSeconds;
+    auto Reveal=[DeltaTime,Duration](const TSharedPtr<SBox>& Panel,bool bOpen,float& Progress,float Direction)
+    {
+        Progress=bOpen ? (Duration>0.f ? FMath::Min(1.f,Progress+DeltaTime/Duration) : 1.f) : 0.f;
+        if (Panel)
+        {
+            const float Ease=1.f-FMath::Pow(1.f-Progress,3.f);
+            Panel->SetRenderOpacity(Ease);
+            Panel->SetRenderTransform(FSlateRenderTransform(FVector2D(Direction*18.f*(1.f-Ease),0.f)));
+        }
+    };
+    Reveal(Frame,bRightOpen,RightReveal,1.f);
+    Reveal(StatsFrame,bStatsOpen,StatsReveal,-1.f);
     CheckGrowthContext();
     if (CraftRevision>=0)
     {
@@ -335,11 +394,55 @@ void UPGUIInventory::NativeTick(const FGeometry& Geometry,float DeltaTime)
     if (GetOwningPlayer()) GetOwningPlayer()->GetViewportSize(PixelsX,PixelsY);
     bCompact=PixelsX<1600;
     ApplyPanelLayout();
-    const float Width=FMath::Max(1.f,Geometry.GetLocalSize().X*(bCompact ? .46f : .29f));
+    const float Width=FMath::Max(1.f,Geometry.GetLocalSize().X*.46f);
     if (!FMath::IsNearlyEqual(Width,LastWidth))
-    { if (Frame) Frame->SetWidthOverride(Width); if (StatsFrame) StatsFrame->SetWidthOverride(Width); LastWidth=Width; }
+    { if (Frame) Frame->SetWidthOverride(Width); if (StatsFrame) StatsFrame->SetWidthOverride(Geometry.GetLocalSize().X*(bCompact ? .46f : .32f)); LastWidth=Width; }
     if (bRefreshPending) Refresh();
 }
+void UPGUIInventory::UpdateCharacterPreview(float DeltaTime)
+{
+    if (!bRightOpen || !Tabs || Tabs->GetActiveWidgetIndex()!=0 || !EquipmentPages || EquipmentPages->GetActiveWidgetIndex()!=0) return;
+    auto* Player=GetOwningPlayerPawn();
+    if (!Player) return;
+    PreviewElapsed+=DeltaTime;
+    if (CharacterCapture && PreviewElapsed<.1f) return;
+    PreviewElapsed=0.f;
+    if (!CharacterCapture)
+    {
+        CharacterPreview=NewObject<UTextureRenderTarget2D>(this);
+        CharacterPreview->RenderTargetFormat=RTF_RGBA8;
+        CharacterPreview->ClearColor=FLinearColor(.012f,.014f,.016f);
+        CharacterPreview->InitAutoFormat(512,640);
+        CharacterPreview->UpdateResourceImmediate(true);
+        CharacterPreviewBrush.SetResourceObject(CharacterPreview);
+        CharacterPreviewBrush.ImageSize=FVector2D(512,640);
+        CharacterPreviewBrush.DrawAs=ESlateBrushDrawType::Image;
+        CharacterCapture=NewObject<USceneCaptureComponent2D>(Player);
+        CharacterCapture->TextureTarget=CharacterPreview;
+        CharacterCapture->CaptureSource=ESceneCaptureSource::SCS_FinalColorLDR;
+        CharacterCapture->PrimitiveRenderMode=ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
+        CharacterCapture->bCaptureEveryFrame=false;
+        CharacterCapture->bCaptureOnMovement=false;
+        CharacterCapture->FOVAngle=36.f;
+        CharacterCapture->bAlwaysPersistRenderingState=true;
+        CharacterCapture->RegisterComponent();
+        // Registration restores the archetype flags; apply the portrait-only view afterwards.
+        CharacterCapture->ShowFlags.SetAtmosphere(false);
+        CharacterCapture->ShowFlags.SetCloud(false);
+        CharacterCapture->ShowFlags.SetFog(false);
+        CharacterCapture->ShowFlags.SetMotionBlur(false);
+    }
+    CharacterCapture->ClearShowOnlyComponents();
+    CharacterCapture->ShowOnlyActorComponents(Player,true);
+    TArray<AActor*> Attachments;
+    Player->GetAttachedActors(Attachments,true,true);
+    for (auto* Attachment : Attachments) CharacterCapture->ShowOnlyActorComponents(Attachment,true);
+    const FVector Target=Player->GetActorLocation();
+    const FVector Location=Target+Player->GetActorForwardVector()*Player->GetSimpleCollisionHalfHeight()*3.1f;
+    CharacterCapture->SetWorldLocationAndRotation(Location,(Target-Location).Rotation());
+    CharacterCapture->CaptureScene();
+}
+
 void UPGUIInventory::OnProfileChanged() { bRefreshPending=true; }
 FReply UPGUIInventory::NativeOnPreviewMouseButtonDown(const FGeometry& Geometry,const FPointerEvent& Event)
 {
@@ -372,7 +475,7 @@ FReply UPGUIInventory::Close()
 void UPGUIInventory::ReleaseSlateResources(bool bReleaseChildren)
 {
     Super::ReleaseSlateResources(bReleaseChildren);
-    Cells.Empty(); BagGrid.Reset(); EquippedRows.Reset(); ComparisonRows.Reset(); BuildRows.Reset(); NearbyRows.Reset();
+    Cells.Empty(); BagGrid.Reset(); EquipmentLeft.Reset(); EquipmentRight.Reset(); EquipmentBrushes.Empty(); EquippedRows.Reset(); ComparisonRows.Reset(); BuildRows.Reset(); NearbyRows.Reset();
     GrowthArea.Reset();
     SalvageRows.Reset(); ImprintRows.Reset(); CraftRows.Reset();
     CharacterRows.Reset(); CharacterGrid.Reset(); CharacterDetailRows.Reset();
@@ -515,20 +618,25 @@ void UPGUIInventory::RefreshBag()
         for (int32 Index=0;Index<Count;++Index)
         {
             auto Cell=MakeShared<FPGInventoryCellView>(); Cells.Add(Cell);
-            BagGrid->AddSlot(Index%6,Index/6)
-            [SNew(SBox).HeightOverride(92)
+            BagGrid->AddSlot(Index%8,Index/8)
+            [SNew(SBox).HeightOverride_Lambda([this]()
+                { return FMath::Max(44.f,(LastWidth-56.f)/8.f-4.f); })
                 [SNew(SBorder).Padding(2).BorderImage_Lambda([this,Index]()
                     { return Cells.IsValidIndex(Index) && Cells[Index]->Guid.IsValid() && Cells[Index]->Guid==SelectedItem
-                        ? &PGInventoryStyle().Selected : FCoreStyle::Get().GetBrush("NoBorder"); })
-                    [SAssignNew(Cell->Button,SButton).ButtonStyle(&Style.Button).ContentPadding(4)
+                        ? &PGInventoryStyle().Selected : Cells.IsValidIndex(Index) ? &Cells[Index]->SlotBackground : &PGInventoryStyle().Card; })
+                    [SAssignNew(Cell->Button,SButton).ButtonStyle(&PGInventorySlotStyle()).ContentPadding(4)
                         .OnClicked_Lambda([this,Index](){if(Cells.IsValidIndex(Index)) SelectItem(Cells[Index]->Guid);return FReply::Handled();})
                         [SNew(SOverlay)
                             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-                            [SNew(SBox).WidthOverride(60).HeightOverride(60)[SNew(SImage).Image(&Cell->Brush)]]
+                            [SNew(SBox).WidthOverride(46).HeightOverride(46)[SNew(SImage).Image(&Cell->Brush)]]
                             + SOverlay::Slot().VAlign(VAlign_Center)
                             [SAssignNew(Cell->Name,STextBlock).Font(Style.Font(13)).Justification(ETextJustify::Center).AutoWrapText(true)]
-                            + SOverlay::Slot().VAlign(VAlign_Bottom).HAlign(HAlign_Center)
-                            [SAssignNew(Cell->Badge,STextBlock).Font(Style.Font(12,true))]]]]];
+                            + SOverlay::Slot().VAlign(VAlign_Top).HAlign(HAlign_Right)
+                            [SAssignNew(Cell->Grade,STextBlock).Font(Style.Font(14,true))]
+                            + SOverlay::Slot().VAlign(VAlign_Bottom).HAlign(HAlign_Left)
+                            [SAssignNew(Cell->Mark,STextBlock).Font(Style.Font(14,true)).ColorAndOpacity(Style.Text)]
+                            + SOverlay::Slot().VAlign(VAlign_Bottom).HAlign(HAlign_Right)
+                            [SAssignNew(Cell->Badge,STextBlock).Font(Style.Font(14,true))]]]]];
         }
     }
     for (int32 Index=0;Index<Count;++Index)
@@ -542,6 +650,7 @@ void UPGUIInventory::RefreshBag()
         const auto Rarity = Def && Item ? Def->GetRarity(*Item) : EPGItemRarity::Common;
 
         Cell.Rarity=Rarity;
+        Cell.SlotBackground=FSlateRoundedBoxBrush(FLinearColor(.008f,.009f,.010f),0.f,Item ? Style.RarityColor(Rarity) : FLinearColor(.24f,.22f,.18f),1.f);
         Cell.DefinitionId=DefinitionId; Cell.bEquipped=Equipped;
         Cell.Button->SetEnabled(Item!=nullptr); Cell.Brush=FSlateBrush();
         auto* Icon=Def ? GetIcon(Def->Id) : nullptr;
@@ -551,9 +660,21 @@ void UPGUIInventory::RefreshBag()
         Cell.Name->SetText(Def ? Def->DisplayName : FText::FromString(Item ? TEXT("알 수 없는 장비") : TEXT("")));
         Cell.Name->SetVisibility(Icon ? EVisibility::Collapsed : EVisibility::HitTestInvisible);
         Cell.Name->SetColorAndOpacity(Def ? Style.Text : Style.Muted);
-        Cell.Badge->SetText(FText::FromString(Equipped ? TEXT("장착 중") : Def ? (Item->bFavorite ? TEXT("★ ") : Item->bJunk ? TEXT("× ") : TEXT(""))+RarityName(Rarity).ToString() : TEXT("")));
-        Cell.Badge->SetColorAndOpacity(Equipped ? Style.Mint : Def ? Style.RarityColor(Rarity) : Style.Muted);
-        Cell.Button->SetToolTipText(Def ? FText::FromString(Def->DisplayName.ToString()+TEXT("\n")+RarityName(Rarity).ToString()+TEXT(" · 선택하여 비교")) : FText::GetEmpty());
+        Cell.Badge->SetText(Item ? FText::AsNumber(Item->Power) : FText::GetEmpty());
+        Cell.Badge->SetColorAndOpacity(Style.Text);
+        Cell.Mark->SetText(FText::FromString(Item ? (Item->bFavorite ? TEXT("★") : Item->bJunk ? TEXT("×") : TEXT("")) : TEXT("")));
+        const TCHAR* Grade=Rarity==EPGItemRarity::Rare ? TEXT("••") : Rarity==EPGItemRarity::Epic ? TEXT("◇") :
+            Rarity==EPGItemRarity::Legendary ? TEXT("◆") : Rarity==EPGItemRarity::Unique ? TEXT("◇◇") :
+            Rarity==EPGItemRarity::MythicUnique ? TEXT("◆◆") : TEXT("");
+        Cell.Grade->SetText(FText::FromString(Item ? Grade : TEXT("")));
+        Cell.Grade->SetColorAndOpacity(Style.RarityColor(Rarity));
+        if (Def)
+            Cell.Button->SetToolTip(SNew(SToolTip).BorderImage(&Style.Panel).TextMargin(14)
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight()[Text(Def->DisplayName,20,Style.Text,true)]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,6)[Text(RarityName(Rarity),14,Style.RarityColor(Rarity))]
+                    + SVerticalBox::Slot().AutoHeight()[Text(FString::Printf(TEXT("위력 %d · 선택하여 비교"),Item->Power),14,Style.Muted)]]);
+        else Cell.Button->SetToolTip(nullptr);
     }
 }
 void UPGUIInventory::SelectItem(FGuid Guid)
@@ -571,6 +692,36 @@ void UPGUIInventory::RefreshEquipment()
     using namespace PGInventoryUI;
     const auto* Profile=UPGProfileSubsystem::Get(this); const auto* Save=Profile->GetProfile(); const auto& Style=PGInventoryStyle();
     EquippedRows->ClearChildren();
+    EquipmentLeft->ClearChildren(); EquipmentRight->ClearChildren(); EquipmentBrushes.Empty();
+    const EPGEquipmentSlot DisplaySlots[]={EPGEquipmentSlot::Head,EPGEquipmentSlot::Chest,EPGEquipmentSlot::Hands,
+        EPGEquipmentSlot::Legs,EPGEquipmentSlot::Feet,EPGEquipmentSlot::Accessory,EPGEquipmentSlot::RingLeft,
+        EPGEquipmentSlot::RingRight,EPGEquipmentSlot::Weapon,EPGEquipmentSlot::OffHand};
+    for (int32 Index=0;Index<UE_ARRAY_COUNT(DisplaySlots);++Index)
+    {
+        const auto ItemSlot=DisplaySlots[Index];
+        const FGuid Id=Save->Equipment.FindRef(ItemSlot);
+        const auto* Item=Save->Items.FindByPredicate([Id](const auto& Entry){return Entry.Guid==Id;});
+        const auto* Def=Item ? Profile->GetCatalog()->FindItem(Item->DefinitionId) : nullptr;
+        auto Brush=MakeShared<FSlateBrush>(); EquipmentBrushes.Add(Brush);
+        auto* Icon=Def ? GetIcon(Def->Id) : nullptr;
+        Brush->SetResourceObject(Icon); Brush->ImageSize=FVector2D(44,44);
+        Brush->DrawAs=Icon ? ESlateBrushDrawType::Image : ESlateBrushDrawType::NoDrawType;
+        if (Def && Def->IconPanel>=0 && Def->IconPanel<3)
+            Brush->SetUVRegion(FBox2f(FVector2f(Def->IconPanel/3.f,0),FVector2f((Def->IconPanel+1)/3.f,1)));
+        auto Column=Index<5 ? EquipmentLeft : EquipmentRight;
+        Column->AddSlot().FillHeight(1).Padding(0,2)
+        [SNew(SBox).WidthOverride(78)
+            [SNew(SBorder).BorderImage(&Style.Card).Padding(1)
+                [SNew(SButton).ButtonStyle(&PGInventorySlotStyle()).ContentPadding(2)
+                    .ToolTipText(Def ? Def->DisplayName : SlotName(ItemSlot)).IsEnabled(Item!=nullptr)
+                    .OnClicked_Lambda([this,Id](){SelectItem(Id);return FReply::Handled();})
+                    [SNew(SOverlay)
+                        + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+                        [SNew(SImage).Image(&Brush.Get())]
+                        + SOverlay::Slot().VAlign(VAlign_Bottom)
+                        [SNew(STextBlock).Text(SlotName(ItemSlot)).Font(Style.Font(11,true)).Justification(ETextJustify::Center)
+                            .ColorAndOpacity(Def ? Style.RarityColor(Def->GetRarity(*Item)) : Style.Muted)]]]]];
+    }
     for (uint8 SlotIndex=0;SlotIndex<uint8(EPGEquipmentSlot::Max);++SlotIndex)
     {
         const auto EquipmentSlot=EPGEquipmentSlot(SlotIndex);
@@ -639,23 +790,6 @@ void UPGUIInventory::RefreshComparison()
                 [Action(SlotName(Target).ToString()+TEXT("과 비교"),[this,Target]()
                 { SelectedEquipmentSlot=uint8(Target); RefreshComparison(); return FReply::Handled(); })];
     const FGuid CurrentId=Save->Equipment.FindRef(EPGEquipmentSlot(SelectedEquipmentSlot));
-    Line(ComparisonRows,FText::FromString(TEXT("교체 부위 · ")+SlotName(EPGEquipmentSlot(SelectedEquipmentSlot)).ToString()),Style.Muted,12);
-    Line(ComparisonRows,FText::FromString(FString::Printf(TEXT("%s · 위력 %d · 상위 옵션 %d개"),
-        Item->Quality==EPGItemQuality::Ancestral ? TEXT("선조") : TEXT("기본 품질"),Item->Power,Item->GreaterOptions.Num())),Style.Muted,12);
-    for (const auto& Roll : Item->OptionRolls)
-    {
-        const TCHAR* Source = Roll.Source==EPGItemOptionSource::Base ? TEXT("기본 성능") :
-            Roll.Source==EPGItemOptionSource::Implicit ? TEXT("고정 특성") : Roll.bGreater ? TEXT("◆ 상위 옵션") : TEXT("일반 옵션");
-        Line(ComparisonRows,FText::FromString(FString::Printf(TEXT("%s · %s %s (일반 범위 %s~%s)"),Source,
-            *StatName(Roll.Stat).ToString(),*StatValue(Roll.Stat,Roll.Value).ToString(),
-            *StatValue(Roll.Stat,Roll.Min).ToString(),*StatValue(Roll.Stat,Roll.Max).ToString())),Roll.bGreater ? Style.Lavender : Style.Muted,12);
-    }
-    if (!Item->Temper.Id.IsNone())
-        Line(ComparisonRows,FText::FromString(TEXT("담금질 · ")+StatName(Item->Temper.Stat).ToString()+TEXT(" ")+StatValue(Item->Temper.Stat,Item->Temper.Value).ToString()),Style.Mint,12);
-    if (Item->MasterworkLevel>0)
-        Line(ComparisonRows,FText::FromString(FString::Printf(TEXT("명품화 %d단계 · 기본 성능 추가분"),Item->MasterworkLevel)),Style.Muted,14);
-    for (const auto& Pair : Item->MasterworkBonuses)
-        Line(ComparisonRows,FText::FromString(StatName(Pair.Key).ToString()+TEXT(" ")+StatValue(Pair.Key,Pair.Value).ToString()),Style.Mint,12);
     const auto* Current=Save->Items.FindByPredicate([CurrentId](const auto& Entry){return Entry.Guid==CurrentId;});
     const auto* CurrentDef=Current ? Profile->GetCatalog()->FindItem(Current->DefinitionId) : nullptr;
     Line(ComparisonRows,FText::FromString(bSelectedEquipped ? TEXT("현재 장착한 아이템입니다") : CurrentDef ? TEXT("비교 대상 · ")+CurrentDef->DisplayName.ToString() : TEXT("비교 대상 · 미장착")),Style.Muted,12);
@@ -689,6 +823,23 @@ void UPGUIInventory::RefreshComparison()
                             *StatValue(Row.Stat,Details.Expected-Details.Current,true).ToString()));
                     })]]];
     }
+    Line(ComparisonRows,FText::FromString(TEXT("교체 부위 · ")+SlotName(EPGEquipmentSlot(SelectedEquipmentSlot)).ToString()),Style.Muted,12);
+    Line(ComparisonRows,FText::FromString(FString::Printf(TEXT("%s · 위력 %d · 상위 옵션 %d개"),
+        Item->Quality==EPGItemQuality::Ancestral ? TEXT("선조") : TEXT("기본 품질"),Item->Power,Item->GreaterOptions.Num())),Style.Muted,12);
+    for (const auto& Roll : Item->OptionRolls)
+    {
+        const TCHAR* Source = Roll.Source==EPGItemOptionSource::Base ? TEXT("기본 성능") :
+            Roll.Source==EPGItemOptionSource::Implicit ? TEXT("고정 특성") : Roll.bGreater ? TEXT("◆ 상위 옵션") : TEXT("일반 옵션");
+        Line(ComparisonRows,FText::FromString(FString::Printf(TEXT("%s · %s %s (일반 범위 %s~%s)"),Source,
+            *StatName(Roll.Stat).ToString(),*StatValue(Roll.Stat,Roll.Value).ToString(),
+            *StatValue(Roll.Stat,Roll.Min).ToString(),*StatValue(Roll.Stat,Roll.Max).ToString())),Roll.bGreater ? Style.Lavender : Style.Muted,12);
+    }
+    if (!Item->Temper.Id.IsNone())
+        Line(ComparisonRows,FText::FromString(TEXT("담금질 · ")+StatName(Item->Temper.Stat).ToString()+TEXT(" ")+StatValue(Item->Temper.Stat,Item->Temper.Value).ToString()),Style.Mint,12);
+    if (Item->MasterworkLevel>0)
+        Line(ComparisonRows,FText::FromString(FString::Printf(TEXT("명품화 %d단계 · 기본 성능 추가분"),Item->MasterworkLevel)),Style.Muted,14);
+    for (const auto& Pair : Item->MasterworkBonuses)
+        Line(ComparisonRows,FText::FromString(StatName(Pair.Key).ToString()+TEXT(" ")+StatValue(Pair.Key,Pair.Value).ToString()),Style.Mint,12);
     Line(ComparisonRows,FText::FromString(TEXT("현재 적용 중인 효과와 상한을 반영합니다. 조건부 피해·발동 효과는 별도이며, 버프가 종료되면 예상값도 달라집니다.")),Style.Muted,12);
     if (const auto* Effect=Profile->GetCatalog()->FindLegendary(Item->LegendaryEffect))
     {
@@ -1059,7 +1210,7 @@ void UPGUIInventory::RefreshCraft()
     TArray<FName> Keys; CraftCost.GetKeys(Keys); Keys.Sort(FNameLexicalLess());
     for (const auto Key : Keys)
         Line(CraftRows,FText::FromString(FString::Printf(TEXT("%s −%lld  (보유 %lld → %lld)"),*Catalog->SalvageRules.MaterialNames.FindRef(Key).ToString(),CraftCost[Key],Save->Materials.FindRef(Key),Save->Materials.FindRef(Key)-CraftCost[Key])),Style.Text,13);
-    auto Confirm=Action(TEXT("강화 확정"),[this](){ConfirmCraft();return FReply::Handled();});
+    auto Confirm=Action(TEXT("강화 확정"),[this](){ConfirmCraft();return FReply::Handled();},true);
     Confirm->SetEnabled(bCanEquip); Confirm->SetTag(TEXT("PGInventory.CraftConfirm")); CraftRows->AddSlot().AutoHeight()[Confirm];
     CraftRows->AddSlot().AutoHeight().Padding(0,6)[Action(TEXT("취소"),[this](){CancelCraft();bRefreshPending=true;return FReply::Handled();})];
 }
@@ -1143,7 +1294,7 @@ void UPGUIInventory::RefreshImprint()
     TArray<FName> Keys; ImprintCost.GetKeys(Keys); Keys.Sort(FNameLexicalLess());
     for (const FName Key : Keys)
         Line(ImprintRows,FText::FromString(FString::Printf(TEXT("%s −%lld  (보유 %lld → %lld)"),*Catalog->SalvageRules.MaterialNames.FindRef(Key).ToString(),ImprintCost[Key],Save->Materials.FindRef(Key),Save->Materials.FindRef(Key)-ImprintCost[Key])),Style.Text,13);
-    auto Confirm=Action(TEXT("각인 확정"),[this](){ConfirmImprint();return FReply::Handled();});
+    auto Confirm=Action(TEXT("각인 확정"),[this](){ConfirmImprint();return FReply::Handled();},true);
     Confirm->SetEnabled(bCanEquip); Confirm->SetTag(TEXT("PGInventory.ImprintConfirm")); ImprintRows->AddSlot().AutoHeight()[Confirm];
     ImprintRows->AddSlot().AutoHeight().Padding(0,6)[Action(TEXT("취소"),[this](){CancelImprint();bRefreshPending=true;return FReply::Handled();})];
 }

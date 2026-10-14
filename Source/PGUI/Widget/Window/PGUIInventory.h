@@ -24,6 +24,7 @@ public:
     void SetBuildTab(bool bBuild);
     void SetCharacterTab();
     void SetStatsTab();
+    void InitializePanels(bool bOpenStats) { bRightOpen=!bOpenStats; bStatsOpen=bOpenStats; bLastStats=bOpenStats; }
     void ToggleRightPanel();
     void ToggleStatsPanel();
     FReply HandleEscape();
@@ -78,6 +79,8 @@ private:
     UPROPERTY(Transient) TMap<int32, TObjectPtr<UTexture2D>> IconTextures;
     TArray<TSharedPtr<FPGInventoryCellView>> Cells;
     TSharedPtr<class SUniformGridPanel> BagGrid;
+    TSharedPtr<class SVerticalBox> EquipmentLeft, EquipmentRight;
+    TArray<TSharedPtr<FSlateBrush>> EquipmentBrushes;
     TSharedPtr<class SVerticalBox> EquippedRows, ComparisonRows, BuildRows, NearbyRows, CharacterRows;
     TSharedPtr<class SScrollBox> ComparisonScroll, BuildScroll, CharacterScroll, StatsScroll;
     TSharedPtr<class SExpandableArea> GrowthArea;
@@ -96,6 +99,11 @@ private:
     TSharedPtr<class STextBlock> StatusText;
     FGuid SelectedItem;
     uint8 SelectedEquipmentSlot = 255;
+    UPROPERTY(Transient) TObjectPtr<class UTextureRenderTarget2D> CharacterPreview;
+    UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> CharacterCapture;
+    FSlateBrush CharacterPreviewBrush;
+    float PreviewElapsed = 0.f;
+    void UpdateCharacterPreview(float DeltaTime);
     FSlateBrush SelectedBrush;
     FSlateBrush InventoryFrameBrush, StatsFrameBrush;
     UPROPERTY(Transient) TMap<FString, TObjectPtr<UTexture2D>> ArtTextures;
@@ -120,6 +128,7 @@ private:
     bool bCanWrite = false;
     bool bActionFailed = false;
     float LastWidth = 0.f;
+    float RightReveal = 0.f, StatsReveal = 0.f;
     void OnProfileChanged();
     void Refresh();
     void RefreshBag();

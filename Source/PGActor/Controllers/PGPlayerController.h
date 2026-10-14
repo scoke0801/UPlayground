@@ -34,6 +34,7 @@ public:
     bool OpenGrowthPanel();
     void SuppressInventoryClick();
     void ToggleInventory();
+    void OpenInventoryOverlay(bool bOpenStats);
     void CloseInventory();
     void PickupNearest();
     // Development capture after streaming and HUD data have settled.
