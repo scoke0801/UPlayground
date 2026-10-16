@@ -94,6 +94,7 @@ private:
     FGameplayTag BufferedInput;
     bool bNormalAttackHeld = false;
     double BufferExpiresAt = 0.;
+    bool bBufferUsesWorldTime = false;
     double BufferedInputAt = -1.;
     double ObservedInputAt = -1.;
     TSharedPtr<FPGSkillObservation> ActiveObservation;
@@ -103,6 +104,7 @@ private:
     FTimerHandle InputBufferTimer;
     bool TryInput(const FGameplayTag& Tag, double InputAt = -1.);
     void RetryBufferedInput();
+    double GetInputBufferTime() const;
 
 protected:
 	virtual void BeginPlay() override;

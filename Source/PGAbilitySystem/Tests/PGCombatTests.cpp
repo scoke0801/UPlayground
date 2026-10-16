@@ -1,5 +1,6 @@
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+#include "Misc/App.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "GameFramework/Actor.h"
@@ -92,7 +93,12 @@ bool FPGInputBufferTest::RunTest(const FString& Parameters)
     Owner->AddInstanceComponent(ASC);
     ASC->RegisterComponent();
     ASC->InitAbilityActorInfo(Owner, Owner);
+    const bool bWasFixedStep = FApp::UseFixedTimeStep();
+    FApp::SetUseFixedTimeStep(false);
     ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Normal);
+    TestFalse(TEXT("Real input does not use the stale frame snapshot"),ASC->bBufferUsesWorldTime);
+    TestTrue(TEXT("Real input retains the authored 180ms lifetime"),
+        FMath::IsNearlyEqual(ASC->BufferExpiresAt-FPlatformTime::Seconds(),double(ASC->InputBufferSeconds),.01));
     TestTrue(TEXT("Unavailable input is buffered"), ASC->BufferedInput.IsValid());
     FGameplayAbilitySpec Spec(UGameplayAbility::StaticClass());
     Spec.GetDynamicSpecSourceTags().AddTag(PGGamePlayTags::InputTag_Skill_Normal);
@@ -161,6 +167,14 @@ bool FPGInputBufferTest::RunTest(const FString& Parameters)
     ASC->bRepeatNormalAttackWhileHeld = false;
     ASC->OnAbilityInputHeld(PGGamePlayTags::InputTag_Skill_Normal);
     TestFalse(TEXT("Repeat can be disabled in player data"), ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+    ASC->ClearBufferedInput();
+    FApp::SetUseFixedTimeStep(true);
+    ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Slot1);
+    TestTrue(TEXT("Offline fixed-step input uses simulation time"),ASC->bBufferUsesWorldTime);
+    TestEqual(TEXT("Offline capture does not lengthen the authored buffer"),
+        ASC->BufferExpiresAt,double(World->GetTimeSeconds())+ASC->InputBufferSeconds);
+    ASC->ClearBufferedInput();
+    FApp::SetUseFixedTimeStep(bWasFixedStep);
     World->DestroyWorld(false);
     return true;
 }

@@ -10,6 +10,8 @@
 #include "NiagaraSystem.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "TimerManager.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/App.h"
 #include "PGData/DataAsset/Combat/PGCombatTuningData.h"
 #include "Combat/PGCombatMath.h"
 #include "PGActor/Characters/PGCharacterBase.h"
@@ -28,6 +30,9 @@
 #include "PGShared/Shared/Message/Base/PGMessageEventDataTemplate.h"
 #include "PGShared/Shared/Tag/PGGamePlayInputTags.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
+
+static TAutoConsoleVariable<int32> CVarPGInputTrace(TEXT("pg.Input.Trace"), 0,
+    TEXT("Log input buffer retries with world time and frame order."));
 
 void UPGAbilitySystemComponent::BeginPlay()
 {
@@ -54,9 +59,11 @@ void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInpu
         if (!Player->IsGameplayInputAllowed()) { ClearBufferedInput(); return; }
     if (InInputTag == PGGamePlayTags::InputTag_Skill_Normal) bNormalAttackHeld = true;
     if (BufferedInput == PGGamePlayTags::InputTag_Roll && InInputTag != PGGamePlayTags::InputTag_Roll &&
-        GetWorld() && GetWorld()->GetTimeSeconds() < BufferExpiresAt) return;
+        GetWorld() && GetInputBufferTime() < BufferExpiresAt) return;
     ClearBufferedInput(false);
     const double InputAt = GetWorld() ? GetWorld()->GetTimeSeconds() : -1.;
+    const bool bUseWorldTime = FApp::UseFixedTimeStep();
+    const double BufferInputAt = bUseWorldTime ? InputAt : FPlatformTime::Seconds();
     if (TryInput(InInputTag, InputAt)) return;
     // Toggle actions must never turn on later after an unrelated state change.
     const auto* Player = Cast<APGCharacterPlayer>(GetAvatarActor());
@@ -65,7 +72,13 @@ void UPGAbilitySystemComponent::OnAbilityInputPressed(const FGameplayTag& InInpu
     if (BufferSeconds <= 0.f || InInputTag.MatchesTag(PGGamePlayTags::InputTag_Toggleable)) return;
     BufferedInput = InInputTag;
     BufferedInputAt = InputAt;
-    BufferExpiresAt = GetWorld()->GetTimeSeconds() + BufferSeconds;
+    // World time is a frame snapshot: the next delta can include work BEFORE this press.
+    // Offline fixed-step capture intentionally measures simulated input time instead.
+    bBufferUsesWorldTime = bUseWorldTime;
+    BufferExpiresAt = BufferInputAt + BufferSeconds;
+    if (CVarPGInputTrace.GetValueOnGameThread())
+        UE_LOG(LogTemp, Display, TEXT("PGInput Queue Frame=%llu Now=%.6f Expires=%.6f Tag=%s Dash=%d Real=%.6f"),
+            GFrameCounter, InputAt, BufferExpiresAt, *InInputTag.ToString(), Player && Player->GetPlayerDashComponent()->IsDashing(), FPlatformTime::Seconds());
     GetWorld()->GetTimerManager().SetTimer(InputBufferTimer, this, &ThisClass::RetryBufferedInput, 0.01f, true);
 }
 
@@ -551,12 +564,25 @@ void UPGAbilitySystemComponent::ClearBufferedInput(bool bClearHeldInput)
 void UPGAbilitySystemComponent::RetryBufferedInput()
 {
     const APGCharacterPlayer* Player = Cast<APGCharacterPlayer>(GetAvatarActor());
+    if (CVarPGInputTrace.GetValueOnGameThread())
+        UE_LOG(LogTemp, Display, TEXT("PGInput Retry Frame=%llu Now=%.6f Dt=%.6f Expires=%.6f Tag=%s Dash=%d Allowed=%d Real=%.6f"),
+            GFrameCounter, GetWorld()->GetTimeSeconds(), GetWorld()->GetDeltaSeconds(), BufferExpiresAt,
+            *BufferedInput.ToString(), Player && Player->GetPlayerDashComponent()->IsDashing(), Player && Player->IsGameplayInputAllowed(), FPlatformTime::Seconds());
     if (HasMatchingGameplayTag(PGGamePlayTags::Shared_Status_Dead) || (Player && !Player->IsGameplayInputAllowed()))
     {
         ClearBufferedInput();
         return;
     }
-    if (!BufferedInput.IsValid() || GetWorld()->GetTimeSeconds() > BufferExpiresAt || TryInput(BufferedInput, BufferedInputAt)) ClearBufferedInput(false);
+    const bool bExpired = GetInputBufferTime() > BufferExpiresAt;
+    const bool bActivated = BufferedInput.IsValid() && !bExpired && TryInput(BufferedInput, BufferedInputAt);
+    if (CVarPGInputTrace.GetValueOnGameThread() && (bExpired || bActivated))
+        UE_LOG(LogTemp, Display, TEXT("PGInput Result Frame=%llu Expired=%d Activated=%d Clock=%.6f"),
+            GFrameCounter, bExpired, bActivated, GetInputBufferTime());
+    if (!BufferedInput.IsValid() || bExpired || bActivated) ClearBufferedInput(false);
+}
+double UPGAbilitySystemComponent::GetInputBufferTime() const
+{
+    return bBufferUsesWorldTime ? GetWorld()->GetTimeSeconds() : FPlatformTime::Seconds();
 }
 void UPGAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
 {

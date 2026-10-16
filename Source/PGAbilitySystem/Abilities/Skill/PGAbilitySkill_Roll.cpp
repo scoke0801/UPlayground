@@ -10,6 +10,7 @@
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGData/PGDataTableManager.h"
 #include "PGData/DataTable/Skill/PGSkillDataRow.h"
+#include "HAL/IConsoleManager.h"
 
 // Preserve the reflected class/slot identity for startup abilities and saves.
 UPGAbilitySkill_Roll::UPGAbilitySkill_Roll()
@@ -53,6 +54,9 @@ void UPGAbilitySkill_Roll::ActivateAbility(const FGameplayAbilitySpecHandle Hand
     Movement->bCanWalkOffLedges = false;
     Movement->StopMovementImmediately();
     Dash->Start();
+    if (IConsoleManager::Get().FindConsoleVariable(TEXT("pg.Input.Trace"))->GetInt())
+        UE_LOG(LogTemp, Display, TEXT("PGInput DashStart Frame=%llu Now=%.6f Duration=%.6f"),
+            GFrameCounter, GetWorld()->GetTimeSeconds(), Dash->Duration);
     Handler->UseSkill(SlotIndex);
     Player->GetPGAbilitySystemComponent()->OnDodgeCommitted();
     auto* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
@@ -87,6 +91,12 @@ void UPGAbilitySkill_Roll::EndAbility(const FGameplayAbilitySpecHandle Handle,
         }
     }
     // Removes the movement source on every completion, death and interruption.
+    if (IConsoleManager::Get().FindConsoleVariable(TEXT("pg.Input.Trace"))->GetInt())
+        UE_LOG(LogTemp, Display, TEXT("PGInput DashEndBeforeSuper Frame=%llu Now=%.6f Cancelled=%d Active=%d"),
+            GFrameCounter, GetWorld()->GetTimeSeconds(), bCancelled, IsActive());
     Super::EndAbility(Handle, Info, Activation, bReplicate, bCancelled);
     DashMontage = nullptr;
+    if (IConsoleManager::Get().FindConsoleVariable(TEXT("pg.Input.Trace"))->GetInt())
+        UE_LOG(LogTemp, Display, TEXT("PGInput DashEndAfterSuper Frame=%llu Now=%.6f Active=%d"),
+            GFrameCounter, GetWorld()->GetTimeSeconds(), IsActive());
 }
