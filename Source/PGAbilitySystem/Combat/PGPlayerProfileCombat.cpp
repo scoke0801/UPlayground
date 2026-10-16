@@ -28,10 +28,14 @@ void UPGAbilitySystemComponent::ProcessProfileProcs(UPGAbilitySystemComponent* S
         !Context->BurstTargets.Contains(GetAvatarActor()))
     {
         Context->BurstTargets.Add(GetAvatarActor());
+        const float ConsumedBleedDamage = BleedDamage;
         const float Burst = BleedDamage * BleedRemaining * Source->GetPerkPercent(EPGCombatPerk::BleedBurst) * .01f;
         BleedRemaining = 0; BleedStacks = 0;
         GetWorld()->GetTimerManager().ClearTimer(BleedTimer);
-        ReceiveProcDamage(Source, Burst, EPGDamageCause::BleedBurst);
+        const float BurstApplied = ReceiveProcDamage(Source, Burst, EPGDamageCause::BleedBurst);
+        // The consumed bleed is no longer visible to ReceiveProcDamage's death propagation.
+        if (BurstApplied > 0.f && GetHealth() <= 0.f && Source->GetPerkPercent(EPGCombatPerk::BleedSpread) > 0)
+            Source->Pulse(GetAvatarActor()->GetActorLocation(), ConsumedBleedDamage * Source->GetPerkPercent(EPGCombatPerk::BleedSpread) * .01f, Tuning->ProcRadius, true);
     }
     if (bDirectKill && bWasBleeding && Source->GetPerkPercent(EPGCombatPerk::BleedSpread) > 0)
         Source->Pulse(GetAvatarActor()->GetActorLocation(), SpreadDamage * Source->GetPerkPercent(EPGCombatPerk::BleedSpread) * .01f, Tuning->ProcRadius, true);

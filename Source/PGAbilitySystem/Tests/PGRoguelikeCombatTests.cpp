@@ -6,6 +6,8 @@
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
 #include "PGActor/Characters/NonPlayer/Enemy/PGCharacterEnemy.h"
 #include "TimerManager.h"
+#include "NiagaraSystem.h"
+#include "PGData/DataAsset/Combat/PGCombatTuningData.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPGRoguelikeCombatTest, "PG.Roguelike.Combat", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FPGRoguelikeCombatTest::RunTest(const FString& Parameters)
@@ -24,8 +26,14 @@ bool FPGRoguelikeCombatTest::RunTest(const FString& Parameters)
     Target->ReceiveCombatHit(Source,Type);
     TestEqual(TEXT("Direct attack seeds bleed"),Target->BleedRemaining,6);
     const float BeforeTick=Target->GetHealth();
+    Source->CombatTuning=NewObject<UPGCombatTuningData>();
+    Source->CombatTuning->BleedVFX=NewObject<UNiagaraSystem>();
+    Source->CombatTuning->BleedVFXInterval=.1f;
+    Source->NextBuildVFXAt=10.; // Simulate another victim already presenting this tick.
     Target->TickBleed();
     TestEqual(TEXT("Bleed deals actual GAS damage"), BeforeTick-Target->GetHealth(),10.f);
+    TestEqual(TEXT("Visual suppression does not consume another visual budget"),Source->NextBuildVFXAt,10.);
+    TestEqual(TEXT("Visual suppression still advances bleed ticks"),Target->BleedRemaining,5);
     TestEqual(TEXT("Secondary damage never adds frenzy stacks"),Source->FrenzyStacks,1);
     TestTrue(TEXT("Direct hits increase attack animation rate"),Source->GetFrenzyRate()>1.f);
     for(int32 I=0;I<20;++I) Target->ReceiveCombatHit(Source,Type);

@@ -68,6 +68,18 @@ bool FPGStatDetailsTest::RunTest(const FString&)
     ASC->SetProfileBonuses({{EPGStatType::CriticalRate,1000}});
     TestEqual(TEXT("Uncapped preview matches replacement"),ASC->GetCombatStat(EPGStatType::CriticalRate),Uncapped);
     TestEqual(TEXT("Negative replacement clamps"),ASC->GetStatDetails(EPGStatType::Attack,-1000.f).Expected,0.f);
+    ASC->SetEquipmentBonuses({{EPGStatType::CriticalRate,17}});
+    ASC->SetProfileBonuses({{EPGStatType::CriticalRate,68}});
+    const auto Critical=UPGAtrributeSet::GetCriticalRateAttribute();
+    ASC->SetNumericAttributeBase(Critical,0.f);
+    const float CriticalBonus=ASC->GetCombatStat(EPGStatType::CriticalRate);
+    TestEqual(TEXT("Zero base still includes equipment and profile critical"),CriticalBonus,85.f);
+    ASC->SetNumericAttributeBase(Critical,-CriticalBonus);
+    TestEqual(TEXT("Isolated critical fixture offsets bonuses"),ASC->GetCombatStat(EPGStatType::CriticalRate),0.f);
+    TestEqual(TEXT("Fixture preserves equipment critical bonus"),ASC->GetStatDetails(EPGStatType::CriticalRate).Weapon,17.f);
+    TestEqual(TEXT("Fixture preserves profile critical bonus"),ASC->GetStatDetails(EPGStatType::CriticalRate).Profile,68.f);
+    ASC->SetNumericAttributeBase(Critical,10000.f-CriticalBonus);
+    TestEqual(TEXT("Isolated guaranteed critical fixture"),ASC->GetCombatStat(EPGStatType::CriticalRate),10000.f);
     TestFalse(TEXT("Invalid stat unavailable"),ASC->GetStatDetails(EPGStatType::None).bValid);
     ASC->GetGameplayAttributeValueChangeDelegate(UPGAtrributeSet::GetAttackPowerAttribute()).Remove(Delegate);
     World->DestroyWorld(false);

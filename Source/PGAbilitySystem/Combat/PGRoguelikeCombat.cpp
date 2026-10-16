@@ -101,7 +101,7 @@ void UPGAbilitySystemComponent::TickBleed()
     const FVector Center = GetAvatarActor()->GetActorLocation();
     ReceiveProcDamage(Source, BleedDamage, EPGDamageCause::BleedTick);
     --BleedRemaining;
-    PlayBuildVFX(Tuning->BleedVFX, Center);
+    Source->PlayBuildVFX(Tuning->BleedVFX, Center, Tuning->BleedVFXScale, Tuning->BleedVFXInterval);
     if (GetHealth() <= 0 || BleedRemaining <= 0)
     { GetWorld()->GetTimerManager().ClearTimer(BleedTimer); BleedRemaining = 0; BleedStacks = 0; }
 }
@@ -116,7 +116,7 @@ void UPGAbilitySystemComponent::Pulse(const FVector& Center, float Damage, float
     TArray<AActor*> Targets;
     UKismetSystemLibrary::SphereOverlapActors(this, Center, FMath::Clamp(Radius, 1.f, 1500.f), Types, APGCharacterEnemy::StaticClass(), Ignore, Targets);
     const auto* Tuning = CombatTuning ? CombatTuning.Get() : GetDefault<UPGCombatTuningData>();
-    PlayBuildVFX(bSpread ? Tuning->BleedVFX : Cause == EPGDamageCause::FrenzyAfterimage ? Tuning->AfterimageVFX : Tuning->ShockVFX, Center);
+    PlayBuildVFX(bSpread ? Tuning->BleedVFX : Cause == EPGDamageCause::FrenzyAfterimage ? Tuning->AfterimageVFX : Tuning->ShockVFX, Center, bSpread ? Tuning->BleedVFXScale : 1.f, bSpread ? Tuning->BleedVFXInterval : 0.f);
     for (AActor* Actor : Targets)
     {
         auto* Enemy = Cast<APGCharacterEnemy>(Actor);
@@ -224,8 +224,17 @@ FPGBuildCombatState UPGAbilitySystemComponent::GetBuildCombatState() const
     return State;
 }
 
-void UPGAbilitySystemComponent::PlayBuildVFX(const TSoftObjectPtr<UNiagaraSystem>& Effect, const FVector& Location)
+void UPGAbilitySystemComponent::PlayBuildVFX(const TSoftObjectPtr<UNiagaraSystem>& Effect, const FVector& Location, float Scale, float MinimumInterval)
 {
     // Assets are preloaded before combat; never synchronously load from a hit callback.
-    if (UNiagaraSystem* Asset = Effect.Get()) UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, Asset, Location);
+    if (UNiagaraSystem* Asset = Effect.Get(); Asset && FMath::IsFinite(Scale) && Scale > 0.f)
+    {
+        if (MinimumInterval > 0.f)
+        {
+            const double Now = GetWorld()->GetTimeSeconds();
+            if (Now < NextBuildVFXAt) return;
+            NextBuildVFXAt = Now + FMath::Clamp(MinimumInterval, 0.f, 1.f);
+        }
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, Asset, Location, FRotator::ZeroRotator, FVector(FMath::Clamp(Scale, 0.f, 3.f)));
+    }
 }

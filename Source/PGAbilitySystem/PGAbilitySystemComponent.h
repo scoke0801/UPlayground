@@ -60,6 +60,7 @@ private:
     double FrenzyUntil = 0.;
     double NextShockAt = 0.;
     double NextFrenzyVFXAt = 0.;
+    double NextBuildVFXAt = 0.;
     bool bHeavySkill = false;
     // Scoped to a synchronous melee event, never retained by a later projectile or another ability.
     float MeleeDamageMultiplier = 1.f;
@@ -88,7 +89,7 @@ private:
     void TickBleed();
     void AddBleed(UPGAbilitySystemComponent* Source, float Damage, bool bSnapshot = false);
     void Pulse(const FVector& Center, float Damage, float Radius, bool bSpread, EPGDamageCause Cause = EPGDamageCause::Shockwave);
-    void PlayBuildVFX(const TSoftObjectPtr<class UNiagaraSystem>& Effect, const FVector& Location);
+    void PlayBuildVFX(const TSoftObjectPtr<class UNiagaraSystem>& Effect, const FVector& Location, float Scale = 1.f, float MinimumInterval = 0.f);
     double RecoveryExpiresAt = 0.;
     float RecoveryDamageBonus = 0.f;
     FGameplayTag BufferedInput;

@@ -11,6 +11,8 @@ struct PGDATA_API FPGImpactFeedback
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TSubclassOf<class UCameraShakeBase> Shake;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="0.15")) float HitStop = .035f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="3")) float Intensity = 1.f;
+    // Visual size is independent of hit-stop, sound and recoil strength.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="3")) float VFXScale = 1.f;
     // Cosmetic mesh recoil in world centimetres; never moves the collision capsule.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="20", Units="cm")) float RecoilDistance = 6.f;
     // Recovery starts after the victim's hit-stop; distance and lean can be disabled independently.
@@ -38,6 +40,9 @@ public:
     float HitStopSeconds = 0.035f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0"))
     float MinimumFeedbackInterval = 0.08f;
+    // Shared by targets hit by one attacker; only Niagara spawning is throttled.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="0", ClampMax="1"))
+    float MinimumSourceVFXInterval = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(ClampMin="1", ClampMax="3"))
     float CriticalIntensity = 1.5f;
     UPROPERTY(EditAnywhere, BlueprintReadOnly)

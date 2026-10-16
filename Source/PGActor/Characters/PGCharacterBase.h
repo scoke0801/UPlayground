@@ -88,6 +88,7 @@ protected:
     FTimerHandle HitStopTimer;
     float SavedAnimRate = 1.f;
     double LastFeedbackTime = -1.;
+    double NextImpactVFXAt = 0.;
     double LastCameraShakeTime = -1.;
     int32 SuppressedFeedbackRequests = 0;
     float TotalHitStopSeconds = 0.f;

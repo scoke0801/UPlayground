@@ -394,3 +394,4 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Validation/RunCombatFilm.py
 !/Tools/Validation/InspectFocusedCombat.py
 !/Tools/Validation/ConfigureFocusedCombat.py
+!/Tools/Validation/Data/InventoryManualAcceptance.md

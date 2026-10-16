@@ -24,6 +24,8 @@ public:
     UPROPERTY(EditAnywhere, Category="Roguelike", meta=(ClampMin="0.1")) float FrenzySeconds = 3.f;
     UPROPERTY(EditAnywhere, Category="Roguelike", meta=(ClampMin="1")) int32 FrenzyMaxStacks = 10;
     UPROPERTY(EditAnywhere, Category="Roguelike") TSoftObjectPtr<class UNiagaraSystem> BleedVFX;
+    UPROPERTY(EditAnywhere, Category="Presentation", meta=(ClampMin="0", ClampMax="3")) float BleedVFXScale = 1.f;
+    UPROPERTY(EditAnywhere, Category="Presentation", meta=(ClampMin="0", ClampMax="1")) float BleedVFXInterval = 0.f;
     UPROPERTY(EditAnywhere, Category="Roguelike") TSoftObjectPtr<class UNiagaraSystem> ShockVFX;
     UPROPERTY(EditAnywhere, Category="Roguelike") TSoftObjectPtr<class UNiagaraSystem> FrenzyVFX;
     UPROPERTY(EditAnywhere, Category="Keystone|Bleed", meta=(ClampMin="0", ClampMax="1")) float BleedRefundFraction = .35f;

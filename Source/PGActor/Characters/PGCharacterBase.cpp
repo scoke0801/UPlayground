@@ -198,7 +198,12 @@ void APGCharacterBase::PlayCombatFeedback(AActor* Source, EPGDamageType Type)
     if (Attacker && !Attacker->bProfileHitFeedback) Attacker->ApplyHitStop(Stop * FMath::Clamp(Attacker->FeedbackIntensity, 0.f, 1.f));
     auto* VFX = Impact.VFX ? Impact.VFX.Get() : Data->ImpactVFX.Get();
     auto* Sound = Impact.Sound ? Impact.Sound.Get() : Data->ImpactSound.Get();
-    if (VFX) UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, GetActorLocation(), FRotator::ZeroRotator, FVector(FMath::Max(.1f, Scale)));
+    const double VFXNow = GetWorld()->GetTimeSeconds();
+    if (VFX && Impact.VFXScale > 0.f && (!Attacker || VFXNow >= Attacker->NextImpactVFXAt))
+    {
+        if (Attacker) Attacker->NextImpactVFXAt = VFXNow + FMath::Clamp(Data->MinimumSourceVFXInterval, 0.f, 1.f);
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, VFX, GetActorLocation(), FRotator::ZeroRotator, FVector(FMath::Max(.1f, Scale) * FMath::Clamp(Impact.VFXScale, 0.f, 3.f)));
+    }
     if (Sound) UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation(), FMath::Min(1.f, Scale));
     APGCharacterBase* Viewer = IsPlayerControlled() ? this : Attacker && Attacker->IsPlayerControlled() ? Attacker : nullptr;
     if (Viewer)
