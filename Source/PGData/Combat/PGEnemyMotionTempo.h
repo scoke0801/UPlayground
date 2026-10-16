@@ -10,6 +10,8 @@ struct PGDATA_API FPGEnemyMotionTempo
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bEnabled = false;
+    // Reach the ready pose, then hold for the remaining warning instead of stretching startup.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0.05", ClampMax="1")) float AnticipationPoseSeconds = .18f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", ClampMax="1")) float SwingStartFraction = .1f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0.05")) float SwingSeconds = .18f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", ClampMax="1")) float SettleStartFraction = .6f;
@@ -17,7 +19,8 @@ struct PGDATA_API FPGEnemyMotionTempo
 
     bool IsValid(float Start, float Impact, float Windup, float Recovery) const
     {
-        return !bEnabled || (FMath::IsFinite(SwingStartFraction) && FMath::IsFinite(SettleStartFraction) &&
+        return !bEnabled || (FMath::IsFinite(AnticipationPoseSeconds) && AnticipationPoseSeconds >= .05f && AnticipationPoseSeconds <= 1.f &&
+            FMath::IsFinite(SwingStartFraction) && FMath::IsFinite(SettleStartFraction) &&
             FMath::IsFinite(SwingSeconds) && FMath::IsFinite(FollowThroughSeconds) &&
             Start < SwingStartFraction && SwingStartFraction < Impact && Impact < SettleStartFraction && SettleStartFraction < 1.f &&
             SwingSeconds >= .05f && SwingSeconds <= Windup - .05f &&

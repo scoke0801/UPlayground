@@ -33,6 +33,7 @@ del a
 level.editor_request_begin_play()
 started=time.monotonic();stopped=None;phase='setup';actors={};player=camera=manager=None;index=0;at=0.;samples=[];captured=set();seen=set()
 report=dict(status='RUNNING',assisted=True,direct_input=False,loadouts=[],casts=[],autonomous=[])
+film_frame=0
 
 
 def attr(actor,name):
@@ -71,6 +72,7 @@ def capture(world,label):
 
 
 def tick(dt):
+    global film_frame
     global phase,actors,player,camera,manager,index,at,cast_at,health_before,samples,captured,seen
     now=time.monotonic()
     if stopped is not None:
@@ -154,10 +156,18 @@ def tick(dt):
         if phase=='start':
             if t<at:return
             capture(world,str(eid)+'_'+str(sid)+'_idle')
+            # Readback stalls this frame; do not charge that delta to a newly started attack.
+            at=t+.3;phase='activate';return
+        if phase=='activate':
+            if t<at:return
             health_before=attr(player,'CurrentHealth')
             assert enemy.get_controller().try_execute_skill(sid),(eid,sid,'activation rejected')
-            cast_at=t;phase='cast';samples=[];captured=set();return
+            cast_at=t;phase='cast';samples=[];captured=set()
+            report['active_cast']=dict(enemy=eid,skill=sid,samples=samples)
+            return
         if phase=='cast':
+            if '-PGEnemyFilm' in command:
+                capture(world,'Frame'+str(film_frame).zfill(6));film_frame+=1
             visual=enemy.appearance_component.get_presentation_mesh()
             def vec(p):return [p.x,p.y,p.z]
             points={bone:vec(enemy.mesh.get_socket_transform(bone,unreal.RelativeTransformSpace.RTS_COMPONENT).translation) for bone in ('hand_r','hand_l')}
@@ -170,6 +180,7 @@ def tick(dt):
             samples.append(dict(time=t-cast_at,points=points,grip_error=error,
                                 position=anim.montage_get_position(montage),
                                 rate=anim.montage_get_play_rate(montage),
+                                playing=anim.montage_is_playing(montage),
                                 health=attr(player,'CurrentHealth'),yaw=enemy.get_actor_rotation().yaw))
             if '-PGEnemyTempoEvidence' in command:
                 duration=row['TelegraphDuration']+row['RecoveryDuration']
@@ -195,18 +206,26 @@ def tick(dt):
             tempo=row.get('MotionTempo',{})
             if tempo.get('bEnabled'):
                 length=montage.get_play_length();impact=row['ImpactMontageFraction']
-                expected_rates=[length*(tempo['SwingStartFraction']-row['WindupMontageFraction'])/(row['TelegraphDuration']-tempo['SwingSeconds']),
+                anticipation=row['TelegraphDuration']-tempo['SwingSeconds']
+                pose_seconds=min(tempo['AnticipationPoseSeconds'],anticipation)
+                expected_rates=[length*(tempo['SwingStartFraction']-row['WindupMontageFraction'])/pose_seconds,
                                 length*(impact-tempo['SwingStartFraction'])/tempo['SwingSeconds'],
                                 length*(tempo['SettleStartFraction']-impact)/tempo['FollowThroughSeconds'],
                                 length*(1-tempo['SettleStartFraction'])/(row['RecoveryDuration']-tempo['FollowThroughSeconds'])]
                 for rate in expected_rates:
                     assert any(abs(s['rate']-rate)<.01 for s in samples),(eid,sid,'missing motion phase',rate)
+                if anticipation>pose_seconds+.05:
+                    held=[s for s in samples if abs(s['rate'])<.001 and abs(s['position']-length*tempo['SwingStartFraction'])<.01]
+                    assert held,(eid,sid,'ready pose was not held before the swing')
+                    assert all(not s['playing'] for s in held),(eid,sid,'ready hold accumulated playback time')
+                    assert all(s['health']==health_before for s in held),(eid,sid,'damage during ready hold')
                 first_hit=next(s['time'] for s in samples if s['health']<health_before-.01)
                 assert first_hit>=row['TelegraphDuration']-.03,(eid,sid,'damage moved before warning end',first_hit)
                 gaps=[b['time']-a['time'] for a,b in zip(samples,samples[1:])]
                 assert first_hit<=row['TelegraphDuration']+max(gaps,default=0)+.08,(eid,sid,'late damage',first_hit)
                 tempo_evidence=dict(expected_rates=expected_rates,first_hit=first_hit,warning=row['TelegraphDuration'])
             report['casts'].append(dict(enemy=eid,skill=sid,damage=damage,hand_delta=delta,samples=samples,tempo=tempo_evidence))
+            report.pop('active_cast',None)
             unreal.log('PGP09Weapons CAST '+str(eid)+' '+str(sid))
             index+=1
             if index==len(cases):

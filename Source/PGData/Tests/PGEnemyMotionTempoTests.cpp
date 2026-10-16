@@ -22,6 +22,11 @@ bool FPGEnemyMotionTempoTest::RunTest(const FString&)
     Row.MotionTempo.FollowThroughSeconds = .42f;
     Row.AimTurnRate = 180.f;
     TestTrue(TEXT("Authored greatsword phases fit unchanged damage/recovery windows"), Row.IsPatternValid());
+    Row.MotionTempo.AnticipationPoseSeconds = 0.f;
+    TestFalse(TEXT("Ready-pose transition must have a positive duration"), Row.IsPatternValid());
+    Row.MotionTempo.AnticipationPoseSeconds = std::numeric_limits<float>::quiet_NaN();
+    TestFalse(TEXT("Non-finite ready-pose time is rejected"), Row.IsPatternValid());
+    Row.MotionTempo.AnticipationPoseSeconds = .18f;
     Row.MotionTempo.SwingSeconds = 1.f;
     TestFalse(TEXT("Swing must leave readable anticipation"), Row.IsPatternValid());
     Row.MotionTempo.SwingSeconds = .16f;

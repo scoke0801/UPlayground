@@ -3,6 +3,8 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+import shutil
+import subprocess
 from pathlib import Path
 from RunQA import ROOT, run_process, read_text, FATAL
 from PlayableCharacterTransaction import restore, write_json
@@ -14,6 +16,7 @@ def main():
     parser.add_argument('--render', action='store_true')
     parser.add_argument('--enemy', type=int)
     parser.add_argument('--tempo', action='store_true', help='Record attack timing and intermediate poses')
+    parser.add_argument('--film', action='store_true', help='Consecutive fixed-step attack frames (not performance evidence)')
     args = parser.parse_args()
     out = ROOT/'Saved/QA'/('P09Weapons_'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f'))
     out.mkdir(parents=True)
@@ -26,6 +29,9 @@ def main():
              '-UserDir='+str(out/'User'), '-PGTestProfile='+out.name]
     if args.enemy: flags.append('-PGP09WeaponEnemy='+str(args.enemy))
     if args.tempo: flags.append('-PGEnemyTempoEvidence')
+    if args.film:
+        assert args.render and args.step == 'runtime'
+        flags.extend(['-PGEnemyFilm', '-UseFixedTimeStep', '-FPS=60'])
     steps = [args.step, 'validate'] if args.step in ('apply','grips') else [args.step]
     results = []
     print(out, flush=True)
@@ -51,6 +57,15 @@ def main():
             if args.step in ('apply','grips') and (out/'transaction.json').exists(): restore(ROOT, out)
             break
     success = all(r['status'] == 'PASS' for r in results)
+    if args.film:
+        frames = sorted(out.glob('Frame*.png'))
+        assert len(frames) >= 30 and [p.name for p in frames] == [f'Frame{i:06d}.png' for i in range(len(frames))]
+        ffmpeg = shutil.which('ffmpeg')
+        assert ffmpeg
+        encoded = subprocess.run([ffmpeg, '-y', '-framerate', '60', '-i', str(out/'Frame%06d.png'),
+            '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', str(out/'continuous.mp4')], capture_output=True)
+        (out/'encode.log').write_bytes(encoded.stderr)
+        success = success and encoded.returncode == 0
     if success and args.step in ('apply','grips'):
         transaction = json.loads((out/'transaction.json').read_text(encoding='utf-8'))
         transaction['status'] = 'VERIFIED'; write_json(out/'transaction.json', transaction)

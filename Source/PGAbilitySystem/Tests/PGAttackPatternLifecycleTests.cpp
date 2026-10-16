@@ -144,6 +144,11 @@ bool FPGAttackPatternLifecycleTest::RunTest(const FString&)
     Player->SetActorLocation(FVector(0,150,90));
     Start();
     TestTrue(TEXT("Tempo schedules its swing without changing the damage timer"), World->GetTimerManager().TimerExists(Ability->MotionTimer));
+    TestEqual(TEXT("Startup reaches the ready pose before the full warning"), World->GetTimerManager().GetTimerRemaining(Ability->MotionTimer), .18f, .001f);
+    const float DamageRemaining = World->GetTimerManager().GetTimerRemaining(Ability->PatternTimer);
+    Ability->BeginMotionHold();
+    TestEqual(TEXT("Holding the ready pose keeps the original strike deadline"), World->GetTimerManager().GetTimerRemaining(Ability->PatternTimer), DamageRemaining, .001f);
+    TestEqual(TEXT("Ready hold schedules the original swing deadline"), World->GetTimerManager().GetTimerRemaining(Ability->MotionTimer), Row.TelegraphDuration-Row.MotionTempo.SwingSeconds, .001f);
     TestTrue(TEXT("Activation no longer snaps toward a side target"), FMath::IsNearlyZero(Enemy->GetActorRotation().Yaw));
     Ability->UpdateAim(.02f);
     TestTrue(TEXT("Anticipation facing is bounded in degrees per second"), FMath::IsNearlyEqual(Enemy->GetActorRotation().Yaw, 3.6f, .01f));
@@ -153,7 +158,7 @@ bool FPGAttackPatternLifecycleTest::RunTest(const FString&)
     TestTrue(TEXT("Tracking ends before the swing even with a longer tracking window"), Ability->PatternForward.Equals(SwingFacing));
     Source->CancelAbilityHandle(Handle);
     TestFalse(TEXT("Cancel removes the pending swing/settle timer"), World->GetTimerManager().TimerExists(Ability->MotionTimer));
-    Ability->BeginMotionSwing(); Ability->BeginMotionSettle();
+    Ability->BeginMotionHold(); Ability->BeginMotionSwing(); Ability->BeginMotionSettle();
     TestFalse(TEXT("Late presentation callbacks cannot reactivate an attack"), Enemy->bPatternActive);
     Start(); Ability->BeginRecovery();
     TestTrue(TEXT("Recovery schedules stance restoration"), World->GetTimerManager().TimerExists(Ability->MotionTimer));

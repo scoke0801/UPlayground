@@ -63,9 +63,10 @@ void UPGEnemyAbilityAttack::BeginElitePattern(const FPGSkillDataRow& Row)
     if (Row.MotionTempo.bEnabled)
     {
         const float AnticipationSeconds = Row.TelegraphDuration - Row.MotionTempo.SwingSeconds;
+        const float PoseSeconds = FMath::Min(Row.MotionTempo.AnticipationPoseSeconds, AnticipationSeconds);
         SetMotionSegment(Row.WindupMontageFraction, Row.MotionTempo.SwingStartFraction,
-            PatternStartedAt, PatternStartedAt + AnticipationSeconds);
-        GetWorld()->GetTimerManager().SetTimer(MotionTimer, this, &ThisClass::BeginMotionSwing, AnticipationSeconds, false);
+            PatternStartedAt, PatternStartedAt + PoseSeconds);
+        GetWorld()->GetTimerManager().SetTimer(MotionTimer, this, &ThisClass::BeginMotionHold, PoseSeconds, false);
     }
     ShowTelegraph(StrikeCenter, Row.Pattern == EPGAttackPattern::ChargeSlam || Row.Pattern == EPGAttackPattern::AimedProjectile || Row.Pattern == EPGAttackPattern::Thrust);
     GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &ThisClass::UpdatePattern, .02f, true);

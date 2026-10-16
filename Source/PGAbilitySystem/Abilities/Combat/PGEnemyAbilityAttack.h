@@ -28,6 +28,7 @@ protected:
     void FinishElitePattern();
     void UpdatePattern();
     void UpdateAim(float DeltaSeconds = 0.f);
+    void BeginMotionHold();
     void BeginMotionSwing();
     void BeginMotionSettle();
     void SetMotionSegment(float StartFraction, float EndFraction, double StartAt, double EndAt);
