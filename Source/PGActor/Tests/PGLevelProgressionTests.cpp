@@ -114,8 +114,8 @@ bool FPGLevelProgressionTest::RunTest(const FString&)
     System->bInjectSaveFailure = false;
     TestTrue(TEXT("Same token retry succeeds"), System->GrantExperience(Run, Retry, 20));
     TestTrue(TEXT("New run commits"), System->BeginNewRun(42));
-    TestEqual(TEXT("New run resets level"), System->Profile->Growth.Level, 1);
-    TestEqual(TEXT("New run resets points"), System->Profile->Growth.UnspentPoints, 0);
+    TestEqual(TEXT("New run retains level"), System->Profile->Growth.Level, 4);
+    TestEqual(TEXT("New run retains points"), System->Profile->Growth.UnspentPoints, 9);
     TestTrue(TEXT("New run clears ledger"), System->Profile->ExperienceClaims.IsEmpty());
     TestFalse(TEXT("Delayed old run grant rejected"), System->GrantExperience(Run, Retry, 20));
     TestTrue(TEXT("Maximum award persists"), System->GrantExperience(System->Profile->RunId, FGuid::NewGuid(), MAX_int64));

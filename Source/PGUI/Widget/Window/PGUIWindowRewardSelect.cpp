@@ -178,8 +178,8 @@ TSharedRef<SWidget> UPGUIWindowRewardSelect::MakeResult()
 
 FText UPGUIWindowRewardSelect::CountdownText() const
 {
-    if (bIsResult) return FText::FromString(TEXT("전리품 · 장비 · 강화는 이번 도전 전용입니다. 새 도전에서 초기화됩니다."));
-    if (bIsStatus) return FText::FromString(TEXT("장비와 강화는 새 도전에서 다시 구성됩니다."));
+    if (bIsResult) return FText::FromString(TEXT("캐릭터 성장과 장비는 유지됩니다. 보스 전리품은 다음 도전 시작 시 창고에 보관되며, 보상 카드만 초기화됩니다."));
+    if (bIsStatus) return FText::FromString(TEXT("레벨·장비·재료는 유지됩니다. 보상 카드는 이번 던전에서만 적용됩니다."));
     if (!StageOwner.IsValid() || StageOwner->IsManualReady()) return FText::FromString(TEXT("한 가지를 선택하세요 · 이번 도전 동안 누적 · 선택 후 장비 정비"));
     return FText::Format(NSLOCTEXT("PG", "BuildCountdown", "정비 시간 {0}초 · 시간 종료 시 첫 번째 보상 자동 선택"),
         FText::AsNumber(FMath::CeilToInt(StageOwner->GetBuildTimeRemaining())));

@@ -101,8 +101,8 @@ bool FPGProfileTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Fresh rogue run"),System->BeginNewRun());
     TestEqual(TEXT("Rogue resets reward selections"),System->Profile->SelectedRewards.Num(),0);
     TestEqual(TEXT("Rogue preserves best record"),System->Profile->BestStage,4);
-    TestEqual(TEXT("Starter replaces previous inventory"),System->Profile->Items.Num(),1);
-    TestTrue(TEXT("Starter gets a fresh identity"),System->Profile->Items[0].Guid != First.Guid);
+    TestEqual(TEXT("New dungeon preserves inventory"),System->Profile->Items.Num(),1);
+    TestEqual(TEXT("Owned item retains identity"),System->Profile->Items[0].Guid,First.Guid);
     System->Catalog->bRoguelikeRuns = false;
     System->Profile->Items = {First}; System->Profile->Equipment.Reset();
     for (int32 Cycle = 0; Cycle < 20; ++Cycle)

@@ -462,8 +462,9 @@ void APGPlayerController::PGInventoryProbe(FString Action)
             Button->OnKeyDown(Button->GetCachedGeometry(),Key);
             Button->OnKeyUp(Button->GetCachedGeometry(),Key);
         };
+        Check(Profile->SelectCharacter(TEXT("Bokusei")),TEXT("initial character selection before loot"));
         InventoryWidget->SetCharacterTab();
-        Check(Contains(InventoryWidget->TakeWidget(),TEXT("검술 · 장비 · 강화 공유")),TEXT("default character preview has details"));
+        Check(Contains(InventoryWidget->TakeWidget(),TEXT("레벨·장비·창고·재료·제작법은 캐릭터별로 보존됩니다.")),TEXT("default character preview has details"));
         const FName Original=Profile->GetProfile()->CharacterId;
         for (const auto& Ref:Catalog->PlayableCharacters)
             if (const auto* Identity=Ref.LoadSynchronous(); Identity && Identity->Id!=Original)
@@ -611,7 +612,7 @@ void APGPlayerController::PGInventoryProbe(FString Action)
             const auto Items=Profile->GetProfile()->Items;
             for (const auto& Item : Items) Profile->Discard(Item.Guid);
         }
-        else
+        else if (Action!=TEXT("build") && Action!=TEXT("character"))
         {
             const int32 Target=Action==TEXT("full") ? Catalog->BagCapacity : FMath::Min(12,Catalog->BagCapacity);
             for (int32 I=Profile->GetBagCount();I<Target && !Catalog->Items.IsEmpty();++I)

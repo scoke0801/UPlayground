@@ -81,7 +81,7 @@ bool FPGLegendaryTest::RunTest(const FString&)
     TestEqual(TEXT("Currency preserved on failure"),System->Profile->Materials.FindRef(TEXT("Shard")),int64(100));
     System->bInjectSaveFailure=false; TestTrue(TEXT("New run"),System->BeginNewRun(123));
     TestTrue(TEXT("Permanent recipe"),System->Profile->LegendaryRecipes.Contains(TEXT("Bloodletting")));
-    TestTrue(TEXT("Run currency cleared"),System->Profile->Materials.IsEmpty());
+    TestEqual(TEXT("Character currency retained"),System->Profile->Materials.FindRef(TEXT("Shard")),int64(100));
     Catalog->LegendaryEffects[0].Cost.Add(TEXT("Shard"),-1);
     TestFalse(TEXT("Negative cost rejected"),PGLegendaryRules::Validate(*Catalog,Reason));
     for (int32 Index=0;Index<2;++Index) UGameplayStatics::DeleteGameInSlot(System->SlotName(Index),0);

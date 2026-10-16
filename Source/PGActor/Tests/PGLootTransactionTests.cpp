@@ -67,6 +67,10 @@ bool FPGLootTransactionTest::RunTest(const FString& Parameters)
     System->bInjectSaveFailure = false;
     TestTrue(TEXT("Explicit new run succeeds"), System->BeginNewRun());
     TestFalse(TEXT("New run clears result slot"), System->Profile->BossReward.Guid.IsValid());
+    TestEqual(TEXT("Boss reward moved to permanent stash"), System->Profile->Stash.Num(), 1);
+    TestEqual(TEXT("Boss identity retained"), System->Profile->Stash[0].Guid, Boss.Guid);
+    TestTrue(TEXT("Stashed boss cannot be picked up again"), System->HasClaimedLoot(Boss.Guid));
+    TestTrue(TEXT("Make bag space for treasure"), System->Discard(Filler.Guid));
     TestEqual(TEXT("New run clears claim ledger"), System->Profile->ClaimedLoot.Num(), 0);
     TestNotEqual(TEXT("New run identity changes"), System->Profile->RunId, RunId);
     TestEqual(TEXT("Permanent victory remains"), System->Profile->CompletedRuns, 1);

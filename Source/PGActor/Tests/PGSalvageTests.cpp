@@ -70,8 +70,8 @@ bool FPGSalvageTest::RunTest(const FString&)
     TestFalse(TEXT("Failed reset preserves materials"),System->BeginNewRun(123));
     TestEqual(TEXT("No reset before persistence"),System->Profile->Materials.FindRef(TEXT("Shard")),int64(42));
     System->bInjectSaveFailure=false;
-    TestTrue(TEXT("New run resets materials"),System->BeginNewRun(123));
-    TestTrue(TEXT("New run empty materials"),System->Profile->Materials.IsEmpty());
+    TestTrue(TEXT("New dungeon begins"),System->BeginNewRun(123));
+    TestEqual(TEXT("New dungeon retains materials"),System->Profile->Materials.FindRef(TEXT("Shard")),int64(42));
     for (int32 Index=0;Index<2;++Index) UGameplayStatics::DeleteGameInSlot(System->SlotName(Index),0);
     return true;
 }

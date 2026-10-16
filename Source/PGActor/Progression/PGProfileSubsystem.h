@@ -30,6 +30,9 @@ public:
     bool SetItemMark(FGuid Guid, bool bFavorite, bool bJunk);
     bool SelectBuild(FName Id);
     bool SelectCharacter(FName Id);
+    bool CanChangeCharacter(FString& Reason) const;
+    bool MoveToStash(FGuid Guid);
+    bool WithdrawFromStash(FGuid Guid);
     bool SelectActiveSkills(const TArray<int32>& Skills);
     bool CanChangeSkills(FString& Reason) const;
     bool CommitReward(FGuid Token, int32 NextStage, EPGStatType Stat, int32 Amount, EPGCombatPerk Perk = EPGCombatPerk::None, int32 PerkPercent = 0, int32 RewardId = 0, bool bAdvance = true);
@@ -60,6 +63,11 @@ public:
     int32 RetryProbeRemaining = -1;
     int32 RetryProbeFailures = 0;
 private:
+    friend class FPGPermanentCharacterTest;
+    bool InitializeCharacter(UPGProfileSave* Candidate);
+    bool ChangeCharacter(FName Id, FName PreviousId);
+    bool MoveStashItem(FGuid Guid, bool bWithdraw);
+    bool ApplyPendingExperience(UPGProfileSave* Candidate) const;
     friend class FPGEquipmentExpansionTest;
     friend class FPGCraftingTest;
     friend class FPGSalvageTest;

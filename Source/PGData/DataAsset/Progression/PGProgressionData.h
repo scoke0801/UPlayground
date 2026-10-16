@@ -72,6 +72,7 @@ public:
 #endif
     UPROPERTY(EditAnywhere, Category="Equipment") TArray<FPGEquipmentRarityRule> RarityRules = PGEquipmentRules::DefaultRarities();
     UPROPERTY(EditAnywhere, Category="Consumables") TObjectPtr<class UPGConsumableData> HealingPotion;
+    // Legacy asset/slot namespace and finite-run flow; character growth is always permanent.
     UPROPERTY(EditAnywhere, Category="Roguelike") bool bRoguelikeRuns = false;
     UPROPERTY(EditAnywhere, Category="Roguelike") TArray<int32> StartingItems;
     UPROPERTY(EditAnywhere, Category="Loot Presentation", meta=(ClampMin="0.05")) float DropArcDuration = .45f;

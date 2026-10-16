@@ -26,6 +26,20 @@
 #include "EngineUtils.h"
 #include "PGShared/Shared/Tag/PGGamePlayTags.h"
 
+namespace
+{
+    template<typename To, typename From>
+    void CopyCharacter(To& Target, const From& Source)
+    {
+        Target.Growth = Source.Growth; Target.Items = Source.Items; Target.Stash = Source.Stash;
+        Target.Equipment = Source.Equipment; Target.Materials = Source.Materials;
+        Target.LegendaryRecipes = Source.LegendaryRecipes; Target.BuildId = Source.BuildId;
+        Target.CustomActiveSkills = Source.CustomActiveSkills;
+        Target.ClearedStages = Source.ClearedStages; Target.CompletedRuns = Source.CompletedRuns;
+        Target.BestStage = Source.BestStage; Target.bCharacterInitialized = Source.bCharacterInitialized;
+    }
+}
+
 UPGProfileSubsystem* UPGProfileSubsystem::Get(const UObject* Context)
 {
     const UWorld* World = Context ? Context->GetWorld() : nullptr;
@@ -81,8 +95,11 @@ void UPGProfileSubsystem::LoadProfile()
         bAnyFile = true;
         auto* Loaded = Cast<UPGProfileSave>(UGameplayStatics::LoadGameFromSlot(SlotName(Index), 0));
         if (Loaded && (Loaded->Version < 1 || Loaded->Version > UPGProfileSave::CurrentVersion)) bUnsupported = true;
-        if (Loaded && (Loaded->Items.ContainsByPredicate([this](const auto& Item)
-            { return Item.ItemVersion > 1 || !Catalog->FindItem(Item.DefinitionId) || (!Item.LegendaryEffect.IsNone() && !Catalog->FindLegendary(Item.LegendaryEffect)); }) ||
+        auto UnsupportedItem = [this](const FPGItemInstance& Item)
+            { return Item.ItemVersion > 1 || !Catalog->FindItem(Item.DefinitionId) || (!Item.LegendaryEffect.IsNone() && !Catalog->FindLegendary(Item.LegendaryEffect)); };
+        if (Loaded) for (const auto& Entry : Loaded->OtherCharacters)
+            if (Entry.Value.Items.ContainsByPredicate(UnsupportedItem) || Entry.Value.Stash.ContainsByPredicate(UnsupportedItem)) bUnsupported = true;
+        if (Loaded && (Loaded->Items.ContainsByPredicate(UnsupportedItem) || Loaded->Stash.ContainsByPredicate(UnsupportedItem) ||
             (Loaded->BossReward.Guid.IsValid() && (Loaded->BossReward.ItemVersion > 1 || !Catalog->FindItem(Loaded->BossReward.DefinitionId) || (!Loaded->BossReward.LegendaryEffect.IsNone() && !Catalog->FindLegendary(Loaded->BossReward.LegendaryEffect)))))) bUnsupported = true;
         if (Validate(Loaded) && (ActiveSlot < 0 || Loaded->Revision > Profile->Revision)) { Profile = Loaded; ActiveSlot = Index; }
     }
@@ -119,12 +136,15 @@ bool UPGProfileSubsystem::UpgradeItems(UPGProfileSave* Candidate) const
         return PGEquipmentRules::ValidateInstance(Item);
     };
     for (auto& Item : Candidate->Items) if (!Upgrade(Item)) return false;
+    for (auto& Item : Candidate->Stash) if (!Upgrade(Item)) return false;
     if (Candidate->BossReward.Guid.IsValid() && !Upgrade(Candidate->BossReward)) return false;
     if (Candidate->Version < 5)
     {
         Candidate->Growth = Catalog->LevelRules.InitialState();
         Candidate->ExperienceClaims.Reset();
     }
+    // A legacy save, including an empty bag, already received its starting grant.
+    if (ActiveSlot >= 0 || !Candidate->Items.IsEmpty()) Candidate->bCharacterInitialized = true;
     Candidate->Version = UPGProfileSave::CurrentVersion;
     return true;
 }
@@ -236,12 +256,19 @@ bool UPGProfileSubsystem::Validate(const UPGProfileSave* Candidate) const
         Ids.Add(Item.Guid);
     }
     TSet<FGuid> EquippedIds;
+    for (const auto& Item : Candidate->Stash)
+    {
+        if (!PGEquipmentRules::ValidateInstance(Item) || Item.ItemVersion != 1 || Ids.Contains(Item.Guid) ||
+            (Item.bFavorite && Item.bJunk) || !Catalog || !PGLegendaryRules::ValidateItem(*Catalog, Item)) return false;
+        Ids.Add(Item.Guid);
+    }
     for (auto Pair : Candidate->Equipment)
     {
         if (EquippedIds.Contains(Pair.Value)) return false;
         EquippedIds.Add(Pair.Value);
         if (!Ids.Contains(Pair.Value) || Pair.Key >= EPGEquipmentSlot::Max) return false;
         const auto* Instance = Candidate->Items.FindByPredicate([&](const auto& I){ return I.Guid == Pair.Value; });
+        if (!Instance) return false;
         const auto* Def = Catalog ? Catalog->FindItem(Instance->DefinitionId) : nullptr;
         if (Def && !PGEquipmentRules::FitsSlot(*Def, Pair.Key)) return false;
         if (Def && Def->EquipmentType == EPGEquipmentType::TwoHandSword &&
@@ -265,18 +292,30 @@ bool UPGProfileSubsystem::Validate(const UPGProfileSave* Candidate) const
     }
     for (auto Pair : Candidate->SelectedRewards) if (Pair.Key <= 0 || Pair.Value < 1 || Pair.Value > 100) return false;
     for (auto Pair : Candidate->StageRewardCounts) if (Pair.Key < 1 || Pair.Value < 1 || Pair.Value > 3) return false;
+    for (const auto& Entry : Candidate->OtherCharacters)
+    {
+        if (Entry.Key.IsNone() || Entry.Key == Candidate->CharacterId || !Entry.Value.bCharacterInitialized) return false;
+        auto* Archived = NewObject<UPGProfileSave>();
+        CopyCharacter(*Archived, Entry.Value);
+        Archived->Version = UPGProfileSave::CurrentVersion;
+        if (!Validate(Archived)) return false;
+    }
+    return true;
+}
+bool UPGProfileSubsystem::ApplyPendingExperience(UPGProfileSave* Candidate) const
+{
+    for (const auto& Claim : PendingExperience)
+        if (!Candidate->ExperienceClaims.Contains(Claim.Key))
+        {
+            if (!Catalog->LevelRules.AddExperience(Candidate->Growth, Claim.Value)) return false;
+            Candidate->ExperienceClaims.Add(Claim.Key);
+        }
     return true;
 }
 bool UPGProfileSubsystem::Commit(UPGProfileSave* Candidate, bool bRestorePlayer)
 {
     if (bCommitting || bReadOnly || bInjectSaveFailure || !UpgradeItems(Candidate)) { Status = TEXT("저장 실패: 변경을 적용하지 않았습니다"); return false; }
-    if (Candidate->RunId == Profile->RunId)
-        for (const auto& Claim : PendingExperience)
-            if (!Candidate->ExperienceClaims.Contains(Claim.Key))
-            {
-                if (!Catalog->LevelRules.AddExperience(Candidate->Growth, Claim.Value)) return false;
-                Candidate->ExperienceClaims.Add(Claim.Key);
-            }
+    if (Candidate->RunId == Profile->RunId && !ApplyPendingExperience(Candidate)) return false;
     if (!Validate(Candidate)) { Status = TEXT("저장 정보 검증 실패: 변경을 적용하지 않았습니다"); return false; }
     TGuardValue<bool> Committing(bCommitting, true);
     if (Profile->Revision == MAX_int64 || (Profile->Version < UPGProfileSave::CurrentVersion && !BackupLegacySlots()))
@@ -285,7 +324,7 @@ bool UPGProfileSubsystem::Commit(UPGProfileSave* Candidate, bool bRestorePlayer)
     const int32 Next = ActiveSlot == 0 ? 1 : 0;
     if (!UGameplayStatics::SaveGameToSlot(Candidate, SlotName(Next), 0)) { Status = TEXT("저장 실패: 이전 정상 저장 유지"); return false; }
     // Alternating slots retain the previous committed snapshot if the newest write is interrupted.
-    if (Profile->RunId != Candidate->RunId) bPendingLevelNotice = false;
+    if (Profile->RunId != Candidate->RunId || Profile->CharacterId != Candidate->CharacterId) bPendingLevelNotice = false;
     else if (Candidate->Growth.Level > Profile->Growth.Level) bPendingLevelNotice = true;
     Profile = Candidate; ActiveSlot = Next;
     PendingExperience.Reset();
@@ -325,7 +364,8 @@ bool UPGProfileSubsystem::TryPickup(const FPGItemInstance& Item)
 }
 bool UPGProfileSubsystem::HasClaimedLoot(FGuid Guid) const
 {
-    return Profile && (Profile->ClaimedLoot.Contains(Guid) || Profile->Items.ContainsByPredicate([&](const auto& Item){ return Item.Guid == Guid; }));
+    return Profile && (Profile->ClaimedLoot.Contains(Guid) || Profile->Items.ContainsByPredicate([&](const auto& Item){ return Item.Guid == Guid; }) ||
+        Profile->Stash.ContainsByPredicate([&](const auto& Item){ return Item.Guid == Guid; }));
 }
 bool UPGProfileSubsystem::QueueBossReward(const FPGItemInstance& Item)
 {
@@ -502,7 +542,7 @@ bool UPGProfileSubsystem::SelectBuild(FName Id)
 }
 bool UPGProfileSubsystem::SelectCharacter(FName Id)
 {
-    if (!CanChangeSkills(Status)) return false;
+    if (!CanChangeCharacter(Status)) return false;
     auto* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
     UPGCharacterAppearance* Selected = nullptr;
     for (const auto& Reference : Catalog->PlayableCharacters)
@@ -510,9 +550,66 @@ bool UPGProfileSubsystem::SelectCharacter(FName Id)
         { Selected = Appearance; break; }
     if (!Player || !Selected || !Player->AppearanceComponent->CanApply(Selected))
     { Status = TEXT("캐릭터 데이터를 불러오지 못했습니다. 기존 선택을 유지합니다"); return false; }
+    const auto* Current = Player->AppearanceComponent->GetAppearance();
+    // The original base mesh has no appearance asset: its first selection inherits existing progress.
+    const FName PreviousId = Profile->CharacterId.IsNone() ? (Current ? Current->Id : Id) : Profile->CharacterId;
+    return ChangeCharacter(Id, PreviousId);
+}
+bool UPGProfileSubsystem::CanChangeCharacter(FString& Reason) const
+{
+    if (!CanChangeSkills(Reason)) return false;
+    Reason = TEXT("캐릭터는 첫 전투에 들어가기 전에 변경할 수 있습니다");
+    if (Profile->Checkpoint != 1 || Profile->bRunEnded || !Profile->SelectedRewards.IsEmpty() ||
+        !Profile->ClaimedLoot.IsEmpty() || !Profile->ExperienceClaims.IsEmpty() || !PendingExperience.IsEmpty()) return false;
+    for (TActorIterator<APGStageManager> It(GetWorld()); It; ++It)
+        if (It->GetCurrentStageId() == 1 && (It->GetCurrentStageState() == EPGStageState::RunPreparation ||
+            It->GetCurrentStageState() == EPGStageState::DungeonTraversal)) { Reason.Reset(); return true; }
+    return false;
+}
+bool UPGProfileSubsystem::ChangeCharacter(FName Id, FName PreviousId)
+{
+    if (!Profile || !Catalog || Id.IsNone() || bReadOnly || bCommitting || !PendingExperience.IsEmpty() ||
+        Profile->bRunEnded || Profile->Checkpoint != 1 || !Profile->ExperienceClaims.IsEmpty() ||
+        !Profile->ClaimedLoot.IsEmpty() || !Profile->SelectedRewards.IsEmpty() || PendingBossReward.Guid.IsValid()) return false;
     if (Profile->CharacterId == Id) return true;
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
+    if (!UpgradeItems(Next) || !ApplyPendingExperience(Next)) return false;
+    // Bind a legacy unnamed profile to its visible character before the first switch.
+    if (PreviousId == Id) { Next->CharacterId = Id; return Commit(Next); }
+    if (PreviousId.IsNone()) { Status = TEXT("현재 캐릭터를 확인하지 못했습니다. 기존 성장을 보존합니다"); return false; }
+    CopyCharacter(Next->OtherCharacters.FindOrAdd(PreviousId), *Next);
+    const FPGCharacterProgress Saved = Next->OtherCharacters.FindRef(Id);
+    Next->OtherCharacters.Remove(Id);
+    CopyCharacter(*Next, Saved);
     Next->CharacterId = Id;
+    if (!InitializeCharacter(Next)) return false;
+    // Unstarted dungeon treasure actors already carry this run identity.
+    Next->ExperienceClaims.Reset(); Next->ClaimedLoot.Reset();
+    Next->RewardBonuses.Reset(); Next->CombatPerks.Reset(); Next->SelectedRewards.Reset();
+    Next->StageRewardCounts.Reset(); Next->LastReward.Invalidate();
+    if (!Commit(Next)) return false;
+    PendingBossReward = FPGItemInstance();
+    return true;
+}
+bool UPGProfileSubsystem::MoveToStash(FGuid Guid)
+{
+    return CanChangeSkills(Status) && MoveStashItem(Guid, false);
+}
+bool UPGProfileSubsystem::WithdrawFromStash(FGuid Guid)
+{
+    return CanChangeSkills(Status) && MoveStashItem(Guid, true);
+}
+bool UPGProfileSubsystem::MoveStashItem(FGuid Guid, bool bWithdraw)
+{
+    if (!Profile || !Catalog || bReadOnly || bCommitting || !Guid.IsValid()) return false;
+    if (bWithdraw && GetBagCount() >= Catalog->BagCapacity) { Status = TEXT("가방이 가득 찼습니다. 장비는 창고에 남습니다"); return false; }
+    if (!bWithdraw && Profile->Equipment.FindKey(Guid)) { Status = TEXT("장착을 해제한 뒤 창고에 보관하세요"); return false; }
+    auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
+    auto& Source = bWithdraw ? Next->Stash : Next->Items;
+    auto& Target = bWithdraw ? Next->Items : Next->Stash;
+    const int32 Index = Source.IndexOfByPredicate([Guid](const auto& Item){ return Item.Guid == Guid; });
+    if (Index == INDEX_NONE) return false;
+    Target.Add(Source[Index]); Source.RemoveAt(Index);
     return Commit(Next);
 }
 bool UPGProfileSubsystem::CanChangeSkills(FString& Reason) const
@@ -579,8 +676,12 @@ bool UPGProfileSubsystem::CommitReward(FGuid Token, int32 NextStage, EPGStatType
 }
 bool UPGProfileSubsystem::BeginNewRun(int32 RequestedSeed)
 {
+    if (!Profile || !Catalog || bReadOnly || bCommitting) return false;
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
-    Next->Growth = Catalog->LevelRules.InitialState(); Next->ExperienceClaims.Reset();
+    if (!UpgradeItems(Next) || !ApplyPendingExperience(Next)) return false;
+    // Victory loot leaves the result slot exactly once, even when the bag is full.
+    if (Next->BossReward.Guid.IsValid()) Next->Stash.Add(Next->BossReward);
+    Next->ExperienceClaims.Reset();
     Next->Checkpoint = 1; Next->RewardBonuses.Reset(); Next->CombatPerks.Reset(); Next->LastReward.Invalidate();
     Next->SelectedRewards.Reset(); Next->bRunEnded = false;
     Next->StageRewardCounts.Reset();
@@ -594,10 +695,18 @@ bool UPGProfileSubsystem::BeginNewRun(int32 RequestedSeed)
         Next->RunSeed = FixedSeed;
     Next->bAssistedRun = RetryProbeRemaining >= 0;
 #endif
-    if (Catalog && Catalog->bRoguelikeRuns)
+    if (!InitializeCharacter(Next) || !Commit(Next)) return false;
+    PendingBossReward = FPGItemInstance();
+    return true;
+}
+bool UPGProfileSubsystem::InitializeCharacter(UPGProfileSave* Next)
+{
+    if (Next->bCharacterInitialized) return true;
+    Next->Growth = Catalog->LevelRules.InitialState();
+    if (Next->BuildId.IsNone() && !Catalog->Builds.IsEmpty()) Next->BuildId = Catalog->Builds[0].Id;
+    if (Next->CustomActiveSkills.IsEmpty()) Next->CustomActiveSkills = Catalog->DefaultActiveSkills;
+    if (Catalog->bRoguelikeRuns)
     {
-        Next->Materials.Reset();
-        Next->Items.Reset(); Next->Equipment.Reset();
         for (int32 Id : Catalog->StartingItems)
             if (const auto* Def = Catalog->FindItem(Id))
             {
@@ -620,8 +729,7 @@ bool UPGProfileSubsystem::BeginNewRun(int32 RequestedSeed)
     for (auto& OwnedItem : Next->Items) if (Next->Equipment.FindKey(OwnedItem.Guid)) OwnedItem.bJunk = false;
             }
     }
-    if (!Commit(Next)) return false;
-    PendingBossReward = FPGItemInstance();
+    Next->bCharacterInitialized = true;
     return true;
 }
 bool UPGProfileSubsystem::EnsureRunSeed()

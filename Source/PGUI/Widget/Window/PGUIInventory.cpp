@@ -223,7 +223,7 @@ TSharedRef<SWidget> UPGUIInventory::RebuildWidget()
     AddEquipmentPage(TEXT("소지품"),0);
     AddEquipmentPage(TEXT("장비 관리"),1);
     AddEquipmentPage(TEXT("비교"),2);
-    AddEquipmentPage(TEXT("재료"),3);
+    AddEquipmentPage(TEXT("재료·창고"),3);
     auto Overview=SNew(SScrollBox).Tag(TEXT("PGInventory.Overview")).ScrollBarStyle(&PGInventoryScrollStyle()).ScrollBarThickness(FVector2D(4,4))
         + SScrollBox::Slot()[SNew(SVerticalBox)
             + SVerticalBox::Slot().AutoHeight().Padding(0,0,0,10)[SNew(SBox).HeightOverride(280)[Paperdoll]]
@@ -337,6 +337,7 @@ void UPGUIInventory::NativeConstruct()
 {
     RightReveal=StatsReveal=0.f;
     Super::NativeConstruct(); BoundProfile=UPGProfileSubsystem::Get(this);
+    if (BoundProfile.IsValid() && BoundProfile->GetProfile()) ObservedCharacter=BoundProfile->GetProfile()->CharacterId;
     if (BoundProfile.IsValid()) ProfileChangedHandle=BoundProfile->OnProfileChanged.AddUObject(this,&ThisClass::OnProfileChanged);
     int32 X=0,Y=0; if (GetOwningPlayer()) GetOwningPlayer()->GetViewportSize(X,Y); bCompact=X<1600;
     Refresh();
@@ -443,7 +444,17 @@ void UPGUIInventory::UpdateCharacterPreview(float DeltaTime)
     CharacterCapture->CaptureScene();
 }
 
-void UPGUIInventory::OnProfileChanged() { bRefreshPending=true; }
+void UPGUIInventory::OnProfileChanged()
+{
+    if (BoundProfile.IsValid() && BoundProfile->GetProfile() && ObservedCharacter!=BoundProfile->GetProfile()->CharacterId)
+    {
+        ObservedCharacter=BoundProfile->GetProfile()->CharacterId;
+        ResetGrowthDraft(); CancelImprint(); CancelSalvage();
+        DraftActiveSkills.Reset(); bDraftDirty=false; bConfirmClose=false;
+        SelectedItem.Invalidate(); PendingDiscard.Invalidate();
+    }
+    bRefreshPending=true;
+}
 FReply UPGUIInventory::NativeOnPreviewMouseButtonDown(const FGeometry& Geometry,const FPointerEvent& Event)
 {
     bLastStats=bStatsOpen && StatsFrame && StatsFrame->GetCachedGeometry().IsUnderLocation(Event.GetScreenSpacePosition());
@@ -495,7 +506,7 @@ void UPGUIInventory::Refresh()
     FString LockReason; bCanEquip=Profile->CanChangeSkills(LockReason);
     if (!Save->Items.ContainsByPredicate([this](const auto& Item){return Item.Guid==SelectedItem;}))
     { SelectedItem.Invalidate(); if (EquipmentPages && EquipmentPages->GetActiveWidgetIndex()==2) EquipmentPages->SetActiveWidgetIndex(0); }
-    const FString Policy=Profile->GetCatalog()->bRoguelikeRuns ? TEXT("장비·강화는 이번 도전 전용") : TEXT("획득·장착 즉시 저장");
+    const FString Policy=TEXT("캐릭터 성장·장비·재료 영구 저장");
     StatusText->SetText(FText::FromString(bConfirmRecovery ? TEXT("원본을 보관하고 복구합니다. 유효한 백업이 없으면 빈 프로필로 시작합니다. Esc로 취소할 수 있습니다.") : Policy+TEXT("  ·  ")+Profile->Status));
     StatusText->SetColorAndOpacity(bActionFailed || Profile->IsSaveBlocked() ? PGInventoryStyle().Danger : PGInventoryStyle().Muted);
     RefreshBag(); RefreshEquipment(); RefreshComparison(); RefreshBuilds(); RefreshNearby(); RefreshCharacters(); RefreshSalvage(); RefreshImprint(); RefreshCraft();
@@ -576,8 +587,8 @@ void UPGUIInventory::RefreshCharacters()
         [SNew(SBox).HeightOverride(220).Clipping(EWidgetClipping::ClipToBounds)
             [SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SNew(SImage).Tag(Preview->Id).Image(Art(Preview->Portrait.ToSoftObjectPath()))]]];
     CharacterDetailRows->AddSlot().AutoHeight().Padding(8,12)[Text(Preview->DisplayName,30,Style.Text,true)];
-    Line(CharacterDetailRows,FText::FromString(TEXT("검술 · 장비 · 강화 공유  /  다음 도전에도 유지")),Style.Muted,14);
-    FString Reason; const bool CanChange=Profile->CanChangeSkills(Reason);
+    Line(CharacterDetailRows,FText::FromString(TEXT("레벨·장비·창고·재료·제작법은 캐릭터별로 보존됩니다.")),Style.Muted,14);
+    FString Reason; const bool CanChange=Profile->CanChangeCharacter(Reason);
     const bool Current=CurrentCharacter==Preview->Id;
     if (!CanChange) Line(CharacterDetailRows,FText::FromString(Reason),Style.Rare,14);
     auto Confirm=Action(Current ? TEXT("현재 함께하는 캐릭터") : TEXT("이 캐릭터와 함께하기  →"),[this,Id=Preview->Id]()
@@ -861,6 +872,13 @@ void UPGUIInventory::RefreshComparison()
     if (!bSelectedEquipped && CurrentDef && !CurrentDef->EffectDescription.IsEmpty())
     { Line(ComparisonRows,FText::FromString(TEXT("현재 장비의 효과")),Style.Muted,12,true); Line(ComparisonRows,CurrentDef->EffectDescription,Style.Muted); }
     if (PendingDiscard.IsValid()) Line(ComparisonRows,FText::FromString(TEXT("이 아이템을 영구 삭제합니다. 아래 버튼으로 확정하거나 Esc로 취소하세요.")),Style.Danger);
+    auto Store=Action(TEXT("캐릭터 창고에 보관"),[this]()
+    {
+        if (auto* P=UPGProfileSubsystem::Get(this)) bActionFailed=!P->MoveToStash(SelectedItem);
+        bRefreshPending=true; return FReply::Handled();
+    });
+    Store->SetEnabled(bCanEquip && !bSelectedEquipped);
+    ComparisonRows->AddSlot().AutoHeight().Padding(0,8)[Store];
 }
 bool UPGUIInventory::EquipSelected()
 {
@@ -1342,13 +1360,27 @@ void UPGUIInventory::RefreshSalvage()
         for (const auto Key : Keys)
             Line(SalvageRows,FText::FromString(FString::Printf(TEXT("%s  %lld"),*Names[Key].ToString(),P->GetProfile()->Materials.FindRef(Key))),Style.Text);
         Line(SalvageRows,FText::FromString(TEXT("재료는 가방 칸을 차지하지 않습니다. 장착·즐겨찾기 장비는 보호됩니다.")),Style.Muted,12);
-        if (P->GetCatalog()->bRoguelikeRuns)
-            Line(SalvageRows,FText::FromString(TEXT("이번 도전 전용 · 새 도전에서 재료 초기화")),Style.Muted,12);
+        Line(SalvageRows,FText::FromString(TEXT("재료와 창고는 이 캐릭터의 다음 도전에도 유지됩니다.")),Style.Muted,12);
         auto Preview=Action(TEXT("모든 잡동사니 분해 미리보기"),[this](){PreviewSalvage(true);return FReply::Handled();});
         Preview->SetTag(TEXT("PGInventory.SalvagePreview"));
         Preview->SetEnabled(bCanEquip);
         SalvageRows->AddSlot().AutoHeight()[Preview];
         Line(SalvageRows,FText::FromString(TEXT("가방 필터와 관계없이 잡동사니로 표시한 모든 장비를 확인합니다.")),Style.Muted,12);
+        Line(SalvageRows,FText::FromString(FString::Printf(TEXT("캐릭터 창고 · %d개"),P->GetProfile()->Stash.Num())),Style.Text,18,true);
+        Line(SalvageRows,FText::FromString(TEXT("보스 전리품은 다음 도전 시작 시 창고에 보관됩니다. 준비·정비 중 가방으로 꺼낼 수 있습니다.")),Style.Muted,12);
+        for (const auto& Item : P->GetProfile()->Stash)
+        {
+            const auto* Def=P->GetCatalog()->FindItem(Item.DefinitionId);
+            Line(SalvageRows,FText::FromString(FString::Printf(TEXT("%s · %s · 위력 %d"),
+                Def ? *Def->DisplayName.ToString() : TEXT("알 수 없는 장비"),*RarityName(Item.Rarity).ToString(),Item.Power)),Style.Text,14);
+            auto Withdraw=Action(TEXT("가방으로 꺼내기"),[this,Guid=Item.Guid]()
+            {
+                if (auto* System=UPGProfileSubsystem::Get(this)) bActionFailed=!System->WithdrawFromStash(Guid);
+                bRefreshPending=true; return FReply::Handled();
+            });
+            Withdraw->SetEnabled(bCanEquip && P->GetBagCount()<P->GetCatalog()->BagCapacity);
+            SalvageRows->AddSlot().AutoHeight().Padding(0,0,0,8)[Withdraw];
+        }
         return;
     }
     Line(SalvageRows,FText::FromString(FString::Printf(TEXT("분해 대상 %d개 · 되돌릴 수 없습니다"),SalvageTargets.Num())),Style.Danger,16,true);

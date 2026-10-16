@@ -5,6 +5,8 @@
 #include "PGActor/Progression/PGLootDrop.h"
 #include "PGActor/Manager/PGStageManager.h"
 #include "PGActor/Characters/Player/PGCharacterPlayer.h"
+#include "PGActor/Components/Rendering/PGCharacterAppearanceComponent.h"
+#include "PGData/DataAsset/Character/PGCharacterAppearance.h"
 #include "PGAbilitySystem/PGAbilitySystemComponent.h"
 #include "PGData/DataAsset/Progression/PGProgressionData.h"
 #include "PGData/DataAsset/Progression/PGItemGeneration.h"
@@ -64,6 +66,26 @@ void PGRunInventoryCycleProbe(APGPlayerController* Controller, const FString& Ac
     const auto Unclaimed=Generate(15002,TEXT("unclaimed"));
     if (Action==TEXT("u8seed"))
     {
+        const auto* Original=Player->AppearanceComponent->GetAppearance();
+        if (!Original && !Catalog->PlayableCharacters.IsEmpty()) Original=Catalog->PlayableCharacters[0].LoadSynchronous();
+        const UPGCharacterAppearance* Other=nullptr;
+        for (const auto& Ref : Catalog->PlayableCharacters)
+            if (const auto* Appearance=Ref.LoadSynchronous(); Appearance && Original && Appearance->Id!=Original->Id)
+            { Other=Appearance; break; }
+        if (Check(Original && Other,TEXT("two playable character definitions")))
+        {
+            const auto Items=System->GetProfile()->Items;
+            Check(System->SelectCharacter(Original->Id),TEXT("bind original character"));
+            const auto* BeforeSwitch=System->GetProfile(); System->bInjectSaveFailure=true;
+            Check(!System->SelectCharacter(Other->Id),TEXT("failed live character switch")); System->bInjectSaveFailure=false;
+            Check(System->GetProfile()==BeforeSwitch && Player->AppearanceComponent->GetAppearance()==Original,TEXT("failed switch keeps appearance and ownership"));
+            Check(System->SelectCharacter(Other->Id),TEXT("switch character before combat"));
+            Check(System->GetProfile()->CharacterId==Other->Id && Player->AppearanceComponent->GetAppearance()==Other,TEXT("saved character matches visible character"));
+            Check(System->SelectCharacter(Original->Id),TEXT("restore original character"));
+            Check(System->GetProfile()->RunId==Run && System->GetProfile()->Items.Num()==Items.Num(),TEXT("switch preserves unstarted dungeon and original gear"));
+            for (const auto& Item : Items)
+                Check(System->GetProfile()->Items.ContainsByPredicate([&Item](const auto& Owned){return Owned.Guid==Item.Guid;}),TEXT("original gear identity restored"));
+        }
         Check(System->MarkRunAssisted(),TEXT("assisted"));
         auto* Drop=Ground(Equipment);
         const auto* Before=System->GetProfile();
@@ -73,6 +95,12 @@ void PGRunInventoryCycleProbe(APGPlayerController* Controller, const FString& Ac
         Check(IsValid(Drop) && System->GetProfile()==Before,TEXT("failed pickup preserves ground and save"));
         Check(Drop && Drop->TryPickup(Player),TEXT("pickup retry"));
         Check(!IsValid(Drop) && !System->TryPickup(Equipment),TEXT("remove only after save and reject duplicate"));
+        Before=System->GetProfile(); System->bInjectSaveFailure=true;
+        Check(!System->MoveToStash(Equipment.Guid),TEXT("failed stash transaction")); System->bInjectSaveFailure=false;
+        Check(System->GetProfile()==Before,TEXT("failed stash keeps bag"));
+        Check(System->MoveToStash(Equipment.Guid),TEXT("stash in live preparation"));
+        Check(!System->TryPickup(Equipment),TEXT("stashed identity cannot duplicate"));
+        Check(System->WithdrawFromStash(Equipment.Guid),TEXT("withdraw in live preparation"));
         Check(System->Equip(Equipment.Guid),TEXT("equip"));
         TArray<FGuid> Targets;
         for (int32 Index=0;Index<10;++Index)
@@ -131,8 +159,13 @@ void PGRunInventoryCycleProbe(APGPlayerController* Controller, const FString& Ac
         Check(System->BeginNewRun(173002),TEXT("new run retry"));
         const auto* Fresh=System->GetProfile();
         Check(Fresh->RunId!=Run && Fresh->Checkpoint==1 && !Fresh->bRunEnded && !Fresh->BossReward.Guid.IsValid(),TEXT("new identity"));
-        Check(Fresh->Materials.IsEmpty() && Fresh->ClaimedLoot.IsEmpty() && Fresh->ExperienceClaims.IsEmpty() && Fresh->Growth.Investments.IsEmpty(),TEXT("run growth reset"));
-        Check(Fresh->Growth.Level==Catalog->LevelRules.StartingLevel && Fresh->Items.Num()==Catalog->StartingItems.Num(),TEXT("starting growth and gear"));
+        Check(Fresh->ClaimedLoot.IsEmpty() && Fresh->ExperienceClaims.IsEmpty() && Fresh->RewardBonuses.IsEmpty() && Fresh->CombatPerks.IsEmpty(),TEXT("dungeon rewards reset"));
+        Check(Fresh->Materials.OrderIndependentCompareEqual(Before->Materials) &&
+            FPGLevelState::StaticStruct()->CompareScriptStruct(&Fresh->Growth,&Before->Growth,0),TEXT("permanent growth and materials"));
+        Check(Fresh->Items.Num()==Before->Items.Num() && Fresh->Equipment.OrderIndependentCompareEqual(Before->Equipment),TEXT("permanent gear"));
+        for (int32 Index=0;Index<Before->Items.Num();++Index)
+            Check(FPGItemInstance::StaticStruct()->CompareScriptStruct(&Fresh->Items[Index],&Before->Items[Index],0),TEXT("exact owned instance retained"));
+        Check(Fresh->Stash.ContainsByPredicate([Before](const auto& Item){return Item.Guid==Before->BossReward.Guid;}),TEXT("boss reward retained in stash"));
         Check(Fresh->LegendaryRecipes.Num()==Recipes.Num() && Fresh->CompletedRuns==Wins,TEXT("permanent recipes and wins retained"));
         for (const FName Recipe : Recipes) Check(Fresh->LegendaryRecipes.Contains(Recipe),TEXT("recipe retained"));
         Check(!System->GrantExperience(Run,Token(TEXT("kill")),650),TEXT("old run experience rejected"));

@@ -6,12 +6,34 @@
 #include "PGShared/Shared/Structure/PGLevelState.h"
 #include "PGProfileSave.generated.h"
 
+// Only permanent ownership crosses dungeon boundaries. Inactive characters have no live run.
+USTRUCT()
+struct FPGCharacterProgress
+{
+    GENERATED_BODY()
+    UPROPERTY(SaveGame) FPGLevelState Growth;
+    UPROPERTY(SaveGame) TArray<FPGItemInstance> Items;
+    UPROPERTY(SaveGame) TArray<FPGItemInstance> Stash;
+    UPROPERTY(SaveGame) TMap<EPGEquipmentSlot, FGuid> Equipment;
+    UPROPERTY(SaveGame) TMap<FName, int64> Materials;
+    UPROPERTY(SaveGame) TSet<FName> LegendaryRecipes;
+    UPROPERTY(SaveGame) FName BuildId;
+    UPROPERTY(SaveGame) TArray<int32> CustomActiveSkills;
+    UPROPERTY(SaveGame) int32 ClearedStages = 0;
+    UPROPERTY(SaveGame) int32 CompletedRuns = 0;
+    UPROPERTY(SaveGame) int32 BestStage = 0;
+    UPROPERTY(SaveGame) bool bCharacterInitialized = false;
+};
+
 UCLASS()
 class PGACTOR_API UPGProfileSave : public USaveGame
 {
     GENERATED_BODY()
 public:
-    static constexpr int32 CurrentVersion = 8;
+    static constexpr int32 CurrentVersion = 9;
+    UPROPERTY(SaveGame) bool bCharacterInitialized = false;
+    UPROPERTY(SaveGame) TArray<FPGItemInstance> Stash;
+    UPROPERTY(SaveGame) TMap<FName, FPGCharacterProgress> OtherCharacters;
     UPROPERTY(SaveGame) TSet<FName> LegendaryRecipes;
     UPROPERTY(SaveGame) TMap<FName, int64> Materials;
     UPROPERTY(SaveGame) FPGLevelState Growth;
@@ -22,7 +44,7 @@ public:
     UPROPERTY(SaveGame) TArray<FPGItemInstance> Items;
     UPROPERTY(SaveGame) TMap<EPGEquipmentSlot, FGuid> Equipment;
     UPROPERTY(SaveGame) FName BuildId;
-    // Additive v1 field; an empty identity retains the original player appearance.
+    // v9: ownership key as well as appearance; legacy empty identity binds on first selection.
     UPROPERTY(SaveGame) FName CharacterId;
     // Empty retains preset choices; legacy pairs gain default extra slots when applied.
     UPROPERTY(SaveGame) TArray<int32> CustomActiveSkills;
@@ -43,6 +65,6 @@ public:
     // Additive v1 fields. Old saves get a committed identity before spawning loot.
     UPROPERTY(SaveGame) FGuid RunId;
     UPROPERTY(SaveGame) TSet<FGuid> ClaimedLoot;
-    // Run-only result slot: independent of bag capacity, committed with victory.
+    // Committed with victory, then transferred to this character's stash on dungeon entry.
     UPROPERTY(SaveGame) FPGItemInstance BossReward;
 };

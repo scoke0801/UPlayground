@@ -75,6 +75,7 @@ private:
     void ResetGrowthDraft();
     void CheckGrowthContext();
     TWeakObjectPtr<UPGProfileSubsystem> BoundProfile;
+    FName ObservedCharacter;
     FDelegateHandle ProfileChangedHandle;
     UPROPERTY(Transient) TMap<int32, TObjectPtr<UTexture2D>> IconTextures;
     TArray<TSharedPtr<FPGInventoryCellView>> Cells;
