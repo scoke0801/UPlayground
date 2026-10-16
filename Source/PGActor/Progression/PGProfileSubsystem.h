@@ -42,6 +42,7 @@ public:
     bool BeginNewRun(int32 RequestedSeed = 0);
     bool GrantExperience(FGuid Run, FGuid Token, int64 Amount);
     bool ApplyInvestments(FGuid Run, const TMap<EPGStatType, int32>& Expected, const TMap<EPGStatType, int32>& Draft);
+    bool CanInvestPoints(FString& Reason) const;
     bool HasPendingLevelNotice() const { return bPendingLevelNotice; }
     void AcknowledgeLevelNotice() { bPendingLevelNotice = false; }
     bool EnsureRunSeed();

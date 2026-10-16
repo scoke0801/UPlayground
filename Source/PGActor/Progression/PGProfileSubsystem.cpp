@@ -345,13 +345,27 @@ bool UPGProfileSubsystem::GrantExperience(FGuid Run, FGuid Token, int64 Amount)
 }
 bool UPGProfileSubsystem::ApplyInvestments(FGuid Run, const TMap<EPGStatType, int32>& Expected, const TMap<EPGStatType, int32>& Draft)
 {
-    if (!CanChangeSkills(Status)) return false;
+    if (!CanInvestPoints(Status)) return false;
     if (Profile->bRunEnded || Profile->RunId != Run || !Profile->Growth.Investments.OrderIndependentCompareEqual(Expected))
     { Status = TEXT("성장 정보가 변경되었습니다. 초안을 다시 확인하세요"); return false; }
     auto* Next = DuplicateObject<UPGProfileSave>(Profile, this);
     if (!Catalog->LevelRules.Invest(Next->Growth, Draft))
     { Status = TEXT("분배할 포인트와 투자 한도를 확인하세요"); return false; }
     return Commit(Next);
+}
+bool UPGProfileSubsystem::CanInvestPoints(FString& Reason) const
+{
+    if (!Profile || !Catalog || bReadOnly || bCommitting)
+    { Reason = TEXT("저장 처리 중이거나 저장이 차단되었습니다"); return false; }
+    Reason = TEXT("살아 있는 캐릭터로 도전 중에 분배할 수 있습니다");
+    if (Profile->bRunEnded || !GetWorld()) return false;
+    const auto* Player = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(this, 0));
+    const auto* ASC = Player ? Player->GetPGAbilitySystemComponent() : nullptr;
+    if (!ASC || ASC->GetHealth() <= 0) return false;
+    if (ASC->IsProcessingDamage())
+    { Reason = TEXT("피해 처리 후 다시 적용해 주세요"); return false; }
+    Reason.Reset();
+    return true;
 }
 bool UPGProfileSubsystem::TryPickup(const FPGItemInstance& Item)
 {

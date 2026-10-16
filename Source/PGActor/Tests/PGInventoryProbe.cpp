@@ -344,8 +344,12 @@ void APGPlayerController::PGInventoryProbe(FString Action)
                     if (!OpenGrowthPanel() || PendingProfile->HasPendingLevelNotice())
                     { ++*Failures; UE_LOG(LogTemp,Error,TEXT("PGInventoryProbe NOTICE FAIL combat manual open")); }
                     const auto Expected=PendingProfile->GetProfile()->Growth.Investments;
-                    if (PendingProfile->ApplyInvestments(PendingProfile->GetProfile()->RunId,Expected,{{EPGStatType::Attack,1}}))
-                    { ++*Failures; UE_LOG(LogTemp,Error,TEXT("PGInventoryProbe NOTICE FAIL combat applied investment")); }
+                    const int32 Points=PendingProfile->GetProfile()->Growth.UnspentPoints;
+                    if (!PendingProfile->CanInvestPoints(Reason) ||
+                        !PendingProfile->ApplyInvestments(PendingProfile->GetProfile()->RunId,Expected,{{EPGStatType::Attack,1}}) ||
+                        PendingProfile->GetProfile()->Growth.UnspentPoints!=Points-1 ||
+                        PendingProfile->GetProfile()->Growth.Investments.FindRef(EPGStatType::Attack)!=Expected.FindRef(EPGStatType::Attack)+1)
+                    { ++*Failures; UE_LOG(LogTemp,Error,TEXT("PGInventoryProbe NOTICE FAIL combat investment")); }
                     UE_LOG(LogTemp,Display,TEXT("PGInventoryProbe NOTICE failures=%d"),*Failures);
                     PGInventoryProbe(TEXT("capture"));
                     return false;

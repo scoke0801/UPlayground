@@ -172,13 +172,13 @@ TSharedRef<SWidget> UPGUIInventory::BuildStatsTab()
         {
             FString Reason;
             const auto* P=UPGProfileSubsystem::Get(this);
-            if (P) P->CanChangeSkills(Reason);
+            if (P) P->CanInvestPoints(Reason);
             return FText::FromString(FString::Printf(TEXT("초안 사용 포인트 %d\n%s%s"),GrowthDraftPoints(),*Reason,
                 bConfirmGrowthClose ? TEXT("\n분배 초안을 적용하거나 취소한 뒤 닫으세요.") : TEXT("")));
         })];
     auto Apply=Button(TEXT("적용"),[this](){return ApplyGrowth();});
     Apply->SetTag(TEXT("PGGrowth.Apply"));
-    Apply->SetEnabled(TAttribute<bool>::CreateLambda([this](){ FString Reason; const auto* P=UPGProfileSubsystem::Get(this); return !GrowthDraft.IsEmpty() && P && P->CanChangeSkills(Reason); }));
+    Apply->SetEnabled(TAttribute<bool>::CreateLambda([this](){ FString Reason; const auto* P=UPGProfileSubsystem::Get(this); return !GrowthDraft.IsEmpty() && P && P->CanInvestPoints(Reason); }));
     Rows->AddSlot().AutoHeight().Padding(0,6,0,8)
     [SNew(SHorizontalBox)
         +SHorizontalBox::Slot().AutoWidth()[Apply]
