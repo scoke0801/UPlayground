@@ -13,15 +13,23 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--render-only', action='store_true')
     parser.add_argument('--configuration', choices=('Development', 'DebugGame'), default='DebugGame')
+    parser.add_argument('--executable', type=Path)
     parser.add_argument('--characters', nargs='+', default=['Bokusei', 'Hwarin', 'Hichi'])
+    parser.add_argument('--dash-stall', type=float, default=0.)
+    parser.add_argument('--before-input-stall', type=float, default=0.)
+    parser.add_argument('--input-trace', action='store_true')
+    parser.add_argument('--dash-only', action='store_true')
+    parser.add_argument('--expect-expired', action='store_true')
     args = parser.parse_args()
     run = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ_') + uuid.uuid4().hex[:6]
     out = ROOT / 'Saved/QA' / (run + '_mobile_combat')
     out.mkdir(parents=True)
     executable = 'UnrealEditor-Win64-DebugGame.exe' if args.configuration == 'DebugGame' else 'UnrealEditor.exe'
     engine = Path(os.environ.get('ProgramFiles', 'C:/Program Files')) / 'Epic Games/UE_5.8/Engine/Binaries/Win64' / executable
-    assert engine.is_file(), engine
-    common = [engine, ROOT / 'UPlayground.uproject']
+    assert (args.executable or engine).is_file(), args.executable or engine
+    common = [args.executable] if args.executable else [engine, ROOT / 'UPlayground.uproject']
+    if args.executable:
+        assert args.render_only, 'Packaged runs only support runtime checks'
     flags = ['-unattended', '-nop4', '-nosound', '-culture=en', '-DisablePlugins=RiderLink', '-ddc=InstalledNoZenLocalFallback']
     cases = []
     if not args.render_only:
@@ -35,13 +43,20 @@ def main():
             '-PGHackSlashComboProbe', '-ExecCmds=t.MaxFPS 60,PGHackSlashProbe'], 'PGHackSlashProbe PASS combo=100,101,102,100'))
     for identity in args.characters:
         cases.append((identity, ['/Game/Maps/RogueArena', '-game', '-RenderOffscreen', '-windowed', '-ForceRes', '-ResX=1280', '-ResY=720',
-            '-PGMobileCapture', '-PGMobileCharacter=' + identity, '-ExecCmds=t.MaxFPS 60,PGMobileCombatProbe'], 'PGMobileCombatProbe PASS'))
+            '-PGMobileCapture', '-PGMobileCharacter=' + identity, '-PGDashStall=' + str(args.dash_stall),
+            '-PGDashBeforeInputStall=' + str(args.before_input_stall),
+            '-ExecCmds=t.MaxFPS 60,' + ('pg.Input.Trace 1,' if args.input_trace else '') + 'PGMobileCombatProbe'], 'PGMobileCombatProbe PASS'))
     print(out, flush=True)
     results = []
     for name, extra, marker in cases:
         profile_prefix = 'HackSlash_' if name in ('spatial', 'combo') else 'MobileCombat_'
         command = common + extra + flags + ['-PGTestProfile=' + profile_prefix + run + '_' + name,
             '-UserDir=' + str(out / name / 'User'), '-abslog=' + str(out / (name + '.log'))]
+        if args.dash_only:
+            command.append('-PGDashOnly')
+        if args.expect_expired:
+            assert args.dash_only and args.dash_stall >= .45
+            command.append('-PGDashExpectExpired')
         code, timeout = run_process(command, ROOT, out / (name + '.stdout.log'), 240)
         log = read_text(out / (name + '.log')) if (out / (name + '.log')).exists() else ''
         errors = []
@@ -55,7 +70,7 @@ def main():
                 errors.extend(check_automation(json.loads(read_text(report)), ['PG.HackSlash.SpatialClockAndCancellation'])[0])
             else:
                 errors.append('Missing automation report')
-        if name in args.characters:
+        if name in args.characters and not args.dash_only:
             samples = re.findall(r'PGMobile Skill=(\d+) Distance=([\d.]+) MinSpeed=([\d.]+) LegAngle=([\d.]+) FreezeFrames=(\d+) ExitSpeed=([\d.]+)', log)
             if [int(sample[0]) for sample in samples] != [100, 101, 102, 112, 114]:
                 errors.append('Missing walking/leg-motion samples')

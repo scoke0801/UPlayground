@@ -11,6 +11,9 @@ class PGBLUEPRINTUTIL_API UPGHumanoidLocomotionTools : public UBlueprintFunction
     GENERATED_BODY()
 public:
     UFUNCTION(BlueprintCallable, Category="PG|Editor")
+    static bool ConfigurePlayerAttackBlend(class UAnimBlueprint* Blueprint);
+
+    UFUNCTION(BlueprintCallable, Category="PG|Editor")
     static bool RemoveRetargetedTurnYaw(class UAnimSequence* Animation, const TArray<float>& RotationProgress, float Angle);
 
     UFUNCTION(BlueprintCallable, Category="PG|Editor")

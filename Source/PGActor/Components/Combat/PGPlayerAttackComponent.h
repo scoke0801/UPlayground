@@ -31,6 +31,7 @@ public:
     bool TryGuardDirectHit(const AActor* Attacker);
     UFUNCTION(BlueprintPure, Category="PG|Combat") float GetLogicalTime() const { return LogicalTime; }
     float GetExpectedSeconds() const;
+    bool UsesUpperBodyMontage() const;
     const TSharedPtr<FPGSkillCastContext>& GetCastContext() const { return CastContext; }
     static TArray<FPGPlayerSwingCue> BuildSwingCues(const UPGPlayerSkillProfile* Profile, const UAnimMontage* Montage);
     const TArray<FPGPlayerSwingCue>& GetSwingCues() const { return SwingCues; }

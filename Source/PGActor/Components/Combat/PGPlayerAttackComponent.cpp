@@ -306,9 +306,14 @@ void UPGPlayerAttackComponent::EndPlay(const EEndPlayReason::Type Reason)
 
 bool UPGPlayerAttackComponent::CanCancel(bool bDodge) const
 {
-    // Attacks and skills must finish; only a dash may interrupt the authored motion.
-    return bDodge && IsRunning() &&
-        (LogicalTime < ActiveProfile->EarlyDodgeUntil || LogicalTime >= ActiveProfile->DodgeCancel);
+    if (!IsRunning()) return false;
+    if (bDodge)
+        return LogicalTime < ActiveProfile->EarlyDodgeUntil || LogicalTime >= ActiveProfile->DodgeCancel;
+    // Keep every authored contact, then allow the next attack to blend out recovery.
+    if (LogicalTime < ActiveProfile->AttackCancel) return false;
+    for (const auto& Hit : ActiveProfile->HitPhases)
+        if (LogicalTime <= Hit.End) return false;
+    return true;
 }
 bool UPGPlayerAttackComponent::TryGuardDirectHit(const AActor* Attacker)
 {
@@ -328,6 +333,11 @@ bool UPGPlayerAttackComponent::TryGuardDirectHit(const AActor* Attacker)
     return true;
 }
 float UPGPlayerAttackComponent::GetExpectedSeconds() const { return IsRunning() ? ActiveProfile->Duration / Speed : 0.f; }
+bool UPGPlayerAttackComponent::UsesUpperBodyMontage() const
+{
+    return IsRunning() && ActiveMontage && ActiveMontage->SlotAnimTracks.Num() == 1 &&
+        ActiveMontage->SlotAnimTracks[0].SlotName == TEXT("UpperBody");
+}
 
 void UPGPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
@@ -338,9 +348,9 @@ void UPGPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     if (SlashMesh && LogicalTime >= SlashUntil) SlashMesh->SetVisibility(false);
     if (Player->GetPGAbilitySystemComponent()->GetHealth() <= 0.f || !Player->IsGameplayInputAllowed())
     { Stop(true); return; }
-    if (Player->GetMesh()->GlobalAnimRateScale <= 0.f)
+    if (Player->IsAttackHitStopped())
     {
-        // Hit-stop pauses the attack clock/pose, not the player's walking input.
+        // Upper-body holds keep walking; full-body holds keep the planted pose still.
         UpdateWalkSpeed(LogicalTime);
         if (Player->GetCharacterMovement()->MaxWalkSpeed <= 0.f)
             Player->GetCharacterMovement()->StopMovementImmediately();
@@ -379,7 +389,7 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
     if (!IsRunning() || !FMath::IsFinite(Seconds) || Seconds <= 0.f) return;
     const auto Context = CastContext;
     auto* Player = CastChecked<APGCharacterPlayer>(GetOwner());
-    if (Player->GetMesh()->GlobalAnimRateScale <= 0.f) return;
+    if (Player->IsAttackHitStopped()) return;
     const float Until = FMath::Min(ActiveProfile->Duration, LogicalTime + Seconds);
     // Split at phase/movement boundaries and at 120 Hz so a long frame cannot skip a window
     // or evaluate both hits at the final dash position.
@@ -393,7 +403,7 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
         for (const auto& Move : ActiveProfile->MovementSegments) { Boundary(Move.Start); Boundary(Move.End); }
         if (!bAimLocked)
         {
-            Player->FaceAimDirection(); LockedForward = Player->GetActorForwardVector();
+            Player->FaceAimDirection((Next - LogicalTime) / Speed); LockedForward = Player->GetActorForwardVector();
             bAimLocked = Next >= ActiveProfile->AimLock;
             if (!FindLeapDistance(ActiveProfile,LockedForward,LeapDistance)) { Stop(true); return; }
         }
@@ -428,7 +438,7 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
         }
         // Finish simultaneous contacts, then sample the contact pose instead of advancing
         // through the rest of this frame while the newly requested hit-stop is active.
-        if (Player->GetMesh()->GlobalAnimRateScale <= 0.f) break;
+        if (Player->IsAttackHitStopped()) break;
     }
     if (CastContext != Context) return;
     if (ActiveProfile->bManualCounter && !bCounterTriggered && LogicalTime >= ActiveProfile->GuardEnd)
@@ -441,7 +451,7 @@ void UPGPlayerAttackComponent::Advance(float Seconds)
     }
     if (auto* Anim = Player->GetMesh()->GetAnimInstance())
         Anim->Montage_SetPosition(ActiveMontage, ActiveProfile->GetMontagePosition(LogicalTime));
-    if (LogicalTime >= ActiveProfile->Duration && Player->GetMesh()->GlobalAnimRateScale > 0.f) Stop(true, false);
+    if (LogicalTime >= ActiveProfile->Duration && !Player->IsAttackHitStopped()) Stop(true, false);
 }
 
 void UPGPlayerAttackComponent::UpdateWalkSpeed(float Time)
@@ -451,6 +461,7 @@ void UPGPlayerAttackComponent::UpdateWalkSpeed(float Time)
     for (const auto& Move : ActiveProfile->MovementSegments)
         if (Move.Mode == EPGPlayerMoveMode::Walk && Time >= Move.Start && Time < Move.End)
         { Ratio = Move.WalkSpeedRatio; break; }
+    if (Player->IsAttackHitStopped() && !UsesUpperBodyMontage()) Ratio = 0.f;
     Player->GetCharacterMovement()->MaxWalkSpeed = SavedWalkSpeed * Ratio;
 }
 

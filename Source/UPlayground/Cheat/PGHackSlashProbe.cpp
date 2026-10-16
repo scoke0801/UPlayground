@@ -1,5 +1,6 @@
 #include "HAL/IConsoleManager.h"
 #if !UE_BUILD_SHIPPING
+#include "PGCombatFilm.h"
 #include "Containers/Ticker.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
@@ -96,6 +97,7 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
         FString GripIdentity;
         bool bGripStress=FParse::Param(FCommandLine::Get(),TEXT("PGGripStress"));
         int32 GripSamples=0;
+        FPGCombatFilm Film;
     };
     auto State=MakeShared<FProbe>(); TWeakObjectPtr<UWorld> WeakWorld=World;
     FParse::Value(FCommandLine::Get(),TEXT("PGFeedbackEnemy="),State->FeedbackEnemyID);
@@ -130,11 +132,12 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
         }
         const auto Finish=[](bool bOK,const TCHAR* Reason)
         { UE_LOG(LogTemp,Display,TEXT("PGHackSlashProbe %s %s"),bOK?TEXT("PASS"):TEXT("FAIL"),Reason); FPlatformMisc::RequestExit(false); return false; };
-        if(FPlatformTime::Seconds()-State->Started>(State->GripIdentity.IsEmpty()?45:90)) return Finish(false,TEXT("timeout"));
+        if(FPlatformTime::Seconds()-State->Started>(State->Film.bEnabled?600:State->GripIdentity.IsEmpty()?45:90)) return Finish(false,TEXT("timeout"));
         auto* Player=Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(W,0));
         if(!Player || !Player->GetSkillHandler() || !Player->GetMesh()->GetAnimInstance()) return true;
         auto* ASC=Player->GetPGAbilitySystemComponent(); auto* Attack=Player->GetPlayerAttackComponent();
         auto* Handler=Player->GetSkillHandler();
+        if (State->bReady) State->Film.Capture();
         if (State->bMotionTrace && !State->bCombo && State->Context && Attack->IsRunning())
         {
             const auto& Pose=Player->GetMesh()->GetBoneSpaceTransforms();
@@ -150,7 +153,7 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
             auto* Montage=Anim->GetCurrentActiveMontage();
             UE_LOG(LogTemp,Display,TEXT("PGMotion Skill=%d Frame=%llu DT=%.6f Clock=%.6f Position=%.6f Frozen=%d MaxBoneAngle=%.6f Bones=%d MaxBone=%s"),
                 State->Context->SkillID,GFrameCounter,W->GetDeltaSeconds(),Attack->GetLogicalTime(),Anim->Montage_GetPosition(Montage),
-                Player->GetMesh()->GlobalAnimRateScale<=0.f,MaxAngle,Pose.Num(),*Player->GetMesh()->GetBoneName(MaxBone).ToString());
+                Player->IsAttackHitStopped(),MaxAngle,Pose.Num(),*Player->GetMesh()->GetBoneName(MaxBone).ToString());
             State->PreviousPose=Pose;
         }
         if(!State->bReady)
@@ -216,7 +219,7 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
             Floor->SetRootComponent(Box); Box->SetBoxExtent(FVector(2500,2500,50));
             Box->SetCollisionObjectType(ECC_WorldStatic); Box->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
             Box->SetCollisionResponseToAllChannels(ECR_Block); Box->RegisterComponent(); Floor->SetActorLocation(FVector(20000,20000,0));
-            if(FParse::Param(FCommandLine::Get(),TEXT("PGHackSlashCapture")))
+            if(State->Film.bEnabled || FParse::Param(FCommandLine::Get(),TEXT("PGHackSlashCapture")))
             {
                 auto* Surface=NewObject<UStaticMeshComponent>(Floor);
                 Surface->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
@@ -427,7 +430,7 @@ static FAutoConsoleCommandWithWorld PGHackSlashProbe(TEXT("PGHackSlashProbe"),
             State->bPlaced=true;
         }
         if(!State->bCaptured && Attack->IsRunning() &&
-            (State->FeedbackEnemyID>0 ? Player->GetMesh()->GlobalAnimRateScale<=0.f : Attack->GetLogicalTime()>=State->CaptureAt) &&
+            (State->FeedbackEnemyID>0 ? Player->IsAttackHitStopped() : Attack->GetLogicalTime()>=State->CaptureAt) &&
             (State->bSwingFX || State->Context->HitTargets.Num()>0) && FParse::Param(FCommandLine::Get(),TEXT("PGHackSlashCapture")))
         {
             if (FParse::Param(FCommandLine::Get(),TEXT("PGNiagaraSlashProbe")))

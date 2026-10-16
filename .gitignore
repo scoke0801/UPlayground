@@ -387,3 +387,10 @@ Tools/Validation/ValidatePlayerAttacks.py
 !/Tools/Art/GothicInventory/*.png
 !/Tools/Art/GothicInventory/Generation.json
 !/Tools/Art/GothicInventory/ImportGothicInventory.py
+
+# Cast telemetry regression tests used by combat validation.
+!/Tools/Validation/TestHackSlashMetrics.py
+!/Tools/Validation/ConfigureCombatMotion.py
+!/Tools/Validation/RunCombatFilm.py
+!/Tools/Validation/InspectFocusedCombat.py
+!/Tools/Validation/ConfigureFocusedCombat.py

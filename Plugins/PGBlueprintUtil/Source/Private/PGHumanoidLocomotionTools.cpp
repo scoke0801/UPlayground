@@ -5,6 +5,7 @@
 #include "AnimGraphNode_BlendListByBool.h"
 #include "AnimGraphNode_SequenceEvaluator.h"
 #include "AnimGraphNode_TwoWayBlend.h"
+#include "AnimGraphNode_LayeredBoneBlend.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimData/IAnimationDataController.h"
 #include "Animation/AnimData/IAnimationDataModel.h"
@@ -14,6 +15,37 @@
 #include "K2Node_VariableGet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
+
+bool UPGHumanoidLocomotionTools::ConfigurePlayerAttackBlend(UAnimBlueprint* Blueprint)
+{
+    if (!Blueprint) return false;
+    UEdGraph* Graph = nullptr;
+    for (UEdGraph* Candidate : Blueprint->FunctionGraphs)
+        if (Candidate->GetFName() == TEXT("AnimGraph")) Graph = Candidate;
+    if (!Graph) return false;
+    UAnimGraphNode_LayeredBoneBlend* Layer = nullptr;
+    UAnimGraphNode_BlendListByBool* Blend = nullptr;
+    for (UEdGraphNode* Node : Graph->Nodes)
+    {
+        if (Node->GetFName() == TEXT("AnimGraphNode_LayeredBoneBlend_0")) Layer = Cast<UAnimGraphNode_LayeredBoneBlend>(Node);
+        if (Node->GetFName() == TEXT("AnimGraphNode_BlendListByBool_1")) Blend = Cast<UAnimGraphNode_BlendListByBool>(Node);
+    }
+    auto* Input = Blend ? Blend->FindPin(TEXT("bActiveValue")) : nullptr;
+    auto* Variable = Input && Input->LinkedTo.Num() == 1 ? Cast<UK2Node_VariableGet>(Input->LinkedTo[0]->GetOwningNode()) : nullptr;
+    if (!Layer || !Variable || Layer->Node.LayerSetup.Num() != 1 ||
+        (Variable->VariableReference.GetMemberName() != TEXT("bHasAcceleration") &&
+         Variable->VariableReference.GetMemberName() != TEXT("bHasVelocity"))) return false;
+    Blueprint->Modify(); Graph->Modify(); Layer->Modify(); Variable->Modify();
+    Layer->Node.bMeshSpaceRotationBlend = true;
+    Input->BreakAllPinLinks();
+    Variable->VariableReference.SetSelfMember(TEXT("bHasVelocity"));
+    Variable->ReconstructNode();
+    UEdGraphPin* Output = Variable->FindPin(TEXT("bHasVelocity"), EGPD_Output);
+    if (!Output || !Graph->GetSchema()->TryCreateConnection(Output, Input)) return false;
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    FKismetEditorUtilities::CompileBlueprint(Blueprint);
+    return Blueprint->Status != BS_Error;
+}
 
 bool UPGHumanoidLocomotionTools::RemoveRetargetedTurnYaw(UAnimSequence* Animation, const TArray<float>& RotationProgress, float Angle)
 {

@@ -67,7 +67,7 @@ public:
     bool IsConsumableInputAllowed() const;
     class UPGConsumableComponent* GetConsumableComponent() const { return ConsumableComponent; }
     const UDataAsset_InputConfig* GetInputConfig() const { return InputConfigDataAsset; }
-    void FaceAimDirection();
+    void FaceAimDirection(float DeltaSeconds = 0.f);
     class UAnimSequence* GetLocomotionTurnAnimation() const { return TurnAnimation; }
     float GetLocomotionTurnTime() const { return TurnAnimationTime; }
     float GetLocomotionTurnPlayRate() const { return TurnEffectivePlayRate; }
@@ -83,7 +83,8 @@ public:
     class UPGPlayerAttackComponent* GetPlayerAttackComponent() const { return PlayerAttackComponent; }
     class UPGPlayerDashComponent* GetPlayerDashComponent() const { return PlayerDashComponent; }
     void ResetAttackHitStop() { EndHitStop(); }
-    void ApplyProfileHitStop(float Seconds) { ApplyHitStop(Seconds); }
+    void ApplyProfileHitStop(float Seconds);
+    bool IsAttackHitStopped() const;
 private:
     UPROPERTY(VisibleAnywhere, Category="PG|Consumables")
     TObjectPtr<class UPGConsumableComponent> ConsumableComponent;

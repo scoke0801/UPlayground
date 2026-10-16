@@ -91,7 +91,7 @@ for item in SPEC['skills']:
             'movement_segment_id':'movement', 'proc_policy':policy}))
     keys = [set_props(unreal.PGPlayerPoseKey(), {'time':t, 'montage_seconds':m}) for t,m in item['pose']]
     set_props(profile, {'skill_id':skill_id, 'duration':item['duration'], 'aim_lock':item.get('aim', .1),
-                        'dodge_cancel':item['dodge'], 'attack_cancel':item['attack'], 'attack_speed':1.,
+                        'dodge_cancel':item['dodge'], 'early_dodge_until':item.get('early_dodge',0.), 'attack_cancel':item['attack'], 'attack_speed':1.,
                         'frenzy_per_cast_cap':3, 'hit_phases':phases, 'movement_segments':[movement],
                         'pose_keys':keys, 'slash_material':material, 'swing_sound':unreal.load_asset('/Game/ExternalAssets/Sound/SFX/'+SFX_SPEC['player_swings'][str(skill_id)])})
     save(profile)

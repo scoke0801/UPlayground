@@ -98,6 +98,28 @@ APGCharacterPlayer::APGCharacterPlayer()
 	SkillMontageController = CreateDefaultSubobject<UPGSkillMontageController>(TEXT("SkillMontageController"));
 }
 
+bool APGCharacterPlayer::IsAttackHitStopped() const
+{
+    return GetWorldTimerManager().IsTimerActive(HitStopTimer) || GetMesh()->GlobalAnimRateScale <= 0.f;
+}
+
+void APGCharacterPlayer::ApplyProfileHitStop(float Seconds)
+{
+    const bool bAlreadyStopped = IsAttackHitStopped();
+    ApplyHitStop(Seconds);
+    // The profile clock holds the sampled upper-body contact; locomotion must still
+    // advance under walking input. Keep full-body skills and received hit reactions frozen.
+    if (!bAlreadyStopped && Seconds > 0.f && PlayerAttackComponent->UsesUpperBodyMontage())
+        GetMesh()->GlobalAnimRateScale = SavedAnimRate;
+    if (IsAttackHitStopped() && PlayerAttackComponent->IsRunning() && !PlayerAttackComponent->UsesUpperBodyMontage())
+    {
+        // A frozen full-body pose must not translate across planted feet.
+        GetCharacterMovement()->MaxWalkSpeed = 0.f;
+        ConsumeMovementInputVector();
+        GetCharacterMovement()->StopMovementImmediately();
+    }
+}
+
 void APGCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
@@ -300,6 +322,9 @@ void APGCharacterPlayer::Input_Move(const FInputActionValue& InputActionValue)
 		const FVector RightDirection = YawRotation.RotateVector(FVector::RightVector);
 		const FVector MovementDirection = (ForwardDirection * MovementVector.Y + RightDirection * MovementVector.X).GetSafeNormal();
         MoveInputDirection = MovementDirection;
+        // MaxWalkSpeed=0 alone still permits MinAnalogWalkSpeed in CharacterMovement.
+        if (PlayerAttackComponent->IsRunning() && !PlayerAttackComponent->UsesUpperBodyMontage() && IsAttackHitStopped())
+            return;
         
 		AddMovementInput(MovementDirection, UpdateMovementFacing(MovementDirection, GetWorld()->GetDeltaSeconds()));
         bCanStartStationaryTurn = false;
@@ -734,12 +759,19 @@ void APGCharacterPlayer::RefreshCursorAim()
           if (!Aim.ContainsNaN() && !Aim.IsNearlyZero()) { LastAimDirection = Aim; LastAimPoint = AimPoint; bHasAimPoint = true; }
     }
 }
-void APGCharacterPlayer::FaceAimDirection()
+void APGCharacterPlayer::FaceAimDirection(float DeltaSeconds)
 {
     CancelLocomotionTurn();
     if (LocomotionData) CombatFacingUntil = GetWorld()->GetTimeSeconds() + LocomotionData->CombatStrafeSeconds;
     RefreshCursorAim(); // Also refresh on buffered ability activation, not only the 60 Hz timer.
-    if (bUseQuarterView && !LastAimDirection.IsNearlyZero() && !bDeathStarted) SetActorRotation(LastAimDirection.Rotation());
+    if (bUseQuarterView && !LastAimDirection.IsNearlyZero() && !bDeathStarted)
+    {
+        const FRotator Target = LastAimDirection.Rotation();
+        // Acquire aim immediately on input; turn continuously during attack anticipation.
+        SetActorRotation(DeltaSeconds > 0.f
+            ? FMath::RInterpConstantTo(GetActorRotation(), Target, DeltaSeconds, FMath::Abs(GetCharacterMovement()->RotationRate.Yaw))
+            : Target);
+    }
 }
 void APGCharacterPlayer::FaceDodgeDirection()
 {

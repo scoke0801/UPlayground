@@ -1,6 +1,7 @@
 #include "HAL/IConsoleManager.h"
 
 #if !UE_BUILD_SHIPPING
+#include "PGCombatFilm.h"
 #include "Containers/Ticker.h"
 #include "EngineUtils.h"
 #include "EnhancedPlayerInput.h"
@@ -41,9 +42,14 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
         float At = 0.f, CastAt = 0.f, MinimumSpeed = 10000.f, LegAngle = 0.f;
         int32 Phase = 0, Index = 0, FrozenFrames = 0;
         bool bFreezeRequested = false, bCaptured = false;
+        bool bDashStalled = false;
         FVector Origin = FVector(20000,20000,148), CastOrigin = FVector::ZeroVector, Direction = FVector::ZeroVector;
         FQuat PreviousLeg = FQuat::Identity;
         TWeakObjectPtr<AActor> Wall;
+        FPGCombatFilm Film;
+        float FrozenLegAngle = 0.f, PreviousClock = -1.f;
+        FVector HoldOrigin = FVector::ZeroVector;
+        float HoldTravel = 0.f;
     };
     auto S = MakeShared<FState>();
     TWeakObjectPtr<UWorld> WeakWorld = World;
@@ -57,7 +63,7 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
             FPlatformMisc::RequestExit(false);
             return false;
         };
-        if (FPlatformTime::Seconds() - S->Start > 90.) return Finish(false, TEXT("timeout"));
+        if (FPlatformTime::Seconds() - S->Start > (S->Film.bEnabled ? 600. : 90.)) return Finish(false, TEXT("timeout"));
         auto* P = Cast<APGCharacterPlayer>(UGameplayStatics::GetPlayerPawn(W,0));
         if (!P || !P->GetSkillHandler() || FPlatformTime::Seconds() - S->Start < 4.) return true;
         auto* PC = Cast<APlayerController>(P->GetController());
@@ -72,8 +78,19 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
         auto* Anim = P->GetMesh()->GetAnimInstance();
         auto* Handler = P->GetSkillHandler();
         const float Now = W->GetTimeSeconds();
+        if (S->Phase == 4 && !S->bDashStalled && Now-S->At >= .20f)
+        {
+            float Stall = 0.f;
+            if (FParse::Value(FCommandLine::Get(), TEXT("PGDashStall="), Stall) && Stall > 0.f)
+            {
+                UE_LOG(LogTemp, Display, TEXT("PGInput Stall Frame=%llu Now=%.6f Seconds=%.6f"), GFrameCounter, Now, Stall);
+                FPlatformProcess::Sleep(FMath::Min(Stall, 2.f));
+            }
+            S->bDashStalled = true;
+        }
+        if (S->Phase > 0) S->Film.Capture();
         const int32 Skills[] = {100,101,102,112,114};
-        const float Ratios[] = {1.f,1.f,1.f,.85f,.9f};
+        const float Ratios[] = {1.f,1.f,1.f,.33f,.9f};
         const auto Equip = [&](int32 ID)
         {
             ASC->ClearBufferedInput();
@@ -105,6 +122,10 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
             P->SetActorLocation(S->Origin,false,nullptr,ETeleportType::TeleportPhysics);
             Move->SetMovementMode(MOVE_Walking); Move->MaxWalkSpeed=600.f;
             Equip(Skills[0]);
+            if (FParse::Param(FCommandLine::Get(), TEXT("PGDashOnly")))
+            {
+                Equip(114); S->Phase=3;
+            }
             return true;
         }
         // Inject the same action bound to WASD, including the character's input-direction state.
@@ -130,6 +151,8 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
                 return Finish(false,TEXT("incorrect movement/attack animation slot"));
             S->CastOrigin=P->GetActorLocation(); S->CastAt=Now; S->MinimumSpeed=Before;
             S->LegAngle=0.f; S->bFreezeRequested=false; S->FrozenFrames=0; S->bCaptured=false;
+            S->FrozenLegAngle=0.f; S->PreviousClock=-1.f;
+            S->HoldTravel=0.f;
             const int32 LegIndex=P->GetMesh()->GetBoneIndex(TEXT("Thigh_L"));
             if (!P->GetMesh()->GetBoneSpaceTransforms().IsValidIndex(LegIndex)) return Finish(false,TEXT("missing lower-body pose"));
             S->PreviousLeg=P->GetMesh()->GetBoneSpaceTransforms()[LegIndex].GetRotation();
@@ -139,15 +162,22 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
         {
             S->MinimumSpeed=FMath::Min(S->MinimumSpeed,float(Move->Velocity.Size2D()));
             const FQuat Leg=P->GetMesh()->GetBoneSpaceTransforms()[P->GetMesh()->GetBoneIndex(TEXT("Thigh_L"))].GetRotation();
-            S->LegAngle+=FMath::RadiansToDegrees(S->PreviousLeg.AngularDistance(Leg)); S->PreviousLeg=Leg;
+            const float LegDelta=FMath::RadiansToDegrees(S->PreviousLeg.AngularDistance(Leg));
+            S->LegAngle+=LegDelta; S->PreviousLeg=Leg;
+            if (S->bFreezeRequested && P->IsAttackHitStopped())
+            {
+                ++S->FrozenFrames;
+                S->HoldTravel=FMath::Max(S->HoldTravel,float(FVector::Dist2D(P->GetActorLocation(),S->HoldOrigin)));
+                if (S->PreviousClock==Attack->GetLogicalTime()) S->FrozenLegAngle+=LegDelta;
+            }
+            S->PreviousClock=Attack->GetLogicalTime();
             if (!S->bFreezeRequested && Attack->IsRunning() && Attack->GetLogicalTime() > .2f)
             {
-                // Hold two evaluated frames to test the production hit-stop branch.
-                Anim->GetSkelMeshComponent()->GlobalAnimRateScale=0.f; S->bFreezeRequested=true;
+                // Real timer/pose path, with a fixed stimulus for before/after evidence.
+                P->ApplyProfileHitStop(.08f); S->bFreezeRequested=true;
+                S->HoldOrigin=P->GetActorLocation();
             }
-            else if (S->bFreezeRequested && P->GetMesh()->GlobalAnimRateScale<=0.f && ++S->FrozenFrames>=2)
-                P->GetMesh()->GlobalAnimRateScale=1.f;
-            if (!S->bCaptured && Now-S->CastAt>.35f && FParse::Param(FCommandLine::Get(),TEXT("PGMobileCapture")))
+            if (!S->Film.bEnabled && !S->bCaptured && Now-S->CastAt>.35f && FParse::Param(FCommandLine::Get(),TEXT("PGMobileCapture")))
             {
                 FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("QA/MobileCombat")/
                     FString::Printf(TEXT("Skill%d.png"),Skills[S->Index]),false,false);
@@ -158,7 +188,13 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
                 const float Distance=FVector::DotProduct(P->GetActorLocation()-S->CastOrigin,S->Direction);
                 UE_LOG(LogTemp,Display,TEXT("PGMobile Skill=%d Distance=%.2f MinSpeed=%.2f LegAngle=%.2f FreezeFrames=%d ExitSpeed=%.2f"),
                     Skills[S->Index],Distance,S->MinimumSpeed,S->LegAngle,S->FrozenFrames,Move->Velocity.Size2D());
-                if (Distance<250.f || S->MinimumSpeed<350.f || Move->Velocity.Size2D()<350.f || S->LegAngle<3.f || S->FrozenFrames<2)
+                UE_LOG(LogTemp,Display,TEXT("PGMobile ContactHold Skill=%d LegAngle=%.6f Frames=%d"), Skills[S->Index],S->FrozenLegAngle,S->FrozenFrames);
+                UE_LOG(LogTemp,Display,TEXT("PGMobile ContactTravel Skill=%d Distance=%.6f"),Skills[S->Index],S->HoldTravel);
+                if (Skills[S->Index]!=112 && S->FrozenLegAngle<.05f)
+                    return Finish(false,TEXT("upper-body contact froze walking legs"));
+                const float ExpectedMinimum=600.f*Ratios[S->Index]*.9f;
+                const bool bHoldMovementOK=Skills[S->Index]==112 ? S->HoldTravel<.1f && S->MinimumSpeed<.1f : S->MinimumSpeed>=ExpectedMinimum;
+                if (Distance<250.f || !bHoldMovementOK || Move->Velocity.Size2D()<ExpectedMinimum || S->LegAngle<3.f || S->FrozenFrames<2)
                     return Finish(false,TEXT("walking, lower-body animation or hit-stop continuity failed"));
                 if (++S->Index<UE_ARRAY_COUNT(Skills))
                 {
@@ -176,12 +212,21 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
         {
             ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Roll);
             if (!Dash->IsDashing()) return Finish(false,TEXT("dash did not start"));
+            float BeforeInputStall=0.f;
+            if (FParse::Value(FCommandLine::Get(),TEXT("PGDashBeforeInputStall="),BeforeInputStall) && BeforeInputStall>0.f)
+                FPlatformProcess::Sleep(FMath::Min(BeforeInputStall,2.f));
             ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Slot1);
             if (Attack->IsRunning()) return Finish(false,TEXT("attack interrupted dash displacement"));
             S->At=Now; S->Phase=4;
         }
         else if (S->Phase == 4 && !Dash->IsDashing())
         {
+            if (FParse::Param(FCommandLine::Get(),TEXT("PGDashExpectExpired")))
+            {
+                if (Attack->IsRunning()) return Finish(false,TEXT("stale dash input activated"));
+                if (Now-S->At>.9f) return Finish(true,TEXT("stale_dash_input_discarded=1"));
+                return true;
+            }
             if (!Attack->IsRunning())
             {
                 if (Now-S->At>.7f) return Finish(false,TEXT("early dash input expired before exit"));
@@ -191,6 +236,8 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
                 Now-S->At,Attack->GetCastContext()->SkillID,Move->MaxWalkSpeed);
             if (Attack->GetCastContext()->SkillID!=114 || Move->MaxWalkSpeed<500.f || Move->Velocity.Size2D()<350.f)
                 return Finish(false,TEXT("dash exit selected wrong skill or retained movement lock"));
+            if (FParse::Param(FCommandLine::Get(), TEXT("PGDashOnly")))
+                return Finish(true,TEXT("isolated_dash_buffer=1"));
             ASC->CancelAllAbilities(); ASC->ClearBufferedInput();
             P->SetActorLocation(S->Origin,false,nullptr,ETeleportType::TeleportPhysics);
             auto* Wall=W->SpawnActor<AActor>(); auto* Box=NewObject<UBoxComponent>(Wall);
@@ -208,7 +255,34 @@ static FAutoConsoleCommandWithWorld PGMobileCombatProbe(
             ASC->CancelAllAbilities(); ASC->ClearBufferedInput();
             if (Attack->IsRunning() || !FMath::IsNearlyEqual(Move->MaxWalkSpeed,600.f,.1f))
                 return Finish(false,TEXT("cancel did not restore movement state"));
-            return Finish(true,TEXT("skills=5 enhanced_move=1 dash_buffer=1 wall_collision=1 lower_body=1"));
+            S->Index=0; S->At=Now; S->Phase=6;
+        }
+        else if (S->Phase==6 && Now-S->At>.8f)
+        {
+            // Use the equipped roll's real cooldown, not an assumed 0.8s interval.
+            if (!Handler->IsCanUseSkill(EPGSkillSlot::SkillSlot_Roll))
+            {
+                if (Now-S->At>10.f) return Finish(false,TEXT("startup dodge cooldown did not recover"));
+                return true;
+            }
+            Equip(Skills[S->Index]);
+            ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Skill_Slot1);
+            if (!Attack->IsRunning()) return Finish(false,TEXT("startup dodge attack did not begin"));
+            S->At=Now; S->Phase=7;
+        }
+        else if (S->Phase==7 && Now-S->At>=.05f)
+        {
+            UE_LOG(LogTemp,Display,TEXT("PGMobile StartupState Skill=%d Ground=%d Dash=%d Cancel=%d RollReady=%d Position=%s"),
+                Skills[S->Index],Move->IsMovingOnGround(),Dash->IsDashing(),Attack->CanCancel(true),
+                Handler->IsCanUseSkill(EPGSkillSlot::SkillSlot_Roll),*P->GetActorLocation().ToString());
+            if (!Attack->IsRunning() || Attack->GetLogicalTime()>=.12f)
+                return Finish(false,TEXT("startup dodge observation missed its window"));
+            ASC->OnAbilityInputPressed(PGGamePlayTags::InputTag_Roll);
+            if (!Dash->IsDashing() || Attack->IsRunning())
+                return Finish(false,TEXT("startup dodge was buffered instead of immediate"));
+            UE_LOG(LogTemp,Display,TEXT("PGMobile StartupDodge Skill=%d Delay=%.6f"),Skills[S->Index],Now-S->At);
+            if (++S->Index==3) return Finish(true,TEXT("skills=5 enhanced_move=1 dash_buffer=1 wall_collision=1 lower_body=1 startup_dodge=3"));
+            S->At=Now; S->Phase=6;
         }
         return true;
     }));

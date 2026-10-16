@@ -23,7 +23,7 @@ def validate_hack_slash_p0(rows=None):
         assert isinstance(profile, unreal.PGPlayerSkillProfile)
         assert profile.get_editor_property('skill_id') == item['id']
         assert row['SkillCoolTime'] == item['cooldown'] and row['Desc'] == item['name']
-        for key, expected in [('duration',item['duration']),('dodge_cancel',item['dodge']),('attack_cancel',item['attack'])]:
+        for key, expected in [('duration',item['duration']),('early_dodge_until',item.get('early_dodge',0.)),('dodge_cancel',item['dodge']),('attack_cancel',item['attack'])]:
             assert abs(profile.get_editor_property(key)-expected)<.0001
         phases = profile.get_editor_property('hit_phases')
         assert len(phases)==len(item['hits'])

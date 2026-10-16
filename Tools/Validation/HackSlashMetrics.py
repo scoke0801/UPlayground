@@ -128,14 +128,35 @@ def check_spatial_observations(log, p1=False):
     """
     probes = [fields(line) for line in log.splitlines() if 'LogTemp:' in line and 'PGHackSlashProbe Skill=' in line]
     expected = [110,113,114] if p1 else [100,101,102,111,112]
-    health = [dict(target='0',loss=row['Damage']) for row in probes]
+    phase_counts, measurements, probe_errors = {}, {}, []
+    try:
+        if len(probes) != len(expected)*2 or {int(row['Skill']) for row in probes} != set(expected):
+            raise ValueError('Expected two independent target HP observations per skill')
+        for skill in expected:
+            rows = [row for row in probes if int(row['Skill']) == skill]
+            if len(rows) != 2 or {int(row['Target']) for row in rows} != {0, 1}:
+                raise ValueError(f'Duplicate or missing target observation: {skill}')
+            phases = {int(row['Phases']) for row in rows}
+            if len(phases) != 1 or min(phases) <= 0:
+                raise ValueError(f'Invalid resolved phase count: {skill}')
+            phase_counts[skill] = phases.pop()
+            moves = [number(row, 'Move') for row in rows]
+            damage = [number(row, 'Damage') for row in rows]
+            if min(moves) < 0 or abs(moves[0]-moves[1]) > .1 or min(damage) < 0:
+                raise ValueError(f'Invalid spatial measurement: {skill}')
+            if any(abs(actual-number(row, 'Expected')) > .1 for row, actual in zip(rows, damage)):
+                raise ValueError(f'Target HP differs from authored damage: {skill}')
+            measurements[skill] = (moves[0], sum(damage))
+    except (KeyError, ValueError, TypeError) as exc:
+        probe_errors.append(str(exc))
+    if probe_errors:
+        return dict(status='FAIL', errors=probe_errors, direct_input_verified=False)
+    health = [dict(target=row['Target'], loss=row['Damage']) for row in probes]
     result, errors = parse_metrics(log, dict(metrics='1', world='0', variant='p1' if p1 else 'p0'), health,
-                                  [dict(skill=str(skill)) for skill in expected])
-    if len(probes) != len(expected)*2:
-        errors.append('Expected two independent target HP observations per skill')
-    moves = [600,60,0] if p1 else [20,25,60,450,0]
-    damages = [440,285,320] if p1 else [90,100,150,180,400]
-    for cast, skill, displacement, damage in zip(result.get('casts', []), expected, moves, damages):
+                                  [dict(skill=str(skill)) for skill in expected], phase_counts)
+    # Source contact markers and walking attacks supersede the original P0 fixed counts/distances.
+    for cast, skill in zip(result.get('casts', []), expected):
+        displacement, damage = measurements[skill]
         if cast.get('skill') != skill or abs(cast.get('displacement_cm', -999)-displacement) > 1.:
             errors.append(f'Spatial observation displacement mismatch: {skill}')
         if abs(cast.get('direct_damage', -999)-damage) > .01 or cast.get('cancelled') is not False:
